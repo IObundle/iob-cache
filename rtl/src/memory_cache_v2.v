@@ -1,5 +1,3 @@
-
-
 `timescale 1ns / 1ps
 
 module memory_cache(
@@ -11,7 +9,7 @@ module memory_cache(
 		    input [29:0]      cache_addr, // 2 MSB removed (0x80000000, since they are only to select the main memory (bit 30 and 31)
 		    output reg [31:0] cache_read_data,
 		    input 	      mem_ack,
-		    input 	      cpu_ack,
+		    input 	      cpu_req,
 		    output reg 	      cache_ack,
 		    /// Cache Controller signals
 		    input [3:0]       cache_controller_address,
@@ -47,8 +45,8 @@ module memory_cache(
    parameter Addr_size = 30;
    parameter Word_size = 32;
    parameter N_bytes   = Word_size/8;
-   parameter Word_select_size = 3; //log2(Line_size/Word_size)
-   parameter Index_size = 7;
+   parameter Word_select_size = 4; //log2(Line_size/Word_size)
+   parameter Index_size = 6;
    parameter Tag_size = Addr_size - (Index_size + Word_select_size + 2); //last 2 bits are always 00 (4 Bytes = 32 bits)
    parameter BUFFER_DEPTH = 4; //Depth of the buffer that writes to the main memory (2**BUFFER_DEPTH positions)
    
@@ -86,7 +84,7 @@ module memory_cache(
 
 
    
-   //wire cache_hit;  = ((tag == cache_addr [Addr_size-1 -: Tag_size]) && v) & cpu_ack;
+   //wire cache_hit;  = ((tag == cache_addr [Addr_size-1 -: Tag_size]) && v) & cpu_req;
    wire 					 cache_hit = (state == hit);
    
    wire 					 cache_invalidate;
@@ -113,7 +111,7 @@ module memory_cache(
 	    
             stand_by:
 	      begin
-		 if (~cpu_ack) state <= stand_by; //reset or no action 
+		 if (~cpu_req) state <= stand_by; //reset or no action 
 		 else          state <= verification;//cache verification	   
 	      end
 
@@ -223,7 +221,6 @@ module memory_cache(
 		 .DATA_W (Tag_size) 
 		 ) tag_memory (
 			       .clk           (clk                                         ),
-			       .reset         (reset                                       ),
 			       .tag_write_data(cache_addr[Addr_size-1:(Addr_size-Tag_size)]),
 			       //.tag_write_data (tag_data_in),
 			       .tag_addr      (index                                       ),
@@ -521,7 +518,7 @@ module cache_controller(
 
    reg [31:0] 				  instr_hit_counter, instr_read_miss_counter, instr_write_miss_counter;
    reg [31:0] 				  data_hit_counter, data_read_miss_counter, data_write_miss_counter;
-   reg [31:0]                 cache_hit_counter, instr_miss_counter, data_miss_counter; 
+   reg [31:0] 				  cache_hit_counter, instr_miss_counter, data_miss_counter; 
 
    
 
@@ -593,25 +590,25 @@ module cache_controller(
        cache_hit_counter <= {32{1'b0}};
      else
        cache_hit_counter <= data_hit_counter + instr_hit_counter;
-	 
+   
    //data_miss
-       always @ (posedge clk, posedge ctrl_reset)
-         if (ctrl_reset)
-           data_miss_counter <= {32{1'b0}};
-         else
-           data_miss_counter <= data_write_miss_counter + data_read_miss_counter;
-           
-              //instr_miss
-           always @ (posedge clk, posedge ctrl_reset)
-             if (ctrl_reset)
-               instr_miss_counter <= {32{1'b0}};
-             else
-               instr_miss_counter <= instr_write_miss_counter + instr_read_miss_counter;	 
+   always @ (posedge clk, posedge ctrl_reset)
+     if (ctrl_reset)
+       data_miss_counter <= {32{1'b0}};
+     else
+       data_miss_counter <= data_write_miss_counter + data_read_miss_counter;
+   
+   //instr_miss
+   always @ (posedge clk, posedge ctrl_reset)
+     if (ctrl_reset)
+       instr_miss_counter <= {32{1'b0}};
+     else
+       instr_miss_counter <= instr_write_miss_counter + instr_read_miss_counter;	 
 
    //cache_controller_requested_data
    always @ (posedge clk)
      begin
-    //instr_hit 
+	//instr_hit 
 	if (ctrl_addr == 4'b0000)
 	  begin
 	     ctrl_req_data <= instr_hit_counter;
@@ -672,10 +669,10 @@ module cache_controller(
 	     ctrl_cache_invalid <= 1'b1;
 	  end
 	else
-	   begin 
-		     ctrl_req_data <= instr_hit_counter;
+	  begin 
+	     ctrl_req_data <= instr_hit_counter;
              ctrl_cache_invalid <= 1'b0; 
-        end     
+          end     
      end
 
 
