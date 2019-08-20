@@ -1,5 +1,3 @@
-
-
 `timescale 1ns / 1ps
 
 module memory_cache(
@@ -521,7 +519,7 @@ module cache_controller(
 
    reg [31:0] 				  instr_hit_counter, instr_read_miss_counter, instr_write_miss_counter;
    reg [31:0] 				  data_hit_counter, data_read_miss_counter, data_write_miss_counter;
-   reg [31:0]                 cache_hit_counter, instr_miss_counter, data_miss_counter; 
+   reg [31:0] 				  cache_hit_counter, instr_miss_counter, data_miss_counter; 
 
    
 
@@ -593,25 +591,25 @@ module cache_controller(
        cache_hit_counter <= {32{1'b0}};
      else
        cache_hit_counter <= data_hit_counter + instr_hit_counter;
-	 
+   
    //data_miss
-       always @ (posedge clk, posedge ctrl_reset)
-         if (ctrl_reset)
-           data_miss_counter <= {32{1'b0}};
-         else
-           data_miss_counter <= data_write_miss_counter + data_read_miss_counter;
-           
-              //instr_miss
-           always @ (posedge clk, posedge ctrl_reset)
-             if (ctrl_reset)
-               instr_miss_counter <= {32{1'b0}};
-             else
-               instr_miss_counter <= instr_write_miss_counter + instr_read_miss_counter;	 
+   always @ (posedge clk, posedge ctrl_reset)
+     if (ctrl_reset)
+       data_miss_counter <= {32{1'b0}};
+     else
+       data_miss_counter <= data_write_miss_counter + data_read_miss_counter;
+   
+   //instr_miss
+   always @ (posedge clk, posedge ctrl_reset)
+     if (ctrl_reset)
+       instr_miss_counter <= {32{1'b0}};
+     else
+       instr_miss_counter <= instr_write_miss_counter + instr_read_miss_counter;	 
 
    //cache_controller_requested_data
    always @ (posedge clk)
      begin
-    //instr_hit 
+	//instr_hit 
 	if (ctrl_addr == 4'b0000)
 	  begin
 	     ctrl_req_data <= instr_hit_counter;
@@ -672,10 +670,10 @@ module cache_controller(
 	     ctrl_cache_invalid <= 1'b1;
 	  end
 	else
-	   begin 
-		     ctrl_req_data <= instr_hit_counter;
+	  begin 
+	     ctrl_req_data <= instr_hit_counter;
              ctrl_cache_invalid <= 1'b0; 
-        end     
+          end     
      end
 
 
