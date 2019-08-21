@@ -42,7 +42,7 @@ module data_memory #(
    xalt_1p_mem_no_initialization  #(
 				    .DATA_W(8),
 				    .ADDR_W(ADDR_W))
-  data_cache_byte0
+   data_cache_byte0
      (
       .data_a   (mem_write_data[7:0]),
       .addr_a   (mem_addr[ADDR_W-1:0]),
