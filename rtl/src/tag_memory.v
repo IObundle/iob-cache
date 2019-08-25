@@ -25,8 +25,7 @@ module tag_memory #(
 		    parameter DATA_W = 20	          
                     )
    (      
-	  input 	      clk,
-	  input 	      reset, 
+	  input 	      clk, 
 	  input [DATA_W-1:0]  tag_write_data,
 	  input [ADDR_W-1:0]  tag_addr,
 	  input 	      tag_en,
@@ -39,7 +38,7 @@ module tag_memory #(
 
    // TAG MEMORY SYSTEM
 
-   xalt_1p_mem_no_initialization_with_reset  #(
+   xalt_1p_mem_no_initialization  #(
 					       .DATA_W(DATA_W),
 					       .ADDR_W(ADDR_W))
    tag_mem
@@ -48,7 +47,6 @@ module tag_memory #(
       .addr_a   (tag_addr),
       .we_a     (tag_en),
       .q_a      (tag_read_data),
-      .rst      (reset),
       .clk      (clk)
       );
 
