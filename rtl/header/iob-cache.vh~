@@ -1,8 +1,5 @@
 //CACHE TYPE
 `define ASSOC_CACHE //Associative Cache (N Ways) - Comment it for Direct Access Cache
-//`define L1
-
-//Replacement Policy
 //`define LRU // Least Recently Used
 //`define BIT_PLRU // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) with similar performance
 `define TREE_PLRU // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru
