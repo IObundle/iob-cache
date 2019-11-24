@@ -25,7 +25,7 @@ module tag_memory #(
 		    parameter DATA_W = 20	          
                     )
    (      
-	  input 	      clk, 
+	  input 	      clk,
 	  input [DATA_W-1:0]  tag_write_data,
 	  input [ADDR_W-1:0]  tag_addr,
 	  input 	      tag_en,
