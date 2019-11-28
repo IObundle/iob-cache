@@ -5,14 +5,14 @@ module memory_cache #(
 		      parameter ADDR_W   = 32,
 		      parameter DATA_W   = 32,
 		      parameter N_BYTES  = DATA_W/8,
-		      parameter NLINE_W  = 4,
-		      parameter OFFSET_W = 2, //log2(Line_size/DATA_W)
+		      parameter NLINE_W  = 3,
+		      parameter OFFSET_W = 3, //log2(Line_size/DATA_W)
 `ifdef L1
 		      parameter I_NLINE_W = 2,
 		      parameter I_OFFSET_W = 2, //Needs to be equal or less than OFFSET_W
 `endif
 `ifdef ASSOC_CACHE
-		      parameter NWAY_W   = 2,
+		      parameter NWAY_W   = 1,
 `endif
 		      parameter BUFFER_W = 4 //Depth of the buffer that writes to the main memory (2**BUFFER_W positions)
 		      ) 
@@ -107,7 +107,7 @@ module memory_cache #(
    wire [DATA_W*(2**I_OFFSET_W) - 1: 0] 	    instr_read;
    wire [I_OFFSET_W-1:0] 			    instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
    wire [I_NLINE_W-1:0] 			    instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [I_OFFSET_W - 1:0] 			    instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
+   wire [I_OFFSET_W - 1:0] 			    instr_word_select = (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
  `else // !`ifdef L1
    wire 					    v;
    wire [TAG_W-1:0] 				    tag;
@@ -343,7 +343,7 @@ module memory_cache #(
 	      .clk           (clk                                         ),
 	      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]         ),
 	      .tag_addr      (index                                       ),
-	      .tag_en        ((j == nway_sel)? data_load&(!instr_req):1'b0),
+	      .tag_en        ((j == nway_selector)? data_load&(!instr_req):1'b0),
 	      .tag_read_data (data_tag[TAG_W*(j+1)-1 : TAG_W*j]           )                                             
 	      );
 
@@ -360,7 +360,7 @@ module memory_cache #(
 	      .reset       (reset || cache_invalidate                     ),
 	      .v_write_data(data_load                                     ),		           
 	      .v_addr      (index                                         ),
-	      .v_en        ((j == nway_sel)? data_load & (!instr_req):1'b0),
+	      .v_en        ((j == nway_selector)? data_load & (!instr_req):1'b0),
 	      .v_read_data (data_v[j]                        )   
 	      );
 
@@ -376,7 +376,7 @@ module memory_cache #(
 		     .clk           (clk                                                                    ),
 		     .mem_write_data(write_data                                                             ),
 		     .mem_addr      (instr_index                                                                  ),
-		     .mem_en        (((i === instr_word_select) && (j === nway_selector) && (data_load) & instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
+		     .mem_en        (((i === instr_word_select) && (j === nway_selector) && (data_load))? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
 		     .mem_read_data (instr_read [(j*(2**I_OFFSET_W)+(i+1))*DATA_W-1:(j*(2**I_OFFSET_W)+i)*DATA_W]) 
 		     ); 
 		
@@ -391,7 +391,7 @@ module memory_cache #(
 	      .clk           (clk                                          ),
 	      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]        ),
 	      .tag_addr      (instr_index                                  ),
-	      .tag_en        ((j == nway_sel)? (data_load & instr_req):1'b0),
+	      .tag_en        ((j == nway_selector)? (data_load & instr_req):1'b0),
 	      .tag_read_data (instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]       )                                             
 	      );
 
@@ -408,7 +408,7 @@ module memory_cache #(
 	      .reset       (reset || cache_invalidate                    ),
 	      .v_write_data(data_load                                    ),		        
 	      .v_addr      (index                                        ),
-	      .v_en        ((j == nway_sel)? (data_load & instr_req):1'b0),
+	      .v_en        ((j == nway_selector)? (data_load & instr_req):1'b0),
 	      .v_read_data (instr_v[j]                                   )   
 	      );
 
