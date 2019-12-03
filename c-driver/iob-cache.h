@@ -15,4 +15,5 @@
 #define ctrl_clock_stop(base)       (*(volatile int*)  (base+0x034))
 #define ctrl_clock_upper(base)      (*(volatile int*)  (base+0x038))
 #define ctrl_clock_lower(base)      (*(volatile int*)  (base+0x03C))
-
+#define ctrl_buffer_empty(base)     (*(volatile int*)  (base+0x040))
+#define ctrl_buffer_full(base)      (*(volatile int*)  (base+0x044))

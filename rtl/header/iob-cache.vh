@@ -14,7 +14,7 @@
 //CONTROLLER
 `define CTRL_CLK // Adds 64-bit clock counter for timing performance measurement
 `define CTRL_COUNTER_W 6
-`define CTRL_ADDR_W 4
+`define CTRL_ADDR_W 5
 
 //uses one-hot enconding - counter for number of hit and misses
 `define INSTR_HIT       (`CTRL_COUNTER_W'd1)
@@ -41,3 +41,5 @@
 `define ADDR_CLK_STOP         (`CTRL_ADDR_W'd13) 
 `define ADDR_CLK_UPPER        (`CTRL_ADDR_W'd14) 
 `define ADDR_CLK_LOWER        (`CTRL_ADDR_W'd15) 
+`define ADDR_BUFFER_EMPTY     (`CTRL_ADDR_W'd16)
+`define ADDR_BUFFER_FULL      (`CTRL_ADDR_W'd17)  
