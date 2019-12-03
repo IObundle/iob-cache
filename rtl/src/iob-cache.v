@@ -8,7 +8,7 @@ module memory_cache #(
 		      parameter NLINE_W  = 4,
 		      parameter OFFSET_W = 2, //log2(Line_size/DATA_W)
 `ifdef L1
-		      parameter I_NLINE_W = 2,
+		      parameter I_NLINE_W = 3,
 		      parameter I_OFFSET_W = 2, //Needs to be equal or less than OFFSET_W
 `endif
 `ifdef ASSOC_CACHE
@@ -19,7 +19,6 @@ module memory_cache #(
    (
     input 		     clk,
     input 		     reset,
-    output 		     buffer_clear,
     input [DATA_W-1:0] 	     cache_write_data,
     input [N_BYTES-1:0]      cache_wstrb,
     input [ADDR_W-1:0] 	     cache_addr,
@@ -871,7 +870,7 @@ module memory_cache #(
    
 
    assign buffer_data_in = {cache_wstrb, cache_addr[ADDR_W -1: 2], cache_write_data};
-   assign buffer_clear   = buffer_empty;//output port
+   
    wire   buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
    
    iob_async_fifo #(
@@ -907,7 +906,8 @@ module memory_cache #(
       .ctrl_req_data      (cache_ctrl_requested_data),
       .ctrl_cpu_req       (cache_ctrl_cpu_request   ),
       .ctrl_ack           (cache_ctrl_acknowledge   ),
-      .ctrl_reset         (reset                    )
+      .ctrl_reset         (reset                    ),
+      .ctrl_buffer_state  ({buffer_full,buffer_empty})
       );
    
 
@@ -926,7 +926,8 @@ module cache_controller #(
     output reg [DATA_W-1:0] 	ctrl_req_data,
     input 			ctrl_cpu_req,
     output reg 			ctrl_ack,
-    input 			ctrl_reset	   
+    input 			ctrl_reset, 
+    input [1:0] 		ctrl_buffer_state
     );
 
    reg [DATA_W-1:0] 		instr_hit_cnt, instr_miss_cnt;
@@ -1048,7 +1049,11 @@ module cache_controller #(
 	     else if (ctrl_addr == `ADDR_RESET_COUNTER)
 	       ctrl_counter_reset <= 1'b1;
 	     else if (ctrl_addr == `ADDR_CACHE_INVALIDATE)
-	       ctrl_cache_invalid <= 1'b1;	  
+	       ctrl_cache_invalid <= 1'b1;	
+	     else if (ctrl_addr == `ADDR_BUFFER_EMPTY)
+               ctrl_req_data <= ctrl_buffer_state[0];
+             else if (ctrl_addr == `ADDR_BUFFER_FULL)
+               ctrl_req_data <= ctrl_buffer_state[1];              
 `ifdef CTRL_CLK
 	     else if (ctrl_addr == `ADDR_CLK_START)
 	       begin
@@ -1245,3 +1250,4 @@ module replacement_policy_algorithm #(
       );
    
 endmodule
+
