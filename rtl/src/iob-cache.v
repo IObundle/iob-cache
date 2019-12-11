@@ -51,7 +51,7 @@ module memory_cache #(
     output reg 		     W_VALID,
     output reg [N_BYTES-1:0] W_STRB, 
     input 		     W_READY,
-    output reg [ADDR_W-1:0]  W_DATA,
+    output reg [DATA_W-1:0]  W_DATA,
     input 		     B_VALID,
     output reg 		     B_READY 	      
     );
