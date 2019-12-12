@@ -33,7 +33,7 @@ module memory_cache #(
     input 		     cache_ctrl_instr_access, 
     ///// AXI signals
     /// Write
-    output [3:0] 	     AW_ID, 
+    output [0:0] 	     AW_ID, 
     output reg [ADDR_W-1:0]  AW_ADDR,
     output [7:0] 	     AW_LEN,
     output [2:0] 	     AW_SIZE,
@@ -54,7 +54,7 @@ module memory_cache #(
     input 		     B_VALID,
     output reg 		     B_READY,
     /// Read
-    output 		     AR_ID,
+    output [0:0]		     AR_ID,
     output reg [ADDR_W-1:0]  AR_ADDR, 
     output reg [7:0] 	     AR_LEN,
     output reg [2:0] 	     AR_SIZE,
@@ -131,11 +131,11 @@ module memory_cache #(
 `endif // !`ifdef ASSOC_CACHE
 
    //Constand AXI signals
-   assign AW_ID = 4'd0;
+   assign AW_ID = 1'd0;
    assign AW_LEN = 8'd0;
    assign AW_SIZE = 3'b010;
    assign AW_BURST = 2'd0;
-   assign AR_ID = 4'd0;
+   assign AR_ID = 1'd0;
    assign AW_LOCK = 1'b0;
    assign AW_CACHE = 4'b0011;
    assign AW_PROT = 3'd0;
