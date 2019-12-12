@@ -23,7 +23,6 @@ module memory_cache #(
     input [N_BYTES-1:0]      cache_wstrb,
     input [ADDR_W-1:0] 	     cache_addr,
     output reg [DATA_W-1:0]  cache_read_data,
-    input 		     mem_ack,
     input 		     cpu_req,
     output reg 		     cache_ack,
     /// Cache Debugger signals
@@ -33,27 +32,45 @@ module memory_cache #(
     output 		     cache_ctrl_acknowledge,
     input 		     cache_ctrl_instr_access, 
     ///// AXI signals
-    /// Read		    
+    /// Write
+    output [3:0] 	     AW_ID, 
+    output reg [ADDR_W-1:0]  AW_ADDR,
+    output [7:0] 	     AW_LEN,
+    output [2:0] 	     AW_SIZE,
+    output [1:0] 	     AW_BURST,
+    output [0:0] 	     AW_LOCK,
+    output [3:0] 	     AW_CACHE,
+    output [2:0] 	     AW_PROT,
+    output [3:0] 	     AW_QOS,
+    output reg 		     AW_VALID,
+    input 		     AW_READY,
+    output reg [DATA_W-1:0]  W_DATA,
+    output reg [N_BYTES-1:0] W_STRB,
+    output reg 		     W_LAST,
+    output reg 		     W_VALID, 
+    input 		     W_READY,
+    input [3:0] 	     B_ID,
+    input [1:0] 	     B_RESP,
+    input 		     B_VALID,
+    output reg 		     B_READY,
+    /// Read
+    output 		     AR_ID,
     output reg [ADDR_W-1:0]  AR_ADDR, 
     output reg [7:0] 	     AR_LEN,
     output reg [2:0] 	     AR_SIZE,
     output reg [1:0] 	     AR_BURST,
+    output [0:0] 	     AR_LOCK,
+    output [3:0] 	     AR_CACHE,
+    output [2:0] 	     AR_PROT,
+    output [3:0] 	     AR_QOS,
     output reg 		     AR_VALID, 
     input 		     AR_READY,
-    input 		     R_VALID, 
-    output reg 		     R_READY,
+    input [3:0] 	     R_ID,
     input [DATA_W-1:0] 	     R_DATA,
+    input [1:0] 	     R_RESP,
     input 		     R_LAST, 
-    /// Write
-    output reg [ADDR_W-1:0]  AW_ADDR,
-    output reg 		     AW_VALID,
-    input 		     AW_READY, 
-    output reg 		     W_VALID,
-    output reg [N_BYTES-1:0] W_STRB, 
-    input 		     W_READY,
-    output reg [DATA_W-1:0]  W_DATA,
-    input 		     B_VALID,
-    output reg 		     B_READY 	      
+    input 		     R_VALID, 
+    output reg 		     R_READY  	      
     );
    
    parameter TAG_W = ADDR_W - (NLINE_W + OFFSET_W + 2); //last 2 bits are always 00 (4 Bytes = 32 bits)
@@ -73,7 +90,7 @@ module memory_cache #(
 `ifdef ASSOC_CACHE
    wire [(2**NWAY_W)*DATA_W*(2**OFFSET_W) - 1: 0] data_read;
    wire [2**NWAY_W -1: 0] 			  cache_hit;//uses one-hot numenclature
-   wire [NWAY_W: 0] 				  nway_hit; // Indicates the way that had a cache_hit
+   wire [NWAY_W -1: 0] 				  nway_hit; // Indicates the way that had a cache_hit
    wire [NWAY_W -1: 0] 				  nway_sel;
  `ifdef L1
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
@@ -113,8 +130,20 @@ module memory_cache #(
  `endif // !`ifdef L1 
 `endif // !`ifdef ASSOC_CACHE
 
-
-
+   //Constand AXI signals
+   assign AW_ID = 4'd0;
+   assign AW_LEN = 8'd0;
+   assign AW_SIZE = 3'b010;
+   assign AW_BURST = 2'd0;
+   assign AR_ID = 4'd0;
+   assign AW_LOCK = 1'b0;
+   assign AW_CACHE = 4'b0011;
+   assign AW_PROT = 3'd0;
+   assign AW_QOS = 4'd0;
+   assign AR_LOCK = 1'b0;
+   assign AR_CACHE = 4'b0011;
+   assign AR_PROT = 3'd0;
+   assign AR_QOS = 4'd0;
    
    //SIM signals  
    wire 					    cache_write = cpu_req & (|cache_wstrb);
@@ -327,7 +356,7 @@ module memory_cache #(
 		     .clk           (clk                                                                    ),
 		     .mem_write_data(write_data                                                             ),
 		     .mem_addr      (index                                                                  ),
-		     .mem_en        (((i === word_select) && (j === nway_selector) && (data_load || cache_hit[j]) && (!instr_req))? data_line_wstrb : {N_BYTES{1'b0}}),
+		     .mem_en        (((i == word_select) && (j == nway_selector) && (data_load || cache_hit[j]) && (!instr_req))? data_line_wstrb : {N_BYTES{1'b0}}),
 		     .mem_read_data (data_read [(j*(2**OFFSET_W)+(i+1))*DATA_W-1:(j*(2**OFFSET_W)+i)*DATA_W]) 
 		     ); 
 		
@@ -346,7 +375,7 @@ module memory_cache #(
 	      .tag_read_data (data_tag[TAG_W*(j+1)-1 : TAG_W*j]           )                                             
 	      );
 
-	   assign data_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] === data_tag[TAG_W*(j+1)-1 : TAG_W*j]);
+	   assign data_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == data_tag[TAG_W*(j+1)-1 : TAG_W*j]);
 	   
 
 	   valid_memory #(
@@ -375,7 +404,7 @@ module memory_cache #(
 		     .clk           (clk                                                                    ),
 		     .mem_write_data(write_data                                                             ),
 		     .mem_addr      (instr_index                                                                  ),
-		     .mem_en        (((i === instr_word_select) && (j === nway_selector) && (data_load) & instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
+		     .mem_en        (((i == instr_word_select) && (j == nway_selector) && (data_load) & instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
 		     .mem_read_data (instr_read [(j*(2**I_OFFSET_W)+(i+1))*DATA_W-1:(j*(2**I_OFFSET_W)+i)*DATA_W]) 
 		     ); 
 		
@@ -394,7 +423,7 @@ module memory_cache #(
 	      .tag_read_data (instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]       )                                             
 	      );
 
-	   assign instr_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)] === instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]);
+	   assign instr_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)] == instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]);
 	   
 
 	   valid_memory #(
@@ -421,7 +450,7 @@ module memory_cache #(
 
 
    onehot_to_bin #(
-		   .BIN_W (NWAY_W+1)
+		   .BIN_W (NWAY_W)
 		   ) 
    onehot_to_bin
      (
@@ -578,7 +607,7 @@ module memory_cache #(
 		     .clk           (clk                                                                ),
 		     .mem_write_data(write_data                                                         ),
 		     .mem_addr      (index                                                              ),
-		     .mem_en        (((i === word_select) && (j === nway_selector)) && (data_load || cache_hit[j])? data_line_wstrb : {N_BYTES{1'b0}} ),
+		     .mem_en        (((i == word_select) && (j == nway_selector)) && (data_load || cache_hit[j])? data_line_wstrb : {N_BYTES{1'b0}} ),
 		     .mem_read_data (data_read [(j*(2**OFFSET_W)+(i+1))*DATA_W-1:(j*(2**OFFSET_W)+i)*DATA_W]) 
 		     ); 
 	     end 
@@ -596,7 +625,7 @@ module memory_cache #(
 	      .tag_read_data (tag[TAG_W*(j+1)-1 : TAG_W*j]       )                                             
 	      );
 
-	   assign tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] === tag[TAG_W*(j+1)-1 : TAG_W*j]);
+	   assign tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == tag[TAG_W*(j+1)-1 : TAG_W*j]);
 	   
 
 	   valid_memory #(
@@ -619,7 +648,7 @@ module memory_cache #(
    endgenerate
 
    onehot_to_bin #(
-		   .BIN_W (NWAY_W+1)
+		   .BIN_W (NWAY_W)
 		   ) 
    onehot_to_bin
      (
@@ -725,7 +754,7 @@ module memory_cache #(
 	AR_SIZE  <= 3'b000;
 	AR_BURST <= 2'b00;
 	R_READY  <= 1'b0;
-	
+        select_counter <= {OFFSET_W{1'b0}};
 	if (reset)
           begin
 	     read_state <= read_stand_by; //reset
@@ -737,11 +766,8 @@ module memory_cache #(
 	    
 	    read_stand_by://0
 	      begin
-		 select_counter     <= {OFFSET_W{1'b0}};
-		 /*`ifdef L1
-		  instr_select_counter <= {I_OFFSET{1'b0}};
-		  `endif*/
-		 if ((state == read_verification) &&  (~(|cache_hit) && buffer_empty))
+		 // select_counter     <= {OFFSET_W{1'b0}};
+	         if ((state == read_verification) &&  (~(|cache_hit) && buffer_empty))
 		   begin
 		      read_state <= data_loader_init; //read miss
 		      data_load <= 1'b1;	  
@@ -769,7 +795,7 @@ module memory_cache #(
 		 AR_SIZE <= $clog2(N_BYTES); // VERIFY BETTER OPTION FOR PARAMETRIZATION
 		 AR_BURST <= 2'b01; //INCR
 		 data_load <= 1'b1;
-		 select_counter <= {OFFSET_W{1'b0}};
+		 //select_counter <= {OFFSET_W{1'b0}};
 		 
 		 if (AR_READY) read_state  <= data_loader;
 		 else          read_state  <= data_loader_init;
@@ -831,6 +857,8 @@ module memory_cache #(
 	W_VALID  <= 1'b0;
 	W_STRB   <= {N_BYTES{1'b0}};
 	B_READY  <= 1'b1;
+	W_DATA   <= {DATA_W{1'b0}};
+	W_LAST   <= 1'b0;
 	
 	if (reset) buffer_state <= buffer_stand_by;
 	else
@@ -854,6 +882,7 @@ module memory_cache #(
 	      begin        //buffer_data_out = {wstrb (size 4), address (size of buffer's WORDSIZE - 4 - word_size), word_size (size of DATA_W)}  
 		 W_VALID  <=  1'b1;
 		 W_STRB   <=  buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
+		 W_LAST   <=  (|buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W]); //OR of W_STRB
 		 W_DATA   <=  buffer_data_out [DATA_W -1 : 0];
 		 if (W_READY) buffer_state <= buffer_stand_by;             
 		 else         buffer_state <= buffer_write_to_mem;
