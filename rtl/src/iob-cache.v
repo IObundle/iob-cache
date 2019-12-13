@@ -1047,7 +1047,7 @@ module cache_controller #(
 `ifdef CTRL_CLK   
    always @(posedge clk, posedge ctrl_arst)
      begin
-	if (ctrl_counter_reset)
+	if (ctrl_arst)
 	  ctrl_clk_cnt <= {(2*DATA_W){1'b0}};
 	else 
 	  begin
