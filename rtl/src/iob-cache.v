@@ -49,7 +49,7 @@ module memory_cache #(
     output reg 		     W_LAST,
     output reg 		     W_VALID, 
     input 		     W_READY,
-    input [3:0] 	     B_ID,
+    input [0:0] 	     B_ID,
     input [1:0] 	     B_RESP,
     input 		     B_VALID,
     output reg 		     B_READY,
