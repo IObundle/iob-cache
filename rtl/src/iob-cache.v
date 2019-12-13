@@ -32,7 +32,7 @@ module memory_cache #(
     output                   cache_ctrl_acknowledge,
     input                    cache_ctrl_instr_access, 
     ///// AXI signals
-    /// Write
+    /// Adress Write
     output [0:0]             AW_ID, 
     output reg [ADDR_W-1:0]  AW_ADDR,
     output [7:0]             AW_LEN,
@@ -44,6 +44,8 @@ module memory_cache #(
     output [3:0]             AW_QOS,
     output reg               AW_VALID,
     input                    AW_READY,
+
+    //Write
     output reg [DATA_W-1:0]  W_DATA,
     output reg [N_BYTES-1:0] W_STRB,
     output reg               W_LAST,
@@ -53,7 +55,8 @@ module memory_cache #(
     input [1:0]              B_RESP,
     input                    B_VALID,
     output reg               B_READY,
-    /// Read
+
+    ///Adress  Read
     output [0:0]             AR_ID,
     output reg [ADDR_W-1:0]  AR_ADDR, 
     output reg [7:0]         AR_LEN,
@@ -65,6 +68,8 @@ module memory_cache #(
     output [3:0]             AR_QOS,
     output reg               AR_VALID, 
     input                    AR_READY,
+
+    ///Read
     input [0:0]              R_ID,
     input [DATA_W-1:0]       R_DATA,
     input [1:0]              R_RESP,
