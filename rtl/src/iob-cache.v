@@ -975,32 +975,23 @@ module cache_controller #(
    reg 				ctrl_clk_start;
 `endif
 
-   always @ (posedge clk, posedge ctrl_reset, posedge ctrl_counter_reset)
-     begin
-	instr_hit_cnt <= instr_hit_cnt;
-	instr_miss_cnt <= instr_miss_cnt;
-	data_read_hit_cnt <= data_read_hit_cnt;
-	data_read_miss_cnt <= data_read_miss_cnt;
-	data_write_hit_cnt <= data_write_hit_cnt;
-	data_write_miss_cnt <= data_write_miss_cnt;
-	data_hit_cnt <= data_hit_cnt;
-	data_miss_cnt <= data_miss_cnt;
-	cache_hit_cnt <= cache_hit_cnt;
-	cache_miss_cnt <= cache_miss_cnt;    	
-	
-	if (ctrl_reset || ctrl_counter_reset) 
+   wire ctrl_arst = ctrl_reset | ctrl_counter_reset;
+      
+   always @ (posedge clk, posedge ctrl_arst)
+     begin 		
+	if (ctrl_arst) 
 	  begin
 	     instr_hit_cnt <= {DATA_W{1'b0}};
-  	     instr_miss_cnt <= {DATA_W{1'b0}};
-	     data_read_hit_cnt <= {DATA_W{1'b0}};
-	     data_read_miss_cnt <= {DATA_W{1'b0}};
-	     data_write_hit_cnt <= {DATA_W{1'b0}};
-	     data_write_miss_cnt <= {DATA_W{1'b0}};
-	     data_hit_cnt <= {DATA_W{1'b0}};
-	     data_miss_cnt <= {DATA_W{1'b0}};
-	     cache_hit_cnt <= {DATA_W{1'b0}};
-	     cache_miss_cnt <= {DATA_W{1'b0}}; 
-          end 
+  	instr_miss_cnt <= {DATA_W{1'b0}};
+	data_read_hit_cnt <= {DATA_W{1'b0}};
+	data_read_miss_cnt <= {DATA_W{1'b0}};
+	data_write_hit_cnt <= {DATA_W{1'b0}};
+	data_write_miss_cnt <= {DATA_W{1'b0}};
+	data_hit_cnt <= {DATA_W{1'b0}};
+	data_miss_cnt <= {DATA_W{1'b0}};
+	cache_hit_cnt <= {DATA_W{1'b0}};
+	cache_miss_cnt <= {DATA_W{1'b0}}; 
+     end 
 	else if (ctrl_counter_input == `INSTR_HIT)
 	  begin
 	     instr_hit_cnt <= instr_hit_cnt + 1;
@@ -1034,6 +1025,19 @@ module cache_controller #(
 	     data_write_miss_cnt <= data_write_miss_cnt + 1;
 	     data_miss_cnt <= data_miss_cnt + 1;
 	     cache_miss_cnt <= cache_miss_cnt + 1;
+	  end
+	else
+	  begin
+	     instr_hit_cnt <= instr_hit_cnt;
+	     instr_miss_cnt <= instr_miss_cnt;
+	     data_read_hit_cnt <= data_read_hit_cnt;
+	     data_read_miss_cnt <= data_read_miss_cnt;
+	     data_write_hit_cnt <= data_write_hit_cnt;
+	     data_write_miss_cnt <= data_write_miss_cnt;
+	     data_hit_cnt <= data_hit_cnt;
+	     data_miss_cnt <= data_miss_cnt;
+	     cache_hit_cnt <= cache_hit_cnt;
+	     cache_miss_cnt <= cache_miss_cnt;
 	  end
      end
 
