@@ -21,7 +21,7 @@ module memory_cache #(
     input                    reset,
     input [DATA_W-1:0]       cache_write_data,
     input [N_BYTES-1:0]      cache_wstrb,
-    input [ADDR_W-1:0]       cache_addr,
+    input [ADDR_W-1:2]       cache_addr,
     output reg [DATA_W-1:0]  cache_read_data,
     input                    cpu_req,
     output reg               cache_ack,
