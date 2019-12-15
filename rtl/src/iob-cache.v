@@ -982,16 +982,16 @@ module cache_controller #(
 	if (ctrl_arst) 
 	  begin
 	     instr_hit_cnt <= {DATA_W{1'b0}};
-  	instr_miss_cnt <= {DATA_W{1'b0}};
-	data_read_hit_cnt <= {DATA_W{1'b0}};
-	data_read_miss_cnt <= {DATA_W{1'b0}};
-	data_write_hit_cnt <= {DATA_W{1'b0}};
-	data_write_miss_cnt <= {DATA_W{1'b0}};
-	data_hit_cnt <= {DATA_W{1'b0}};
-	data_miss_cnt <= {DATA_W{1'b0}};
-	cache_hit_cnt <= {DATA_W{1'b0}};
-	cache_miss_cnt <= {DATA_W{1'b0}}; 
-     end 
+  	     instr_miss_cnt <= {DATA_W{1'b0}};
+	     data_read_hit_cnt <= {DATA_W{1'b0}};
+	     data_read_miss_cnt <= {DATA_W{1'b0}};
+	     data_write_hit_cnt <= {DATA_W{1'b0}};
+	     data_write_miss_cnt <= {DATA_W{1'b0}};
+	     data_hit_cnt <= {DATA_W{1'b0}};
+	     data_miss_cnt <= {DATA_W{1'b0}};
+	     cache_hit_cnt <= {DATA_W{1'b0}};
+	     cache_miss_cnt <= {DATA_W{1'b0}}; 
+          end 
 	else
 	  begin
 	     if (ctrl_counter_input == `INSTR_HIT)
