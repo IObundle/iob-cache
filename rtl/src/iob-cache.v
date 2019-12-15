@@ -17,73 +17,73 @@ module memory_cache #(
 		      parameter BUFFER_W = 4 //Depth of the buffer that writes to the main memory (2**BUFFER_W positions)
 		      ) 
    (
-    input 		     clk,
-    input 		     reset,
-    input [DATA_W-1:0] 	     cache_write_data,
+    input                    clk,
+    input                    reset,
+    input [DATA_W-1:0]       cache_write_data,
     input [N_BYTES-1:0]      cache_wstrb,
-    input [ADDR_W-1:2] 	     cache_addr,
+    input [ADDR_W-1:2]       cache_addr,
     output reg [DATA_W-1:0]  cache_read_data,
-    input 		     cpu_req,
-    output reg 		     cache_ack,
+    input                    cpu_req,
+    output reg               cache_ack,
     /// Cache Debugger signals
     input [`CTRL_ADDR_W-1:0] cache_ctrl_address,
     output [DATA_W-1:0]      cache_ctrl_requested_data,
-    input 		     cache_ctrl_cpu_request,
-    output 		     cache_ctrl_acknowledge,
-    input 		     cache_ctrl_instr_access, 
+    input                    cache_ctrl_cpu_request,
+    output                   cache_ctrl_acknowledge,
+    input                    cache_ctrl_instr_access, 
     ///// AXI signals
     /// Adress Write
-    output [0:0] 	     AW_ID, 
+    output [0:0]             AW_ID, 
     output reg [ADDR_W-1:0]  AW_ADDR,
-    output [7:0] 	     AW_LEN,
-    output [2:0] 	     AW_SIZE,
-    output [1:0] 	     AW_BURST,
-    output [0:0] 	     AW_LOCK,
-    output [3:0] 	     AW_CACHE,
-    output [2:0] 	     AW_PROT,
-    output [3:0] 	     AW_QOS,
-    output reg 		     AW_VALID,
-    input 		     AW_READY,
+    output [7:0]             AW_LEN,
+    output [2:0]             AW_SIZE,
+    output [1:0]             AW_BURST,
+    output [0:0]             AW_LOCK,
+    output [3:0]             AW_CACHE,
+    output [2:0]             AW_PROT,
+    output [3:0]             AW_QOS,
+    output reg               AW_VALID,
+    input                    AW_READY,
 
     //Write
     output reg [DATA_W-1:0]  W_DATA,
     output reg [N_BYTES-1:0] W_STRB,
-    output reg 		     W_LAST,
-    output reg 		     W_VALID, 
-    input 		     W_READY,
-    input [0:0] 	     B_ID,
-    input [1:0] 	     B_RESP,
-    input 		     B_VALID,
-    output reg 		     B_READY,
+    output reg               W_LAST,
+    output reg               W_VALID, 
+    input                    W_READY,
+    input [0:0]              B_ID,
+    input [1:0]              B_RESP,
+    input                    B_VALID,
+    output reg               B_READY,
 
     ///Adress  Read
-    output [0:0] 	     AR_ID,
+    output [0:0]             AR_ID,
     output reg [ADDR_W-1:0]  AR_ADDR, 
-    output reg [7:0] 	     AR_LEN,
-    output reg [2:0] 	     AR_SIZE,
-    output reg [1:0] 	     AR_BURST,
-    output [0:0] 	     AR_LOCK,
-    output [3:0] 	     AR_CACHE,
-    output [2:0] 	     AR_PROT,
-    output [3:0] 	     AR_QOS,
-    output reg 		     AR_VALID, 
-    input 		     AR_READY,
+    output reg [7:0]         AR_LEN,
+    output reg [2:0]         AR_SIZE,
+    output reg [1:0]         AR_BURST,
+    output [0:0]             AR_LOCK,
+    output [3:0]             AR_CACHE,
+    output [2:0]             AR_PROT,
+    output [3:0]             AR_QOS,
+    output reg               AR_VALID, 
+    input                    AR_READY,
 
     ///Read
-    input [0:0] 	     R_ID,
-    input [DATA_W-1:0] 	     R_DATA,
-    input [1:0] 	     R_RESP,
-    input 		     R_LAST, 
-    input 		     R_VALID, 
-    output reg 		     R_READY  	      
+    input [0:0]              R_ID,
+    input [DATA_W-1:0]       R_DATA,
+    input [1:0]              R_RESP,
+    input                    R_LAST, 
+    input                    R_VALID, 
+    output reg               R_READY  	      
     );
    
    parameter TAG_W = ADDR_W - (NLINE_W + OFFSET_W + 2); //last 2 bits are always 00 (4 Bytes = 32 bits)
    
    reg 			     data_load;
-   reg [OFFSET_W-1 :0] 	     select_counter;
-   wire [OFFSET_W-1:0] 	     Offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
-   wire [NLINE_W-1:0] 	     index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
+   reg [OFFSET_W-1 :0]       select_counter;
+   wire [OFFSET_W-1:0]       Offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
+   wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
    wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : Offset;
    wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
    wire 		     buffer_full, buffer_empty;
@@ -94,44 +94,44 @@ module memory_cache #(
 
 `ifdef ASSOC_CACHE
    wire [(2**NWAY_W)*DATA_W*(2**OFFSET_W) - 1: 0] data_read;
-   wire [2**NWAY_W -1: 0] 			  cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0] 				  nway_hit; // Indicates the way that had a cache_hit
-   wire [NWAY_W -1: 0] 				  nway_sel;
+   wire [2**NWAY_W -1: 0]                         cache_hit;//uses one-hot numenclature
+   wire [NWAY_W -1: 0]                            nway_hit; // Indicates the way that had a cache_hit
+   wire [NWAY_W -1: 0]                            nway_sel;
  `ifdef L1
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
    wire 					  instr_req = cache_ctrl_instr_access;
-   wire [2**NWAY_W -1: 0] 			  instr_cache_hit, data_cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0] 				  instr_nway_sel, data_nway_sel;
+   wire [2**NWAY_W -1: 0]                         instr_cache_hit, data_cache_hit;//uses one-hot numenclature
+   wire [NWAY_W -1: 0]                            instr_nway_sel, data_nway_sel;
    wire [(2**NWAY_W)*DATA_W*(2**I_OFFSET_W) - 1: 0] instr_read;
-   wire [(2**NWAY_W)-1:0] 			    instr_v, data_v;
-   wire [(2**NWAY_W)*I_TAG_W-1:0] 		    instr_tag;
-   wire [(2**NWAY_W)*TAG_W-1:0] 		    data_tag;
-   wire [(2**NWAY_W)-1 : 0] 			    instr_tag_val, data_tag_val; //TAG Validation
-   wire [NLINE_W-1:0] 				    instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [NLINE_W-1:0] 				    data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [I_OFFSET_W-1:0] 			    instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_OFFSET_W - 1:0] 			    instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
+   wire [(2**NWAY_W)-1:0]                           instr_v, data_v;
+   wire [(2**NWAY_W)*I_TAG_W-1:0]                   instr_tag;
+   wire [(2**NWAY_W)*TAG_W-1:0]                     data_tag;
+   wire [(2**NWAY_W)-1 : 0]                         instr_tag_val, data_tag_val; //TAG Validation
+   wire [NLINE_W-1:0]                               instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
+   wire [NLINE_W-1:0]                               data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
+   wire [I_OFFSET_W-1:0]                            instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
+   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
  `else
-   wire [(2**NWAY_W)-1 : 0] 			    tag_val; //TAG Validation
-   wire [(2**NWAY_W)-1:0] 			    v;
-   wire [(2**NWAY_W)*TAG_W-1:0] 		    tag;
+   wire [(2**NWAY_W)-1 : 0]                         tag_val; //TAG Validation
+   wire [(2**NWAY_W)-1:0]                           v;
+   wire [(2**NWAY_W)*TAG_W-1:0]                     tag;
  `endif
 `else 
-   wire [DATA_W*(2**OFFSET_W) - 1: 0] 		    data_read;
+   wire [DATA_W*(2**OFFSET_W) - 1: 0]               data_read;
    wire 					    cache_hit;
  `ifdef L1
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
    wire 					    instr_req = cache_ctrl_instr_access;
    wire 					    data_v, instr_v;
-   wire [TAG_W-1:0] 				    data_tag;
-   wire [I_TAG_W -1:0] 				    instr_tag;
-   wire [DATA_W*(2**I_OFFSET_W) - 1: 0] 	    instr_read;
-   wire [I_OFFSET_W-1:0] 			    instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_NLINE_W-1:0] 			    instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [I_OFFSET_W - 1:0] 			    instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
+   wire [TAG_W-1:0]                                 data_tag;
+   wire [I_TAG_W -1:0]                              instr_tag;
+   wire [DATA_W*(2**I_OFFSET_W) - 1: 0]             instr_read;
+   wire [I_OFFSET_W-1:0]                            instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
+   wire [I_NLINE_W-1:0]                             instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
+   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
  `else // !`ifdef L1
    wire 					    v;
-   wire [TAG_W-1:0] 				    tag;
+   wire [TAG_W-1:0]                                 tag;
  `endif // !`ifdef L1 
 `endif // !`ifdef ASSOC_CACHE
 
@@ -158,7 +158,7 @@ module memory_cache #(
  `ifdef TAG_BASED //only to be used for testing of the associative cache, not a real replacemente policy
    assign nway_sel = cache_addr [NWAY_W +1 +NLINE_W: 2+NLINE_W];
  `elsif COUNTER //only to be used for testing of the associative cache, not a real replacement policy
-   reg [NWAY_W-1:0] 				    nway_sel_cnt;
+   reg [NWAY_W-1:0]                                 nway_sel_cnt;
 
    always @ (posedge cache_ack, posedge reset)
      begin
@@ -235,7 +235,7 @@ module memory_cache #(
      stand_by_delay        = 3'd7;
    
    reg [2:0] 					  state;
-   reg [2:0] 					  next_state;
+   reg [2:0]                                      next_state;
 
    
    always @ (posedge clk, posedge reset)
@@ -953,25 +953,25 @@ module cache_controller #(
 			  parameter DATA_W = 32
 			  )
    (
-    input 			clk,
+    input                       clk,
     input [`CTRL_COUNTER_W-1:0] ctrl_counter_input, 
-    output reg 			ctrl_cache_invalid,
-    input [`CTRL_ADDR_W-1:0] 	ctrl_addr,
-    output reg [DATA_W-1:0] 	ctrl_req_data,
-    input 			ctrl_cpu_req,
-    output reg 			ctrl_ack,
-    input 			ctrl_reset, 
-    input [1:0] 		ctrl_buffer_state
+    output reg                  ctrl_cache_invalid,
+    input [`CTRL_ADDR_W-1:0]    ctrl_addr,
+    output reg [DATA_W-1:0]     ctrl_req_data,
+    input                       ctrl_cpu_req,
+    output reg                  ctrl_ack,
+    input                       ctrl_reset, 
+    input [1:0]                 ctrl_buffer_state
     );
 
-   reg [DATA_W-1:0] 		instr_hit_cnt, instr_miss_cnt;
-   reg [DATA_W-1:0] 		data_read_hit_cnt, data_read_miss_cnt, data_write_hit_cnt, data_write_miss_cnt;
-   reg [DATA_W-1:0] 		data_hit_cnt, data_miss_cnt; 
-   reg [DATA_W-1:0] 		cache_hit_cnt, cache_miss_cnt;
+   reg [DATA_W-1:0]             instr_hit_cnt, instr_miss_cnt;
+   reg [DATA_W-1:0]             data_read_hit_cnt, data_read_miss_cnt, data_write_hit_cnt, data_write_miss_cnt;
+   reg [DATA_W-1:0]             data_hit_cnt, data_miss_cnt; 
+   reg [DATA_W-1:0]             cache_hit_cnt, cache_miss_cnt;
    reg 				ctrl_counter_reset;
    
 `ifdef CTRL_CLK
-   reg [2*DATA_W-1:0] 		ctrl_clk_cnt;
+   reg [2*DATA_W-1:0]           ctrl_clk_cnt;
    reg 				ctrl_clk_start;
 `endif
 
@@ -982,16 +982,16 @@ module cache_controller #(
 	if (ctrl_arst) 
 	  begin
 	     instr_hit_cnt <= {DATA_W{1'b0}};
-  	instr_miss_cnt <= {DATA_W{1'b0}};
-        data_read_hit_cnt <= {DATA_W{1'b0}};
-	data_read_miss_cnt <= {DATA_W{1'b0}};
-	data_write_hit_cnt <= {DATA_W{1'b0}};
-	data_write_miss_cnt <= {DATA_W{1'b0}};
-	data_hit_cnt <= {DATA_W{1'b0}};
-	data_miss_cnt <= {DATA_W{1'b0}};
-	cache_hit_cnt <= {DATA_W{1'b0}};
-	cache_miss_cnt <= {DATA_W{1'b0}}; 
-     end 
+  	     instr_miss_cnt <= {DATA_W{1'b0}};
+             data_read_hit_cnt <= {DATA_W{1'b0}};
+	     data_read_miss_cnt <= {DATA_W{1'b0}};
+	     data_write_hit_cnt <= {DATA_W{1'b0}};
+	     data_write_miss_cnt <= {DATA_W{1'b0}};
+	     data_hit_cnt <= {DATA_W{1'b0}};
+	     data_miss_cnt <= {DATA_W{1'b0}};
+	     cache_hit_cnt <= {DATA_W{1'b0}};
+	     cache_miss_cnt <= {DATA_W{1'b0}}; 
+          end 
 	else
 	  begin
 	     if (ctrl_counter_input == `INSTR_HIT)
@@ -1143,9 +1143,9 @@ module replacement_policy_algorithm #(
    (
     input [2**NWAY_W-1:0] cache_hit,
     input [NLINE_W-1:0]   index,
-    input 		  clk,
-    input 		  reset,
-    input 		  write_en,
+    input                 clk,
+    input                 reset,
+    input                 write_en,
     output [NWAY_W-1:0]   nway_sel 
     );
 
@@ -1153,13 +1153,13 @@ module replacement_policy_algorithm #(
    
    
 `ifdef BIT_PLRU
-   wire [NWAYS -1:0] 	  mru_output;
-   wire [NWAYS -1:0] 	  mru_input = (&(mru_output | cache_hit))? {NWAYS{1'b0}} : mru_output | cache_hit; //When the cache access results in a hit (or access (wish would be 1 in cache_hit even during a read-miss), it will add to the MRU, if after the the OR with Cache_hit, the entire input is 1s, it resets
-   wire [NWAYS -1:0] 	  bitplru = (~mru_output); //least recent used
-   wire [0:NWAYS -1] 	  bitplru_liw = bitplru [NWAYS -1:0]; //LRU Lower-Index-Way priority
+   wire [NWAYS -1:0]      mru_output;
+   wire [NWAYS -1:0]      mru_input = (&(mru_output | cache_hit))? {NWAYS{1'b0}} : mru_output | cache_hit; //When the cache access results in a hit (or access (wish would be 1 in cache_hit even during a read-miss), it will add to the MRU, if after the the OR with Cache_hit, the entire input is 1s, it resets
+   wire [NWAYS -1:0]      bitplru = (~mru_output); //least recent used
+   wire [0:NWAYS -1]      bitplru_liw = bitplru [NWAYS -1:0]; //LRU Lower-Index-Way priority
    wire [(NWAYS**2)-1:0]  ext_bitplru;// Extended LRU
    wire [(NWAYS**2)-(NWAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest index way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
-   wire [NWAYS-1:0] 		 bitplru_sel;  
+   wire [NWAYS-1:0]              bitplru_sel;  
 
    genvar 			 i;
    generate
@@ -1184,10 +1184,10 @@ module replacement_policy_algorithm #(
    wire [NWAYS*NWAY_W -1:0] mru_output, mru_input;
    wire [NWAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
    wire [NWAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
-   wire [NWAYS -1:0] 	    mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
+   wire [NWAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
    wire 		    mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
-   wire [NWAY_W -1:0] 	    mru_hit_min [NWAYS :0];
-   wire [NWAYS -1:0] 	    lru_sel; //selects the way to be replaced, using the LSB of each Way's section
+   wire [NWAY_W -1:0]       mru_hit_min [NWAYS :0];
+   wire [NWAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
    assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
    genvar 		    i;
    generate
