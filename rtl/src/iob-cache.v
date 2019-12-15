@@ -459,7 +459,7 @@ module memory_cache #(
 		   ) 
    onehot_to_bin
      (
-      .onehot(cache_hit),
+      .onehot(cache_hit[2**NWAY_W-1:1]),
       .bin(nway_hit)
       );
    
@@ -657,7 +657,7 @@ module memory_cache #(
 		   ) 
    onehot_to_bin
      (
-      .onehot(cache_hit),
+      .onehot(cache_hit[2**NWAY_W-1:1]),
       .bin(nway_hit)
       );
    
@@ -975,15 +975,15 @@ module cache_controller #(
    reg 				ctrl_clk_start;
 `endif
 
-   wire ctrl_arst = ctrl_reset | ctrl_counter_reset;
-      
+   wire 			ctrl_arst = ctrl_reset | ctrl_counter_reset;
+   
    always @ (posedge clk, posedge ctrl_arst)
      begin 		
 	if (ctrl_arst) 
 	  begin
 	     instr_hit_cnt <= {DATA_W{1'b0}};
   	     instr_miss_cnt <= {DATA_W{1'b0}};
-	     data_read_hit_cnt <= {DATA_W{1'b0}};
+             data_read_hit_cnt <= {DATA_W{1'b0}};
 	     data_read_miss_cnt <= {DATA_W{1'b0}};
 	     data_write_hit_cnt <= {DATA_W{1'b0}};
 	     data_write_miss_cnt <= {DATA_W{1'b0}};
@@ -1122,14 +1122,14 @@ module onehot_to_bin #(
 		       parameter BIN_W = 2
 		       )
    (
-    input [2**BIN_W-1:0]   onehot ,
+    input [2**BIN_W-1:1]   onehot ,
     output reg [BIN_W-1:0] bin 
     );
    always @ (onehot) begin: onehot_to_binary_encoder
       integer i;
-      reg [BIN_W-1:0] bin_cnt ;
+      reg [BIN_W-1:1] bin_cnt ;
       bin_cnt = 0;
-      for (i=0; i<2**BIN_W; i=i+1)
+      for (i=1; i<2**BIN_W; i=i+1)
         if (onehot[i]) bin_cnt = bin_cnt|i;
       bin = bin_cnt;    
    end
@@ -1257,11 +1257,11 @@ module replacement_policy_algorithm #(
    lru_selector
      (
 `ifdef BIT_PLRU       
-      .onehot(bitplru_sel),
+      .onehot(bitplru_sel[NWAYS-1:1]),
 `elsif LRU     
-      .onehot(lru_sel),
+      .onehot(lru_sel[NWAYS-1:1]),
 `elsif TREE_PLRU
-      .onehot(tplru_sel),
+      .onehot(tplru_sel[NWAYS-1:1]),
 `endif
       .bin(nway_sel)
       );
