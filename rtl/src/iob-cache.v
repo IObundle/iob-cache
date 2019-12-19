@@ -27,7 +27,7 @@ module iob_cache
     input                    cpu_req,
     output reg               cache_ack,
 
-    // cache debug signals  JTS:???
+    // cache controller signals  
     input [`CTRL_ADDR_W-1:0] cache_ctrl_address,
     output [DATA_W-1:0]      cache_ctrl_requested_data,
     input                    cache_ctrl_cpu_request,
@@ -37,7 +37,7 @@ module iob_cache
     // AXI interface 
     // Address Write
     output [0:0]             AW_ID, 
-    output reg [ADDR_W-1:0]  AW_ADDR,
+    output [ADDR_W-1:0]      AW_ADDR,
     output [7:0]             AW_LEN,
     output [2:0]             AW_SIZE,
     output [1:0]             AW_BURST,
@@ -45,18 +45,18 @@ module iob_cache
     output [3:0]             AW_CACHE,
     output [2:0]             AW_PROT,
     output [3:0]             AW_QOS,
-    output reg               AW_VALID,
+    output                   AW_VALID,
     input                    AW_READY,
     //Write
-    output reg [DATA_W-1:0]  W_DATA,
-    output reg [N_BYTES-1:0] W_STRB,
-    output reg               W_LAST,
-    output reg               W_VALID, 
+    output [DATA_W-1:0]      W_DATA,
+    output [N_BYTES-1:0]     W_STRB,
+    output                   W_LAST,
+    output                   W_VALID, 
     input                    W_READY,
     input [0:0]              B_ID,
     input [1:0]              B_RESP,
     input                    B_VALID,
-    output reg               B_READY,
+    output                   B_READY,
     //Address Read
     output [0:0]             AR_ID,
     output reg [ADDR_W-1:0]  AR_ADDR, 
@@ -136,15 +136,6 @@ module iob_cache
 `endif // !`ifdef ASSOC_CACHE
 
    //Constand AXI signals
-   assign AW_ID = 1'd0;
-   assign AW_LEN = 8'd0;
-   assign AW_SIZE = 3'b010;
-   assign AW_BURST = 2'd0;
-   assign AR_ID = 1'd0;
-   assign AW_LOCK = 1'b0;
-   assign AW_CACHE = 4'b0011;
-   assign AW_PROT = 3'd0;
-   assign AW_QOS = 4'd0;
    assign AR_LOCK = 1'b0;
    assign AR_CACHE = 4'b0011;
    assign AR_PROT = 3'd0;
@@ -537,7 +528,6 @@ module iob_cache
 		.clk           (clk                                  ),
 		.mem_write_data(write_data                           ),
 		.mem_addr      (instr_index                          ),
-		//.mem_en        ((((i == instr_word_select) && (data_load || cache_hit)) && instr_req)? data_line_wstrb : {N_BYTES{1'b0}}),
 		.mem_en        ((((i == instr_word_select) && (data_load)) && instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}}), //Instruction cache only is written during cache line memory loads, during read-misses.
 		.mem_read_data (instr_read [DATA_W*(i+1)-1: DATA_W*i])   
 		);      
@@ -839,95 +829,47 @@ module iob_cache
      end                        
 
 
-   //// buffer FSM states and register ////
-   parameter
-     buffer_stand_by         = 2'd0,
-     buffer_write_validation = 2'd1,
-     buffer_write_to_mem     = 2'd2,
-     buffer_wait_reply       = 2'd3;  
-   
-   
-   reg [1:0] buffer_state;
 
-   reg 	     buffer_empty_delay;
-   
-   wire [(N_BYTES) + (ADDR_W - 2) + (DATA_W) -1 :0] buffer_data_out, buffer_data_in; // {wstrb, addr [29:2], word}
-   
-
-
-   always @ (posedge clk, posedge reset)
-     begin
-	AW_ADDR  <= {(ADDR_W){1'b0}};
-	AW_VALID <= 1'b0;
-	W_VALID  <= 1'b0;
-	W_STRB   <= {N_BYTES{1'b0}};
-	B_READY  <= 1'b1;
-	W_DATA   <= {DATA_W{1'b0}};
-	W_LAST   <= 1'b0;
-	
-	if (reset) buffer_state <= buffer_stand_by;
-	else
-	  case (buffer_state)
-	    
-	    buffer_stand_by:
-	      begin
-		 if (buffer_empty) buffer_state <= buffer_stand_by; 
-		 else              buffer_state <= buffer_write_validation;
-	      end 
-
-	    buffer_write_validation:
-	      begin
-		 AW_ADDR  <= {buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W], 2'b00};
-		 AW_VALID <= 1'b1;
-		 if (AW_READY) buffer_state <= buffer_write_to_mem; 
-		 else          buffer_state <= buffer_write_validation;
-	      end        
-	    
-	    buffer_write_to_mem:
-	      begin        //buffer_data_out = {wstrb (size 4), address (size of buffer's WORDSIZE - 4 - word_size), word_size (size of DATA_W)}  
-		 W_VALID  <=  1'b1;
-		 W_STRB   <=  buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
-		 W_LAST   <=  (|buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W]); //OR of W_STRB
-		 W_DATA   <=  buffer_data_out [DATA_W -1 : 0];
-		 if (W_READY) buffer_state <= buffer_stand_by;             
-		 else         buffer_state <= buffer_write_to_mem;
-	      end
-	    
-	    default:        
-	      begin
-		 buffer_state <= buffer_stand_by;
-	      end
-	    
-	  endcase    
-     end         
-
-   
-
-   assign buffer_data_in = {cache_wstrb, cache_addr[ADDR_W -1: 2], cache_write_data};
-   
-   wire   buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
-   
-   iob_async_fifo #(
-		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
-		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
-		    ) 
-   buffer 
+write_through_ctrl #(              
+                     .ADDR_W(ADDR_W),
+                     .DATA_W(DATA_W),
+                     .N_BYTES(N_BYTES),
+                     .WTBUF_DEPTH_W(WTBUF_DEPTH_W)
+                     ) 
+   write_through_ctrl
      (
-      .rst     (reset                    ),
-      .data_out(buffer_data_out          ), 
-      .empty   (buffer_empty             ),
-      .level_r (),
-      .read_en (buffer_read_en           ),
-      .rclk    (clk                      ),    
-      .data_in (buffer_data_in           ), 
-      .full    (buffer_full              ),
-      .level_w (),
-      .write_en((|cache_wstrb) && cpu_req),
-      .wclk    (clk                      )
+      .clk      (clk),
+      .reset    (reset),
+      .cpu_req  (cpu_req),
+      .cache_addr (cache_addr),
+      .cache_wstrb (cache_wstrb),
+      .cache_wdata (cache_wdata),
+      .buffer_empty (buffer_empty),
+      .buffer_full  (buffer_full),     
+      .AW_ID    (AW_ID), 
+      .AW_ADDR  (AW_ADDR),
+      .AW_LEN   (AW_LEN),
+      .AW_SIZE  (AW_SIZE),
+      .AW_BURST (AW_BURST),
+      .AW_LOCK  (AW_LOCK),
+      .AW_CACHE (AW_CACHE),
+      .AW_PROT  (AW_PROT),
+      .AW_QOS   (AW_QOS),
+      .AW_VALID (AW_VALID),
+      .AW_READY (AW_READY),
+      .W_DATA   (W_DATA),
+      .W_STRB   (W_STRB),
+      .W_LAST   (W_LAST),
+      .W_VALID  (W_VALID), 
+      .W_READY  (W_READY),
+      .B_ID     (B_ID),
+      .B_RESP   (B_RESP),
+      .B_VALID  (B_VALID),
+      .B_READY  (B_READY)    
       );
 
 
-
+   
    cache_controller #(
 		      .DATA_W(DATA_W)
 		      )
@@ -1296,3 +1238,150 @@ module replacement_policy_algorithm #(
    
 endmodule
 
+
+
+module write_through_ctrl
+  #(
+    parameter ADDR_W   = 32,
+    parameter DATA_W   = 32,
+    parameter N_BYTES  = DATA_W/8,
+    parameter WTBUF_DEPTH_W = 4
+    ) 
+   (
+    input                    clk,
+    input                    reset,
+    input                    cpu_req,
+    input [ADDR-1:2]         cache_addr,
+    input [N_BYTES-1:0]      cache_wstrb,
+    input [DATA_W-1:0]       cache_wdata,
+    // Buffer status
+    output                   buffer_empty,
+    output                   buffer_full,
+    // AXI interface 
+    // Address Write
+    output [0:0]             AW_ID, 
+    output reg [ADDR_W-1:0]  AW_ADDR,
+    output [7:0]             AW_LEN,
+    output [2:0]             AW_SIZE,
+    output [1:0]             AW_BURST,
+    output [0:0]             AW_LOCK,
+    output [3:0]             AW_CACHE,
+    output [2:0]             AW_PROT,
+    output [3:0]             AW_QOS,
+    output reg               AW_VALID,
+    input                    AW_READY,
+    //Write                  
+    output reg [DATA_W-1:0]  W_DATA,
+    output reg [N_BYTES-1:0] W_STRB,
+    output reg               W_LAST,
+    output reg               W_VALID, 
+    input                    W_READY,
+    input [0:0]              B_ID,
+    input [1:0]              B_RESP,
+    input                    B_VALID,
+    output reg               B_READY
+    );
+
+
+   wire [(N_BYTES) + (ADDR_W - 2) + (DATA_W) -1 :0] buffer_data_out, buffer_data_in; // {wstrb, addr [ADDR_W-1:2], word}
+   
+
+   assign buffer_data_in = {cache_wstrb, cache_addr, cache_write_data};
+   
+   wire                                             buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
+
+   //Constant AXI signals
+   assign AW_ID = 1'd0;
+   assign AW_LEN = 8'd0;
+   assign AW_SIZE = 3'b010;
+   assign AW_BURST = 2'd0;
+   assign AR_ID = 1'd0;
+   assign AW_LOCK = 1'b0;
+   assign AW_CACHE = 4'b0011;
+   assign AW_PROT = 3'd0;
+   assign AW_QOS = 4'd0;
+
+   
+
+   //// buffer FSM states and register ////
+   parameter
+     buffer_stand_by         = 2'd0,
+     buffer_write_validation = 2'd1,
+     buffer_write_to_mem     = 2'd2,
+     buffer_wait_reply       = 2'd3;  
+   
+   
+   reg [1:0]                                        buffer_state;
+
+   reg                                              buffer_empty_delay;
+   
+
+
+   always @ (posedge clk, posedge reset)
+     begin
+	AW_ADDR  <= {(ADDR_W){1'b0}};
+	AW_VALID <= 1'b0;
+	W_VALID  <= 1'b0;
+	W_STRB   <= {N_BYTES{1'b0}};
+	B_READY  <= 1'b1;
+	W_DATA   <= {DATA_W{1'b0}};
+	W_LAST   <= 1'b0;
+	
+	if (reset) buffer_state <= buffer_stand_by;
+	else
+	  case (buffer_state)
+	    
+	    buffer_stand_by:
+	      begin
+		 if (buffer_empty) buffer_state <= buffer_stand_by; 
+		 else              buffer_state <= buffer_write_validation;
+	      end 
+
+	    buffer_write_validation:
+	      begin
+		 AW_ADDR  <= {buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W], 2'b00};
+		 AW_VALID <= 1'b1;
+		 if (AW_READY) buffer_state <= buffer_write_to_mem; 
+		 else          buffer_state <= buffer_write_validation;
+	      end        
+	    
+	    buffer_write_to_mem:
+	      begin        //buffer_data_out = {wstrb (size 4), address (size of buffer's WORDSIZE - 4 - word_size), word_size (size of DATA_W)}  
+		 W_VALID  <=  1'b1;
+		 W_STRB   <=  buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
+		 W_LAST   <=  (|buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W]); //OR of W_STRB
+		 W_DATA   <=  buffer_data_out [DATA_W -1 : 0];
+		 if (W_READY) buffer_state <= buffer_stand_by;             
+		 else         buffer_state <= buffer_write_to_mem;
+	      end
+	    
+	    default:        
+	      begin
+		 buffer_state <= buffer_stand_by;
+	      end
+	    
+	  endcase    
+     end         
+
+   
+
+   iob_async_fifo #(
+		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
+		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
+		    ) 
+   buffer 
+     (
+      .rst     (reset                    ),
+      .data_out(buffer_data_out          ), 
+      .empty   (buffer_empty             ),
+      .level_r (),
+      .read_en (buffer_read_en           ),
+      .rclk    (clk                      ),    
+      .data_in (buffer_data_in           ), 
+      .full    (buffer_full              ),
+      .level_w (),
+      .write_en((|cache_wstrb) && cpu_req),
+      .wclk    (clk                      )
+      );
+
+endmodule
