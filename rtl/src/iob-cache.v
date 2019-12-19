@@ -1,21 +1,22 @@
 `timescale 1ns / 1ps
 `include "iob-cache.vh"
 
-module memory_cache #(
-		      parameter ADDR_W   = 32,
-		      parameter DATA_W   = 32,
-		      parameter N_BYTES  = DATA_W/8,
-		      parameter NLINE_W  = 4,
-		      parameter OFFSET_W = 2, //log2(Line_size/DATA_W)
+module iob_cache 
+  #(
+    parameter ADDR_W   = 32,
+    parameter DATA_W   = 32,
+    parameter N_BYTES  = DATA_W/8,
+    parameter NLINE_W  = 4,
+    parameter OFFSET_W = 2,
 `ifdef L1
-		      parameter I_NLINE_W = 3,
-		      parameter I_OFFSET_W = 2, //Needs to be equal or less than OFFSET_W
+    parameter I_NLINE_W = 3,
+    parameter I_OFFSET_W = 2,
 `endif
 `ifdef ASSOC_CACHE
-		      parameter NWAY_W   = 2,
+    parameter NWAY_W   = 2,
 `endif
-		      parameter BUFFER_W = 4 //Depth of the buffer that writes to the main memory (2**BUFFER_W positions)
-		      ) 
+    parameter WTBUF_DEPTH_W = 4
+    ) 
    (
     input                    clk,
     input                    reset,
@@ -25,14 +26,16 @@ module memory_cache #(
     output reg [DATA_W-1:0]  cache_read_data,
     input                    cpu_req,
     output reg               cache_ack,
-    /// Cache Debugger signals
+
+    // cache debug signals  JTS:???
     input [`CTRL_ADDR_W-1:0] cache_ctrl_address,
     output [DATA_W-1:0]      cache_ctrl_requested_data,
     input                    cache_ctrl_cpu_request,
     output                   cache_ctrl_acknowledge,
     input                    cache_ctrl_instr_access, 
-    ///// AXI signals
-    /// Adress Write
+
+    // AXI interface 
+    // Address Write
     output [0:0]             AW_ID, 
     output reg [ADDR_W-1:0]  AW_ADDR,
     output [7:0]             AW_LEN,
@@ -44,7 +47,6 @@ module memory_cache #(
     output [3:0]             AW_QOS,
     output reg               AW_VALID,
     input                    AW_READY,
-
     //Write
     output reg [DATA_W-1:0]  W_DATA,
     output reg [N_BYTES-1:0] W_STRB,
@@ -55,8 +57,7 @@ module memory_cache #(
     input [1:0]              B_RESP,
     input                    B_VALID,
     output reg               B_READY,
-
-    ///Adress  Read
+    //Address Read
     output [0:0]             AR_ID,
     output reg [ADDR_W-1:0]  AR_ADDR, 
     output reg [7:0]         AR_LEN,
@@ -68,8 +69,7 @@ module memory_cache #(
     output [3:0]             AR_QOS,
     output reg               AR_VALID, 
     input                    AR_READY,
-
-    ///Read
+    //Read
     input [0:0]              R_ID,
     input [DATA_W-1:0]       R_DATA,
     input [1:0]              R_RESP,
@@ -78,13 +78,13 @@ module memory_cache #(
     output reg               R_READY  	      
     );
    
-   parameter TAG_W = ADDR_W - (NLINE_W + OFFSET_W + 2); //last 2 bits are always 00 (4 Bytes = 32 bits)
+   parameter TAG_W = ADDR_W - (NLINE_W + 2 + OFFSET_W);
    
    reg 			     data_load;
    reg [OFFSET_W-1 :0]       select_counter;
-   wire [OFFSET_W-1:0]       Offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
+   wire [OFFSET_W-1:0]       offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
    wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : Offset;
+   wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
    wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
    wire 		     buffer_full, buffer_empty;
    wire 		     cache_invalidate;
@@ -109,8 +109,8 @@ module memory_cache #(
    wire [(2**NWAY_W)-1 : 0]                         instr_tag_val, data_tag_val; //TAG Validation
    wire [NLINE_W-1:0]                               instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
    wire [NLINE_W-1:0]                               data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [I_OFFSET_W-1:0]                            instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
+   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
+   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
  `else
    wire [(2**NWAY_W)-1 : 0]                         tag_val; //TAG Validation
    wire [(2**NWAY_W)-1:0]                           v;
@@ -126,9 +126,9 @@ module memory_cache #(
    wire [TAG_W-1:0]                                 data_tag;
    wire [I_TAG_W -1:0]                              instr_tag;
    wire [DATA_W*(2**I_OFFSET_W) - 1: 0]             instr_read;
-   wire [I_OFFSET_W-1:0]                            instr_Offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
+   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
    wire [I_NLINE_W-1:0]                             instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_Offset;
+   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
  `else // !`ifdef L1
    wire 					    v;
    wire [TAG_W-1:0]                                 tag;
@@ -909,7 +909,7 @@ module memory_cache #(
    
    iob_async_fifo #(
 		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
-		    .ADDRESS_WIDTH (BUFFER_W)//Depth of FIFO
+		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
 		    ) 
    buffer 
      (
