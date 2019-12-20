@@ -59,15 +59,15 @@ module iob_cache
     output                   B_READY,
     //Address Read
     output [0:0]             AR_ID,
-    output reg [ADDR_W-1:0]  AR_ADDR, 
-    output reg [7:0]         AR_LEN,
-    output reg [2:0]         AR_SIZE,
-    output reg [1:0]         AR_BURST,
+    output [ADDR_W-1:0]      AR_ADDR, 
+    output [7:0]             AR_LEN,
+    output [2:0]             AR_SIZE,
+    output [1:0]             AR_BURST,
     output [0:0]             AR_LOCK,
     output [3:0]             AR_CACHE,
     output [2:0]             AR_PROT,
     output [3:0]             AR_QOS,
-    output reg               AR_VALID, 
+    output                   AR_VALID, 
     input                    AR_READY,
     //Read
     input [0:0]              R_ID,
@@ -75,13 +75,13 @@ module iob_cache
     input [1:0]              R_RESP,
     input                    R_LAST, 
     input                    R_VALID, 
-    output reg               R_READY  	      
+    output                   R_READY  	      
     );
    
    parameter TAG_W = ADDR_W - (NLINE_W + 2 + OFFSET_W);
    
-   reg 			     data_load;
-   reg [OFFSET_W-1 :0]       select_counter;
+   wire			     data_load;
+   wire [OFFSET_W-1 :0]      select_counter;
    wire [OFFSET_W-1:0]       offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
    wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
    wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
@@ -135,12 +135,6 @@ module iob_cache
  `endif // !`ifdef L1 
 `endif // !`ifdef ASSOC_CACHE
 
-   //Constand AXI signals
-   assign AR_LOCK = 1'b0;
-   assign AR_CACHE = 4'b0011;
-   assign AR_PROT = 3'd0;
-   assign AR_QOS = 4'd0;
-   
    //SIM signals  
    wire 					    cache_write = cpu_req & (|cache_wstrb);
    wire 					    cache_read = cpu_req & ~(|cache_wstrb);  
@@ -725,123 +719,20 @@ module iob_cache
 `endif // !`ifdef L1
    
 
-   
-   //// read fail Auxiliary FSM states and register //// -> Loading Data (to Data line/Block)
-   parameter
-     read_stand_by     = 2'd0,
-     data_loader_init  = 2'd1,
-     data_loader       = 2'd2,
-     data_loader_dummy = 2'd3;
-   
-   
-   reg [1:0] read_state;
-   reg [1:0] read_next_state;
-
-
-   //wire [ADDR_W-1-OFFSET_W:0] address = {2'b0 , cache_addr[ADDR_W-1:OFFSET_W+2]};
-   
-   always @ (posedge clk, posedge reset)
-     begin
-	
-	AR_ADDR  <= {ADDR_W{1'b0}};
-	AR_VALID <= 1'b0;
-	AR_LEN   <= 8'd0;
-	AR_SIZE  <= 3'b000;
-	AR_BURST <= 2'b00;
-	R_READY  <= 1'b0;
-        select_counter <= {OFFSET_W{1'b0}};
-	if (reset)
-          begin
-	     read_state <= read_stand_by; //reset
-	     data_load <= 1'b0;
-	  end	  
-	else
-	   
-	  case (read_state)
-	    
-	    read_stand_by://0
-	      begin
-		 // select_counter     <= {OFFSET_W{1'b0}};
-	         if ((state == read_verification) &&  (~(|cache_hit) && buffer_empty))
-		   begin
-		      read_state <= data_loader_init; //read miss
-		      data_load <= 1'b1;	  
-		   end
-		 else 
-		   begin
-		      read_state <= read_stand_by; //idle
-		      data_load <= 1'b0;
-		   end
-	      end 
-	    
-	    
-	    data_loader_init://1
-	       
-	      begin
-		 AR_VALID <= 1'b1;
-`ifdef L1
-                 AR_ADDR  <= (instr_req)? {cache_addr[ADDR_W -1 : I_OFFSET_W + 2], {(I_OFFSET_W+2){1'b0}}} : {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
-                 AR_LEN  <= (instr_req)? 2**(I_OFFSET_W)-1 :  2**(OFFSET_W)-1;
-`else        
-                 AR_ADDR  <= {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}} }  ; //addr = {tag,index,0...00,00} => word_select = 0...00
-                 AR_LEN   <= 2**(OFFSET_W)-1;
-`endif
-		 //AR_SIZE  <= 3'b010;// 4 bytes
-		 AR_SIZE <= $clog2(N_BYTES); // VERIFY BETTER OPTION FOR PARAMETRIZATION
-		 AR_BURST <= 2'b01; //INCR
-		 data_load <= 1'b1;
-		 //select_counter <= {OFFSET_W{1'b0}};
-		 
-		 if (AR_READY) read_state  <= data_loader;
-		 else          read_state  <= data_loader_init;
-	      end 
-	    
-	    
-	    data_loader://2
-	      begin
-	         if (R_VALID)
-		   begin
-		      if (R_LAST)
-	                begin
-			   R_READY <= 1'b0;
-			   read_state <= read_stand_by;
-			   data_load <= 1'b0;
-			   select_counter <= select_counter;
-	                end else begin
-			   R_READY <= 1'b1;
-			   select_counter <= select_counter + 1;                    
-			   read_state <= data_loader;
-                        end
-		      
-		   end else begin 
-		      R_READY <= 1'b1;   
-		      select_counter <= select_counter;
-		      read_state <= data_loader;  
-		   end
-	      end  
-	    
-	    default:        
-	      begin
-		 read_state <= read_stand_by;
-	      end
-	    
-	  endcase // case (state)       
-     end                        
-
 
 
 write_through_ctrl #(              
-                     .ADDR_W(ADDR_W),
-                     .DATA_W(DATA_W),
-                     .N_BYTES(N_BYTES),
-                     .WTBUF_DEPTH_W(WTBUF_DEPTH_W)
+                     .ADDR_W (ADDR_W),
+                     .DATA_W (DATA_W),
+                     .N_BYTES (N_BYTES),
+                     .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
                      ) 
    write_through_ctrl
      (
-      .clk      (clk),
-      .reset    (reset),
-      .cpu_req  (cpu_req),
-      .cache_addr (cache_addr),
+      .clk         (clk),
+      .reset       (reset),
+      .cpu_req     (cpu_req),
+      .cache_addr  (cache_addr),
       .cache_wstrb (cache_wstrb),
       .cache_wdata (cache_wdata),
       .buffer_empty (buffer_empty),
@@ -869,6 +760,49 @@ write_through_ctrl #(
       );
 
 
+
+   line_loader_ctrl #(
+`ifdef L1
+                      .I_OFFSET_W (I_OFFSET_W),
+`endif
+                      .ADDR_W (ADDR_W),
+                      .DATA_W (DATA_W),
+                      .N_BYTES (N_BYTES),
+                      .OFFSET_W (OFFSET_W)
+                      )
+   line_loader_ctrl (
+                     .clk               (clk),
+                     .reset             (reset),
+`ifdef L1
+                     .instr_req         (instr_req),
+`endif
+                     .cache_addr        (cache_addr),
+                     .cache_hit         (cache_hit),
+                     .read_verification (state == read_verification), 
+                     .cache_miss        (~(|cache_hit)),
+                     .data_load      (data_load),
+                     .select_counter (select_counter), 
+                     .AR_ID    (AR_ID),
+                     .AR_ADDR  (AR_ADDR), 
+                     .AR_LEN   (AR_LEN),
+                     .AR_SIZE  (AR_SIZE),
+                     .AR_BURST (AR_BURST),
+                     .AR_LOCK  (AR_LOCK),
+                     .AR_CACHE (AR_CACHE),
+                     .AR_PROT  (AR_PROT),
+                     .AR_QOS   (AR_QOS),
+                     .AR_VALID (AR_VALID), 
+                     .AR_READY (AR_READY),
+                     .R_ID     (R_ID),
+                     .R_DATA   (R_DATA),
+                     .R_RESP   (R_RESP),
+                     .R_LAST   (R_LAST), 
+                     .R_VALID  (R_VALID), 
+                     .R_READY  (R_READY)
+                     );
+   
+  
+   
    
    cache_controller #(
 		      .DATA_W(DATA_W)
@@ -1309,13 +1243,8 @@ module write_through_ctrl
      buffer_write_validation = 2'd1,
      buffer_write_to_mem     = 2'd2,
      buffer_wait_reply       = 2'd3;  
-   
-   
+      
    reg [1:0]                                        buffer_state;
-
-   reg                                              buffer_empty_delay;
-   
-
 
    always @ (posedge clk, posedge reset)
      begin
@@ -1383,5 +1312,155 @@ module write_through_ctrl
       .write_en((|cache_wstrb) && cpu_req),
       .wclk    (clk                      )
       );
+
+endmodule
+
+
+
+module line_loader_ctrl 
+  #(
+`ifdef L1
+    parameter I_OFFSET_W = 2,
+`endif
+    parameter ADDR_W   = 32,
+    parameter DATA_W   = 32,
+    parameter N_BYTES  = DATA_W/8,
+    parameter OFFSET_W = 2
+    )
+   cache_loader_ctrl
+                           (
+                            input                     clk,
+                            input                     reset,
+`ifdef L1
+                            input                     instr_req,
+`endif
+                            input [ADDR_W -1: 2]      cache_addr,
+                            input [2**NWAY_W -1: 0]   cache_hit,
+                            input                     read_verification, //Read verification FSM state (state == read_verification)
+                            input                     cache_miss, //~(|cache_hit)
+                            output reg                data_load,
+                            output reg [OFFSET_W-1:0] select_counter, 
+                            // AXI interface  
+                            //Address Read
+                            output [0:0]              AR_ID,
+                            output reg [ADDR_W-1:0]   AR_ADDR, 
+                            output reg [7:0]          AR_LEN,
+                            output reg [2:0]          AR_SIZE,
+                            output reg [1:0]          AR_BURST,
+                            output [0:0]              AR_LOCK,
+                            output [3:0]              AR_CACHE,
+                            output [2:0]              AR_PROT,
+                            output [3:0]              AR_QOS,
+                            output reg                AR_VALID, 
+                            input                     AR_READY,
+                            //Read
+                            input [0:0]               R_ID,
+                            input [DATA_W-1:0]        R_DATA,
+                            input [1:0]               R_RESP,
+                            input                     R_LAST, 
+                            input                     R_VALID, 
+                            output reg                R_READY 
+                            );
+
+   //Constant AXI signals
+   assign AR_LOCK = 1'b0;
+   assign AR_CACHE = 4'b0011;
+   assign AR_PROT = 3'd0;
+   assign AR_QOS = 4'd0;
+   
+   //// read fail Auxiliary FSM states and register //// -> Loading Data (to Data line/Block)
+   parameter
+     read_stand_by     = 2'd0,
+     data_loader_init  = 2'd1,
+     data_loader       = 2'd2,
+     data_loader_dummy = 2'd3;
+   
+   
+   reg [1:0]                    read_state;
+
+   always @ (posedge clk, posedge reset)
+     begin
+	
+	AR_ADDR  <= {ADDR_W{1'b0}};
+	AR_VALID <= 1'b0;
+	AR_LEN   <= 8'd0;
+	AR_SIZE  <= 3'b000;
+	AR_BURST <= 2'b00;
+	R_READY  <= 1'b0;
+        select_counter <= {OFFSET_W{1'b0}};
+	if (reset)
+          begin
+	     read_state <= read_stand_by; //reset
+	     data_load <= 1'b0;
+	  end	  
+	else
+	   
+	  case (read_state)
+	    
+	    read_stand_by://0
+	      begin
+                 if ((read_verification) &&  (cache_miss && buffer_empty))
+		   begin
+		      read_state <= data_loader_init; //read miss
+		      data_load <= 1'b1;	  
+		   end
+		 else 
+		   begin
+		      read_state <= read_stand_by; //idle
+		      data_load <= 1'b0;
+		   end
+	      end 
+	    
+	    
+	    data_loader_init://1
+	       
+	      begin
+		 AR_VALID <= 1'b1;
+`ifdef L1
+                 AR_ADDR  <= (instr_req)? {cache_addr[ADDR_W -1 : I_OFFSET_W + 2], {(I_OFFSET_W+2){1'b0}}} : {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
+                 AR_LEN  <= (instr_req)? 2**(I_OFFSET_W)-1 :  2**(OFFSET_W)-1;
+`else        
+                 AR_ADDR  <= {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}} }  ; //addr = {tag,index,0...00,00} => word_select = 0...00
+                 AR_LEN   <= 2**(OFFSET_W)-1;
+`endif
+		 AR_SIZE <= $clog2(N_BYTES); // VERIFY BETTER OPTION FOR PARAMETRIZATION
+		 AR_BURST <= 2'b01; //INCR
+		 data_load <= 1'b1;
+		 
+		 if (AR_READY) read_state  <= data_loader;
+		 else          read_state  <= data_loader_init;
+	      end 
+	    
+	    
+	    data_loader://2
+	      begin
+	         if (R_VALID)
+		   begin
+		      if (R_LAST)
+	                begin
+			   R_READY <= 1'b0;
+			   read_state <= read_stand_by;
+			   data_load <= 1'b0;
+			   select_counter <= select_counter;
+	                end else begin
+			   R_READY <= 1'b1;
+			   select_counter <= select_counter + 1;                    
+			   read_state <= data_loader;
+                        end
+		      
+		   end else begin 
+		      R_READY <= 1'b1;   
+		      select_counter <= select_counter;
+		      read_state <= data_loader;  
+		   end
+	      end  
+	    
+	    default:        
+	      begin
+		 read_state <= read_stand_by;
+	      end
+            
+	  endcase    
+     end                        
 
 endmodule
