@@ -721,12 +721,12 @@ module iob_cache
 
 
 
-write_through_ctrl #(              
-                     .ADDR_W (ADDR_W),
-                     .DATA_W (DATA_W),
-                     .N_BYTES (N_BYTES),
-                     .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
-                     ) 
+   write_through_ctrl #(              
+                                      .ADDR_W (ADDR_W),
+                                      .DATA_W (DATA_W),
+                                      .N_BYTES (N_BYTES),
+                                      .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
+                                      ) 
    write_through_ctrl
      (
       .clk         (clk),
@@ -734,7 +734,7 @@ write_through_ctrl #(
       .cpu_req     (cpu_req),
       .cache_addr  (cache_addr),
       .cache_wstrb (cache_wstrb),
-      .cache_wdata (cache_wdata),
+      .cache_wdata (cache_write_data),
       .buffer_empty (buffer_empty),
       .buffer_full  (buffer_full),     
       .AW_ID    (AW_ID), 
@@ -776,10 +776,10 @@ write_through_ctrl #(
 `ifdef L1
                      .instr_req         (instr_req),
 `endif
-                     .cache_addr        (cache_addr),
-                     .cache_hit         (cache_hit),
+                     .cache_addr        (cache_addr[ADDR_W-1: OFFSET_W+2]),
                      .read_verification (state == read_verification), 
                      .cache_miss        (~(|cache_hit)),
+                     .buffer_empty      (buffer_empty),
                      .data_load      (data_load),
                      .select_counter (select_counter), 
                      .AR_ID    (AR_ID),
@@ -794,14 +794,13 @@ write_through_ctrl #(
                      .AR_VALID (AR_VALID), 
                      .AR_READY (AR_READY),
                      .R_ID     (R_ID),
-                     .R_DATA   (R_DATA),
                      .R_RESP   (R_RESP),
                      .R_LAST   (R_LAST), 
                      .R_VALID  (R_VALID), 
                      .R_READY  (R_READY)
                      );
    
-  
+   
    
    
    cache_controller #(
@@ -1185,7 +1184,7 @@ module write_through_ctrl
     input                    clk,
     input                    reset,
     input                    cpu_req,
-    input [ADDR-1:2]         cache_addr,
+    input [ADDR_W-1:2]       cache_addr,
     input [N_BYTES-1:0]      cache_wstrb,
     input [DATA_W-1:0]       cache_wdata,
     // Buffer status
@@ -1220,16 +1219,14 @@ module write_through_ctrl
    wire [(N_BYTES) + (ADDR_W - 2) + (DATA_W) -1 :0] buffer_data_out, buffer_data_in; // {wstrb, addr [ADDR_W-1:2], word}
    
 
-   assign buffer_data_in = {cache_wstrb, cache_addr, cache_write_data};
+   assign buffer_data_in = {cache_wstrb, cache_addr, cache_wdata};
    
-   wire                                             buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
-
+   
    //Constant AXI signals
    assign AW_ID = 1'd0;
    assign AW_LEN = 8'd0;
    assign AW_SIZE = 3'b010;
    assign AW_BURST = 2'd0;
-   assign AR_ID = 1'd0;
    assign AW_LOCK = 1'b0;
    assign AW_CACHE = 4'b0011;
    assign AW_PROT = 3'd0;
@@ -1243,7 +1240,7 @@ module write_through_ctrl
      buffer_write_validation = 2'd1,
      buffer_write_to_mem     = 2'd2,
      buffer_wait_reply       = 2'd3;  
-      
+   
    reg [1:0]                                        buffer_state;
 
    always @ (posedge clk, posedge reset)
@@ -1293,6 +1290,8 @@ module write_through_ctrl
      end         
 
    
+   wire                                             buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
+   
 
    iob_async_fifo #(
 		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
@@ -1322,47 +1321,50 @@ module line_loader_ctrl
 `ifdef L1
     parameter I_OFFSET_W = 2,
 `endif
+`ifdef ASSOC_CACHE
+    parameter NWAY_W = 4,
+`endif
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter N_BYTES  = DATA_W/8,
     parameter OFFSET_W = 2
     )
-   cache_loader_ctrl
-                           (
-                            input                     clk,
-                            input                     reset,
+   (
+    input                           clk,
+    input                           reset,
 `ifdef L1
-                            input                     instr_req,
+    input                           instr_req,
 `endif
-                            input [ADDR_W -1: 2]      cache_addr,
-                            input [2**NWAY_W -1: 0]   cache_hit,
-                            input                     read_verification, //Read verification FSM state (state == read_verification)
-                            input                     cache_miss, //~(|cache_hit)
-                            output reg                data_load,
-                            output reg [OFFSET_W-1:0] select_counter, 
-                            // AXI interface  
-                            //Address Read
-                            output [0:0]              AR_ID,
-                            output reg [ADDR_W-1:0]   AR_ADDR, 
-                            output reg [7:0]          AR_LEN,
-                            output reg [2:0]          AR_SIZE,
-                            output reg [1:0]          AR_BURST,
-                            output [0:0]              AR_LOCK,
-                            output [3:0]              AR_CACHE,
-                            output [2:0]              AR_PROT,
-                            output [3:0]              AR_QOS,
-                            output reg                AR_VALID, 
-                            input                     AR_READY,
-                            //Read
-                            input [0:0]               R_ID,
-                            input [DATA_W-1:0]        R_DATA,
-                            input [1:0]               R_RESP,
-                            input                     R_LAST, 
-                            input                     R_VALID, 
-                            output reg                R_READY 
-                            );
+    input [ADDR_W -1: 2 + OFFSET_W] cache_addr,
+    input                           read_verification, //Read verification FSM state (state == read_verification)
+    input                           cache_miss, //~(|cache_hit)
+    input                           buffer_empty,
+    output reg                      data_load,
+    output reg [OFFSET_W-1:0]       select_counter, 
+    // AXI interface  
+    //Address Read
+    output [0:0]                    AR_ID,
+    output reg [ADDR_W-1:0]         AR_ADDR, 
+    output reg [7:0]                AR_LEN,
+    output reg [2:0]                AR_SIZE,
+    output reg [1:0]                AR_BURST,
+    output [0:0]                    AR_LOCK,
+    output [3:0]                    AR_CACHE,
+    output [2:0]                    AR_PROT,
+    output [3:0]                    AR_QOS,
+    output reg                      AR_VALID, 
+    input                           AR_READY,
+    //Read
+    input [0:0]                     R_ID,
+    //input [DATA_W-1:0]        R_DATA, //this module only controls the Data loading, doesn't receive it
+    input [1:0]                     R_RESP,
+    input                           R_LAST, 
+    input                           R_VALID, 
+    output reg                      R_READY 
+    );
 
    //Constant AXI signals
+   assign AR_ID = 1'd0;
    assign AR_LOCK = 1'b0;
    assign AR_CACHE = 4'b0011;
    assign AR_PROT = 3'd0;
@@ -1376,7 +1378,7 @@ module line_loader_ctrl
      data_loader_dummy = 2'd3;
    
    
-   reg [1:0]                    read_state;
+   reg [1:0]                        read_state;
 
    always @ (posedge clk, posedge reset)
      begin
