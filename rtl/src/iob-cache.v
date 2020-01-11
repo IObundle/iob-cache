@@ -25,7 +25,7 @@ module iob_cache
     input [ADDR_W-1:2]       cache_addr,
     output [DATA_W-1:0]      cache_read_data,
     input                    cpu_req,
-    output reg               cache_ack,
+    output                   cache_ack,
 
     // cache controller signals  
     input [`CTRL_ADDR_W-1:0] cache_ctrl_address,
@@ -82,139 +82,53 @@ module iob_cache
    
    wire			     data_load;
    wire [OFFSET_W-1 :0]      select_counter;
-   //wire [OFFSET_W-1:0]       offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
-   //wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   //wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
-   //wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
    wire 		     buffer_full, buffer_empty;
    wire 		     cache_invalidate;
-   reg [`CTRL_COUNTER_W-1:0] ctrl_counter;
-   reg 			     write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
+   wire [`CTRL_COUNTER_W-1:0] ctrl_counter;
+   wire 		      write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
 
 
 `ifdef ASSOC_CACHE
-   wire [2**NWAY_W -1: 0]    cache_hit;//uses one-hot numenclature
- `ifdef L1
-   wire 		     instr_req = cache_ctrl_instr_access;
- `else
- `endif
+   wire [2**NWAY_W -1: 0]     cache_hit;//uses one-hot numenclature
 `else 
-   wire 		     cache_hit;
- `ifdef L1
-   wire 		     instr_req = cache_ctrl_instr_access;
- `else // !`ifdef L1
- `endif // !`ifdef L1 
-`endif // !`ifdef ASSOC_CACHE
-
-   //SIM signals  
-   wire 		     cache_write = cpu_req & (|cache_wstrb);
-   wire 		     cache_read = cpu_req & ~(|cache_wstrb);  
-
+   wire 		      cache_hit;
+`endif
+`ifdef L1
+   wire 		      instr_req = cache_ctrl_instr_access;
+`endif
    
-   /// FSM states and register ////
-   parameter
-     stand_by              = 3'd0, 
-     write_verification    = 3'd1,
-     read_verification     = 3'd2,
-     read_miss             = 3'd3,
-     read_validation       = 3'd4,
-     hit                   = 3'd5,
-     end_verification      = 3'd6,
-     stand_by_delay        = 3'd7;
+   wire 		      cache_write = cpu_req & (|cache_wstrb);
+   wire 		      cache_read = cpu_req & ~(|cache_wstrb);  
+
+   wire 		      cache_read_miss;
+   wire 		      read_verification;
    
-   reg [2:0]                 state;
-   reg [2:0]                 next_state;
-
    
-   always @ (posedge clk, posedge reset)
-     begin
-	cache_ack <= 1'b0;
-	ctrl_counter <= `CTRL_COUNTER_W'd0;
-	write_enable <= 1'b0;
-	
-	if (reset) state <= stand_by;
-	else 
-	  case (state)
-	    
-            stand_by:
-	      begin
-		 if(cache_write) state <= write_verification;
-		 else
-		   if (cache_read) state <= read_verification;
-		   else
-		     state <= stand_by;
-	      end
-
-	    write_verification:
-	      begin
-		 if (buffer_full)
-		   state <= write_verification;
-		 else
-		   begin
-		      state <= end_verification;
-		      write_enable <= 1'b1;
-		      if (|cache_hit)
-			ctrl_counter <= `DATA_WRITE_HIT;
-		      else
-			ctrl_counter <= `DATA_WRITE_MISS;
-		   end
-	      end
-
-	    
-	    read_verification:
-	      begin
-		 if (buffer_empty) 
-		   begin
-		      if (|cache_hit) 
-			begin
-			   state <= end_verification;
-			   write_enable <= 1'b1;
-			   if (cache_ctrl_instr_access)
-			     ctrl_counter <= `INSTR_HIT;
-			   else
-			     ctrl_counter <= `DATA_READ_HIT;
-			end
-		      else 
-			begin
-			   state <= read_miss;	    
-			   if (cache_ctrl_instr_access)
-			     ctrl_counter <= `INSTR_MISS;
-			   else
-			     ctrl_counter <= `DATA_READ_MISS;
-			end
-		   end
-		 else 
-		   state <= read_verification; 
-	      end 
-	    
-
-            read_miss:      
-	      begin
-		 if (data_load) //is data being loaded? wait to avoid collision
-		   state <= read_miss; 
-		 else
-		   state <= read_validation; 
-              end 
-
-	    read_validation:
-	      begin
-		 state <= end_verification;
-		 write_enable <= 1'b1;
-	      end
-	    
-      	    end_verification: 
-      	      begin
-      	         cache_ack <= 1'b1;
-      		 state <= stand_by_delay;	    
-	      end
-	    
-            default:        
-	      begin
-		 state <= stand_by;
-              end
-	  endcase
-     end                        
-
+   cache_verification_controller #(
+				   )
+   verification_FSM
+     (
+      .clk (clk),
+      .reset (reset),
+      .cpu_req (cpu_req),
+      .cache_write (cache_write),
+      .cache_read (cache_read),
+      .data_load (data_load),
+`ifdef ASSOC_CACHE
+      .cache_hit (|cache_hit),
+`else
+      .cache_hit (cache_hit),
+`endif
+      .buffer_full (buffer_full),
+      .buffer_empty (buffer_empty),
+      .instr_access (cache_ctrl_instr_access),
+      .cache_ack (cache_ack),
+      .write_enable (write_enable),
+      .ctrl_counter (ctrl_counter),
+      .cache_read_miss (cache_read_miss),
+      .cache_read_verification (read_verification)
+      );
+   
 
    memory_cache #(
 `ifdef L1
@@ -239,7 +153,7 @@ module iob_cache
       .cache_addr       (cache_addr),
       .cache_read_data  (cache_read_data),
       .cpu_req          (cpu_req),
-      .cache_read_miss  (state == read_miss),
+      .cache_read_miss  (cache_read_miss),
       .data_load        (data_load),
       .select_counter   (select_counter),
       .buffer_empty     (buffer_empty),
@@ -313,8 +227,12 @@ module iob_cache
                      .instr_req         (instr_req),
 `endif
                      .cache_addr        (cache_addr[ADDR_W-1: OFFSET_W+2]),
-                     .read_verification (state == read_verification), 
+                     .read_verification (read_verification), 
+`ifdef ASSOC_CACHE
                      .cache_miss        (~(|cache_hit)),
+`else
+		     .cache_miss (~cache_hit),
+`endif
                      .buffer_empty      (buffer_empty),
                      .data_load      (data_load),
                      .select_counter (select_counter), 
@@ -1588,4 +1506,136 @@ module memory_cache
  `endif        
 `endif //  `ifdef ASSOC_CACHE
    
+endmodule
+
+
+
+module cache_verification_controller 
+  (
+   input                            clk,
+   input                            reset,
+   input                            cpu_req,
+   input                            cache_write,
+   input                            cache_read,
+   input                            data_load,
+   input                            cache_hit,
+   input                            buffer_full,
+   input                            buffer_empty,
+   input                            instr_access,
+   output reg                       cache_ack,
+   output reg                       write_enable,
+   output reg [`CTRL_COUNTER_W-1:0] ctrl_counter,
+   output                           cache_read_miss,
+   output                           cache_read_verification
+   );
+
+   
+   /// FSM states and register ////
+   parameter
+     stand_by              = 3'd0, 
+     write_verification    = 3'd1,
+     read_verification     = 3'd2,
+     read_miss             = 3'd3,
+     read_validation       = 3'd4,
+     hit                   = 3'd5,
+     end_verification      = 3'd6,
+     stand_by_delay        = 3'd7;
+   
+   reg [2:0]                        state;
+   reg [2:0]                        next_state;
+
+
+   assign cache_read_miss = (state == read_miss);
+
+   assign cache_read_verification = (state == read_verification);
+
+   always @ (posedge clk, posedge reset)
+     begin
+	cache_ack <= 1'b0;
+	ctrl_counter <= `CTRL_COUNTER_W'd0;
+	write_enable <= 1'b0;
+	
+	if (reset) state <= stand_by;
+	else 
+	  case (state)
+	    
+            stand_by:
+	      begin
+		 if(cache_write) state <= write_verification;
+		 else
+		   if (cache_read) state <= read_verification;
+		   else
+		     state <= stand_by;
+	      end
+
+	    write_verification:
+	      begin
+		 if (buffer_full)
+		   state <= write_verification;
+		 else
+		   begin
+		      state <= end_verification;
+		      write_enable <= 1'b1;
+		      if (cache_hit)	 
+			ctrl_counter <= `DATA_WRITE_HIT;
+		      else
+			ctrl_counter <= `DATA_WRITE_MISS;
+		   end
+	      end
+
+	    
+	    read_verification:
+	      begin
+		 if (buffer_empty) 
+		   begin
+		      if (cache_hit)	
+			begin
+			   state <= end_verification;
+			   write_enable <= 1'b1;
+			   if (instr_access)
+			     ctrl_counter <= `INSTR_HIT;
+			   else
+			     ctrl_counter <= `DATA_READ_HIT;
+			end
+		      else 
+			begin
+			   state <= read_miss;	    
+			   if (instr_access)
+			     ctrl_counter <= `INSTR_MISS;
+			   else
+			     ctrl_counter <= `DATA_READ_MISS;
+			end
+		   end
+		 else 
+		   state <= read_verification; 
+	      end 
+	    
+
+            read_miss:      
+	      begin
+		 if (data_load) //is data being loaded? wait to avoid collision
+		   state <= read_miss; 
+		 else
+		   state <= read_validation; 
+              end 
+
+	    read_validation:
+	      begin
+		 state <= end_verification;
+		 write_enable <= 1'b1;
+	      end
+	    
+      	    end_verification: 
+      	      begin
+      	         cache_ack <= 1'b1;
+      		 state <= stand_by_delay;	    
+	      end
+	    
+            default:        
+	      begin
+		 state <= stand_by;
+              end
+	  endcase
+     end                        
+
 endmodule
