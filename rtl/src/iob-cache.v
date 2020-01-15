@@ -23,9 +23,9 @@ module iob_cache
     input [DATA_W-1:0]       cache_write_data,
     input [N_BYTES-1:0]      cache_wstrb,
     input [ADDR_W-1:2]       cache_addr,
-    output reg [DATA_W-1:0]  cache_read_data,
+    output [DATA_W-1:0]      cache_read_data,
     input                    cpu_req,
-    output reg               cache_ack,
+    output                   cache_ack,
 
     // cache controller signals  
     input [`CTRL_ADDR_W-1:0] cache_ctrl_address,
@@ -78,658 +78,105 @@ module iob_cache
     output                   R_READY  	      
     );
    
-   parameter TAG_W = ADDR_W - (NLINE_W + 2 + OFFSET_W);
+   // parameter TAG_W = ADDR_W - (NLINE_W + 2 + OFFSET_W);
    
    wire			     data_load;
    wire [OFFSET_W-1 :0]      select_counter;
-   wire [OFFSET_W-1:0]       offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
-   wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
-   wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
    wire 		     buffer_full, buffer_empty;
    wire 		     cache_invalidate;
-   reg [`CTRL_COUNTER_W-1:0] ctrl_counter;
-   reg 			     write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
+   wire [`CTRL_COUNTER_W-1:0] ctrl_counter;
+   wire 		      write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
 
 
 `ifdef ASSOC_CACHE
-   wire [(2**NWAY_W)*DATA_W*(2**OFFSET_W) - 1: 0] data_read;
-   wire [2**NWAY_W -1: 0]                         cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0]                            nway_hit; // Indicates the way that had a cache_hit
-   wire [NWAY_W -1: 0]                            nway_sel;
- `ifdef L1
-   parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
-   wire 					  instr_req = cache_ctrl_instr_access;
-   wire [2**NWAY_W -1: 0]                         instr_cache_hit, data_cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0]                            instr_nway_sel, data_nway_sel;
-   wire [(2**NWAY_W)*DATA_W*(2**I_OFFSET_W) - 1: 0] instr_read;
-   wire [(2**NWAY_W)-1:0]                           instr_v, data_v;
-   wire [(2**NWAY_W)*I_TAG_W-1:0]                   instr_tag;
-   wire [(2**NWAY_W)*TAG_W-1:0]                     data_tag;
-   wire [(2**NWAY_W)-1 : 0]                         instr_tag_val, data_tag_val; //TAG Validation
-   wire [NLINE_W-1:0]                               instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [NLINE_W-1:0]                               data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
- `else
-   wire [(2**NWAY_W)-1 : 0]                         tag_val; //TAG Validation
-   wire [(2**NWAY_W)-1:0]                           v;
-   wire [(2**NWAY_W)*TAG_W-1:0]                     tag;
- `endif
+   wire [2**NWAY_W -1: 0]     cache_hit;//uses one-hot numenclature
 `else 
-   wire [DATA_W*(2**OFFSET_W) - 1: 0]               data_read;
-   wire 					    cache_hit;
- `ifdef L1
-   parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
-   wire 					    instr_req = cache_ctrl_instr_access;
-   wire 					    data_v, instr_v;
-   wire [TAG_W-1:0]                                 data_tag;
-   wire [I_TAG_W -1:0]                              instr_tag;
-   wire [DATA_W*(2**I_OFFSET_W) - 1: 0]             instr_read;
-   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_NLINE_W-1:0]                             instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
- `else // !`ifdef L1
-   wire 					    v;
-   wire [TAG_W-1:0]                                 tag;
- `endif // !`ifdef L1 
-`endif // !`ifdef ASSOC_CACHE
-
-   //SIM signals  
-   wire 					    cache_write = cpu_req & (|cache_wstrb);
-   wire 					    cache_read = cpu_req & ~(|cache_wstrb);  
-
-`ifdef ASSOC_CACHE   
- `ifdef TAG_BASED //only to be used for testing of the associative cache, not a real replacemente policy
-   assign nway_sel = cache_addr [NWAY_W +1 +NLINE_W: 2+NLINE_W];
- `elsif COUNTER //only to be used for testing of the associative cache, not a real replacement policy
-   reg [NWAY_W-1:0]                                 nway_sel_cnt;
-
-   always @ (posedge cache_ack, posedge reset)
-     begin
-	nway_sel_cnt = nway_sel_cnt;
-	if (reset)
-          nway_sel_cnt = {NWAY_W{ 1'b0}};
-	else if (cache_ack)
-          nway_sel_cnt = nway_sel_cnt +1;
-     end
-
-   assign nway_sel = nway_sel_cnt;
-   
- `else
-
-  `ifdef L1
-   
-   replacement_policy_algorithm #(
-				  .NWAY_W(NWAY_W),
-				  .NLINE_W(NLINE_W)
-				  )
-   Data_RP
-     (
-      .cache_hit(data_cache_hit           ),
-      .index    (index                    ),
-      .clk      (clk                      ),
-      .reset    (reset || cache_invalidate),
-      .write_en (write_enable&(!instr_req)),
-      .nway_sel (data_nway_sel            )
-      );
-   
-   replacement_policy_algorithm #(
-				  .NWAY_W(NWAY_W),
-				  .NLINE_W(I_NLINE_W)
-				  )
-   Instr_RP
-     (
-      .cache_hit(instr_cache_hit          ),
-      .index    (instr_index              ),
-      .clk      (clk                      ),
-      .reset    (reset || cache_invalidate),
-      .write_en (write_enable & instr_req ),
-      .nway_sel (instr_nway_sel           )
-      );
-
-   
-  `else
-   
-   replacement_policy_algorithm #(
-				  .NWAY_W(NWAY_W),
-				  .NLINE_W(NLINE_W)
-				  )
-   replacement_policy_algorithm
-     (
-      .cache_hit (cache_hit),
-      .index (index),
-      .clk (clk),
-      .reset (reset || cache_invalidate),
-      .write_en (write_enable),
-      .nway_sel (nway_sel)
-      );
-   
-  `endif
- `endif        
+   wire 		      cache_hit;
 `endif
-
-
-   
-   /// FSM states and register ////
-   parameter
-     stand_by              = 3'd0, 
-     write_verification    = 3'd1,
-     read_verification     = 3'd2,
-     read_fail             = 3'd3,
-     read_validation       = 3'd4,
-     hit                   = 3'd5,
-     end_verification      = 3'd6,
-     stand_by_delay        = 3'd7;
-   
-   reg [2:0] 					  state;
-   reg [2:0]                                      next_state;
-
-   
-   always @ (posedge clk, posedge reset)
-     begin
-	cache_ack <= 1'b0;
-	ctrl_counter <= `CTRL_COUNTER_W'd0;
-	write_enable <= 1'b0;
-	
-	if (reset) state <= stand_by;
-	else 
-	  case (state)
-	    
-            stand_by:
-	      begin
-		 if(cache_write) state <= write_verification;
-		 else
-		   if (cache_read) state <= read_verification;
-		   else
-		     state <= stand_by;
-	      end
-
-	    write_verification:
-	      begin
-		 if (buffer_full)
-		   state <= write_verification;
-		 else
-		   begin
-		      state <= end_verification;
-		      write_enable <= 1'b1;
-		      if (|cache_hit)
-			ctrl_counter <= `DATA_WRITE_HIT;
-		      else
-			ctrl_counter <= `DATA_WRITE_MISS;
-		   end
-	      end
-
-	    
-	    read_verification:
-	      begin
-		 if (buffer_empty) 
-		   begin
-		      if (|cache_hit) 
-			begin
-			   state <= end_verification;
-			   write_enable <= 1'b1;
-			   if (cache_ctrl_instr_access)
-			     ctrl_counter <= `INSTR_HIT;
-			   else
-			     ctrl_counter <= `DATA_READ_HIT;
-			end
-		      else 
-			begin
-			   state <= read_fail;	    
-			   if (cache_ctrl_instr_access)
-			     ctrl_counter <= `INSTR_MISS;
-			   else
-			     ctrl_counter <= `DATA_READ_MISS;
-			end
-		   end
-		 else 
-		   state <= read_verification; 
-	      end 
-	    
-
-            read_fail:      
-	      begin
-		 if (data_load) //is data being loaded? wait to avoid collision
-		   state <= read_fail; 
-		 else
-		   state <= read_validation; 
-              end 
-
-	    read_validation:
-	      begin
-		 state <= end_verification;
-		 write_enable <= 1'b1;
-	      end
-	    
-      	    end_verification: 
-      	      begin
-      	         cache_ack <= 1'b1;
-      		 state <= stand_by_delay;	    
-	      end
-	    
-            default:        
-	      begin
-		 state <= stand_by;
-              end
-	  endcase
-     end                        
-
-   
 `ifdef L1
+   wire 		      instr_req = cache_ctrl_instr_access;
+`endif
    
- `ifdef ASSOC_CACHE // ASSOCIATIVE CACHE L1 (INSTR CACHE + DATA CACHE)
+   wire 		      cache_write = cpu_req & (|cache_wstrb);
+   wire 		      cache_read = cpu_req & ~(|cache_wstrb);  
 
-   assign nway_sel = (instr_req)? instr_nway_sel : data_nway_sel;
+   wire 		      cache_read_miss;
+   wire 		      read_verification;
    
-   reg [NWAY_W-1:0]                 nway_selector;
-   always @ (posedge clk)
-     begin
-        nway_selector <= nway_hit; // nway_hit start at 1 (hit at position 0)
-        if  (state == read_fail)
-          nway_selector <= nway_sel;
-     end  
-
-
-   wire [N_BYTES-1:0] 					  data_line_wstrb;           
-   assign data_line_wstrb = (write_enable)? (cache_wstrb & {N_BYTES{cpu_req}}) :  {N_BYTES{R_READY}}; 
-   genvar 						  i, j;
    
-   generate
-      for (j = 0; j < 2**NWAY_W; j=j+1)
-	begin
-	   //DATA CACHE
-	   for (i = 0; i < 2**OFFSET_W; i=i+1)
-	     begin
-		data_memory #(
-			      .ADDR_W (NLINE_W) 
-			      ) 
-		data_memory 
-		    (
-		     .clk           (clk                                                                    ),
-		     .mem_write_data(write_data                                                             ),
-		     .mem_addr      (index                                                                  ),
-		     .mem_en        (((i == word_select) && (j == nway_selector) && (data_load || cache_hit[j]) && (!instr_req))? data_line_wstrb : {N_BYTES{1'b0}}),
-		     .mem_read_data (data_read [(j*(2**OFFSET_W)+(i+1))*DATA_W-1:(j*(2**OFFSET_W)+i)*DATA_W]) 
-		     ); 
-		
-	     end 
-	   
-	   tag_memory  #(
-			 .ADDR_W (NLINE_W), 
-			 .DATA_W (TAG_W)
-			 ) 
-	   data_mem_tag 
-	     (
-	      .clk           (clk                                         ),
-	      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]         ),
-	      .tag_addr      (index                                       ),
-	      .tag_en        ((j == nway_sel)? data_load&(!instr_req):1'b0),
-	      .tag_read_data (data_tag[TAG_W*(j+1)-1 : TAG_W*j]           )                                             
-	      );
-
-	   assign data_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == data_tag[TAG_W*(j+1)-1 : TAG_W*j]);
-	   
-
-	   valid_memory #(
-			  .ADDR_W (NLINE_W), 
-			  .DATA_W (1)
-			  ) 
-	   data_valid 
-	     (
-	      .clk         (clk                                           ),
-	      .reset       (reset || cache_invalidate                     ),
-	      .v_write_data(data_load                                     ),		           
-	      .v_addr      (index                                         ),
-	      .v_en        ((j == nway_sel)? data_load & (!instr_req):1'b0),
-	      .v_read_data (data_v[j]                        )   
-	      );
-
-
-	   //INSTRUCTION CACHE
-	   for (i = 0; i < 2**I_OFFSET_W; i=i+1)
-	     begin
-		data_memory #(
-			      .ADDR_W (I_NLINE_W) 
-			      ) 
-	        instr_memory 
-		    (
-		     .clk           (clk                                                                    ),
-		     .mem_write_data(write_data                                                             ),
-		     .mem_addr      (instr_index                                                                  ),
-		     .mem_en        (((i == instr_word_select) && (j == nway_selector) && (data_load) & instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
-		     .mem_read_data (instr_read [(j*(2**I_OFFSET_W)+(i+1))*DATA_W-1:(j*(2**I_OFFSET_W)+i)*DATA_W]) 
-		     ); 
-		
-	     end 
-	   
-	   tag_memory  #(
-			 .ADDR_W (I_NLINE_W), 
-			 .DATA_W (I_TAG_W)
-			 ) 
-	   instr_mem_tag 
-	     (
-	      .clk           (clk                                          ),
-	      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]        ),
-	      .tag_addr      (instr_index                                  ),
-	      .tag_en        ((j == nway_sel)? (data_load & instr_req):1'b0),
-	      .tag_read_data (instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]       )                                             
-	      );
-
-	   assign instr_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)] == instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]);
-	   
-
-	   valid_memory #(
-			  .ADDR_W (I_NLINE_W), 
-			  .DATA_W (1)
-			  ) 
-	   instr_valid
-	     (
-	      .clk         (clk                                          ),
-	      .reset       (reset || cache_invalidate                    ),
-	      .v_write_data(data_load                                    ),		        
-	      .v_addr      (index                                        ),
-	      .v_en        ((j == nway_sel)? (data_load & instr_req):1'b0),
-	      .v_read_data (instr_v[j]                                   )   
-	      );
-
-	   
-	   //DATA + INSTR
-	   assign cache_hit[j] = (instr_req)? instr_tag_val[j] && instr_v[j] : data_tag_val[j] && data_v[j];//one-hot cache-hit	   	
-	   assign instr_cache_hit[j] = instr_tag_val[j] && instr_v[j];
-	   assign data_cache_hit[j] = data_tag_val[j] && data_v[j];  
-	end     
-   endgenerate
-
-
-   onehot_to_bin #(
-		   .BIN_W (NWAY_W)
-		   ) 
-   onehot_to_bin
+   cache_verification_controller #(
+				   )
+   verification_FSM
      (
-      .onehot(cache_hit[2**NWAY_W-1:1]),
-      .bin(nway_hit)
+      .clk (clk),
+      .reset (reset),
+      .cpu_req (cpu_req),
+      .cache_write (cache_write),
+      .cache_read (cache_read),
+      .data_load (data_load),
+`ifdef ASSOC_CACHE
+      .cache_hit (|cache_hit),
+`else
+      .cache_hit (cache_hit),
+`endif
+      .buffer_full (buffer_full),
+      .buffer_empty (buffer_empty),
+      .instr_access (cache_ctrl_instr_access),
+      .cache_ack (cache_ack),
+      .write_enable (write_enable),
+      .ctrl_counter (ctrl_counter),
+      .cache_read_miss (cache_read_miss),
+      .cache_read_verification (read_verification)
       );
    
 
-   
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= (instr_req)? instr_read >> DATA_W*(instr_word_select + (2**I_OFFSET_W)*nway_hit) : data_read >> DATA_W*(word_select + (2**OFFSET_W)*nway_hit);
-
-
-   
- `else // DIRECT ACCESS L1 (INSTR CACHE + DATA CACHE)
-
-   assign cache_hit = (instr_req)? ((instr_tag == cache_addr [ADDR_W-1 -: I_TAG_W]) && instr_v)  : ((data_tag == cache_addr [ADDR_W-1 -: TAG_W]) && data_v);
-   
-   wire [N_BYTES -1 :0] 	      data_line_wstrb;  
-   assign data_line_wstrb = (write_enable)? (cache_wstrb & {N_BYTES{cpu_req}}) :  {N_BYTES{R_READY}}; 
-   
-   genvar 			      i;
-   
-   //DATA CACHE 
-   generate  
-      for (i = 0; i < 2**OFFSET_W; i=i+1)
-        begin
-           data_memory #(
-			 .ADDR_W (NLINE_W) 
-			 ) 
-	   data_memory 
-	       (
-		.clk           (clk                                 ),
-		.mem_write_data(write_data                          ),
-		.mem_addr      (index                               ),
-		.mem_en        (((i == word_select) && (data_load || cache_hit) && (!instr_req))? data_line_wstrb : {N_BYTES{1'b0}}), 
-		.mem_read_data (data_read [DATA_W*(i+1)-1: DATA_W*i])   
-		);      
-        end     
-   endgenerate
-
-   tag_memory  #(
-		 .ADDR_W (NLINE_W), 
-		 .DATA_W (TAG_W  ) 
-		 ) 
-   data_mem_tag 
+   memory_cache #(
+`ifdef L1
+		  .I_NLINE_W  (I_NLINE_W),
+		  .I_OFFSET_W (I_OFFSET_W),
+`endif
+`ifdef ASSOC_CACHE
+		  .NWAY_W   (NWAY_W),
+`endif
+		  .ADDR_W   (ADDR_W),
+                  .DATA_W   (DATA_W),
+                  .N_BYTES  (N_BYTES),
+		  .NLINE_W  (NLINE_W),
+		  .OFFSET_W (OFFSET_W)
+		  )
+   memory_cache		  
      (
-      .clk           (clk                                ),
-      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
-      .tag_addr      (index                              ),
-      .tag_en        ((!instr_req) & data_load           ),
-      .tag_read_data (data_tag                           )                     
-      );
-
-
-   valid_memory #(
-		  .ADDR_W (NLINE_W), 
-		  .DATA_W (1) 
-		  ) 
-   data_valid 
-     (
-      .clk         (clk                      ),
-      .reset       (reset || cache_invalidate),
-      .v_write_data(data_load                ),				        
-      .v_addr      (index                    ),
-      .v_en        ((!instr_req) & data_load ),
-      .v_read_data (data_v                   )   
-      );
-   
-   //INSTRUCTION CACHE
-   generate
-      for (i = 0; i < 2**I_OFFSET_W; i=i+1)
-        begin
-           data_memory #(
-			 .ADDR_W (I_NLINE_W) 
-			 ) 
-	   instr_memory 
-	       (
-		.clk           (clk                                  ),
-		.mem_write_data(write_data                           ),
-		.mem_addr      (instr_index                          ),
-		.mem_en        ((((i == instr_word_select) && (data_load)) && instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}}), //Instruction cache only is written during cache line memory loads, during read-misses.
-		.mem_read_data (instr_read [DATA_W*(i+1)-1: DATA_W*i])   
-		);      
-        end     
-   endgenerate
-
-
-
-   tag_memory  #(
-		 .ADDR_W (I_NLINE_W), 
-		 .DATA_W (I_TAG_W  ) 
-		 ) 
-   instr_mem_tag 
-     (
-      .clk           (clk                                  ),
-      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]),
-      .tag_addr      (instr_index                          ),
-      .tag_en        (data_load & instr_req                ),
-      .tag_read_data (instr_tag                            )                     
-      );
-
-
-   valid_memory #(
-		  .ADDR_W (I_NLINE_W), 
-		  .DATA_W (1) 
-		  ) 
-   instr_valid 
-     (
-      .clk         (clk                      ),
-      .reset       (reset || cache_invalidate),
-      .v_write_data(data_load                ),				        
-      .v_addr      (instr_index              ),
-      .v_en        (data_load & instr_req    ),
-      .v_read_data (instr_v                  )   
-      );
-
-   
-   //Using shifts to select the correct Data memory from the cache's Data line, avoiding the use of generate. 
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= (instr_req)? instr_read >> (instr_word_select * DATA_W) : data_read >> (word_select * DATA_W);
-   
-
- `endif   
-   
-`else // L1 CACHE (1 MEMORY)
-   
- `ifdef ASSOC_CACHE //ASSOCIATIVE CACHE (1 Memory for both Data and Instructions)
-   
-   reg [NWAY_W-1:0]                 nway_selector;
-   always @ (posedge clk)
-     begin
-        nway_selector <= nway_hit; // nway_hit start at 1 (hit at position 0)
-        if  (state == read_fail)
-          nway_selector <= nway_sel;
-     end  
-
-
-   wire [N_BYTES-1:0] 					  data_line_wstrb;           
-   assign data_line_wstrb = (write_enable)? (cache_wstrb & {N_BYTES{cpu_req}}) :  {N_BYTES{R_READY}}; 
-
-   genvar 						  i, j;
-   generate
-      for (j = 0; j < 2**NWAY_W; j=j+1)
-	begin
-	   for (i = 0; i < 2**OFFSET_W; i=i+1)
-	     begin
-		data_memory #(
-			      .ADDR_W (NLINE_W) 
-			      ) 
-		data_memory 
-		    (
-		     .clk           (clk                                                                ),
-		     .mem_write_data(write_data                                                         ),
-		     .mem_addr      (index                                                              ),
-		     .mem_en        (((i == word_select) && (j == nway_selector)) && (data_load || cache_hit[j])? data_line_wstrb : {N_BYTES{1'b0}} ),
-		     .mem_read_data (data_read [(j*(2**OFFSET_W)+(i+1))*DATA_W-1:(j*(2**OFFSET_W)+i)*DATA_W]) 
-		     ); 
-	     end 
-	   
-	   tag_memory  #(
-			 .ADDR_W (NLINE_W), 
-			 .DATA_W (TAG_W)
-			 ) 
-	   tag_memory 
-	     (
-	      .clk           (clk                                ),
-	      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
-	      .tag_addr      (index                              ),
-	      .tag_en        ((j == nway_sel)? data_load : 1'b0  ),
-	      .tag_read_data (tag[TAG_W*(j+1)-1 : TAG_W*j]       )                                             
-	      );
-
-	   assign tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == tag[TAG_W*(j+1)-1 : TAG_W*j]);
-	   
-
-	   valid_memory #(
-			  .ADDR_W (NLINE_W), 
-			  .DATA_W (1)
-			  ) 
-	   valid_memory 
-	     (
-	      .clk         (clk                              ),
-	      .reset       (reset || cache_invalidate        ),
-	      .v_write_data(data_load                        ),				       
-	      .v_addr      (index                            ),
-	      .v_en        ((j == nway_sel)? data_load : 1'b0),
-	      .v_read_data (v[j]                             )   
-	      );
-	   
-
-	   assign cache_hit[j] = tag_val[j] && v[j];//one-hot cache-hit	   	
-        end     
-   endgenerate
-
-   onehot_to_bin #(
-		   .BIN_W (NWAY_W)
-		   ) 
-   onehot_to_bin
-     (
-      .onehot(cache_hit[2**NWAY_W-1:1]),
-      .bin(nway_hit)
+      .clk   (clk),
+      .reset (reset),
+      .cache_write_data (cache_write_data),
+      .cache_wstrb      (cache_wstrb),
+      .cache_addr       (cache_addr),
+      .cache_read_data  (cache_read_data),
+      .cpu_req          (cpu_req),
+      .cache_read_miss  (cache_read_miss),
+      .data_load        (data_load),
+      .select_counter   (select_counter),
+      .buffer_empty     (buffer_empty),
+      .buffer_full      (buffer_full),
+      .cache_invalidate (cache_invalidate),
+      .write_enable     (write_enable),
+      .cache_hit_output (cache_hit),
+`ifdef L1
+      .instr_req        (instr_req),
+`endif
+      .R_DATA  (R_DATA),
+      .R_READY (R_READY)
       );
    
 
-   
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= data_read >> DATA_W*(word_select + (2**OFFSET_W)*nway_hit);
 
    
- `else  // DIRECT ACCESS CACHE (1 Memory for both Data and Instructions)  
-
-   assign cache_hit = (tag == cache_addr [ADDR_W-1 -: TAG_W]) && v;
-   
-   wire [N_BYTES -1:0] 		      data_line_wstrb;  
-   assign data_line_wstrb = (write_enable)? (cache_wstrb & {N_BYTES{cpu_req}}) :  {N_BYTES{R_READY}}; 
-
-   genvar 			      i;
-   
-   generate
-      for (i = 0; i < 2**OFFSET_W; i=i+1)
-        begin
-	   data_memory #(
-			 .ADDR_W (NLINE_W) 
-			 ) 
-	   data_memory 
-	       (
-		.clk           (clk                                 ),
-		.mem_write_data(write_data                          ),
-		.mem_addr      (index                               ),
-		.mem_en        (((i == word_select) && (data_load || cache_hit))? data_line_wstrb : {N_BYTES{1'b0}}), 
-		.mem_read_data (data_read [DATA_W*(i+1)-1: DATA_W*i])   
-		);      
-        end     
-   endgenerate
-
-
-
-   tag_memory  #(
-		 .ADDR_W (NLINE_W), 
-		 .DATA_W (TAG_W) 
-		 ) 
-   tag_memory 
-     (
-      .clk           (clk                                ),
-      .tag_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
-      .tag_addr      (index                              ),
-      .tag_en        (data_load                          ),
-      .tag_read_data (tag                                )                     
-      );
-
-
-   valid_memory #(
-		  .ADDR_W (NLINE_W), 
-		  .DATA_W (1) 
-		  ) 
-   valid_memory 
-     (
-      .clk         (clk                      ),
-      .reset       (reset || cache_invalidate),
-      .v_write_data(data_load                ),				        
-      .v_addr      (index                    ),
-      .v_en        (data_load                ),
-      .v_read_data (v                        )   
-      );
-   
-
-   
-   //Using shifts to select the correct Data memory from the cache's Data line, avoiding the use of generate. 
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= data_read >> (word_select * DATA_W);
-   
- `endif // !`ifdef ASSOC_CACHE
-   
-
-`endif // !`ifdef L1
-   
-
-
-
-write_through_ctrl #(              
-                     .ADDR_W (ADDR_W),
-                     .DATA_W (DATA_W),
-                     .N_BYTES (N_BYTES),
-                     .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
-                     ) 
+   write_through_ctrl #(              
+				      .ADDR_W (ADDR_W),
+				      .DATA_W (DATA_W),
+				      .N_BYTES (N_BYTES),
+				      .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
+				      ) 
    write_through_ctrl
      (
       .clk         (clk),
@@ -780,8 +227,12 @@ write_through_ctrl #(
                      .instr_req         (instr_req),
 `endif
                      .cache_addr        (cache_addr[ADDR_W-1: OFFSET_W+2]),
-                     .read_verification (state == read_verification), 
+                     .read_verification (read_verification), 
+`ifdef ASSOC_CACHE
                      .cache_miss        (~(|cache_hit)),
+`else
+		     .cache_miss (~cache_hit),
+`endif
                      .buffer_empty      (buffer_empty),
                      .data_load      (data_load),
                      .select_counter (select_counter), 
@@ -803,7 +254,7 @@ write_through_ctrl #(
                      .R_READY  (R_READY)
                      );
    
-  
+   
    
    
    cache_controller #(
@@ -1184,38 +635,38 @@ module write_through_ctrl
     parameter WTBUF_DEPTH_W = 4
     ) 
    (
-    input 		     clk,
-    input 		     reset,
-    input 		     cpu_req,
-    input [ADDR_W-1:2] 	     cache_addr,
+    input                    clk,
+    input                    reset,
+    input                    cpu_req,
+    input [ADDR_W-1:2]       cache_addr,
     input [N_BYTES-1:0]      cache_wstrb,
-    input [DATA_W-1:0] 	     cache_wdata,
+    input [DATA_W-1:0]       cache_wdata,
     // Buffer status
-    output 		     buffer_empty,
-    output 		     buffer_full,
+    output                   buffer_empty,
+    output                   buffer_full,
     // AXI interface 
     // Address Write
-    output [0:0] 	     AW_ID, 
+    output [0:0]             AW_ID, 
     output reg [ADDR_W-1:0]  AW_ADDR,
-    output [7:0] 	     AW_LEN,
-    output [2:0] 	     AW_SIZE,
-    output [1:0] 	     AW_BURST,
-    output [0:0] 	     AW_LOCK,
-    output [3:0] 	     AW_CACHE,
-    output [2:0] 	     AW_PROT,
-    output [3:0] 	     AW_QOS,
-    output reg 		     AW_VALID,
-    input 		     AW_READY,
+    output [7:0]             AW_LEN,
+    output [2:0]             AW_SIZE,
+    output [1:0]             AW_BURST,
+    output [0:0]             AW_LOCK,
+    output [3:0]             AW_CACHE,
+    output [2:0]             AW_PROT,
+    output [3:0]             AW_QOS,
+    output reg               AW_VALID,
+    input                    AW_READY,
     //Write                  
     output reg [DATA_W-1:0]  W_DATA,
     output reg [N_BYTES-1:0] W_STRB,
-    output reg 		     W_LAST,
-    output reg 		     W_VALID, 
-    input 		     W_READY,
-    input [0:0] 	     B_ID,
-    input [1:0] 	     B_RESP,
-    input 		     B_VALID,
-    output reg 		     B_READY
+    output reg               W_LAST,
+    output reg               W_VALID, 
+    input                    W_READY,
+    input [0:0]              B_ID,
+    input [1:0]              B_RESP,
+    input                    B_VALID,
+    output reg               B_READY
     );
 
 
@@ -1224,7 +675,7 @@ module write_through_ctrl
 
    assign buffer_data_in = {cache_wstrb, cache_addr, cache_wdata};
    
-  
+   
    //Constant AXI signals
    assign AW_ID = 1'd0;
    assign AW_LEN = 8'd0;
@@ -1243,7 +694,7 @@ module write_through_ctrl
      buffer_write_validation   = 2'd1,
      buffer_write_to_mem       = 2'd2,
      buffer_write_verification = 2'd3;  
-      
+   
    reg [1:0]                                        buffer_state;
 
    always @ (posedge clk, posedge reset)
@@ -1295,7 +746,7 @@ module write_through_ctrl
 		 else
 		   buffer_state <= buffer_write_verification;
 	      end
-		     
+	    
 	    default:        
 	      begin
 		 buffer_state <= buffer_stand_by;
@@ -1304,9 +755,9 @@ module write_through_ctrl
 	  endcase    
      end         
 
- 
+   
    wire                                             buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
-  
+   
 
    iob_async_fifo #(
 		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
@@ -1344,39 +795,39 @@ module line_loader_ctrl
     parameter N_BYTES  = DATA_W/8,
     parameter OFFSET_W = 2
     )
-                           (
-                            input 			    clk,
-                            input 			    reset,
+   (
+    input                           clk,
+    input                           reset,
 `ifdef L1
-                            input 			    instr_req,
+    input                           instr_req,
 `endif
-                            input [ADDR_W -1: 2 + OFFSET_W] cache_addr,
-                            input 			    read_verification, //Read verification FSM state (state == read_verification)
-                            input 			    cache_miss, //~(|cache_hit)
-                            input 			    buffer_empty,
-                            output reg 			    data_load,
-                            output reg [OFFSET_W-1:0] 	    select_counter, 
-                            // AXI interface  
-                            //Address Read
-                            output [0:0] 		    AR_ID,
-                            output reg [ADDR_W-1:0] 	    AR_ADDR, 
-                            output reg [7:0] 		    AR_LEN,
-                            output reg [2:0] 		    AR_SIZE,
-                            output reg [1:0] 		    AR_BURST,
-                            output [0:0] 		    AR_LOCK,
-                            output [3:0] 		    AR_CACHE,
-                            output [2:0] 		    AR_PROT,
-                            output [3:0] 		    AR_QOS,
-                            output reg 			    AR_VALID, 
-                            input 			    AR_READY,
-                            //Read
-                            input [0:0] 		    R_ID,
-                            //input [DATA_W-1:0]        R_DATA, //this module only controls the Data loading, doesn't receive it
-                            input [1:0] 		    R_RESP,
-                            input 			    R_LAST, 
-                            input 			    R_VALID, 
-                            output reg 			    R_READY 
-                            );
+    input [ADDR_W -1: 2 + OFFSET_W] cache_addr,
+    input                           read_verification, //Read verification FSM state (state == read_verification)
+    input                           cache_miss, //~(|cache_hit)
+    input                           buffer_empty,
+    output reg                      data_load,
+    output reg [OFFSET_W-1:0]       select_counter, 
+    // AXI interface  
+    //Address Read
+    output [0:0]                    AR_ID,
+    output reg [ADDR_W-1:0]         AR_ADDR, 
+    output reg [7:0]                AR_LEN,
+    output reg [2:0]                AR_SIZE,
+    output reg [1:0]                AR_BURST,
+    output [0:0]                    AR_LOCK,
+    output [3:0]                    AR_CACHE,
+    output [2:0]                    AR_PROT,
+    output [3:0]                    AR_QOS,
+    output reg                      AR_VALID, 
+    input                           AR_READY,
+    //Read
+    input [0:0]                     R_ID,
+    //input [DATA_W-1:0]        R_DATA, //this module only controls the Data loading, doesn't receive it
+    input [1:0]                     R_RESP,
+    input                           R_LAST, 
+    input                           R_VALID, 
+    output reg                      R_READY 
+    );
 
    //Constant AXI signals
    assign AR_ID = 1'd0;
@@ -1393,7 +844,7 @@ module line_loader_ctrl
      data_loader_dummy = 2'd3;
    
    
-   reg [1:0]                    read_state;
+   reg [1:0]                        read_state;
 
    always @ (posedge clk, posedge reset)
      begin
@@ -1483,6 +934,8 @@ module line_loader_ctrl
 endmodule
 
 
+
+
 module memory_cache 
   #(
     parameter ADDR_W   = 32,
@@ -1501,83 +954,92 @@ module memory_cache
     )
    (
     // iob_cache port signals
-    input 		    clk,
-    input 		    reset,
-    input [DATA_W-1:0] 	    cache_write_data,
-    input [N_BYTES-1:0]     cache_wstrb,
-    input [ADDR_W-1:2] 	    cache_addr,
-    output reg [DATA_W-1:0] cache_read_data,
-    input 		    cpu_req,
-    output reg 		    cache_ack,
+    input                    clk,
+    input                    reset,
+    input [DATA_W-1:0]       cache_write_data,
+    input [N_BYTES-1:0]      cache_wstrb,
+    input [ADDR_W-1:2]       cache_addr,
+    output reg [DATA_W-1:0]  cache_read_data,
+    input                    cpu_req,
     // input signals
-    input 		    cache_read_miss, // verification state == read_miss  
-    input 		    data_load,
-    input [OFFSET_W-1 :0]   select_counter,
-    input 		    buffer_empty,
-    input 		    buffer_full,
-    input 		    cache_invalidate,
-    input 		    write_enable,
+    input                    cache_read_miss, // verification state == read_miss  
+    input                    data_load,
+    input [OFFSET_W-1 :0]    select_counter,
+    input                    buffer_empty,
+    input                    buffer_full,
+    input                    cache_invalidate,
+    input                    write_enable,
 `ifdef L1 
-    input 		    instr_req,// cache_ctrl_instr_access
-`endif    
+    input                    instr_req,// cache_ctrl_instr_access
+`endif 
+`ifdef ASSOC_CACHE
+    output [2**NWAY_W -1: 0] cache_hit_output,
+`else
+    output                   cache_hit_output,
+`endif
     //AXI - input Read signals
-    input [DATA_W-1:0] 	    R_DATA,
-    input 		    R_READY
+    input [DATA_W-1:0]       R_DATA,
+    input                    R_READY
     );
-
-
-
    
    parameter TAG_W = ADDR_W - (NLINE_W + 2 + OFFSET_W);
-   wire [OFFSET_W-1:0]      offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
-   wire [NLINE_W-1:0] 	    index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [OFFSET_W - 1:0]    word_select= (data_load)? select_counter : offset;
-   wire [DATA_W -1 : 0]     write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
- 
+   
+   //wire 		    data_load;
+   //wire [OFFSET_W-1 :0]     select_counter;
+   wire [OFFSET_W-1:0]       offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
+   wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
+   wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
+   wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
+   //wire 		    buffer_full, buffer_empty;
+   // wire 		    cache_invalidate;
+   //reg 			     write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
+
 
 `ifdef ASSOC_CACHE
    wire [(2**NWAY_W)*DATA_W*(2**OFFSET_W) - 1: 0] data_read;
-   wire [2**NWAY_W -1: 0] 			  cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0] 				  nway_hit; // Indicates the way that had a cache_hit
-   wire [NWAY_W -1: 0] 				  nway_sel;
+   wire [2**NWAY_W -1: 0]                         cache_hit;//uses one-hot numenclature
+   wire [NWAY_W -1: 0]                            nway_hit; // Indicates the way that had a cache_hit
+   wire [NWAY_W -1: 0]                            nway_sel;
  `ifdef L1
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
-   wire [2**NWAY_W -1: 0] 			  instr_cache_hit, data_cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0] 				  instr_nway_sel, data_nway_sel;
+   //wire 					  instr_req = cache_ctrl_instr_access;
+   wire [2**NWAY_W -1: 0]                         instr_cache_hit, data_cache_hit;//uses one-hot numenclature
+   wire [NWAY_W -1: 0]                            instr_nway_sel, data_nway_sel;
    wire [(2**NWAY_W)*DATA_W*(2**I_OFFSET_W) - 1: 0] instr_read;
-   wire [(2**NWAY_W)-1:0] 			    instr_v, data_v;
-   wire [(2**NWAY_W)*I_TAG_W-1:0] 		    instr_tag;
-   wire [(2**NWAY_W)*TAG_W-1:0] 		    data_tag;
-   wire [(2**NWAY_W)-1 : 0] 			    instr_tag_val, data_tag_val; //TAG Validation
-   wire [NLINE_W-1:0] 				    instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [NLINE_W-1:0] 				    data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [I_OFFSET_W-1:0] 			    instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_OFFSET_W - 1:0] 			    instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
+   wire [(2**NWAY_W)-1:0]                           instr_v, data_v;
+   wire [(2**NWAY_W)*I_TAG_W-1:0]                   instr_tag;
+   wire [(2**NWAY_W)*TAG_W-1:0]                     data_tag;
+   wire [(2**NWAY_W)-1 : 0]                         instr_tag_val, data_tag_val; //TAG Validation
+   wire [NLINE_W-1:0]                               instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
+   wire [NLINE_W-1:0]                               data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
+   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
+   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
  `else
-   wire [(2**NWAY_W)-1 : 0] 			    tag_val; //TAG Validation
-   wire [(2**NWAY_W)-1:0] 			    v;
-   wire [(2**NWAY_W)*TAG_W-1:0] 		    tag;
+   wire [(2**NWAY_W)-1 : 0]                         tag_val; //TAG Validation
+   wire [(2**NWAY_W)-1:0]                           v;
+   wire [(2**NWAY_W)*TAG_W-1:0]                     tag;
  `endif
 `else 
-   wire [DATA_W*(2**OFFSET_W) - 1: 0] 		    data_read;
+   wire [DATA_W*(2**OFFSET_W) - 1: 0]               data_read;
    wire 					    cache_hit;
  `ifdef L1
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
    wire 					    instr_req = cache_ctrl_instr_access;
    wire 					    data_v, instr_v;
-   wire [TAG_W-1:0] 				    data_tag;
-   wire [I_TAG_W -1:0] 				    instr_tag;
-   wire [DATA_W*(2**I_OFFSET_W) - 1: 0] 	    instr_read;
-   wire [I_OFFSET_W-1:0] 			    instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_NLINE_W-1:0] 			    instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [I_OFFSET_W - 1:0] 			    instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
+   wire [TAG_W-1:0]                                 data_tag;
+   wire [I_TAG_W -1:0]                              instr_tag;
+   wire [DATA_W*(2**I_OFFSET_W) - 1: 0]             instr_read;
+   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
+   wire [I_NLINE_W-1:0]                             instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
+   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
  `else // !`ifdef L1
    wire 					    v;
-   wire [TAG_W-1:0] 				    tag;
+   wire [TAG_W-1:0]                                 tag;
  `endif // !`ifdef L1 
 `endif // !`ifdef ASSOC_CACHE
    
-
+   assign cache_hit_output = cache_hit;
+   
 
    
    
@@ -1587,7 +1049,7 @@ module memory_cache
 
    assign nway_sel = (instr_req)? instr_nway_sel : data_nway_sel;
    
-   reg [NWAY_W-1:0] 				    nway_selector;
+   reg [NWAY_W-1:0]                                 nway_selector;
    always @ (posedge clk)
      begin
         nway_selector <= nway_hit; // nway_hit start at 1 (hit at position 0)
@@ -1990,19 +1452,6 @@ module memory_cache
 `ifdef ASSOC_CACHE   
  `ifdef TAG_BASED //only to be used for testing of the associative cache, not a real replacemente policy
    assign nway_sel = cache_addr [NWAY_W +1 +NLINE_W: 2+NLINE_W];
- `elsif COUNTER //only to be used for testing of the associative cache, not a real replacement policy
-   reg [NWAY_W-1:0]                                 nway_sel_cnt;
-
-   always @ (posedge cache_ack, posedge reset)
-     begin
-	nway_sel_cnt = nway_sel_cnt;
-	if (reset)
-          nway_sel_cnt = {NWAY_W{ 1'b0}};
-	else if (cache_ack)
-          nway_sel_cnt = nway_sel_cnt +1;
-     end
-
-   assign nway_sel = nway_sel_cnt;
    
  `else
 
@@ -2057,4 +1506,136 @@ module memory_cache
  `endif        
 `endif //  `ifdef ASSOC_CACHE
    
+endmodule
+
+
+
+module cache_verification_controller 
+  (
+   input                            clk,
+   input                            reset,
+   input                            cpu_req,
+   input                            cache_write,
+   input                            cache_read,
+   input                            data_load,
+   input                            cache_hit,
+   input                            buffer_full,
+   input                            buffer_empty,
+   input                            instr_access,
+   output reg                       cache_ack,
+   output reg                       write_enable,
+   output reg [`CTRL_COUNTER_W-1:0] ctrl_counter,
+   output                           cache_read_miss,
+   output                           cache_read_verification
+   );
+
+   
+   /// FSM states and register ////
+   parameter
+     stand_by              = 3'd0, 
+     write_verification    = 3'd1,
+     read_verification     = 3'd2,
+     read_miss             = 3'd3,
+     read_validation       = 3'd4,
+     hit                   = 3'd5,
+     end_verification      = 3'd6,
+     stand_by_delay        = 3'd7;
+   
+   reg [2:0]                        state;
+   reg [2:0]                        next_state;
+
+
+   assign cache_read_miss = (state == read_miss);
+
+   assign cache_read_verification = (state == read_verification);
+
+   always @ (posedge clk, posedge reset)
+     begin
+	cache_ack <= 1'b0;
+	ctrl_counter <= `CTRL_COUNTER_W'd0;
+	write_enable <= 1'b0;
+	
+	if (reset) state <= stand_by;
+	else 
+	  case (state)
+	    
+            stand_by:
+	      begin
+		 if(cache_write) state <= write_verification;
+		 else
+		   if (cache_read) state <= read_verification;
+		   else
+		     state <= stand_by;
+	      end
+
+	    write_verification:
+	      begin
+		 if (buffer_full)
+		   state <= write_verification;
+		 else
+		   begin
+		      state <= end_verification;
+		      write_enable <= 1'b1;
+		      if (cache_hit)	 
+			ctrl_counter <= `DATA_WRITE_HIT;
+		      else
+			ctrl_counter <= `DATA_WRITE_MISS;
+		   end
+	      end
+
+	    
+	    read_verification:
+	      begin
+		 if (buffer_empty) 
+		   begin
+		      if (cache_hit)	
+			begin
+			   state <= end_verification;
+			   write_enable <= 1'b1;
+			   if (instr_access)
+			     ctrl_counter <= `INSTR_HIT;
+			   else
+			     ctrl_counter <= `DATA_READ_HIT;
+			end
+		      else 
+			begin
+			   state <= read_miss;	    
+			   if (instr_access)
+			     ctrl_counter <= `INSTR_MISS;
+			   else
+			     ctrl_counter <= `DATA_READ_MISS;
+			end
+		   end
+		 else 
+		   state <= read_verification; 
+	      end 
+	    
+
+            read_miss:      
+	      begin
+		 if (data_load) //is data being loaded? wait to avoid collision
+		   state <= read_miss; 
+		 else
+		   state <= read_validation; 
+              end 
+
+	    read_validation:
+	      begin
+		 state <= end_verification;
+		 write_enable <= 1'b1;
+	      end
+	    
+      	    end_verification: 
+      	      begin
+      	         cache_ack <= 1'b1;
+      		 state <= stand_by_delay;	    
+	      end
+	    
+            default:        
+	      begin
+		 state <= stand_by;
+              end
+	  endcase
+     end                        
+
 endmodule
