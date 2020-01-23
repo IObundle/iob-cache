@@ -597,7 +597,7 @@ module replacement_policy_algorithm #(
 
    
    //Most Recently Used (MRU) memory	   
-   generesetable_memory  #(
+   generable_reg_file  #(
 		           .ADDR_W (NLINE_W),
 `ifdef BIT_PLRU
 		           .DATA_W (NWAYS),
@@ -1105,7 +1105,7 @@ module memory_cache
 	   assign data_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == data_tag[TAG_W*(j+1)-1 : TAG_W*j]);
 	   
 
-           generesetable_memory #(
+           generable_reg_file #(
 			          .ADDR_W (NLINE_W), 
 			          .DATA_W (1),
                                   .MEM_W (1),
@@ -1160,7 +1160,7 @@ module memory_cache
 	   assign instr_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)] == instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]);
 	   
 
-           generesetable_memory #(
+           generable_reg_file #(
 			          .ADDR_W (I_NLINE_W), 
 			          .DATA_W (1),
                                   .MEM_W (1),
@@ -1247,7 +1247,7 @@ module memory_cache
       );
 
 
-   generesetable_memory #(
+   generable_reg_file #(
 		          .ADDR_W (NLINE_W), 
 		          .DATA_W (1),
                           .MEM_W (1),
@@ -1302,7 +1302,7 @@ module memory_cache
       );
 
 
-   generesetable_memory #(
+   generable_reg_file #(
 		          .ADDR_W (I_NLINE_W), 
 		          .DATA_W (1),
                           .MEM_W (1),
@@ -1382,7 +1382,7 @@ module memory_cache
 	   assign tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == tag[TAG_W*(j+1)-1 : TAG_W*j]);
 	   
 
-	   generesetable_memory #(
+	   generable_reg_file #(
 			          .ADDR_W (NLINE_W), 
 			          .DATA_W (1),
                                   .MEM_W  (1),
@@ -1465,7 +1465,7 @@ module memory_cache
       );
 
 
-   generesetable_memory #(
+   generable_reg_file #(
 		          .ADDR_W (NLINE_W), 
 		          .DATA_W (1),
                           .MEM_W (1),
