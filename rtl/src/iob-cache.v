@@ -597,20 +597,20 @@ module replacement_policy_algorithm #(
 
    
    //Most Recently Used (MRU) memory	   
-   generable_memory  #(
-		       .ADDR_W (NLINE_W),
+   generable_reg_file  #(
+		           .ADDR_W (NLINE_W),
 `ifdef BIT_PLRU
-		       .DATA_W (NWAYS),
-		       .MEM_W  (NWAYS),
+		           .DATA_W (NWAYS),
+		           .MEM_W  (NWAYS),
 `elsif LRU 		
-		       .DATA_W (NWAYS*NWAY_W),
-		       .MEM_W  (NWAYS*NWAY_W),
+		           .DATA_W (NWAYS*NWAY_W),
+		           .MEM_W  (NWAYS*NWAY_W),
 `elsif TREE_PLRU
-		       .DATA_W (NWAYS-1),
-		       .MEM_W  (NWAYS-1),
+		           .DATA_W (NWAYS-1),
+		           .MEM_W  (NWAYS-1),
 `endif
-                       .N_MEM (1)
-		       ) 
+                           .N_MEM (1)
+		           ) 
    mru_memory //simply uses the same format as valid memory
      (
       .clk         (clk          ),
@@ -1072,7 +1072,6 @@ module memory_cache
 	   for (i = 0; i < 2**OFFSET_W; i=i+1)
 	     begin
                 generable_memory #(
-                                   .RESET (0),
 			           .ADDR_W (NLINE_W),
                                    .MEM_W (8),
                                    .N_MEM (N_BYTES)
@@ -1080,7 +1079,6 @@ module memory_cache
 		data_memory 
 		    (
 		     .clk           (clk                                                                    ),
-                     .rst           (1'b0),
 		     .mem_write_data(write_data                                                             ),
 		     .mem_addr      (index                                                                  ),
 		     .mem_en        (((i == word_select) && (j == nway_selector) && (data_load || cache_hit[j]) && (!instr_req))? data_line_wstrb : {N_BYTES{1'b0}}),
@@ -1090,7 +1088,6 @@ module memory_cache
 	     end 
 	   
            generable_memory #(
-                              .RESET (0),
 			      .ADDR_W (NLINE_W), 
 			      .DATA_W (TAG_W),
                               .MEM_W (TAG_W),
@@ -1099,7 +1096,6 @@ module memory_cache
 	   data_mem_tag 
 	     (
 	      .clk           (clk                                         ),
-              .rst           (1'b0),
 	      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]         ),
 	      .mem_addr      (index                                       ),
 	      .mem_en        ((j == nway_sel)? data_load&(!instr_req):1'b0),
@@ -1109,13 +1105,12 @@ module memory_cache
 	   assign data_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == data_tag[TAG_W*(j+1)-1 : TAG_W*j]);
 	   
 
-           generable_memory #(
-                              .RESET (1),
-			      .ADDR_W (NLINE_W), 
-			      .DATA_W (1),
-                              .MEM_W (1),
-                              .N_MEM (1)
-			      ) 
+           generable_reg_file #(
+			          .ADDR_W (NLINE_W), 
+			          .DATA_W (1),
+                                  .MEM_W (1),
+                                  .N_MEM (1)
+			          ) 
 	   data_valid 
 	     (
 	      .clk         (clk                                           ),
@@ -1131,7 +1126,6 @@ module memory_cache
 	   for (i = 0; i < 2**I_OFFSET_W; i=i+1)
 	     begin
                 generable_memory #(
-                                   .RESET (0),
 			           .ADDR_W (I_NLINE_W),
                                    .DATA_W (DATA_W),
                                    .MEM_W (8),
@@ -1140,7 +1134,6 @@ module memory_cache
 	        instr_memory 
 		    (
 		     .clk           (clk                                                                    ),
-		     .rst           (1'b0),
                      .mem_write_data(write_data                                                             ),
 		     .mem_addr      (instr_index                                                                  ),
 		     .mem_en        (((i == instr_word_select) && (j == nway_selector) && (data_load) & instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
@@ -1150,7 +1143,6 @@ module memory_cache
 	     end 
 	   
            generable_memory #(
-                              .RESET (0),
 			      .ADDR_W (I_NLINE_W), 
 			      .DATA_W (I_TAG_W),
                               .MEM_W (I_TAG_W),
@@ -1159,7 +1151,6 @@ module memory_cache
 	   instr_mem_tag 
 	     (
 	      .clk           (clk                                          ),
-	      .rst           (1'b0),
               .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]        ),
 	      .mem_addr      (instr_index                                  ),
 	      .mem_en        ((j == nway_sel)? (data_load & instr_req):1'b0),
@@ -1169,13 +1160,12 @@ module memory_cache
 	   assign instr_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)] == instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]);
 	   
 
-           generable_memory #(
-                              .RESET (1),
-			      .ADDR_W (I_NLINE_W), 
-			      .DATA_W (1),
-                              .MEM_W (1),
-                              .N_MEM (1)
-			      ) 
+           generable_reg_file #(
+			          .ADDR_W (I_NLINE_W), 
+			          .DATA_W (1),
+                                  .MEM_W (1),
+                                  .N_MEM (1)
+			          ) 
 	   instr_valid
 	     (
 	      .clk         (clk                                          ),
@@ -1225,7 +1215,6 @@ module memory_cache
       for (i = 0; i < 2**OFFSET_W; i=i+1)
         begin
            generable_memory #(
-                              .RESET (0),
 			      .ADDR_W (NLINE_W),
                               .DATA_W (DATA_W),
                               .MEM_W (8),
@@ -1234,7 +1223,6 @@ module memory_cache
 	   data_memory 
 	       (
 		.clk           (clk                                 ),
-                .rst           (1'b0),
 		.mem_write_data(write_data                          ),
 		.mem_addr      (index                               ),
 		.mem_en        (((i == word_select) && (data_load || cache_hit) && (!instr_req))? data_line_wstrb : {N_BYTES{1'b0}}), 
@@ -1244,7 +1232,6 @@ module memory_cache
    endgenerate
 
    generable_memory #(
-                      .RESET (0),
 		      .ADDR_W (NLINE_W), 
 		      .DATA_W (TAG_W  ),
                       .MEM_W (TAG_W),
@@ -1253,7 +1240,6 @@ module memory_cache
    data_mem_tag 
      (
       .clk           (clk                                ),
-      .rst           (1'b0),
       .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
       .mem_addr      (index                              ),
       .mem_en        ((!instr_req) & data_load           ),
@@ -1261,13 +1247,12 @@ module memory_cache
       );
 
 
-   generable_memory #(
-                      .RESET (1),
-		      .ADDR_W (NLINE_W), 
-		      .DATA_W (1),
-                      .MEM_W (1),
-                      .N_MEM (1)
-		      ) 
+   generable_reg_file #(
+		          .ADDR_W (NLINE_W), 
+		          .DATA_W (1),
+                          .MEM_W (1),
+                          .N_MEM (1)
+		          ) 
    data_valid 
      (
       .clk         (clk                      ),
@@ -1283,7 +1268,6 @@ module memory_cache
       for (i = 0; i < 2**I_OFFSET_W; i=i+1)
         begin
            generable_memory #(
-                              .RESET (0),
 			      .ADDR_W (I_NLINE_W),
                               .DATA_W (DATA_W),
                               .MEM_W (8),
@@ -1292,7 +1276,6 @@ module memory_cache
 	   instr_memory 
 	       (
 		.clk           (clk                                  ),
-                .rst           (1'b0),
 		.mem_write_data(write_data                           ),
 		.mem_addr      (instr_index                          ),
 		.mem_en        ((((i == instr_word_select) && (data_load)) && instr_req)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}}), //Instruction cache only is written during cache line memory loads, during read-misses.
@@ -1304,7 +1287,6 @@ module memory_cache
 
 
    generable_memory #(
-                      .RESET (0),
 		      .ADDR_W (I_NLINE_W), 
 		      .DATA_W (I_TAG_W  ),
                       .MEM_W (I_TAG_W),
@@ -1313,7 +1295,6 @@ module memory_cache
    instr_mem_tag 
      (
       .clk           (clk                                  ),
-      .rst           (1'b0),
       .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]),
       .mem_addr      (instr_index                          ),
       .mem_en        (data_load & instr_req                ),
@@ -1321,13 +1302,12 @@ module memory_cache
       );
 
 
-   generable_memory #(
-                      .RESET (1),
-		      .ADDR_W (I_NLINE_W), 
-		      .DATA_W (1),
-                      .MEM_W (1),
-                      .N_MEM (1)
-		      ) 
+   generable_reg_file #(
+		          .ADDR_W (I_NLINE_W), 
+		          .DATA_W (1),
+                          .MEM_W (1),
+                          .N_MEM (1)
+		          ) 
    instr_valid 
      (
       .clk         (clk                      ),
@@ -1369,7 +1349,6 @@ module memory_cache
 	   for (i = 0; i < 2**OFFSET_W; i=i+1)
 	     begin
 	        generable_memory #(
-                                   .RESET (0),
 			           .ADDR_W (NLINE_W),
                                    .DATA_W (DATA_W),
                                    .MEM_W (8),
@@ -1378,7 +1357,6 @@ module memory_cache
 		data_memory 
 		    (
 		     .clk           (clk                                                                ),
-		     .rst (1'b0),
 		     .mem_write_data(write_data                                                         ),
 		     .mem_addr      (index                                                              ),
 		     .mem_en        (((i == word_select) && (j == nway_selector)) && (data_load || cache_hit[j])? data_line_wstrb : {N_BYTES{1'b0}} ),
@@ -1387,7 +1365,6 @@ module memory_cache
 	     end 
 	   
 	   generable_memory  #(
-                               .RESET  (0),
 			       .ADDR_W (NLINE_W), 
 			       .DATA_W (TAG_W),
                                .MEM_W  (TAG_W),
@@ -1396,7 +1373,6 @@ module memory_cache
 	   tag_memory 
 	     (
 	      .clk           (clk                                ), 
-	      .rst (1'b0),
 	      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
 	      .mem_addr      (index                              ),
 	      .mem_en        ((j == nway_sel)? data_load : 1'b0  ),
@@ -1406,13 +1382,12 @@ module memory_cache
 	   assign tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == tag[TAG_W*(j+1)-1 : TAG_W*j]);
 	   
 
-	   generable_memory #(
-                              .RESET  (1),
-			      .ADDR_W (NLINE_W), 
-			      .DATA_W (1),
-                              .MEM_W  (1),
-                              .N_MEM  (1)
-			      ) 
+	   generable_reg_file #(
+			          .ADDR_W (NLINE_W), 
+			          .DATA_W (1),
+                                  .MEM_W  (1),
+                                  .N_MEM  (1)
+			          ) 
 	   valid_memory 
 	     (
 	      .clk         (clk                              ),
@@ -1456,7 +1431,6 @@ module memory_cache
       for (i = 0; i < 2**OFFSET_W; i=i+1)
         begin
 	   generable_memory #(
-                              .RESET (0),
 			      .ADDR_W (NLINE_W),
                               .DATA_W (DATA_W),
                               .MEM_W (8),
@@ -1465,7 +1439,6 @@ module memory_cache
 	   data_memory 
 	       (
 		.clk           (clk                                 ),
-                .rst           (1'b0),
 		.mem_write_data(write_data                          ),
 		.mem_addr      (index                               ),
 		.mem_en        (((i == word_select) && (data_load || cache_hit))? data_line_wstrb : {N_BYTES{1'b0}}), 
@@ -1477,7 +1450,6 @@ module memory_cache
 
 
    generable_memory #(
-                      .RESET (0),
 		      .ADDR_W (NLINE_W), 
 		      .DATA_W (TAG_W),
                       .MEM_W (TAG_W),
@@ -1486,7 +1458,6 @@ module memory_cache
    tag_memory 
      (
       .clk           (clk                                ),
-      .rst           (1'b0),
       .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
       .mem_addr      (index                              ),
       .mem_en        (data_load                          ),
@@ -1494,13 +1465,12 @@ module memory_cache
       );
 
 
-   generable_memory #(
-                      .RESET (1),
-		      .ADDR_W (NLINE_W), 
-		      .DATA_W (1),
-                      .MEM_W (1),
-                      .N_MEM (1)
-		      ) 
+   generable_reg_file #(
+		          .ADDR_W (NLINE_W), 
+		          .DATA_W (1),
+                          .MEM_W (1),
+                          .N_MEM (1)
+		          ) 
    valid_memory 
      (
       .clk         (clk                      ),
