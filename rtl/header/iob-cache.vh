@@ -1,6 +1,6 @@
 //CACHE TYPE
 `define ASSOC_CACHE //Associative Cache (N Ways) - Comment it for Direct Access Cache
-//`define L1
+//`define L1_ID
 
 //Replacement Policy
 //`define LRU // Least Recently Used

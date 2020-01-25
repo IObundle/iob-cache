@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+g`timescale 1ns / 1ps
 `include "iob-cache.vh"
 
 module iob_cache 
@@ -8,7 +8,7 @@ module iob_cache
     parameter N_BYTES  = DATA_W/8,
     parameter NLINE_W  = 4,
     parameter OFFSET_W = 2,
-`ifdef L1
+`ifdef L1_ID
     parameter I_NLINE_W = 3,
     parameter I_OFFSET_W = 2,
 `endif
@@ -93,7 +93,7 @@ module iob_cache
 `else 
    wire 		      cache_hit;
 `endif
-`ifdef L1
+`ifdef L1_ID
    wire 		      instr_req = cache_ctrl_instr_access;
 `endif
    
@@ -131,7 +131,7 @@ module iob_cache
    
 
    memory_cache #(
-`ifdef L1
+`ifdef L1_ID
 		  .I_NLINE_W  (I_NLINE_W),
 		  .I_OFFSET_W (I_OFFSET_W),
 `endif
@@ -161,7 +161,7 @@ module iob_cache
       .cache_invalidate (cache_invalidate),
       .write_enable     (write_enable),
       .cache_hit_output (cache_hit),
-`ifdef L1
+`ifdef L1_ID
       .instr_req        (instr_req),
 `endif
       .R_DATA  (R_DATA),
@@ -212,7 +212,7 @@ module iob_cache
 
 
    line_loader_ctrl #(
-`ifdef L1
+`ifdef L1_ID
                       .I_OFFSET_W (I_OFFSET_W),
 `endif
                       .ADDR_W (ADDR_W),
@@ -223,7 +223,7 @@ module iob_cache
    line_loader_ctrl (
                      .clk               (clk),
                      .reset             (reset),
-`ifdef L1
+`ifdef L1_ID
                      .instr_req         (instr_req),
 `endif
                      .cache_addr        (cache_addr[ADDR_W-1: OFFSET_W+2]),
@@ -788,7 +788,7 @@ endmodule
 
 module line_loader_ctrl 
   #(
-`ifdef L1
+`ifdef L1_ID
     parameter I_OFFSET_W = 2,
 `endif
 `ifdef ASSOC_CACHE
@@ -802,7 +802,7 @@ module line_loader_ctrl
    (
     input                           clk,
     input                           reset,
-`ifdef L1
+`ifdef L1_ID
     input                           instr_req,
 `endif
     input [ADDR_W -1: 2 + OFFSET_W] cache_addr,
@@ -888,7 +888,7 @@ module line_loader_ctrl
 	       
 	      begin
 		 AR_VALID <= 1'b1;
-`ifdef L1
+`ifdef L1_ID
                  AR_ADDR  <= (instr_req)? {cache_addr[ADDR_W -1 : I_OFFSET_W + 2], {(I_OFFSET_W+2){1'b0}}} : {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
                  AR_LEN  <= (instr_req)? 2**(I_OFFSET_W)-1 :  2**(OFFSET_W)-1;
 `else        
@@ -947,7 +947,7 @@ module memory_cache
     parameter N_BYTES  = DATA_W/8,
     parameter NLINE_W  = 4,
     parameter OFFSET_W = 2,
-`ifdef L1
+`ifdef L1_ID
     parameter I_NLINE_W = 3,
     parameter I_OFFSET_W = 2,
 `endif
@@ -973,7 +973,7 @@ module memory_cache
     input                    buffer_full,
     input                    cache_invalidate,
     input                    write_enable,
-`ifdef L1 
+`ifdef L1_ID 
     input                    instr_req,// cache_ctrl_instr_access
 `endif 
 `ifdef ASSOC_CACHE
@@ -1004,7 +1004,7 @@ module memory_cache
    wire [2**NWAY_W -1: 0]                         cache_hit;//uses one-hot numenclature
    wire [NWAY_W -1: 0]                            nway_hit; // Indicates the way that had a cache_hit
    wire [NWAY_W -1: 0]                            nway_sel;
- `ifdef L1
+ `ifdef L1_ID
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
    //wire 					  instr_req = cache_ctrl_instr_access;
    wire [2**NWAY_W -1: 0]                         instr_cache_hit, data_cache_hit;//uses one-hot numenclature
@@ -1026,7 +1026,7 @@ module memory_cache
 `else 
    wire [DATA_W*(2**OFFSET_W) - 1: 0]               data_read;
    wire 					    cache_hit;
- `ifdef L1
+ `ifdef L1_ID
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
    wire 					    data_v, instr_v;
    wire [TAG_W-1:0]                                 data_tag;
@@ -1035,10 +1035,10 @@ module memory_cache
    wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
    wire [I_NLINE_W-1:0]                             instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
    wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
- `else // !`ifdef L1
+ `else // !`ifdef L1_ID
    wire 					    v;
    wire [TAG_W-1:0]                                 tag;
- `endif // !`ifdef L1 
+ `endif // !`ifdef L1_ID 
 `endif // !`ifdef ASSOC_CACHE
    
    assign cache_hit_output = cache_hit;
@@ -1046,7 +1046,7 @@ module memory_cache
 
    
    
-`ifdef L1
+`ifdef L1_ID
    
  `ifdef ASSOC_CACHE // ASSOCIATIVE CACHE L1 (INSTR CACHE + DATA CACHE)
 
@@ -1490,7 +1490,7 @@ module memory_cache
  `endif // !`ifdef ASSOC_CACHE
    
 
-`endif // !`ifdef L1
+`endif // !`ifdef L1_ID
 
    
 `ifdef ASSOC_CACHE   
@@ -1499,7 +1499,7 @@ module memory_cache
    
  `else
 
-  `ifdef L1
+  `ifdef L1_ID
    
    replacement_policy_algorithm #(
 				  .NWAY_W(NWAY_W),
