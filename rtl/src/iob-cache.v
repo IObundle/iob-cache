@@ -1,4 +1,4 @@
-g`timescale 1ns / 1ps
+`timescale 1ns / 1ps
 `include "iob-cache.vh"
 
 module iob_cache 
