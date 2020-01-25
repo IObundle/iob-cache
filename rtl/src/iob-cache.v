@@ -185,8 +185,9 @@ module iob_cache
       .cache_addr  (cache_addr),
       .cache_wstrb (cache_wstrb),
       .cache_wdata (cache_write_data),
-      .buffer_empty (buffer_empty),
-      .buffer_full  (buffer_full),     
+      .buffer_write_en (write_enable),
+      .buffer_empty    (buffer_empty),
+      .buffer_full     (buffer_full),     
       .AW_ID    (AW_ID), 
       .AW_ADDR  (AW_ADDR),
       .AW_LEN   (AW_LEN),
@@ -598,19 +599,19 @@ module replacement_policy_algorithm #(
    
    //Most Recently Used (MRU) memory	   
    generable_reg_file  #(
-		           .ADDR_W (NLINE_W),
+		         .ADDR_W (NLINE_W),
 `ifdef BIT_PLRU
-		           .DATA_W (NWAYS),
-		           .MEM_W  (NWAYS),
+		         .DATA_W (NWAYS),
+		         .MEM_W  (NWAYS),
 `elsif LRU 		
-		           .DATA_W (NWAYS*NWAY_W),
-		           .MEM_W  (NWAYS*NWAY_W),
+		         .DATA_W (NWAYS*NWAY_W),
+		         .MEM_W  (NWAYS*NWAY_W),
 `elsif TREE_PLRU
-		           .DATA_W (NWAYS-1),
-		           .MEM_W  (NWAYS-1),
+		         .DATA_W (NWAYS-1),
+		         .MEM_W  (NWAYS-1),
 `endif
-                           .N_MEM (1)
-		           ) 
+                         .N_MEM (1)
+		         ) 
    mru_memory //simply uses the same format as valid memory
      (
       .clk         (clk          ),
@@ -648,6 +649,8 @@ module write_through_ctrl
     // Buffer status
     output                   buffer_empty,
     output                   buffer_full,
+    // Buffer write enable
+    input                    buffer_write_en,
     // AXI interface 
     // Address Write
     output [0:0]             AW_ID, 
@@ -675,6 +678,7 @@ module write_through_ctrl
 
 
    wire [(N_BYTES) + (ADDR_W - 2) + (DATA_W) -1 :0] buffer_data_out, buffer_data_in; // {wstrb, addr [ADDR_W-1:2], word}
+   reg                                              buffer_read_en;
    
 
    assign buffer_data_in = {cache_wstrb, cache_addr, cache_wdata};
@@ -710,7 +714,8 @@ module write_through_ctrl
 	B_READY  <= 1'b1;
 	W_DATA   <= {DATA_W{1'b0}};
 	W_LAST   <= 1'b0;
-	
+        buffer_read_en <= 1'b0;
+        
 	if (reset) buffer_state <= buffer_stand_by;
 	else
 	  case (buffer_state)
@@ -744,7 +749,10 @@ module write_through_ctrl
 		 B_READY <= 1'b1;
 		 if (B_VALID)
 		   if (~B_RESP[1]) //00 or 01 for OKAY response
-		     buffer_state <= buffer_stand_by;
+                     begin
+		        buffer_state <= buffer_stand_by;
+                        buffer_read_en <= 1'b1;
+                     end
 		   else
 		     buffer_state <= buffer_write_validation; //re-writes, the previous write was unsuccessfull
 		 else
@@ -760,7 +768,6 @@ module write_through_ctrl
      end         
 
    
-   wire                                             buffer_read_en = (~buffer_empty) && (buffer_state == buffer_stand_by);
    
 
    iob_async_fifo #(
@@ -778,7 +785,7 @@ module write_through_ctrl
       .data_in (buffer_data_in           ), 
       .full    (buffer_full              ),
       .level_w (),
-      .write_en((|cache_wstrb) && cpu_req),
+      .write_en((|cache_wstrb) && buffer_write_en),
       .wclk    (clk                      )
       );
 
@@ -973,7 +980,7 @@ module memory_cache
     input                    buffer_full,
     input                    cache_invalidate,
     input                    write_enable,
-`ifdef L1_ID 
+`ifdef L1_ID
     input                    instr_req,// cache_ctrl_instr_access
 `endif 
 `ifdef ASSOC_CACHE
@@ -1106,11 +1113,11 @@ module memory_cache
 	   
 
            generable_reg_file #(
-			          .ADDR_W (NLINE_W), 
-			          .DATA_W (1),
-                                  .MEM_W (1),
-                                  .N_MEM (1)
-			          ) 
+			        .ADDR_W (NLINE_W), 
+			        .DATA_W (1),
+                                .MEM_W (1),
+                                .N_MEM (1)
+			        ) 
 	   data_valid 
 	     (
 	      .clk         (clk                                           ),
@@ -1161,11 +1168,11 @@ module memory_cache
 	   
 
            generable_reg_file #(
-			          .ADDR_W (I_NLINE_W), 
-			          .DATA_W (1),
-                                  .MEM_W (1),
-                                  .N_MEM (1)
-			          ) 
+			        .ADDR_W (I_NLINE_W), 
+			        .DATA_W (1),
+                                .MEM_W (1),
+                                .N_MEM (1)
+			        ) 
 	   instr_valid
 	     (
 	      .clk         (clk                                          ),
@@ -1248,11 +1255,11 @@ module memory_cache
 
 
    generable_reg_file #(
-		          .ADDR_W (NLINE_W), 
-		          .DATA_W (1),
-                          .MEM_W (1),
-                          .N_MEM (1)
-		          ) 
+		        .ADDR_W (NLINE_W), 
+		        .DATA_W (1),
+                        .MEM_W (1),
+                        .N_MEM (1)
+		        ) 
    data_valid 
      (
       .clk         (clk                      ),
@@ -1303,11 +1310,11 @@ module memory_cache
 
 
    generable_reg_file #(
-		          .ADDR_W (I_NLINE_W), 
-		          .DATA_W (1),
-                          .MEM_W (1),
-                          .N_MEM (1)
-		          ) 
+		        .ADDR_W (I_NLINE_W), 
+		        .DATA_W (1),
+                        .MEM_W (1),
+                        .N_MEM (1)
+		        ) 
    instr_valid 
      (
       .clk         (clk                      ),
@@ -1383,11 +1390,11 @@ module memory_cache
 	   
 
 	   generable_reg_file #(
-			          .ADDR_W (NLINE_W), 
-			          .DATA_W (1),
-                                  .MEM_W  (1),
-                                  .N_MEM  (1)
-			          ) 
+			        .ADDR_W (NLINE_W), 
+			        .DATA_W (1),
+                                .MEM_W  (1),
+                                .N_MEM  (1)
+			        ) 
 	   valid_memory 
 	     (
 	      .clk         (clk                              ),
@@ -1466,11 +1473,11 @@ module memory_cache
 
 
    generable_reg_file #(
-		          .ADDR_W (NLINE_W), 
-		          .DATA_W (1),
-                          .MEM_W (1),
-                          .N_MEM (1)
-		          ) 
+		        .ADDR_W (NLINE_W), 
+		        .DATA_W (1),
+                        .MEM_W (1),
+                        .N_MEM (1)
+		        ) 
    valid_memory 
      (
       .clk         (clk                      ),
@@ -1490,7 +1497,7 @@ module memory_cache
  `endif // !`ifdef ASSOC_CACHE
    
 
-`endif // !`ifdef L1_ID
+`endif // !`ifdef L1
 
    
 `ifdef ASSOC_CACHE   
