@@ -156,8 +156,6 @@ module iob_cache
       .cache_read_miss  (cache_read_miss),
       .data_load        (data_load),
       .select_counter   (select_counter),
-      .buffer_empty     (buffer_empty),
-      .buffer_full      (buffer_full),
       .cache_invalidate (cache_invalidate),
       .write_enable     (write_enable),
       .cache_hit_output (cache_hit),
@@ -181,7 +179,6 @@ module iob_cache
      (
       .clk         (clk),
       .reset       (reset),
-      .cpu_req     (cpu_req),
       .cache_addr  (cache_addr),
       .cache_wstrb (cache_wstrb),
       .cache_wdata (cache_write_data),
@@ -642,7 +639,6 @@ module write_through_ctrl
    (
     input                    clk,
     input                    reset,
-    input                    cpu_req,
     input [ADDR_W-1:2]       cache_addr,
     input [N_BYTES-1:0]      cache_wstrb,
     input [DATA_W-1:0]       cache_wdata,
@@ -976,8 +972,6 @@ module memory_cache
     input                    cache_read_miss, // verification state == read_miss  
     input                    data_load,
     input [OFFSET_W-1 :0]    select_counter,
-    input                    buffer_empty,
-    input                    buffer_full,
     input                    cache_invalidate,
     input                    write_enable,
 `ifdef L1_ID
@@ -1001,9 +995,6 @@ module memory_cache
    wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
    wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
    wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
-   //wire 		    buffer_full, buffer_empty;
-   // wire 		    cache_invalidate;
-   //reg 			     write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
 
 
 `ifdef ASSOC_CACHE
@@ -1013,7 +1004,6 @@ module memory_cache
    wire [NWAY_W -1: 0]                            nway_sel;
  `ifdef L1_ID
    parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
-   //wire 					  instr_req = cache_ctrl_instr_access;
    wire [2**NWAY_W -1: 0]                         instr_cache_hit, data_cache_hit;//uses one-hot numenclature
    wire [NWAY_W -1: 0]                            instr_nway_sel, data_nway_sel;
    wire [(2**NWAY_W)*DATA_W*(2**I_OFFSET_W) - 1: 0] instr_read;
@@ -1049,9 +1039,7 @@ module memory_cache
 `endif // !`ifdef ASSOC_CACHE
    
    assign cache_hit_output = cache_hit;
-   
-
-   
+      
    
 `ifdef L1_ID
    
