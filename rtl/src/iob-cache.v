@@ -703,64 +703,79 @@ module write_through_ctrl
 
    always @ (posedge clk, posedge reset)
      begin
-	AW_ADDR  <= {(ADDR_W){1'b0}};
-	AW_VALID <= 1'b0;
-	W_VALID  <= 1'b0;
-	W_STRB   <= {N_BYTES{1'b0}};
-	B_READY  <= 1'b1;
-	W_DATA   <= {DATA_W{1'b0}};
-	W_LAST   <= 1'b0;
-        buffer_read_en <= 1'b0;
         
-	if (reset) buffer_state <= buffer_stand_by;
+	if (reset)
+	  begin 
+	     buffer_state <= buffer_stand_by;
+	     AW_ADDR  <= {(ADDR_W){1'b0}};
+             AW_VALID <= 1'b0;
+             W_VALID  <= 1'b0;
+             W_STRB   <= {N_BYTES{1'b0}};
+             B_READY  <= 1'b1;
+             W_DATA   <= {DATA_W{1'b0}};
+             W_LAST   <= 1'b0;
+             buffer_read_en <= 1'b0;
+          end
 	else
-	  case (buffer_state)
-	    
-	    buffer_stand_by:
-	      begin
-		 if (buffer_empty) buffer_state <= buffer_stand_by; 
-		 else              buffer_state <= buffer_write_validation;
-	      end 
+	  begin
+	     AW_ADDR  <= {(ADDR_W){1'b0}};
+             AW_VALID <= 1'b0;
+             W_VALID  <= 1'b0;
+             W_STRB   <= {N_BYTES{1'b0}};
+             B_READY  <= 1'b1;
+             W_DATA   <= {DATA_W{1'b0}};
+             W_LAST   <= 1'b0;
+             buffer_read_en <= 1'b0;
 
-	    buffer_write_validation:
-	      begin
-		 AW_ADDR  <= {buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W], 2'b00};
-		 AW_VALID <= 1'b1;
-		 if (AW_READY) buffer_state <= buffer_write_to_mem; 
-		 else          buffer_state <= buffer_write_validation;
-	      end        
-	    
-	    buffer_write_to_mem:
-	      begin        //buffer_data_out = {wstrb, address, word_size (DATA_W)}  
-		 W_VALID  <=  1'b1;
-		 W_STRB   <=  buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
-		 W_LAST   <=  1'b1;
-		 W_DATA   <=  buffer_data_out [DATA_W -1 : 0];
-		 if (W_READY) buffer_state <= buffer_write_verification;             
-		 else         buffer_state <= buffer_write_to_mem;
-	      end
+             
+	     case (buffer_state)
+	       
+	       buffer_stand_by:
+	         begin
+		    if (buffer_empty) buffer_state <= buffer_stand_by; 
+		    else              buffer_state <= buffer_write_validation;
+	         end 
 
-	    buffer_write_verification:
-	      begin
-		 B_READY <= 1'b1;
-		 if (B_VALID)
-		   if (~B_RESP[1]) //00 or 01 for OKAY response
-                     begin
-		        buffer_state <= buffer_stand_by;
-                        buffer_read_en <= 1'b1;
-                     end
-		   else
-		     buffer_state <= buffer_write_validation; //re-writes, the previous write was unsuccessfull
-		 else
-		   buffer_state <= buffer_write_verification;
-	      end
-	    
-	    default:        
-	      begin
-		 buffer_state <= buffer_stand_by;
-	      end
-	    
-	  endcase    
+	       buffer_write_validation:
+	         begin
+		    AW_ADDR  <= {buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W], 2'b00};
+		    AW_VALID <= 1'b1;
+		    if (AW_READY) buffer_state <= buffer_write_to_mem; 
+		    else          buffer_state <= buffer_write_validation;
+	         end        
+	       
+	       buffer_write_to_mem:
+	         begin        //buffer_data_out = {wstrb, address, word_size (DATA_W)}  
+		    W_VALID  <=  1'b1;
+		    W_STRB   <=  buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
+		    W_LAST   <=  1'b1;
+		    W_DATA   <=  buffer_data_out [DATA_W -1 : 0];
+		    if (W_READY) buffer_state <= buffer_write_verification;             
+		    else         buffer_state <= buffer_write_to_mem;
+	         end
+
+	       buffer_write_verification:
+	         begin
+		    B_READY <= 1'b1;
+		    if (B_VALID)
+		      if (~B_RESP[1]) //00 or 01 for OKAY response
+                        begin
+		           buffer_state <= buffer_stand_by;
+                           buffer_read_en <= 1'b1;
+                        end
+		      else
+		        buffer_state <= buffer_write_validation; //re-writes, the previous write was unsuccessfull
+		    else
+		      buffer_state <= buffer_write_verification;
+	         end
+	       
+	       default:        
+	         begin
+		    buffer_state <= buffer_stand_by;
+	         end
+	       
+	     endcase  
+	  end  
      end         
 
    
@@ -855,87 +870,97 @@ module line_loader_ctrl
 
    always @ (posedge clk, posedge reset)
      begin
-	
-	AR_ADDR  <= {ADDR_W{1'b0}};
-	AR_VALID <= 1'b0;
-	AR_LEN   <= 8'd0;
-	AR_SIZE  <= 3'b000;
-	AR_BURST <= 2'b00;
-	R_READY  <= 1'b0;
-        select_counter <= {OFFSET_W{1'b0}};
+
 	if (reset)
           begin
 	     read_state <= read_stand_by; //reset
 	     data_load <= 1'b0;
+	     AR_ADDR  <= {ADDR_W{1'b0}};
+             AR_VALID <= 1'b0;
+             AR_LEN   <= 8'd0;
+             AR_SIZE  <= 3'b000;
+             AR_BURST <= 2'b00;
+             R_READY  <= 1'b0;
+             select_counter <= {OFFSET_W{1'b0}};     
 	  end	  
 	else
-	   
-	  case (read_state)
-	    
-	    read_stand_by://0
-	      begin
-                 if ((read_verification) &&  (cache_miss && buffer_empty))
-		   begin
-		      read_state <= data_loader_init; //read miss
-		      data_load <= 1'b1;	  
-		   end
-		 else 
-		   begin
-		      read_state <= read_stand_by; //idle
-		      data_load <= 1'b0;
-		   end
-	      end 
-	    
-	    
-	    data_loader_init://1
+	  begin
+	     AR_ADDR  <= {ADDR_W{1'b0}};
+             AR_VALID <= 1'b0;
+             AR_LEN   <= 8'd0;
+             AR_SIZE  <= 3'b000;
+             AR_BURST <= 2'b00;
+             R_READY  <= 1'b0;
+             select_counter <= {OFFSET_W{1'b0}};
+
+             
+	     case (read_state)
 	       
-	      begin
-		 AR_VALID <= 1'b1;
+	       read_stand_by://0
+	         begin
+                    if ((read_verification) &&  (cache_miss && buffer_empty))
+		      begin
+		         read_state <= data_loader_init; //read miss
+		         data_load <= 1'b1;	  
+		      end
+		    else 
+		      begin
+		         read_state <= read_stand_by; //idle
+		         data_load <= 1'b0;
+		      end
+	         end 
+	       
+	       
+	       data_loader_init://1
+	          
+	         begin
+		    AR_VALID <= 1'b1;
 `ifdef L1_ID
-                 AR_ADDR  <= (instr_req)? {cache_addr[ADDR_W -1 : I_OFFSET_W + 2], {(I_OFFSET_W+2){1'b0}}} : {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
-                 AR_LEN  <= (instr_req)? 2**(I_OFFSET_W)-1 :  2**(OFFSET_W)-1;
+                    AR_ADDR  <= (instr_req)? {cache_addr[ADDR_W -1 : I_OFFSET_W + 2], {(I_OFFSET_W+2){1'b0}}} : {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
+                    AR_LEN  <= (instr_req)? 2**(I_OFFSET_W)-1 :  2**(OFFSET_W)-1;
 `else        
-                 AR_ADDR  <= {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
-                 AR_LEN   <= 2**(OFFSET_W)-1;
+                    AR_ADDR  <= {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
+                    AR_LEN   <= 2**(OFFSET_W)-1;
 `endif
-		 AR_SIZE <= $clog2(N_BYTES); // VERIFY BETTER OPTION FOR PARAMETRIZATION
-		 AR_BURST <= 2'b01; //INCR
-		 data_load <= 1'b1;
-		 
-		 if (AR_READY) read_state  <= data_loader;
-		 else          read_state  <= data_loader_init;
-	      end 
-	    
-	    
-	    data_loader://2
-	      begin
-	         if (R_VALID)
-		   begin
-		      if (R_LAST)
-	                begin
-			   R_READY <= 1'b0;
-			   read_state <= read_stand_by;
-			   data_load <= 1'b0;
-			   select_counter <= select_counter;
-	                end else begin
-			   R_READY <= 1'b1;
-			   select_counter <= select_counter + 1;                    
-			   read_state <= data_loader;
-                        end
-		      
-		   end else begin 
-		      R_READY <= 1'b1;   
-		      select_counter <= select_counter;
-		      read_state <= data_loader;  
-		   end
-	      end  
-	    
-	    default:        
-	      begin
-		 read_state <= read_stand_by;
-	      end
-            
-	  endcase    
+		    AR_SIZE <= $clog2(N_BYTES); // VERIFY BETTER OPTION FOR PARAMETRIZATION
+		    AR_BURST <= 2'b01; //INCR
+		    data_load <= 1'b1;
+		    
+		    if (AR_READY) read_state  <= data_loader;
+		    else          read_state  <= data_loader_init;
+	         end 
+	       
+	       
+	       data_loader://2
+	         begin
+	            if (R_VALID)
+		      begin
+		         if (R_LAST)
+	                   begin
+			      R_READY <= 1'b0;
+			      read_state <= read_stand_by;
+			      data_load <= 1'b0;
+			      select_counter <= select_counter;
+	                   end else begin
+			      R_READY <= 1'b1;
+			      select_counter <= select_counter + 1;                    
+			      read_state <= data_loader;
+                           end
+		         
+		      end else begin 
+		         R_READY <= 1'b1;   
+		         select_counter <= select_counter;
+		         read_state <= data_loader;  
+		      end
+	         end  
+	       
+	       default:        
+	         begin
+		    read_state <= read_stand_by;
+	         end
+               
+	     endcase  
+	  end  
      end                        
 
 endmodule
@@ -1039,7 +1064,7 @@ module memory_cache
 `endif // !`ifdef ASSOC_CACHE
    
    assign cache_hit_output = cache_hit;
-      
+   
    
 `ifdef L1_ID
    
@@ -1590,91 +1615,101 @@ module cache_verification_controller
 
    always @ (posedge clk, posedge reset)
      begin
-	cache_ack <= 1'b0;
-	ctrl_counter <= `CTRL_COUNTER_W'd0;
-	write_enable <= 1'b0;
 	
-	if (reset) state <= stand_by;
+	if (reset)
+	  begin
+	     state <= stand_by;
+	     cache_ack <= 1'b0;
+             ctrl_counter <= `CTRL_COUNTER_W'd0;
+             write_enable <= 1'b0;
+          end 
 	else 
-	  case (state)
-	    
-            stand_by:
-	      begin
-		 if(cache_write) state <= write_verification;
-		 else
-		   if (cache_read) state <= read_verification;
-		   else
-		     state <= stand_by;
-	      end
+	  begin
+	     cache_ack <= 1'b0;
+             ctrl_counter <= `CTRL_COUNTER_W'd0;
+             write_enable <= 1'b0;
 
-	    write_verification:
-	      begin
-		 if (buffer_full)
-		   state <= write_verification;
-		 else
-		   begin
-		      state <= end_verification;
-		      write_enable <= 1'b1;
-		      if (cache_hit)	 
-			ctrl_counter <= `DATA_WRITE_HIT;
+             
+	     case (state)
+	       
+               stand_by:
+	         begin
+		    if(cache_write) state <= write_verification;
+		    else
+		      if (cache_read) state <= read_verification;
 		      else
-			ctrl_counter <= `DATA_WRITE_MISS;
-		   end
-	      end
+		        state <= stand_by;
+	         end
 
-	    
-	    read_verification:
-	      begin
-		 if (buffer_empty) 
-		   begin
-		      if (cache_hit)	
-			begin
-			   state <= end_verification;
-			   write_enable <= 1'b1;
-			   if (instr_access)
-			     ctrl_counter <= `INSTR_HIT;
-			   else
-			     ctrl_counter <= `DATA_READ_HIT;
-			end
-		      else 
-			begin
-			   state <= read_miss;	    
-			   if (instr_access)
-			     ctrl_counter <= `INSTR_MISS;
-			   else
-			     ctrl_counter <= `DATA_READ_MISS;
-			end
-		   end
-		 else 
-		   state <= read_verification; 
-	      end 
-	    
+	       write_verification:
+	         begin
+		    if (buffer_full)
+		      state <= write_verification;
+		    else
+		      begin
+		         state <= end_verification;
+		         write_enable <= 1'b1;
+		         if (cache_hit)	 
+			   ctrl_counter <= `DATA_WRITE_HIT;
+		         else
+			   ctrl_counter <= `DATA_WRITE_MISS;
+		      end
+	         end
 
-            read_miss:      
-	      begin
-		 if (data_load) //is data being loaded? wait to avoid collision
-		   state <= read_miss; 
-		 else
-		   state <= read_validation; 
-              end 
+	       
+	       read_verification:
+	         begin
+		    if (buffer_empty) 
+		      begin
+		         if (cache_hit)	
+			   begin
+			      state <= end_verification;
+			      write_enable <= 1'b1;
+			      if (instr_access)
+			        ctrl_counter <= `INSTR_HIT;
+			      else
+			        ctrl_counter <= `DATA_READ_HIT;
+			   end
+		         else 
+			   begin
+			      state <= read_miss;	    
+			      if (instr_access)
+			        ctrl_counter <= `INSTR_MISS;
+			      else
+			        ctrl_counter <= `DATA_READ_MISS;
+			   end
+		      end
+		    else 
+		      state <= read_verification; 
+	         end 
+	       
 
-	    read_validation:
-	      begin
-		 state <= end_verification;
-		 write_enable <= 1'b1;
-	      end
-	    
-      	    end_verification: 
-      	      begin
-      	         cache_ack <= 1'b1;
-      		 state <= stand_by_delay;	    
-	      end
-	    
-            default:        
-	      begin
-		 state <= stand_by;
-              end
-	  endcase
+               read_miss:      
+	         begin
+		    if (data_load) //is data being loaded? wait to avoid collision
+		      state <= read_miss; 
+		    else
+		      state <= read_validation; 
+                 end 
+
+	       read_validation:
+	         begin
+		    state <= end_verification;
+		    write_enable <= 1'b1;
+	         end
+	       
+      	       end_verification: 
+      	         begin
+      	            cache_ack <= 1'b1;
+      		    state <= stand_by_delay;	    
+	         end
+	       
+               default:        
+	         begin
+		    state <= stand_by;
+                 end
+	     endcase
+	  end
      end                        
 
 endmodule
