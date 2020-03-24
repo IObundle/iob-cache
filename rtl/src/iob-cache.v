@@ -142,7 +142,8 @@ module iob_cache
                   .DATA_W   (DATA_W),
                   .N_BYTES  (N_BYTES),
 		  .NLINE_W  (NLINE_W),
-		  .OFFSET_W (OFFSET_W)
+		  .OFFSET_W (OFFSET_W),
+          .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
 		  )
    memory_cache		  
      (
@@ -213,6 +214,9 @@ module iob_cache
 `ifdef L1_ID
                       .I_OFFSET_W (I_OFFSET_W),
 `endif
+`ifdef ASSOC_CACHE
+                     .NWAY_W (NWAY_W),
+`endif                     
                       .ADDR_W (ADDR_W),
                       .DATA_W (DATA_W),
                       .N_BYTES (N_BYTES),
