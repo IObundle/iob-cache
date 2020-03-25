@@ -13,7 +13,7 @@ module iob_cache
     parameter I_OFFSET_W = 2,
 `endif
 `ifdef ASSOC_CACHE
-    parameter NWAY_W   = 1,
+    parameter NWAY_W   = 2,
 `endif
     parameter WTBUF_DEPTH_W = 4
     ) 
@@ -456,12 +456,13 @@ module onehot_to_bin #(
     input [2**BIN_W-1:1]   onehot ,
     output reg [BIN_W-1:0] bin 
     );
+   wire [2**BIN_W-1:0]     one_hot = {onehot,1'b0};
    always @ (onehot) begin: onehot_to_binary_encoder
       integer i;
-      reg [BIN_W-1:1] bin_cnt ;
+      reg [BIN_W-1:0] bin_cnt ;
       bin_cnt = 0;
-      for (i=1; i<2**BIN_W; i=i+1)
-        if (onehot[i]) bin_cnt = bin_cnt|i;
+      for (i=0; i<2**BIN_W; i=i+1)
+        if (one_hot[i]) bin_cnt = bin_cnt|i;
       bin = bin_cnt;    
    end
 endmodule  // onehot_to_bin
