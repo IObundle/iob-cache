@@ -6,14 +6,14 @@ module iob_cache
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter N_BYTES  = DATA_W/8,
-    parameter NLINE_W  = 4,
-    parameter OFFSET_W = 2,
+    parameter NLINE_W  = 5,
+    parameter OFFSET_W = 4,
 `ifdef L1_ID
     parameter I_NLINE_W = 3,
     parameter I_OFFSET_W = 2,
 `endif
 `ifdef ASSOC_CACHE
-    parameter NWAY_W   = 2,
+    parameter NWAY_W   = 1,
 `endif
     parameter WTBUF_DEPTH_W = 4
     ) 

@@ -3,9 +3,9 @@
 //`define L1_ID
 
 //Replacement Policy
-//`define LRU // Least Recently Used
+`define LRU // Least Recently Used
 //`define BIT_PLRU // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) with similar performance
-`define TREE_PLRU // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru
+//`define TREE_PLRU // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru
 
 ////This following Replacement Policies are only for testing the Associative Cache, without a complex replacement algorithm (check how the memories (Data, Valid, TAG) are working, for example
 //`define TAG_BASED //NOT A REAL RP, for testing only - Uses the LSB of the TAG section of the input Address to choose the Way
