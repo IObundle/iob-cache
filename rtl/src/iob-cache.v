@@ -24,12 +24,12 @@ module iob_cache
     (
      input                clk,
      input                reset,
-     input [ADDR_W:2]     cache_addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-     input [DATA_W-1:0]   cache_write_data,
-     input [N_BYTES-1:0]  cache_wstrb,
-     output [DATA_W-1:0]  cache_read_data,
-     input                cpu_req,
-     output               cache_ack,
+     input [ADDR_W:2]     addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+     input [DATA_W-1:0]   write,
+     input [N_BYTES-1:0]  wstrb,
+     output [DATA_W-1:0]  rdata,
+     input                valid,
+     output               ready,
      input                instr,
     // AXI interface 
     // Address Write
