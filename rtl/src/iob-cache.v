@@ -31,13 +31,6 @@ module iob_cache
      input                cpu_req,
      output               cache_ack,
      input                instr,
-     /*   // cache controller signals  
-    input [`CTRL_ADDR_W-1:0] cache_ctrl_address,
-    output [DATA_W-1:0]      cache_ctrl_requested_data,
-    input                    cache_ctrl_cpu_request,
-    output                   cache_ctrl_acknowledge,
-    input                    cache_ctrl_instr_access, 
-*/
     // AXI interface 
     // Address Write
      output [0:0]         AW_ID, 
