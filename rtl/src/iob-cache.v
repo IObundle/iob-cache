@@ -21,80 +21,80 @@ module iob_cache
 `endif
     parameter WTBUF_DEPTH_W = 4
     ) 
-    (
-     input                clk,
-     input                reset,
-     input [ADDR_W:2]     addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-     input [DATA_W-1:0]   write,
-     input [N_BYTES-1:0]  wstrb,
-     output [DATA_W-1:0]  rdata,
-     input                valid,
-     output               ready,
-     input                instr,
+   (
+    input                clk,
+    input                reset,
+    input [ADDR_W:2]     addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input [DATA_W-1:0]   wdata,
+    input [N_BYTES-1:0]  wstrb,
+    output [DATA_W-1:0]  rdata,
+    input                valid,
+    output               ready,
+    input                instr,
     // AXI interface 
     // Address Write
-     output [0:0]         AW_ID, 
-     output [ADDR_W-1:0]  AW_ADDR,
-     output [7:0]         AW_LEN,
-     output [2:0]         AW_SIZE,
-     output [1:0]         AW_BURST,
-     output [0:0]         AW_LOCK,
-     output [3:0]         AW_CACHE,
-     output [2:0]         AW_PROT,
-     output [3:0]         AW_QOS,
-     output               AW_VALID,
-     input                AW_READY,
+    output [0:0]         AW_ID, 
+    output [ADDR_W-1:0]  AW_ADDR,
+    output [7:0]         AW_LEN,
+    output [2:0]         AW_SIZE,
+    output [1:0]         AW_BURST,
+    output [0:0]         AW_LOCK,
+    output [3:0]         AW_CACHE,
+    output [2:0]         AW_PROT,
+    output [3:0]         AW_QOS,
+    output               AW_VALID,
+    input                AW_READY,
     //Write
-     output [DATA_W-1:0]  W_DATA,
-     output [N_BYTES-1:0] W_STRB,
-     output               W_LAST,
-     output               W_VALID, 
-     input                W_READY,
-     input [0:0]          B_ID,
-     input [1:0]          B_RESP,
-     input                B_VALID,
-     output               B_READY,
+    output [DATA_W-1:0]  W_DATA,
+    output [N_BYTES-1:0] W_STRB,
+    output               W_LAST,
+    output               W_VALID, 
+    input                W_READY,
+    input [0:0]          B_ID,
+    input [1:0]          B_RESP,
+    input                B_VALID,
+    output               B_READY,
     //Address Read
-     output [0:0]         AR_ID,
-     output [ADDR_W-1:0]  AR_ADDR, 
-     output [7:0]         AR_LEN,
-     output [2:0]         AR_SIZE,
-     output [1:0]         AR_BURST,
-     output [0:0]         AR_LOCK,
-     output [3:0]         AR_CACHE,
-     output [2:0]         AR_PROT,
-     output [3:0]         AR_QOS,
-     output               AR_VALID, 
-     input                AR_READY,
+    output [0:0]         AR_ID,
+    output [ADDR_W-1:0]  AR_ADDR, 
+    output [7:0]         AR_LEN,
+    output [2:0]         AR_SIZE,
+    output [1:0]         AR_BURST,
+    output [0:0]         AR_LOCK,
+    output [3:0]         AR_CACHE,
+    output [2:0]         AR_PROT,
+    output [3:0]         AR_QOS,
+    output               AR_VALID, 
+    input                AR_READY,
     //Read
-     input [0:0]          R_ID,
-     input [DATA_W-1:0]   R_DATA,
-     input [1:0]          R_RESP,
-     input                R_LAST, 
-     input                R_VALID, 
-     output               R_READY  	      
+    input [0:0]          R_ID,
+    input [DATA_W-1:0]   R_DATA,
+    input [1:0]          R_RESP,
+    input                R_LAST, 
+    input                R_VALID, 
+    output               R_READY  	      
     );
    
    
-   wire			     data_load;
-   wire [OFFSET_W-1 :0]      select_counter;
-   wire 		     buffer_full, buffer_empty;
-   wire 		     cache_invalidate;
+   wire                  data_load;
+   wire [OFFSET_W-1 :0]  select_counter;
+   wire                  buffer_full, buffer_empty;
+   wire                  cache_invalidate;
    wire [`CTRL_COUNTER_W-1:0] ctrl_counter;
    wire 		      write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
-   wire                       module_select = cache_addr[ADDR_W]; // Selects which module (cache or it's controller is being accessed)
+   wire                       module_select = addr[ADDR_W]; // Selects which module (cache or it's controller is being accessed)
    wire [DATA_W-1:0]          read_data, ctrl_read_data;
-   assign cache_read_data = (module_select)? ctrl_read_data : read_data;
+   assign rdata = (module_select)? ctrl_read_data : read_data;
    wire                       ack, ctrl_ack;
-   assign cache_ack = (module_select)? ctrl_ack : ack;
+   assign ready = (module_select)? ctrl_ack : ack;
 
 `ifdef ASSOC_CACHE
    wire [2**NWAY_W -1: 0]     cache_hit;//uses one-hot numenclature
 `else 
    wire 		      cache_hit;
 `endif
-   wire 		      cache_write = cpu_req & (~module_select) & (|cache_wstrb);
-   wire 		      cache_read = cpu_req & ~(module_select) & ~(|cache_wstrb);  
+   wire 		      cache_write = valid & (~module_select) & (|wstrb);
+   wire 		      cache_read = valid & ~(module_select) & ~(|wstrb);  
 
    wire 		      cache_read_miss;
    wire 		      read_verification;
@@ -106,7 +106,7 @@ module iob_cache
      (
       .clk (clk),
       .reset (reset),
-      .cpu_req (cpu_req & (~module_select)),
+      .cpu_req (valid & (~module_select)),
       .cache_write (cache_write),
       .cache_read (cache_read),
       .data_load (data_load),
@@ -144,7 +144,7 @@ module iob_cache
 `ifdef L1_ID
                      .instr_req         (instr),
 `endif
-                     .cache_addr        (cache_addr[ADDR_W-1:2]),
+                     .cache_addr        (addr[ADDR_W-1:2]),
                      .read_verification (read_verification), 
 `ifdef ASSOC_CACHE
                      .cache_miss        (~(|cache_hit)),
@@ -173,7 +173,7 @@ module iob_cache
                      );
    
    
- write_through_ctrl #(              
+   write_through_ctrl #(              
 				      .ADDR_W  (ADDR_W),
 				      .DATA_W  (DATA_W),
 				      .N_BYTES (N_BYTES),
@@ -183,9 +183,9 @@ module iob_cache
      (
       .clk         (clk),
       .reset       (reset),
-      .cache_addr  (cache_addr[ADDR_W-1:2]),
-      .cache_wstrb (cache_wstrb),
-      .cache_wdata (cache_write_data),
+      .cache_addr  (addr[ADDR_W-1:2]),
+      .cache_wstrb (wstrb),
+      .cache_wdata (wdata),
       .buffer_write_en (write_enable),
       .buffer_empty    (buffer_empty),
       .buffer_full     (buffer_full),     
@@ -212,7 +212,7 @@ module iob_cache
       );
 
    
- 
+   
    memory_cache #(
 `ifdef L1_ID
 		  .I_NLINE_W  (I_NLINE_W),
@@ -232,9 +232,9 @@ module iob_cache
      (
       .clk   (clk),
       .reset (reset),
-      .cache_write_data (cache_write_data),
-      .cache_wstrb      (cache_wstrb),
-      .cache_addr       (cache_addr[ADDR_W-1:2]),
+      .cache_write_data (wdata),
+      .cache_wstrb      (wstrb),
+      .cache_addr       (addr[ADDR_W-1:2]),
       .cache_read_data  (read_data),
       .cache_read_miss  (cache_read_miss),
       .data_load        (data_load),
@@ -248,8 +248,8 @@ module iob_cache
       .R_DATA  (R_DATA),
       .R_READY (R_READY)
       );
-     
-      
+   
+   
    cache_controller #(
 		      .DATA_W(DATA_W)
 		      )
@@ -258,9 +258,9 @@ module iob_cache
       .clk (clk),   
       .ctrl_counter_input (ctrl_counter             ),
       .ctrl_cache_invalid (cache_invalidate         ),
-      .ctrl_addr          (cache_addr[`CTRL_ADDR_W+1:2]     ),
+      .ctrl_addr          (addr[`CTRL_ADDR_W+1:2]     ),
       .ctrl_req_data      (ctrl_read_data),
-      .ctrl_cpu_req       (cpu_req & module_select),
+      .ctrl_cpu_req       (valid & module_select),
       .ctrl_ack           (ctrl_ack),
       .ctrl_reset         (reset                    ),
       .ctrl_buffer_state  ({buffer_full,buffer_empty})
@@ -420,8 +420,8 @@ endmodule
 
 
 /////////////////
-// Line_loader //
-/////////////////
+                      // Line_loader //
+                      /////////////////
 
 
 module line_loader_ctrl 
@@ -486,7 +486,7 @@ module line_loader_ctrl
      data_loader_dummy = 2'd3;
    
    
-   reg [1:0]                        read_state;
+   reg [1:0]                  read_state;
 
    always @ (posedge clk, posedge reset)
      begin
@@ -587,8 +587,8 @@ endmodule
 
 
 ///////////////////
-// Write-through //
-//////////////////
+                 // Write-through //
+                 //////////////////
 
 module write_through_ctrl
   #(
@@ -1542,8 +1542,8 @@ endmodule
 
 
 ///////////////////////////////
-// One-Hot to Binary Encoder //
-///////////////////////////////
+     // One-Hot to Binary Encoder //
+     ///////////////////////////////
 
 // One-hot to binary encoder (if input is (0)0 or (0)1, the output is 0)
 module onehot_to_bin #(
