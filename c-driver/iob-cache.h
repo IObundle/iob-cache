@@ -1,19 +1,45 @@
+#include <stdarg.h>
+#include <stdlib.h>
+
+#define CACHEFUNC(cache_base, func) (*((volatile int*) (cache_base + (func * sizeof(int)))))
+
+//Function's memory map
+#define HIT             0
+#define MISS            1
+#define INSTR_HIT       2
+#define INSTR_MISS      3
+#define DATA_HIT        4
+#define DATA_MISS       5
+#define DATA_READ_HIT   6
+#define DATA_READ_MISS  7
+#define DATA_WRITE_HIT  8
+#define DATA_WRITE_MISS 9
+#define COUNTER_RESET   10
+#define INVALIDATE      11
+#define CLOCK_START     12
+#define CLOCK_STOP      13
+#define CLOCK_UPPER     14
+#define CLOCK_LOWER     15
+#define BUFFER_EMPTY    16
+#define BUFFER_FULL     17
+
 // Cache Controllers's functions
-#define ctrl_cache_hit(base)        (*(volatile int*)  (base+0x000))
-#define ctrl_cache_miss(base)       (*(volatile int*)  (base+0x004))
-#define ctrl_instr_hit(base)        (*(volatile int*)  (base+0x008))
-#define ctrl_instr_miss(base)       (*(volatile int*)  (base+0x00C))
-#define ctrl_data_hit(base)         (*(volatile int*)  (base+0x010))
-#define ctrl_data_miss(base)        (*(volatile int*)  (base+0x014))
-#define ctrl_data_read_hit(base)    (*(volatile int*)  (base+0x018))
-#define ctrl_data_read_miss(base)   (*(volatile int*)  (base+0x01C))
-#define ctrl_data_write_hit(base)   (*(volatile int*)  (base+0x020))
-#define ctrl_data_write_miss(base)  (*(volatile int*)  (base+0x024))
-#define ctrl_counter_reset(base)    (*(volatile int*)  (base+0x028))
-#define ctrl_cache_invalidate(base) (*(volatile int*)  (base+0x02C))
-#define ctrl_clock_start(base)      (*(volatile int*)  (base+0x030))
-#define ctrl_clock_stop(base)       (*(volatile int*)  (base+0x034))
-#define ctrl_clock_upper(base)      (*(volatile int*)  (base+0x038))
-#define ctrl_clock_lower(base)      (*(volatile int*)  (base+0x03C))
-#define ctrl_buffer_empty(base)     (*(volatile int*)  (base+0x040))
-#define ctrl_buffer_full(base)      (*(volatile int*)  (base+0x044))
+void cache_init(int cache_addr);
+int cache_hit();        
+int cache_miss();           
+int cache_instr_hit();       
+int cache_instr_miss();       
+int cache_data_hit();        
+int cache_data_miss();      
+int cache_data_read_hit();    
+int cache_data_read_miss(); 
+int cache_data_write_hit();  
+int cache_data_write_miss();  
+int cache_counter_reset();  
+int cache_invalidate();     
+int cache_clock_start();    
+int cache_clock_stop();     
+int cache_clock_upper();   
+int cache_clock_lower();   
+int cache_buffer_empty();    
+int cache_buffer_full(); 
