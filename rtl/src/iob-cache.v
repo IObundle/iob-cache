@@ -299,22 +299,19 @@ module cache_verification_controller
    
    /// FSM states and register ////
    parameter
-     stand_by              = 3'd0, 
-     write_verification    = 3'd1,
-     read_verification     = 3'd2,
-     read_miss             = 3'd3,
-     read_validation       = 3'd4,
-     hit                   = 3'd5,
-     end_verification      = 3'd6,
-     stand_by_delay        = 3'd7;
+     stand_by               = 3'd0, 
+     write_wait             = 3'd1,
+     read_miss_verification = 3'd2,
+     read_miss_load         = 3'd3,
+     end_verification       = 3'd4;
+   
    
    reg [2:0]                        state;
-   reg [2:0]                        next_state;
 
 
-   assign cache_read_miss = (state == read_miss);
+   assign cache_read_miss = (state == read_miss_verification);
 
-   assign cache_read_verification = (state == read_verification);
+   assign cache_read_verification = cache_read;
 
    always @ (posedge clk, posedge reset)
      begin
@@ -334,77 +331,91 @@ module cache_verification_controller
 
              
 	     case (state)
-	       
+               
                stand_by:
 	         begin
-		    if(cache_write) state <= write_verification;
-		    else
-		      if (cache_read) state <= read_verification;
-		      else
-		        state <= stand_by;
-	         end
+		    if(cache_read)
+		       
+                      if(cache_hit)
+                        begin
+                           state <= end_verification;
+                           cache_ack <= 1'b1;
+                           write_enable <= 1'b1;//for replacement policy
+                           if (instr_access)
+                             ctrl_counter <= `INSTR_HIT;
+                           else
+                             ctrl_counter <= `DATA_READ_HIT;
+                        end
+                      else
+                        begin
+                           state <= read_miss_verification;
+                           if (instr_access)
+                             ctrl_counter <= `INSTR_MISS;
+                           else
+                             ctrl_counter <= `DATA_READ_MISS;
+                        end
+                    else
+                      if(cache_write)
+                        if(buffer_full)
+                          begin
+                             state <= write_wait;
+                             if(cache_hit)
+                               ctrl_counter <= `DATA_WRITE_HIT;
+                             else
+                               ctrl_counter <= `DATA_WRITE_MISS;
+                          end
+                        else
+                          begin
+                             state <= end_verification;
+                             write_enable <= 1'b1;
+                             cache_ack <= 1'b1;
+                             if(cache_hit)
+                               ctrl_counter <= `DATA_WRITE_HIT;
+                             else
+                               ctrl_counter <= `DATA_WRITE_MISS;
+                          end
+                      else
+                        state <= stand_by;
+                 end
+               
 
-	       write_verification:
+	       write_wait:
 	         begin
 		    if (buffer_full)
-		      state <= write_verification;
+		      state <= write_wait;
 		    else
 		      begin
-		         state <= end_verification;
-		         write_enable <= 1'b1;
-		         if (cache_hit)	 
-			   ctrl_counter <= `DATA_WRITE_HIT;
-		         else
-			   ctrl_counter <= `DATA_WRITE_MISS;
+                         write_enable <= 1'b1;
+                         state <= end_verification;
+                         cache_ack <= 1'b1;
 		      end
 	         end
 
 	       
-	       read_verification:
+	       read_miss_verification:
 	         begin
-		    if (buffer_empty) 
-		      begin
-		         if (cache_hit)	
-			   begin
-			      state <= end_verification;
-			      write_enable <= 1'b1;
-			      if (instr_access)
-			        ctrl_counter <= `INSTR_HIT;
-			      else
-			        ctrl_counter <= `DATA_READ_HIT;
-			   end
-		         else 
-			   begin
-			      state <= read_miss;	    
-			      if (instr_access)
-			        ctrl_counter <= `INSTR_MISS;
-			      else
-			        ctrl_counter <= `DATA_READ_MISS;
-			   end
-		      end
-		    else 
-		      state <= read_verification; 
-	         end 
-	       
+                    if (buffer_empty)
+                      state <= read_miss_load;
+                    else
+                      state <= read_miss_verification;
+                 end
+               
 
-               read_miss:      
-	         begin
-		    if (data_load) //is data being loaded? wait to avoid collision
-		      state <= read_miss; 
-		    else
-		      state <= read_validation; 
-                 end 
-
-	       read_validation:
-	         begin
-		    state <= end_verification;
-		    write_enable <= 1'b1;
-	         end
-	       
+               read_miss_load:
+                 begin  
+                    if (data_load)
+                      state <= read_miss_load;
+                    else
+                      begin
+                         state <= end_verification;
+                         write_enable <= 1'b1;
+                         cache_ack <= 1'b1;
+                      end
+                 end
+               
       	       end_verification: 
       	         begin
-      	            cache_ack <= 1'b1;
-      		    state <= stand_by_delay;	    
+      		    state <= stand_by;	    
 	         end
 	       
                default:        
@@ -419,9 +430,10 @@ endmodule
 
 
 
+
 /////////////////
-                      // Line_loader //
-                      /////////////////
+// Line_loader //
+/////////////////
 
 
 module line_loader_ctrl 
