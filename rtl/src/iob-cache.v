@@ -98,9 +98,18 @@ module iob_cache
 
    wire 		      cache_read_miss;
    wire 		      read_verification;
+
+
+   wire [ADDR_W-1:2]          cache_addr;
+   wire [DATA_W-1:0]          cache_wdata;
+   wire [N_BYTES-1:0]         cache_wstrb;
+   wire                       cache_write_ef, cache_read_ef;
    
    
    cache_verification_controller #(
+                                   .ADDR_W(ADDR_W),
+                                   .DATA_W(DATA_W),
+                                   .N_BYTES(N_BYTES)
 				   )
    verification_FSM
      (
@@ -122,7 +131,14 @@ module iob_cache
       .write_enable (write_enable),
       .ctrl_counter (ctrl_counter),
       .cache_read_miss (cache_read_miss),
-      .cache_read_verification (read_verification)
+      .addr(addr[ADDR_W-1:2]),
+      .wdata(wdata),
+      .wstrb(wstrb),
+      .addr_ef(cache_addr),
+      .wdata_ef(cache_wdata),
+      .wstrb_ef(cache_wstrb),
+      .cache_read_ef(cache_read_ef),
+      .cache_write_ef(cache_write_ef) //probably not needed
       );
    
 
@@ -144,8 +160,8 @@ module iob_cache
 `ifdef L1_ID
                      .instr_req         (instr),
 `endif
-                     .cache_addr        (addr[ADDR_W-1:2]),
-                     .read_verification (read_verification), 
+                     .cache_addr        (cache_addr),
+                     .read_verification (cache_read_ef), 
 `ifdef ASSOC_CACHE
                      .cache_miss        (~(|cache_hit)),
 `else
@@ -183,9 +199,9 @@ module iob_cache
      (
       .clk         (clk),
       .reset       (reset),
-      .cache_addr  (addr[ADDR_W-1:2]),
-      .cache_wstrb (wstrb),
-      .cache_wdata (wdata),
+      .cache_addr  (cache_addr),
+      .cache_wstrb (cache_wstrb),
+      .cache_wdata (cache_wdata),
       .buffer_write_en (write_enable),
       .buffer_empty    (buffer_empty),
       .buffer_full     (buffer_full),     
@@ -232,9 +248,9 @@ module iob_cache
      (
       .clk   (clk),
       .reset (reset),
-      .cache_write_data (wdata),
-      .cache_wstrb      (wstrb),
-      .cache_addr       (addr[ADDR_W-1:2]),
+      .cache_write_data (cache_wdata),
+      .cache_wstrb      (cache_wstrb),
+      .cache_addr       (cache_addr),
       .cache_read_data  (read_data),
       .cache_read_miss  (cache_read_miss),
       .data_load        (data_load),
@@ -278,23 +294,36 @@ endmodule // iob_cache
 
 
 module cache_verification_controller 
-  (
-   input                            clk,
-   input                            reset,
-   input                            cpu_req,
-   input                            cache_write,
-   input                            cache_read,
-   input                            data_load,
-   input                            cache_hit,
-   input                            buffer_full,
-   input                            buffer_empty,
-   input                            instr_access,
-   output reg                       cache_ack,
-   output reg                       write_enable,
-   output reg [`CTRL_COUNTER_W-1:0] ctrl_counter,
-   output                           cache_read_miss,
-   output                           cache_read_verification
-   );
+  #(
+    parameter ADDR_W = 32,
+    parameter DATA_W = 32,
+    parameter N_BYTES = DATA_W/8
+    )
+   (
+    input                            clk,
+    input                            reset,
+    input                            cpu_req,
+    input                            cache_write,
+    input                            cache_read,
+    input                            data_load,
+    input                            cache_hit,
+    input                            buffer_full,
+    input                            buffer_empty,
+    input                            instr_access,
+    output reg                       cache_ack,
+    output reg                       write_enable,
+    output reg [`CTRL_COUNTER_W-1:0] ctrl_counter,
+    output                           cache_read_miss,
+    //input data -- Look-ahead cpu interfaces
+    input [ADDR_W-1:2]               addr,
+    input [DATA_W-1:0]               wdata,
+    input [N_BYTES-1:0]              wstrb,
+    output reg [ADDR_W-1:2]          addr_ef,
+    output reg [DATA_W-1:0]          wdata_ef,
+    output reg [N_BYTES-1:0]         wstrb_ef, 
+    output                           cache_read_ef,
+    output                           cache_write_ef
+    );
 
    
    /// FSM states and register ////
@@ -306,12 +335,63 @@ module cache_verification_controller
      end_verification       = 3'd4;
    
    
-   reg [2:0]                        state;
+   reg [2:0]                         state;
+   
+   //Look-ahead data storage
+   reg [ADDR_W-1:2]                  addr_reg;
+   reg [DATA_W-1:0]                  wdata_reg;
+   reg [N_BYTES-1:0]                 wstrb_reg;
+   reg                               val_reg;
+   
+   always @(posedge clk)
+     begin
+        if (cpu_req)
+          begin
+             addr_reg  <= addr;
+             wdata_reg <= wdata;
+             wstrb_reg <= wstrb;
+          end 
+        else 
+          begin 
+             addr_reg  <= addr_reg;
+             wdata_reg <= wdata_reg;
+             wstrb_reg <= wstrb_reg;      
+          end
+     end // always @ (posedge clk)
 
+always @(posedge clk, posedge reset)
+  begin
+     if (reset)
+       val_reg <= 1'b0;
+     else
+       if (cache_ack)
+         val_reg <= 1'b0;
+     if (cpu_req & ~cache_ack)
+       val_reg <= 1'b1;
+  end
+
+   assign cache_read_ef = val_reg & ~(|wstrb_reg);
+   assign cache_write_ef = val_reg & (|wstrb_reg);
+   
+  
+   
+   always @*
+     begin
+        if (state == stand_by)         
+          begin
+             addr_ef = addr;
+             wdata_ef = wdata;
+             wstrb_ef = wstrb;
+          end
+        else
+          begin
+             addr_ef = addr_reg;
+             wdata_ef = wdata_reg;
+             wstrb_ef = wstrb_reg;
+          end
+     end       
 
    assign cache_read_miss = (state == read_miss_verification);
-
-   assign cache_read_verification = cache_read;
 
    always @ (posedge clk, posedge reset)
      begin
@@ -598,9 +678,9 @@ module line_loader_ctrl
 endmodule
 
 
-///////////////////
-                 // Write-through //
-                 //////////////////
+/* ------------- */
+/* Write-through */
+/* ------------- */
 
 module write_through_ctrl
   #(
@@ -1553,9 +1633,9 @@ module replacement_policy_algorithm #(
 endmodule
 
 
-///////////////////////////////
-     // One-Hot to Binary Encoder //
-     ///////////////////////////////
+/*---------------------------*/
+/* One-Hot to Binary Encoder */
+/*---------------------------*/
 
 // One-hot to binary encoder (if input is (0)0 or (0)1, the output is 0)
 module onehot_to_bin #(

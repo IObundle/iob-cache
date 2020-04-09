@@ -2,7 +2,7 @@
 
 IOb-cache is a configurable cpu cache developed by IOBundle. In its current state its possible to select its size (including the word-size), the type of Associativity (Direct-mapped or Associative), and the respective replacement policies. Currently it only allows the Write-throught policy. The memory requires AXI4-full interface.
  
-## Organization of the repository:
+## Organization of the repository
 
 	/rtl/ - has all the verilog sources necessary for the synthesis of the cache. It has 2 folders:
 
@@ -31,7 +31,7 @@ IOb-cache is a configurable cpu cache developed by IOBundle. In its current stat
 	/c-drive/ - the C programing Header  file, "iob-cache.h", that contains the multiple caches functions, all of them implemented logically, therefore only addresses.
 							
 
-## Cache Configurations:
+## Cache Configurations
 
 	Module Parameters (iob-cache.v): This are the parameters responsable for the caches size:
 
@@ -62,11 +62,11 @@ IOb-cache is a configurable cpu cache developed by IOBundle. In its current stat
 
 		Replacemente policies (only when ASSOC_CACHE is enabled):
 
-			LRU - Least-Recently Used, most effective but uses the highest complexity O(N²) per cache line (N = number of ways)
+			LRU - Least-Recently Used, most effective but uses the highest complexity O(N*logN) per cache line (N = number of ways)
 
-			BIT_PLRU - Bit-based PseudoLRU, least effective but smallest complexity of O(log(N)) per cache line
+			BIT_PLRU - Bit-based PseudoLRU, low complexity of O(N)) per cache line
 
-			TREE_PLRU - Tree-based PseudoLRU, an effective policy with lower complexity than LRU (O(N*log(N)) per cache line).
+			TREE_PLRU - Tree-based PseudoLRU, lowest complexity (of the currently implemented) of O(N-1) per cache line, but better eficiency than bit-plru.
 
 		
 		CTRL_CLK - to enable a 2*word size clock (a 32-bit cache will have a 64-bit clock) for performance measurement. Only to use when the system needs to measure the timing (number of clock cycles) performance but lacks any build logic for it, otherwise this can be disabled for resource saving.
@@ -74,7 +74,7 @@ IOb-cache is a configurable cpu cache developed by IOBundle. In its current stat
 		The remaining values are simply the one-hot encoding for the cache controllers counters (for performance measurement) as well its functions addresses.
 		
 		
-## I/O ports:
+## I/O ports
 
     clk - caches input clock signal. If the Memory connected to the cache uses a different clock, it requires a interconnect in between them for synchronization
 
@@ -111,7 +111,7 @@ IOb-cache is a configurable cpu cache developed by IOBundle. In its current stat
 
     
 
-## Cache (Controller) Functions:
+## Cache (Controller) Functions
                    
                    ctrl_cache_***_hit/miss: The number of cache hits or misses for each type of access (cache (total), instr (instruction), data, and then read or write)
 
@@ -133,7 +133,7 @@ IOb-cache is a configurable cpu cache developed by IOBundle. In its current stat
 
 
 
-## IOb-cache architecture:
+## IOb-cache architecture
 
           - iob_cache: top-level module that connects the following multiple modules
 
