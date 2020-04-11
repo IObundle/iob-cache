@@ -1,0 +1,3 @@
+[submodule "submodules/iob-mem"]
+	path = submodules/iob-mem
+	url = git@bitbucket.org:jjts/iob-mem.git
