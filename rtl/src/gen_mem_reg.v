@@ -12,7 +12,7 @@ module generable_memory #(
 	  input [DATA_W-1:0]   mem_write_data,
 	  input [ADDR_W-1:0]   mem_addr,
 	  input [N_MEM-1:0]    mem_en,
-	  output [DATA_W-1 :0] mem_read_data
+	  output reg [DATA_W-1 :0] mem_read_data
 	  );
    
    genvar                      i;
@@ -28,9 +28,10 @@ module generable_memory #(
              begin
                   if (mem_en[i])
                     mem [mem_addr] <= mem_write_data [MEM_W*(i+1) -1: MEM_W*i];
+                    else
+                    mem_read_data [MEM_W*(i+1) -1: MEM_W*i] <= mem [mem_addr];    
              end 
            
-           assign mem_read_data [MEM_W*(i+1) -1: MEM_W*i] = mem [mem_addr];
            
         end                                             
    endgenerate
