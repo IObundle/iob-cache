@@ -907,7 +907,8 @@ module read_process_native
                            end
                          else
                            begin
-                              select_counter_reg <= select_counter_reg +1;
+                              //select_counter_reg <= select_counter_reg +1;
+                              select_counter_reg <= select_counter_reg;
                               read_state <= read_handshake_delay;
                               mem_valid <= 1'b0;
                               data_load <= 1'b1;
@@ -929,7 +930,8 @@ module read_process_native
                     mem_valid <=1'b1;
                     read_state <= read_handshake;
                     data_load <= 1'b1;
-                    select_counter_reg <= select_counter_reg;
+                    //select_counter_reg <= select_counter_reg;
+                    select_counter_reg <= select_counter_reg+1;
                  end
                
                

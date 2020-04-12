@@ -1,51 +1,48 @@
 `timescale 1ns / 1ps
 
-
 module generable_memory #(
-		          parameter ADDR_W = 10,
+		          parameter ADDR_W = 14,
                           parameter DATA_W = 32,         // Total size of the memory (N_MEM x MEM_W)
                           parameter MEM_W  = 8,    // Size of each individual memory
                           parameter N_MEM  = DATA_W/MEM_W// Number of individual memories 
 		          )
    (      
-	  input                clk,
-	  input [DATA_W-1:0]   mem_write_data,
-	  input [ADDR_W-1:0]   mem_addr,
-	  input [N_MEM-1:0]    mem_en,
+	  input                    clk,
+	  input [DATA_W-1:0]       mem_write_data,
+	  input [ADDR_W-1:0]       mem_addr,
+	  input [N_MEM-1:0]        mem_en,
 	  output reg [DATA_W-1 :0] mem_read_data
 	  );
    
-   genvar                      i;
-   integer                     j;
    
-   generate
-      for (i = 0; i < N_MEM; i=i+1)
-        begin
-
-           reg [MEM_W-1:0]             mem [2**ADDR_W-1:0]; //each individual memory 
-           
-           always @ (posedge clk)
-             begin
-                  if (mem_en[i])
-                    mem [mem_addr] <= mem_write_data [MEM_W*(i+1) -1: MEM_W*i];
-                    else
-                    mem_read_data [MEM_W*(i+1) -1: MEM_W*i] <= mem [mem_addr];    
-             end 
-           
-           
-        end                                             
-   endgenerate
+   
+   
+   reg [DATA_W-1:0]                ram_block[(2**ADDR_W)-1:0]; 
+   
+   // Initialize the RAM
+   
+   
+   //Operation 
+   integer                         i;     
+   always @ (posedge clk) begin 
+      for(i=0;i<N_MEM;i=i+1) begin 
+         if(mem_en[i]) begin 
+            ram_block[mem_addr][i*MEM_W+: MEM_W] <= mem_write_data[i*MEM_W +: MEM_W]; 
+         end 
+      end mem_read_data <= ram_block[mem_addr]; //Send Feedback
+   end
+   
    
 endmodule
 
 
 
 module generable_reg_file #(
-		          parameter ADDR_W = 10,
-                          parameter DATA_W = 32,         // Total size of the memory (N_MEM x MEM_W)
-                          parameter MEM_W  = 8,    // Size of each individual memory
-                          parameter N_MEM  = DATA_W/MEM_W// Number of individual memories 
-		          )
+		            parameter ADDR_W = 10,
+                            parameter DATA_W = 32,         // Total size of the memory (N_MEM x MEM_W)
+                            parameter MEM_W  = 8,    // Size of each individual memory
+                            parameter N_MEM  = DATA_W/MEM_W// Number of individual memories 
+		            )
    (      
 	  input                clk,
           input                rst,
