@@ -10,8 +10,8 @@ module iob_cache
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter N_BYTES  = DATA_W/8,
-    parameter NLINE_W  = 5,
-    parameter OFFSET_W = 4,
+    parameter NLINE_W  = 6,
+    parameter OFFSET_W = 3,
     parameter WTBUF_DEPTH_W = 4,
 `ifdef L1_ID
     parameter I_NLINE_W = 3,
