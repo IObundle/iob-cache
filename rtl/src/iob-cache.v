@@ -14,6 +14,8 @@ module iob_cache
     parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
+    //Replacement policy (N_WAYS > 1)
+    parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
     parameter N_BYTES  = DATA_W/8,       //Number of Bytes per Word
@@ -366,7 +368,8 @@ module iob_cache
        .N_WAYS(N_WAYS),
        .LINE_OFF_W(LINE_OFF_W),
        .WORD_OFF_W(WORD_OFF_W),
-       .MEM_DATA_W(MEM_DATA_W)
+       .MEM_DATA_W(MEM_DATA_W),
+       .REP_POLICY(REP_POLICY)
        )
    memory_cache
      (
@@ -398,7 +401,7 @@ module iob_cache
       .clk(clk),
       .din(ctrl_counter),
       .invalidate(invalidate),
-      .addr(addr_int[`ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
       .dout(rdata_ctrl),
       .valid(valid_int & ~cache_select),
       .ready(ready_ctrl),
@@ -671,7 +674,6 @@ module read_process_axi
    assign axi_arprot  = 3'd0;
    assign axi_arqos   = 4'd0;
    //Burst parameters
-   // assign axi_arlen   = (MEM_DATA_W/DATA_W)*2**WORD_OFF_W -1; //will choose the burst lenght depending on the cache's and slave's data width
    assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
    assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
    assign axi_arburst = 2'b01; //incremental burst
@@ -1322,7 +1324,9 @@ module memory_section
     parameter MEM_DATA_W = DATA_W, //Data width of the memory
     parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
     //Do NOT change - slave parameters - dependency
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W) //burst offset based on the cache and memory word size
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W), //burst offset based on the cache and memory word size
+    //Replacement policy (N_WAYS > 1)
+    parameter REP_POLICY = `LRU //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     )
    ( 
      //master interface
@@ -1366,7 +1370,8 @@ module memory_section
            
            replacement_process #(
 	                         .N_WAYS    (N_WAYS    ),
-	                         .LINE_OFF_W(LINE_OFF_W)
+	                         .LINE_OFF_W(LINE_OFF_W),
+                                 .REP_POLICY(REP_POLICY)
 	                         )
            replacement_policy_algorithm
              (
@@ -1567,163 +1572,204 @@ endmodule  // onehot_to_bin
 
 module replacement_process 
   #(
-    parameter N_WAYS     = 2,
-    parameter LINE_OFF_W = 2,
-    parameter NWAY_W = $clog2(N_WAYS)
+    parameter N_WAYS     = 4,
+    parameter LINE_OFF_W = 6,
+    parameter NWAY_W = $clog2(N_WAYS),
+    parameter REP_POLICY = `LRU //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     )
    (
     input                  clk,
     input                  reset,
     input                  write_en,
-    input [2**NWAY_W-1:0]  way_hit,
+    input [N_WAYS-1:0]     way_hit,
     input [LINE_OFF_W-1:0] line_addr,
     output [NWAY_W-1:0]    way_select 
     );
 
-`ifdef BIT_PLRU
-   wire [N_WAYS -1:0]      mru_output;
-   wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
-   wire [N_WAYS -1:0]      bitplru = (~mru_output); //least recent used
-   wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Line_addr-Way priority
-   wire [(N_WAYS**2)-1:0]  ext_bitplru;// Extended LRU
-   wire [(N_WAYS**2)-(N_WAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest line_addr way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
-   wire [N_WAYS-1:0]               bitplru_sel;  
 
-   genvar                          i;
+   genvar                  i, j, k;
+
    generate
-      for (i = 0; i < N_WAYS; i=i+1)
-	begin
-	   assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
-	end
+      if(REP_POLICY == `LRU)
+        begin
 
-      assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
-      
-      for (i = 2; i < N_WAYS; i=i+1)
-	begin
-	   assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
-	end
-   endgenerate
-   assign bitplru_sel = cmp_bitplru [(N_WAYS**2)-(N_WAYS)-1 :(N_WAYS**2)-2*(N_WAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest line_addr way LRU 
+           wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
+           wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
+           wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
+           wire [N_WAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
+           wire                      mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
+           wire [NWAY_W -1:0]        mru_hit_min [N_WAYS :0];
+           wire [N_WAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
+           assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
 
-
-
-`elsif LRU
-
-   wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
-   wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
-   wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
-   wire [N_WAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
-   wire                      mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
-   wire [NWAY_W -1:0]        mru_hit_min [N_WAYS :0];
-   wire [N_WAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
-   assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
-   genvar                    i;
-   generate
-      for (i = 0; i < N_WAYS; i=i+1)
-	begin
-	   assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
-	   assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
-	   
-	   assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
-	   
-	   assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
-	   
-	   assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest line_addr (otherwise the first would would be the highest.
-	end
-   endgenerate
-   assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
-   
-
-   
-`elsif TREE_PLRU
-   
-   wire [N_WAYS -1: 1] t_plru, t_plru_output;
-   wire [N_WAYS -1: 0] nway_tree [NWAY_W: 0]; // the order of the way line_addr will be [lower; ...; higher way line_addr], for readable reasons
-   wire [N_WAYS -1: 0] tplru_sel;
-   genvar              i, j, k;
-
-   // Tree-structure: t_plru[i] = tree's bit i (0 - top, towards bottom of the tree)
-   generate      
-      for (i = 1; i <= NWAY_W; i = i + 1)
-	begin
-	   for (j = 0; j < (1<<(i-1)) ; j = j + 1)
+           for (i = 0; i < N_WAYS; i=i+1)
 	     begin
-		assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
+	        assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
+	        assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
+	        
+	        assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
+	        
+	        assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
+	        
+	        assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest line_addr (otherwise the first would would be the highest.
 	     end
-	end
-   endgenerate
-   
-   // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the line_addres of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
-   assign nway_tree [0] = {N_WAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
-   generate
-      for (i = 1; i <= NWAY_W; i = i + 1)
-	begin
-	   for (j = 0; j < (1 << (i-1)); j = j + 1)
+
+           assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
+           
+
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           lru_select
+             (    
+                  .onehot(lru_sel[N_WAYS-1:0]),
+                  .bin(way_select)
+                  );
+
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),		
+               .COL_WIDTH (N_WAYS*NWAY_W),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(mru_input    ),
+              .rdata(mru_output   ),			             
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+           
+           
+        end // if (REP_POLICY == `LRU)
+      else if (REP_POLICY == `BIT_PLRU)
+        begin
+           
+           wire [N_WAYS -1:0]      mru_output;
+           wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
+           wire [N_WAYS -1:0]      bitplru = (~mru_output); //least recent used
+           wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Line_addr-Way priority
+           wire [(N_WAYS**2)-1:0]  ext_bitplru;// Extended LRU
+           wire [(N_WAYS**2)-(N_WAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest line_addr way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
+           wire [N_WAYS-1:0]               bitplru_sel;  
+
+           for (i = 0; i < N_WAYS; i=i+1)
 	     begin
-		for (k = 0; k < (N_WAYS >> i); k = k + 1)
-		  begin
-		     assign nway_tree [i][j*(N_WAYS >> (i-1)) + k] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && ~(t_plru_output [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
-		     assign nway_tree [i][j*(N_WAYS >> (i-1)) + k + (N_WAYS >> i)] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && t_plru_output [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
-		  end	
+	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
 	     end
-	end 
-      // placing the way select wire in the correct order for the onehot-binary encoder
-      for (i = 0; i < N_WAYS; i = i + 1)
-	begin
-	   assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
-	end 				
+
+           assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
+           
+           for (i = 2; i < N_WAYS; i=i+1)
+	     begin
+	        assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
+	     end
+           
+           assign bitplru_sel = cmp_bitplru [(N_WAYS**2)-(N_WAYS)-1 :(N_WAYS**2)-2*(N_WAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest line_addr way LRU 
+
+           
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           lru_select
+             (      
+                    .onehot(bitplru_sel[N_WAYS-1:0]),
+                    .bin(way_select)
+                    );
+
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),
+               .COL_WIDTH (N_WAYS),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(mru_input    ),
+              .rdata(mru_output   ),			            
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+
+        end // if (REP_POLICY == BIT_PLRU)
+      else // (REP_POLICY == TREE_PLRU)
+        begin
+           
+           wire [N_WAYS -1: 1] t_plru, t_plru_output;
+           wire [N_WAYS -1: 0] nway_tree [NWAY_W: 0]; // the order of the way line_addr will be [lower; ...; higher way line_addr], for readable reasons
+           wire [N_WAYS -1: 0] tplru_sel;
+           
+           // Tree-structure: t_plru[i] = tree's bit i (0 - top, towards bottom of the tree)
+           for (i = 1; i <= NWAY_W; i = i + 1)
+	     begin
+	        for (j = 0; j < (1<<(i-1)) ; j = j + 1)
+	          begin
+		     assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
+	          end
+	     end
+           
+           // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the line_addres of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
+           assign nway_tree [0] = {N_WAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
+           for (i = 1; i <= NWAY_W; i = i + 1)
+	     begin
+	        for (j = 0; j < (1 << (i-1)); j = j + 1)
+	          begin
+		     for (k = 0; k < (N_WAYS >> i); k = k + 1)
+		       begin
+		          assign nway_tree [i][j*(N_WAYS >> (i-1)) + k] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && ~(t_plru_output [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
+		          assign nway_tree [i][j*(N_WAYS >> (i-1)) + k + (N_WAYS >> i)] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && t_plru_output [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
+		       end	
+	          end
+	     end 
+           // placing the way select wire in the correct order for the onehot-binary encoder
+           for (i = 0; i < N_WAYS; i = i + 1)
+	     begin
+	        assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
+	     end
+
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           lru_select
+             (
+              .onehot(tplru_sel[N_WAYS-1:0]),
+              .bin(way_select)
+              );
+
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),
+               .COL_WIDTH (N_WAYS-1),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(t_plru       ),
+              .rdata(t_plru_output),     
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+           
+
+           
+        end // else: !if(REP_POLICY == BIT_PLRU)
    endgenerate
-   
-   
-`endif				      
-   
 
-   //Selects the least recent used way (encoder for one-hot to binary format)
-   onehot_to_bin #(
-                   .BIN_W (NWAY_W)	       
-                   ) 
-   lru_selector
-     (
-`ifdef BIT_PLRU       
-      .onehot(bitplru_sel[N_WAYS-1:0]),
-`elsif LRU     
-      .onehot(lru_sel[N_WAYS-1:0]),
-`elsif TREE_PLRU
-      .onehot(tplru_sel[N_WAYS-1:0]),
-`endif
-      .bin(way_select)
-      );
-
-   
-   //Most Recently Used (MRU) memory	   
-   iob_reg_file
-     #(
-       .ADDR_WIDTH (LINE_OFF_W),
-`ifdef BIT_PLRU
-       .COL_WIDTH (N_WAYS),
-`elsif LRU 		
-       .COL_WIDTH (N_WAYS*NWAY_W),
-`elsif TREE_PLRU
-       .COL_WIDTH (N_WAYS-1),
-`endif
-       .NUM_COL (1)
-       ) 
-   mru_memory //simply uses the same format as valid memory
-     (
-      .clk  (clk          ),
-      .rst  (reset        ),
-`ifdef TREE_PLRU
-      .wdata(t_plru       ),
-      .rdata(t_plru_output),
-`else
-      .wdata(mru_input    ),
-      .rdata(mru_output   ),			        
-
-`endif      
-      .addr (line_addr    ),
-      .en   (write_en     )
-      );
-   
 endmodule
 
 
@@ -1742,7 +1788,7 @@ module cache_controller #(
     input                       clk,
     input [`CTRL_COUNTER_W-1:0] din, 
     output reg                  invalidate,
-    input [`ADDR_W-1:0]         addr,
+    input [`CTRL_ADDR_W-1:0]    addr,
     output reg [DATA_W-1:0]     dout,
     input                       valid,
     output reg                  ready,

@@ -1,7 +1,7 @@
 //Replacement Policy
-`define LRU // Least Recently Used
-//`define BIT_PLRU // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) with similar performance
-//`define TREE_PLRU // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru
+`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line
+`define BIT_PLRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
+`define TREE_PLRU 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
 
 //CONTROLLER
 `define CTRL_COUNTER_W 3
