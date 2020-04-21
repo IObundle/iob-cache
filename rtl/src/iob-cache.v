@@ -7,638 +7,547 @@
 
 module iob_cache 
   #(
-    parameter ADDR_W   = 32,
-    parameter DATA_W   = 32,
-    parameter N_BYTES  = DATA_W/8,
-    parameter NLINE_W  = 6,
-    parameter OFFSET_W = 3,
-    parameter WTBUF_DEPTH_W = 4,
-`ifdef L1_ID
-    parameter I_NLINE_W = 3,
-    parameter I_OFFSET_W = 2,
-`endif
-`ifdef ASSOC_CACHE
-    parameter NWAY_W   = 2,
-`endif
-    parameter MEM_NATIVE = 0
+    //memory cache's parameters
+    parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
+    parameter DATA_W   = 32,       //Data width - word size used for the cache
+    parameter N_WAYS   = 4,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
+    //Do NOT change - memory cache's parameters - dependency
+    parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
+    parameter N_BYTES  = DATA_W/8,       //Number of Bytes per Word
+    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    /*---------------------------------------------------*/
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_NATIVE = 0,      //Cache's higher level memory interface: AXI(0-default), Native(1)
+    parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory 
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    parameter MEM_BYTES_W = $clog2(MEM_NBYTES), //Offset of Number of Bytes
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0, //AXI ID value
+    //Cache-Memory base Offset
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
+    //Look-ahead Interface - Store Front-End input signals
+    parameter LA_INTERF = (0) 
     ) 
    (
-    input                clk,
-    input                reset,
-    input [ADDR_W:2]     addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input [DATA_W-1:0]   wdata,
-    input [N_BYTES-1:0]  wstrb,
-    output [DATA_W-1:0]  rdata,
-    input                valid,
-    output               ready,
-    input                instr,
+    input                                    clk,
+    input                                    reset,
+    input [ADDR_W:$clog2(N_BYTES)]           addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input [DATA_W-1:0]                       wdata,
+    input [N_BYTES-1:0]                      wstrb,
+    output [DATA_W-1:0]                      rdata,
+    input                                    valid,
+    output                                   ready,
+    input                                    instr,
     // AXI interface 
     // Address Write
-    output [0:0]         AW_ID, 
-    output [ADDR_W-1:0]  AW_ADDR,
-    output [7:0]         AW_LEN,
-    output [2:0]         AW_SIZE,
-    output [1:0]         AW_BURST,
-    output [0:0]         AW_LOCK,
-    output [3:0]         AW_CACHE,
-    output [2:0]         AW_PROT,
-    output [3:0]         AW_QOS,
-    output               AW_VALID,
-    input                AW_READY,
+    output [0:0]                             axi_awid, 
+    output [MEM_ADDR_W-1:0]                  axi_awaddr,
+    output [7:0]                             axi_awlen,
+    output [2:0]                             axi_awsize,
+    output [1:0]                             axi_awburst,
+    output [0:0]                             axi_awlock,
+    output [3:0]                             axi_awcache,
+    output [2:0]                             axi_awprot,
+    output [3:0]                             axi_awqos,
+    output                                   axi_awvalid,
+    input                                    axi_awready,
     //Write
-    output [DATA_W-1:0]  W_DATA,
-    output [N_BYTES-1:0] W_STRB,
-    output               W_LAST,
-    output               W_VALID, 
-    input                W_READY,
-    input [0:0]          B_ID,
-    input [1:0]          B_RESP,
-    input                B_VALID,
-    output               B_READY,
+    output [MEM_DATA_W-1:0]                  axi_wdata,
+    output [MEM_NBYTES-1:0]                  axi_wstrb,
+    output                                   axi_wlast,
+    output                                   axi_wvalid, 
+    input                                    axi_wready,
+    input [AXI_ID_W-1:0]                              axi_bid,
+    input [1:0]                              axi_bresp,
+    input                                    axi_bvalid,
+    output                                   axi_bready,
     //Address Read
-    output [0:0]         AR_ID,
-    output [ADDR_W-1:0]  AR_ADDR, 
-    output [7:0]         AR_LEN,
-    output [2:0]         AR_SIZE,
-    output [1:0]         AR_BURST,
-    output [0:0]         AR_LOCK,
-    output [3:0]         AR_CACHE,
-    output [2:0]         AR_PROT,
-    output [3:0]         AR_QOS,
-    output               AR_VALID, 
-    input                AR_READY,
+    output [AXI_ID_W-1:0]                             axi_arid,
+    output [MEM_ADDR_W-1:0]                  axi_araddr, 
+    output [7:0]                             axi_arlen,
+    output [2:0]                             axi_arsize,
+    output [1:0]                             axi_arburst,
+    output [0:0]                             axi_arlock,
+    output [3:0]                             axi_arcache,
+    output [2:0]                             axi_arprot,
+    output [3:0]                             axi_arqos,
+    output                                   axi_arvalid, 
+    input                                    axi_arready,
     //Read
-    input [0:0]          R_ID,
-    input [DATA_W-1:0]   R_DATA,
-    input [1:0]          R_RESP,
-    input                R_LAST, 
-    input                R_VALID, 
-    output               R_READY,
+    input [AXI_ID_W-1:0]                              axi_rid,
+    input [MEM_DATA_W-1:0]                   axi_rdata,
+    input [1:0]                              axi_rresp,
+    input                                    axi_rlast, 
+    input                                    axi_rvalid, 
+    output                                   axi_rready,
     //Native interface
-    output [ADDR_W-1:2]  mem_addr,
-    output               mem_valid,
-    input                mem_ready,
-    output [DATA_W-1:0]  mem_wdata,
-    output [N_BYTES-1:0] mem_wstrb,
-    input [DATA_W-1:0]   mem_rdata
+    output [MEM_ADDR_W-1:$clog2(MEM_NBYTES)] mem_addr,
+    output                                   mem_valid,
+    input                                    mem_ready,
+    output [MEM_DATA_W-1:0]                  mem_wdata,
+    output [MEM_NBYTES-1:0]                  mem_wstrb,
+    input [MEM_DATA_W-1:0]                   mem_rdata
     );
    
-   
-   wire                  data_load;
-   wire [OFFSET_W-1 :0]  select_counter;
-   wire                  buffer_full, buffer_empty;
-   wire                  cache_invalidate;
-   wire [`CTRL_COUNTER_W-1:0] ctrl_counter;
-   wire 		      write_enable; //Enables the write in memories like Data (still depends on the wstrb) and algorithm's (it goes high at the end of the task, after all procedures have concluded)
-   wire                       module_select = addr[ADDR_W]; // Selects which module (cache or it's controller is being accessed)
-   wire [DATA_W-1:0]          read_data, ctrl_read_data;
-   assign rdata = (module_select)? ctrl_read_data : read_data;
-   wire                       ack, ctrl_ack;
-   assign ready = (module_select)? ctrl_ack : ack;
-
-`ifdef ASSOC_CACHE
-   wire [2**NWAY_W -1: 0]     cache_hit;//uses one-hot numenclature
-`else 
-   wire 		      cache_hit;
-`endif
-   wire 		      cache_write = valid & (~module_select) & (|wstrb);
-   wire 		      cache_read = valid & ~(module_select) & ~(|wstrb);  
-
-   wire 		      cache_read_miss;
-   wire 		      read_verification;
-
-
-   wire [ADDR_W-1:2]          cache_addr;
-   wire [DATA_W-1:0]          cache_wdata;
-   wire [N_BYTES-1:0]         cache_wstrb;
-   wire                       cache_write_ef, cache_read_ef;
+   //Internal signals
+   wire [ADDR_W   : $clog2(N_BYTES)]         addr_int;
+   wire                                      valid_int;
+   wire [DATA_W-1 : 0]                       wdata_int;
+   wire [N_BYTES-1: 0]                       wstrb_int;
+   wire                                      instr_int; //Ctrl's counter
+   wire                                      ready_int;
+   assign ready = ready_int;
    
    
-   cache_verification_controller #(
-                                   .ADDR_W(ADDR_W),
-                                   .DATA_W(DATA_W),
-                                   .N_BYTES(N_BYTES)
-				   )
-   verification_FSM
-     (
-      .clk (clk),
-      .reset (reset),
-      .cpu_req (valid & (~module_select)),
-      .cache_write (cache_write),
-      .cache_read (cache_read),
-      .data_load (data_load),
-`ifdef ASSOC_CACHE
-      .cache_hit (|cache_hit),
-`else
-      .cache_hit (cache_hit),
-`endif
-      .buffer_full (buffer_full),
-      .buffer_empty (buffer_empty),
-      .instr_access (instr),
-      .cache_ack (ack),
-      .write_enable (write_enable),
-      .ctrl_counter (ctrl_counter),
-      .cache_read_miss (cache_read_miss),
-      .addr(addr[ADDR_W-1:2]),
-      .wdata(wdata),
-      .wstrb(wstrb),
-      .addr_ef(cache_addr),
-      .wdata_ef(cache_wdata),
-      .wstrb_ef(cache_wstrb),
-      .cache_read_ef(cache_read_ef),
-      .cache_write_ef(cache_write_ef) //probably not needed
-      );
+   wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB      
+   wire                                      write_access = (cache_select &   (|wstrb_int));
+   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
    
+   //Cache - Memory-Controller signals
+   wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
+   wire                                      ready_cache, ready_ctrl; 
+   assign rdata     = (cache_select)? rdata_cache : rdata_ctrl;
+   assign ready_int = (cache_select)? ready_cache : ready_ctrl;
+   
+   //Process connection and controller signals
+   wire                                      read_miss, hit, write_full, write_empty, write_en;
+   wire                                      line_load, line_load_en;
+   wire [MEM_DATA_W-1:0]                     line_load_data;
+   wire [MEM_OFFSET_W-1:0]                   word_counter;
+   wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
+   wire                                      invalidate;
 
 
-   generate   
-      if (MEM_NATIVE)
+
+   generate
+      if (LA_INTERF) //Look-Ahead Interface - signal storage
         begin
-           wire [ADDR_W-1:2] mem_addr_read, mem_addr_write;
-           wire              mem_valid_read, mem_valid_write;
+           reg [ADDR_W   : $clog2(N_BYTES)]         addr_la;
+           reg                                      valid_la;
+           reg [DATA_W-1 : 0]                       wdata_la;
+           reg [N_BYTES-1: 0]                       wstrb_la;
+           reg                                      instr_la; //Ctrl's counter
 
-           assign mem_addr = (data_load)? mem_addr_read : mem_addr_write;
-           assign mem_valid = (data_load)? mem_valid_read: mem_valid_write;      
-
-           wire [DATA_W-1:0] cache_line_rdata = mem_rdata;
-           wire              cache_line_enable = mem_ready & data_load;
+           always @(posedge clk, posedge reset) //ready is a reset
+             begin
+                if(reset)
+                  begin
+                     addr_la  <= 0;
+                     valid_la <= 0;
+                     wdata_la <= 0;
+                     wstrb_la <= 0;
+                     instr_la <= 0;
+                  end
+                else
+                  if(ready_int)
+                    begin
+                       addr_la  <= 0;
+                       valid_la <= 0;
+                       wdata_la <= 0;
+                       wstrb_la <= 0;
+                       instr_la <= 0;
+                    end
+                  else
+                    if(valid) //updates
+                      begin
+                         addr_la  <= addr;
+                         valid_la <= 1'b1;
+                         wdata_la <= wdata;
+                         wstrb_la <= wstrb;
+                         instr_la <= instr;
+                      end
+                    else 
+                      begin
+                         addr_la  <= addr_la;
+                         valid_la <= valid_la;
+                         wdata_la <= wdata_la;
+                         wstrb_la <= wstrb_la;
+                         instr_la <= instr_la;
+                      end // else: !if(valid)
+             end // always @ (posedge clk, posedge ready_int)
            
-           
-           read_process_native #(
-`ifdef L1_ID
-                                 .I_OFFSET_W (I_OFFSET_W),
-`endif
-`ifdef ASSOC_CACHE
-                                 .NWAY_W   (NWAY_W),
-`endif                     
-                                 .ADDR_W   (ADDR_W),
-                                 .DATA_W   (DATA_W),
-                                 .N_BYTES  (N_BYTES),
-                                 .OFFSET_W (OFFSET_W)
-                                 )
-           read_process_native (
-                                .clk               (clk),
-                                .reset             (reset),
-`ifdef L1_ID
-                                .instr_req         (instr),
-`endif
-                                .cache_addr        (cache_addr),
-                                .read_verification (cache_read_ef), 
-`ifdef ASSOC_CACHE
-                                .cache_miss        (~(|cache_hit)),
-`else
-		                .cache_miss        (~cache_hit),
-`endif
-                                .buffer_empty      (buffer_empty),
-                                .data_load         (data_load),
-                                .select_counter    (select_counter), 
-                                .mem_addr  (mem_addr_read),
-                                .mem_valid (mem_valid_read),
-                                .mem_ready (mem_ready)
-                                );
-           
-           
-           write_process_native #(              
-				                .ADDR_W  (ADDR_W),
-				                .DATA_W  (DATA_W),
-				                .N_BYTES (N_BYTES),
-				                .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
-				                ) 
-           write_process_native
-             (
-              .clk         (clk),
-              .reset       (reset),
-              .cache_addr  (cache_addr),
-              .cache_wstrb (cache_wstrb),
-              .cache_wdata (cache_wdata),
-              .buffer_write_en (write_enable),
-              .buffer_empty    (buffer_empty),
-              .buffer_full     (buffer_full),     
-              .mem_addr  (mem_addr_write),
-              .mem_valid (mem_valid_write),
-              .mem_ready (mem_ready),
-              .mem_wdata (mem_wdata),
-              .mem_wstrb (mem_wstrb)
-              );
-           memory_cache #(
-`ifdef L1_ID
-                          .I_NLINE_W  (I_NLINE_W),
-                          .I_OFFSET_W (I_OFFSET_W),
-`endif
-`ifdef ASSOC_CACHE
-                          .NWAY_W   (NWAY_W),
-`endif
-                          .ADDR_W   (ADDR_W),
-                          .DATA_W   (DATA_W),
-                          .N_BYTES  (N_BYTES),
-                          .NLINE_W  (NLINE_W),
-                          .OFFSET_W (OFFSET_W),
-                          .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
-                          )
-           memory_cache          
-             (
-              .clk   (clk),
-              .reset (reset),
-              .cache_write_data (cache_wdata),
-              .cache_wstrb      (cache_wstrb),
-              .cache_addr       (cache_addr),
-              .cache_read_data  (read_data),
-              .cache_read_miss  (cache_read_miss),
-              .data_load        (data_load),
-              .select_counter   (select_counter),
-              .cache_invalidate (cache_invalidate),
-              .write_enable     (write_enable),
-              .cache_hit_output (cache_hit),
-`ifdef L1_ID
-              .instr            (instr),
-`endif
-              .cache_line_rdata(cache_line_rdata),
-              .cache_line_enable(cache_line_enable)
-              );
-           
-        end // if (MEM_NATIVE)
+           //Internal assignment - Multiplexers (to there is no delay)
+           assign addr_int  = (valid_la)? addr_la  : addr;
+           assign valid_int = (valid_la)? 1'b1     :valid;
+           assign wdata_int = (valid_la)? wdata_la :wdata;
+           assign wstrb_int = (valid_la)? wstrb_la :wstrb;
+           assign instr_int = (valid_la)? instr_la :instr; //only for Controller's counter
+        end
       else
         begin
-           
-           wire [DATA_W-1:0] cache_line_rdata = R_DATA;
-           wire              cache_line_enable = R_READY;
-           
-           
-
-           
-           read_process_axi #(
-`ifdef L1_ID
-                              .I_OFFSET_W (I_OFFSET_W),
-`endif
-`ifdef ASSOC_CACHE
-                              .NWAY_W   (NWAY_W),
-`endif                     
-                              .ADDR_W   (ADDR_W),
-                              .DATA_W   (DATA_W),
-                              .N_BYTES  (N_BYTES),
-                              .OFFSET_W (OFFSET_W)
-                              )
-           read_process_axi (
-                             .clk               (clk),
-                             .reset             (reset),
-`ifdef L1_ID
-                             .instr_req         (instr),
-`endif
-                             .cache_addr        (cache_addr),
-                             .read_verification (cache_read_ef), 
-`ifdef ASSOC_CACHE
-                             .cache_miss        (~(|cache_hit)),
-`else
-		             .cache_miss        (~cache_hit),
-`endif
-                             .buffer_empty      (buffer_empty),
-                             .data_load         (data_load),
-                             .select_counter    (select_counter), 
-                             .AR_ID    (AR_ID),
-                             .AR_ADDR  (AR_ADDR), 
-                             .AR_LEN   (AR_LEN),
-                             .AR_SIZE  (AR_SIZE),
-                             .AR_BURST (AR_BURST),
-                             .AR_LOCK  (AR_LOCK),
-                             .AR_CACHE (AR_CACHE),
-                             .AR_PROT  (AR_PROT),
-                             .AR_QOS   (AR_QOS),
-                             .AR_VALID (AR_VALID), 
-                             .AR_READY (AR_READY),
-                             .R_ID     (R_ID),
-                             .R_RESP   (R_RESP),
-                             .R_LAST   (R_LAST), 
-                             .R_VALID  (R_VALID), 
-                             .R_READY  (R_READY)
-                             );
-           
-           
-           write_process_axi #(              
-				             .ADDR_W  (ADDR_W),
-				             .DATA_W  (DATA_W),
-				             .N_BYTES (N_BYTES),
-				             .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
-				             ) 
-           write_process_axi
-             (
-              .clk         (clk),
-              .reset       (reset),
-              .cache_addr  (cache_addr),
-              .cache_wstrb (cache_wstrb),
-              .cache_wdata (cache_wdata),
-              .buffer_write_en (write_enable),
-              .buffer_empty    (buffer_empty),
-              .buffer_full     (buffer_full),     
-              .AW_ID    (AW_ID), 
-              .AW_ADDR  (AW_ADDR),
-              .AW_LEN   (AW_LEN),
-              .AW_SIZE  (AW_SIZE),
-              .AW_BURST (AW_BURST),
-              .AW_LOCK  (AW_LOCK),
-              .AW_CACHE (AW_CACHE),
-              .AW_PROT  (AW_PROT),
-              .AW_QOS   (AW_QOS),
-              .AW_VALID (AW_VALID),
-              .AW_READY (AW_READY),
-              .W_DATA   (W_DATA),
-              .W_STRB   (W_STRB),
-              .W_LAST   (W_LAST),
-              .W_VALID  (W_VALID), 
-              .W_READY  (W_READY),
-              .B_ID     (B_ID),
-              .B_RESP   (B_RESP),
-              .B_VALID  (B_VALID),
-              .B_READY  (B_READY)
-              );
-           
-           
-           
-           memory_cache #(
-`ifdef L1_ID
-                          .I_NLINE_W  (I_NLINE_W),
-                          .I_OFFSET_W (I_OFFSET_W),
-`endif
-`ifdef ASSOC_CACHE
-                          .NWAY_W   (NWAY_W),
-`endif
-                          .ADDR_W   (ADDR_W),
-                          .DATA_W   (DATA_W),
-                          .N_BYTES  (N_BYTES),
-                          .NLINE_W  (NLINE_W),
-                          .OFFSET_W (OFFSET_W),
-                          .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
-                          )
-           memory_cache          
-             (
-              .clk   (clk),
-              .reset (reset),
-              .cache_write_data (cache_wdata),
-              .cache_wstrb      (cache_wstrb),
-              .cache_addr       (cache_addr),
-              .cache_read_data  (read_data),
-              .cache_read_miss  (cache_read_miss),
-              .data_load        (data_load),
-              .select_counter   (select_counter),
-              .cache_invalidate (cache_invalidate),
-              .write_enable     (write_enable),
-              .cache_hit_output (cache_hit),
-`ifdef L1_ID
-              .instr            (instr),
-`endif
-              .cache_line_rdata(cache_line_rdata),
-              .cache_line_enable(cache_line_enable)
-              );
-        end // else: !if(MEM_NATIVE)
+           //Internal assignment - Direct wiring
+           assign addr_int  = addr;
+           assign valid_int = valid;
+           assign wdata_int = wdata;
+           assign wstrb_int = wstrb;
+           assign instr_int = instr; //only for Controller's counter
+        end // else: !if(LA_INTERF)
    endgenerate
    
    
-   
-   
-   
-   cache_controller #(
-		      .DATA_W(DATA_W)
-		      )
-   cache_ctrl
+   main_process main_fsm
      (
-      .clk (clk),   
-      .ctrl_counter_input (ctrl_counter             ),
-      .ctrl_cache_invalid (cache_invalidate         ),
-      .ctrl_addr          (addr[`CTRL_ADDR_W+1:2]     ),
-      .ctrl_req_data      (ctrl_read_data),
-      .ctrl_cpu_req       (valid & module_select),
-      .ctrl_ack           (ctrl_ack),
-      .ctrl_reset         (reset                    ),
-      .ctrl_buffer_state  ({buffer_full,buffer_empty})
+      .clk(clk),
+      .reset(reset),
+      .write_access(write_access),
+      .read_access(read_access),
+      .read_miss(read_miss),
+      .line_load(line_load),
+      .hit(hit),
+      .write_full(write_full),
+      .write_empty(write_empty),
+      .instr(instr_int),
+      .ready(ready_cache),
+      .write_en(write_en),
+      .ctrl_counter(ctrl_counter)
       );
    
+   
+   generate
+      if(MEM_NATIVE)
+        begin
+           
+           wire [MEM_ADDR_W-1:$clog2(MEM_NBYTES)] mem_addr_read,  mem_addr_write;
+           wire                                   mem_valid_read, mem_valid_write;
+           
+           assign mem_addr =  (line_load)? mem_addr_read : mem_addr_write;
+           assign mem_valid = (line_load)? mem_valid_read: mem_valid_write;                   
+           
+           read_process_native
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W),  
+               .WORD_OFF_W(WORD_OFF_W),
+               .MEM_ADDR_W (MEM_ADDR_W),
+               .MEM_DATA_W (MEM_DATA_W)
+               )
+           read_fsm
+             (
+              .clk(clk),
+              .reset(reset),
+              .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
+              .read_miss(read_miss), 
+              .write_empty(write_empty), 
+              .line_load(line_load),
+              .line_load_en(line_load_en),
+              .word_counter(word_counter),
+              .line_load_data(line_load_data),
+              .mem_addr(mem_addr_read),
+              .mem_valid(mem_valid_read),
+              .mem_ready(mem_ready),
+              .mem_rdata(mem_rdata)  
+              );
 
+           write_process_native
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W),
+               .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+               .MEM_ADDR_W (MEM_ADDR_W),
+               .MEM_DATA_W (MEM_DATA_W)
+               )
+           write_fsm
+             (
+              .clk(clk),
+              .reset(reset),
+              .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
+              .wstrb(wstrb_int),
+              .wdata(wdata_int),
+              .write_empty(write_empty),
+              .write_full(write_full),
+              .write_en(write_en),
+              .mem_addr(mem_addr_write),
+              .mem_valid(mem_valid_write),
+              .mem_ready(mem_ready),
+              .mem_wdata(mem_wdata),
+              .mem_wstrb(mem_wstrb)
+              );
+        end
+      else
+        begin
+           read_process_axi
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W),  
+               .WORD_OFF_W(WORD_OFF_W),
+               .MEM_ADDR_W (MEM_ADDR_W),
+               .MEM_DATA_W (MEM_DATA_W),
+               .AXI_ID_W(AXI_ID_W),
+               .AXI_ID(AXI_ID)
+               )
+           read_fsm
+             (
+              .clk(clk),
+              .reset(reset),
+              .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
+              .read_miss(read_miss), 
+              .write_empty(write_empty), 
+              .line_load(line_load),
+              .line_load_en(line_load_en),
+              .word_counter(word_counter),
+              .line_load_data (line_load_data),
+              .axi_arid(axi_arid),
+              .axi_araddr(axi_araddr), 
+              .axi_arlen(axi_arlen),
+              .axi_arsize(axi_arsize),
+              .axi_arburst(axi_arburst),
+              .axi_arlock(axi_arlock),
+              .axi_arcache(axi_arcache),
+              .axi_arprot(axi_arprot),
+              .axi_arqos(axi_arqos),
+              .axi_arvalid(axi_arvalid), 
+              .axi_arready(axi_arready),
+              .axi_rid(axi_rid),
+              .axi_rdata(axi_rdata),
+              .axi_rresp(axi_rresp),
+              .axi_rlast(axi_rlast), 
+              .axi_rvalid(axi_rvalid), 
+              .axi_rready(axi_rready)  
+              );
+
+           write_process_axi
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W),
+               .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+               .MEM_ADDR_W (MEM_ADDR_W),
+               .MEM_DATA_W (MEM_DATA_W),
+               .AXI_ID_W(AXI_ID_W),
+               .AXI_ID(AXI_ID)
+               )
+           write_fsm
+             (
+              .clk(clk),
+              .reset(reset),
+              .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
+              .wstrb(wstrb_int),
+              .wdata(wdata_int),
+              .write_empty(write_empty),
+              .write_full(write_full),
+              .write_en(write_en),
+              .axi_awid(axi_awid),
+              .axi_awaddr(axi_awaddr), 
+              .axi_awlen(axi_awlen),
+              .axi_awsize(axi_awsize),
+              .axi_awburst(axi_awburst),
+              .axi_awlock(axi_awlock),
+              .axi_awcache(axi_awcache),
+              .axi_awprot(axi_awprot),
+              .axi_awqos(axi_awqos),
+              .axi_awvalid(axi_awvalid), 
+              .axi_awready(axi_awready),
+              .axi_wdata(axi_wdata),
+              .axi_wstrb(axi_wstrb),
+              .axi_wlast(axi_wlast),
+              .axi_wvalid(axi_wvalid),
+              .axi_wready(axi_wready),
+              .axi_bid(axi_bid),
+              .axi_bresp(axi_bresp),
+              .axi_bvalid(axi_bvalid), 
+              .axi_bready(axi_bready)  
+              );      
+        end
+   endgenerate
+   
+   
+   memory_section
+     #(
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),
+       .N_WAYS(N_WAYS),
+       .LINE_OFF_W(LINE_OFF_W),
+       .WORD_OFF_W(WORD_OFF_W),
+       .MEM_DATA_W(MEM_DATA_W)
+       )
+   memory_cache
+     (
+      .clk  (clk),
+      .reset(reset),
+      .addr (addr_int[ADDR_W-1:$clog2(N_BYTES)]),
+      .wdata(wdata_int),
+      .wstrb(wstrb_int),
+      .rdata(rdata_cache),
+      .valid(valid_int & cache_select),
+      .line_load_data(line_load_data),
+      .line_load(line_load),
+      .line_load_en(line_load_en),
+      .word_counter(word_counter),
+      .hit(hit),
+      .write_en(write_en),
+      .invalidate(invalidate)
+      );
+
+   
+   cache_controller
+     #(
+       .DATA_W(DATA_W)
+       )
+   cache_control
+     (
+      .clk(clk),
+      .ctrl_counter_input(ctrl_counter),
+      .ctrl_cache_invalid(invalidate),
+      .ctrl_addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .ctrl_req_data(rdata_ctrl),
+      .ctrl_cpu_req(valid_int & ~cache_select),
+      .ctrl_ack(ready_ctrl),
+      .ctrl_reset(reset),
+      .ctrl_buffer_state({write_full,write_empty})
+      );
    
 endmodule // iob_cache
 
 
 
-//////////////////////
-// Verification FSM //
-//////////////////////
+/*--------------*/
+/* Main Process */ 
+/*--------------*/
+//Cache's main process, that controls the current cache's state based on the other processes
 
-
-module cache_verification_controller 
-  #(
-    parameter ADDR_W = 32,
-    parameter DATA_W = 32,
-    parameter N_BYTES = DATA_W/8
-    )
-   (
-    input                            clk,
-    input                            reset,
-    input                            cpu_req,
-    input                            cache_write,
-    input                            cache_read,
-    input                            data_load,
-    input                            cache_hit,
-    input                            buffer_full,
-    input                            buffer_empty,
-    input                            instr_access,
-    output reg                       cache_ack,
-    output reg                       write_enable,
-    output reg [`CTRL_COUNTER_W-1:0] ctrl_counter,
-    output                           cache_read_miss,
-    //input data -- Look-ahead cpu interfaces
-    input [ADDR_W-1:2]               addr,
-    input [DATA_W-1:0]               wdata,
-    input [N_BYTES-1:0]              wstrb,
-    output reg [ADDR_W-1:2]          addr_ef,
-    output reg [DATA_W-1:0]          wdata_ef,
-    output reg [N_BYTES-1:0]         wstrb_ef, 
-    output                           cache_read_ef,
-    output                           cache_write_ef
-    );
-
+module main_process
+  (
+   input                            clk,
+   input                            reset,
+   input                            write_access,
+   input                            read_access,
+   output reg                       read_miss, 
+   input                            line_load,
+   input                            hit,
+   input                            write_full,
+   input                            write_empty,
+   input                            instr,
+   output reg                       ready,
+   output reg                       write_en,
+   output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
+   );
    
-   /// FSM states and register ////
+   
    localparam
-     stand_by               = 3'd0, 
-     write_wait             = 3'd1,
-     read_miss_verification = 3'd2,
-     read_miss_load         = 3'd3,
-     end_verification       = 3'd4;
+     idle          = 2'd0,
+     write_standby = 2'd1,
+     read_standby  = 2'd2,
+     read_process  = 2'd3;
    
    
-   reg [2:0]                         state;
+   reg [1:0]                        state;
    
-   //Look-ahead data storage
-   reg [ADDR_W-1:2]                  addr_reg;
-   reg [DATA_W-1:0]                  wdata_reg;
-   reg [N_BYTES-1:0]                 wstrb_reg;
-   reg                               val_reg;
-   
-   always @(posedge clk)
-     begin
-        if (cpu_req)
-          begin
-             addr_reg  <= addr;
-             wdata_reg <= wdata;
-             wstrb_reg <= wstrb;
-          end 
-        else 
-          begin 
-             addr_reg  <= addr_reg;
-             wdata_reg <= wdata_reg;
-             wstrb_reg <= wstrb_reg;      
-          end
-     end // always @ (posedge clk)
-
    always @(posedge clk, posedge reset)
      begin
         if (reset)
-          val_reg <= 1'b0;
+          state <= idle;
         else
-          if (cache_ack)
-            val_reg <= 1'b0;
-          else
-            if (cpu_req & ~cache_ack)
-              val_reg <= 1'b1;
-     end
+          case (state)
+            idle:
+              begin
+                 if (read_access)
+                   state <= read_standby;
+                 else
+                   if(write_access)
+                     state <= write_standby;
+                   else
+                     state <= idle;
+              end
+            
+            write_standby:
+              begin
+                 if (write_full)
+                   state <= write_standby;
+                 else
+                   state <= idle;
+              end
 
-   assign cache_read_ef = val_reg & ~(|wstrb_reg);
-   assign cache_write_ef = val_reg & (|wstrb_reg);
-   
-   
-   
+            read_standby:
+              begin
+                 if(hit)
+                   state <= idle;
+                 else 
+                   if(write_empty)   
+                     state <= read_process; //read-miss, needs a line load
+                   else
+                     state <= read_standby;
+              end
+
+            read_process: //line_load
+              begin
+                 if (~line_load)
+                   state <= idle;
+                 else
+                   state <= read_process;
+              end
+
+            default:;
+
+          endcase // case (state)
+     end // always @ (posedge clk, posedge reset)
+
+
    always @*
      begin
-        if (state == stand_by)         
-          begin
-             addr_ef = addr;
-             wdata_ef = wdata;
-             wstrb_ef = wstrb;
-          end
-        else
-          begin
-             addr_ef = addr_reg;
-             wdata_ef = wdata_reg;
-             wstrb_ef = wstrb_reg;
-          end
+        read_miss = 1'b0;
+        ready = 1'b0;
+        ctrl_counter = `CTRL_COUNTER_W'd0;
+        write_en = 1'b0;
+        
+	case (state)
+          idle:
+            begin
+               ready = 1'b0;
+               ctrl_counter = `CTRL_COUNTER_W'd0;
+               write_en = 1'b0;
+            end
+
+          write_standby:
+            begin
+               ready = ~write_full; // ends process if isn't full, regardless if hit or miss
+               write_en = ~write_full;
+               
+               if (~write_full)
+                 if(hit)
+                   ctrl_counter = `DATA_WRITE_HIT;
+                 else
+                   ctrl_counter = `DATA_WRITE_MISS;
+               else
+                 ctrl_counter = `CTRL_COUNTER_W'd0;
+            end
+          
+
+          read_standby:
+            begin
+               ready = hit; // if it was a hit, the data in rdata is the correct one
+               write_en = hit; //update replacement policy algorithm
+
+               if (hit)
+                 if(instr)
+                   ctrl_counter = `INSTR_HIT;
+                 else
+                   ctrl_counter = `DATA_READ_HIT;
+               else
+                 if(write_empty)
+                   begin
+                      read_miss = 1'b1; //so the hit signal is properly updated (memory read-latency) and only starts after everything has been written to the top memory
+                      if(instr)
+                        ctrl_counter = `INSTR_MISS;
+                      else
+                        ctrl_counter = `DATA_READ_MISS;
+                   end
+                 else
+                   ctrl_counter = `CTRL_COUNTER_W'd0;
+            end
+          
+          read_process:
+            begin  
+               write_en = ~line_load;
+               ready = ~line_load;                           
+            end
+        endcase
      end       
-
-   assign cache_read_miss = (state == read_miss_verification);
-
-   always @ (posedge clk, posedge reset)
-     begin
-	
-	if (reset)
-	  begin
-	     state <= stand_by;
-	     cache_ack <= 1'b0;
-             ctrl_counter <= `CTRL_COUNTER_W'd0;
-             write_enable <= 1'b0;
-          end 
-	else 
-	  begin
-	     cache_ack <= 1'b0;
-             ctrl_counter <= `CTRL_COUNTER_W'd0;
-             write_enable <= 1'b0;
-
-             
-	     case (state)
-               
-               stand_by:
-	         begin
-		    if(cache_read)
-		       
-                      if(cache_hit)
-                        begin
-                           state <= end_verification;
-                           cache_ack <= 1'b1;
-                           write_enable <= 1'b1;//for replacement policy
-                           if (instr_access)
-                             ctrl_counter <= `INSTR_HIT;
-                           else
-                             ctrl_counter <= `DATA_READ_HIT;
-                        end
-                      else
-                        begin
-                           state <= read_miss_verification;
-                           if (instr_access)
-                             ctrl_counter <= `INSTR_MISS;
-                           else
-                             ctrl_counter <= `DATA_READ_MISS;
-                        end
-                    else
-                      if(cache_write)
-                        if(buffer_full)
-                          begin
-                             state <= write_wait;
-                             if(cache_hit)
-                               ctrl_counter <= `DATA_WRITE_HIT;
-                             else
-                               ctrl_counter <= `DATA_WRITE_MISS;
-                          end
-                        else
-                          begin
-                             state <= end_verification;
-                             write_enable <= 1'b1;
-                             cache_ack <= 1'b1;
-                             if(cache_hit)
-                               ctrl_counter <= `DATA_WRITE_HIT;
-                             else
-                               ctrl_counter <= `DATA_WRITE_MISS;
-                          end
-                      else
-                        state <= stand_by;
-                 end
-               
-
-	       write_wait:
-	         begin
-		    if (buffer_full)
-		      state <= write_wait;
-		    else
-		      begin
-                         write_enable <= 1'b1;
-                         state <= end_verification;
-                         cache_ack <= 1'b1;
-		      end
-	         end
-
-	       
-	       read_miss_verification:
-	         begin
-                    if (buffer_empty)
-                      state <= read_miss_load;
-                    else
-                      state <= read_miss_verification;
-                 end
-               
-
-               read_miss_load:
-                 begin  
-                    if (data_load)
-                      state <= read_miss_load;
-                    else
-                      begin
-                         state <= end_verification;
-                         write_enable <= 1'b1;
-                         cache_ack <= 1'b1;
-                      end
-                 end
-               
-      	       end_verification: 
-      	         begin
-      		    state <= stand_by;	    
-	         end
-	       
-               default:        
-	         begin
-		    state <= stand_by;
-                 end
-	     endcase
-	  end
-     end                        
-
-endmodule
-
-
+   
+endmodule            
 
 
 /*--------------*/
@@ -646,304 +555,317 @@ endmodule
 /*--------------*/
 // Process that loads a cache line, in the occurence of a read-miss
 
-module read_process_axi
+module read_process_axi 
   #(
-`ifdef L1_ID
-    parameter I_OFFSET_W = 2,
-`endif
-`ifdef ASSOC_CACHE
-    parameter NWAY_W = 4,
-`endif
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
+    parameter WORD_OFF_W = 3,
     parameter N_BYTES  = DATA_W/8,
-    parameter OFFSET_W = 2
+    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory 
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    parameter MEM_BYTES_W = $clog2(MEM_NBYTES), //Offset of the Number of Bytes
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0,  //AXI ID value
+    //Cache-Memory base Offset
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W) //burst offset based on the cache's word and memory word size
     )
    (
-    input                     clk,
-    input                     reset,
-`ifdef L1_ID
-    input                     instr_req,
-`endif
-    input [ADDR_W -1: 2]      cache_addr,
-    input                     read_verification, //Read verification FSM state (state == read_verification)
-    input                     cache_miss, //~(|cache_hit)
-    input                     buffer_empty,
-    output reg                data_load,
-    output reg [OFFSET_W-1:0] select_counter, 
+    input                              clk,
+    input                              reset,
+    input [ADDR_W -1: $clog2(N_BYTES)] addr,
+    input                              read_miss, //read access that results in a cache miss
+    input                              write_empty, //write_process has an empty buffer
+    output reg                         line_load, //load cache line with new data
+    output                             line_load_en,//Memory enable during the cache line load
+    output reg [MEM_OFFSET_W-1:0]      word_counter,//counter to enable each word in the line
+    output [MEM_DATA_W-1:0]            line_load_data,//data to load the cache line  
     // AXI interface  
     //Address Read
-    output [0:0]              AR_ID,
-    output reg [ADDR_W-1:0]   AR_ADDR, 
-    output reg [7:0]          AR_LEN,
-    output reg [2:0]          AR_SIZE,
-    output reg [1:0]          AR_BURST,
-    output [0:0]              AR_LOCK,
-    output [3:0]              AR_CACHE,
-    output [2:0]              AR_PROT,
-    output [3:0]              AR_QOS,
-    output reg                AR_VALID, 
-    input                     AR_READY,
+    output [AXI_ID_W-1:0]              axi_arid,
+    output [MEM_ADDR_W-1:0]            axi_araddr, 
+    output [7:0]                       axi_arlen,
+    output [2:0]                       axi_arsize,
+    output [1:0]                       axi_arburst,
+    output [0:0]                       axi_arlock,
+    output [3:0]                       axi_arcache,
+    output [2:0]                       axi_arprot,
+    output [3:0]                       axi_arqos,
+    output reg                         axi_arvalid, 
+    input                              axi_arready,
     //Read
-    input [0:0]               R_ID,
-    //input [DATA_W-1:0]        R_DATA, //this module only controls the Data loading, doesn't receive it
-    input [1:0]               R_RESP,
-    input                     R_LAST, 
-    input                     R_VALID, 
-    output reg                R_READY
+    input [AXI_ID_W-1:0]                 axi_rid,
+    input [MEM_DATA_W-1:0]             axi_rdata,
+    input [1:0]                        axi_rresp,
+    input                              axi_rlast, 
+    input                              axi_rvalid, 
+    output reg                         axi_rready
     );
 
    //Constant AXI signals
-   assign AR_ID = 1'd0;
-   assign AR_LOCK = 1'b0;
-   assign AR_CACHE = 4'b0011;
-   assign AR_PROT = 3'd0;
-   assign AR_QOS = 4'd0;
+   assign axi_arid    = AXI_ID;
+   assign axi_arlock  = 1'b0;
+   assign axi_arcache = 4'b0011;
+   assign axi_arprot  = 3'd0;
+   assign axi_arqos   = 4'd0;
+   //Burst parameters
+  // assign axi_arlen   = (MEM_DATA_W/DATA_W)*2**WORD_OFF_W -1; //will choose the burst lenght depending on the cache's and slave's data width
+   assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
+   assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
+   assign axi_arburst = 2'b01; //incremental burst
+   assign axi_araddr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W-1:MEM_OFFSET_W + MEM_BYTES_W], {(MEM_OFFSET_W+MEM_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
+
+   //Line Load signals
+   assign line_load_en   = axi_rvalid;
+   assign line_load_data = axi_rdata;
    
-   //// read fail Auxiliary FSM states and register //// -> Loading Data (to Data line/Block)
+   
    localparam
-     read_stand_by     = 2'd0,
-     data_loader_init  = 2'd1,
-     data_loader       = 2'd2,
-     data_loader_dummy = 2'd3;
+     idle          = 2'd0,
+     init_process  = 2'd1,
+     load_process  = 2'd2,
+     end_process   = 2'd3;
    
    
-   reg [1:0]                  read_state;
+   reg [1:0]                           state;
 
-   always @ (posedge clk, posedge reset)
+   
+   always @(posedge clk, posedge reset)
      begin
-
-	if (reset)
+        if(reset)
           begin
-	     read_state <= read_stand_by; //reset
-	     data_load <= 1'b0;
-	     AR_ADDR  <= {ADDR_W{1'b0}};
-             AR_VALID <= 1'b0;
-             AR_LEN   <= 8'd0;
-             AR_SIZE  <= 3'b000;
-             AR_BURST <= 2'b00;
-             R_READY  <= 1'b0;
-             select_counter <= {OFFSET_W{1'b0}};     
-	  end	  
-	else
-	  begin
-	     AR_ADDR  <= {ADDR_W{1'b0}};
-             AR_VALID <= 1'b0;
-             AR_LEN   <= 8'd0;
-             AR_SIZE  <= 3'b000;
-             AR_BURST <= 2'b00;
-             R_READY  <= 1'b0;
-             select_counter <= {OFFSET_W{1'b0}};
+             state <= idle;
+             word_counter <= 0;
+          end
+        else
+           
+          case (state)   
+            idle:
+              begin
+                 word_counter <= 0;  
+                 if(read_miss)
+                   state <= init_process;
+                 else
+                   state <= idle;
+              end
 
-             
-	     case (read_state)
-	       
-	       read_stand_by://0
-	         begin
-                    if ((read_verification) &&  (cache_miss && buffer_empty))
-		      begin
-		         read_state <= data_loader_init; //read miss
-		         data_load <= 1'b1;	  
-		      end
-		    else 
-		      begin
-		         read_state <= read_stand_by; //idle
-		         data_load <= 1'b0;
-		      end
-	         end 
-	       
-	       
-	       data_loader_init://1
-	          
-	         begin
-		    AR_VALID <= 1'b1;
-`ifdef L1_ID
-                    AR_ADDR  <= (instr_req)? {cache_addr[ADDR_W -1 : I_OFFSET_W + 2], {(I_OFFSET_W+2){1'b0}}} : {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
-                    AR_LEN  <= (instr_req)? 2**(I_OFFSET_W)-1 :  2**(OFFSET_W)-1;
-`else        
-                    AR_ADDR  <= {cache_addr[ADDR_W -1 : OFFSET_W + 2], {(OFFSET_W+2){1'b0}}}; //addr = {tag,index,0...00,00} => word_select = 0...00
-                    AR_LEN   <= 2**(OFFSET_W)-1;
-`endif
-		    AR_SIZE <= $clog2(N_BYTES); // VERIFY BETTER OPTION FOR PARAMETRIZATION
-		    AR_BURST <= 2'b01; //INCR
-		    data_load <= 1'b1;
-		    
-		    if (AR_READY) read_state  <= data_loader;
-		    else          read_state  <= data_loader_init;
-	         end 
-	       
-	       
-	       data_loader://2
-	         begin
-	            if (R_VALID)
-		      begin
-		         if (R_LAST)
-	                   begin
-			      R_READY <= 1'b0;
-			      read_state <= read_stand_by;
-			      data_load <= 1'b0;
-			      select_counter <= select_counter;
-	                   end else begin
-			      R_READY <= 1'b1;
-			      select_counter <= select_counter + 1;                    
-			      read_state <= data_loader;
-                           end
-		         
-		      end else begin 
-		         R_READY <= 1'b1;   
-		         select_counter <= select_counter;
-		         read_state <= data_loader;  
-		      end
-	         end  
-	       
-	       default:        
-	         begin
-		    read_state <= read_stand_by;
-	         end
-               
-	     endcase  
-	  end  
-     end                        
+            init_process:
+              begin
+                 word_counter <= 0;  
+                 if(axi_arready)
+                   state <= load_process;
+                 else
+                   state <= init_process;
+              end
 
+            load_process:
+              begin
+                 if(axi_rvalid)
+                   if(axi_rlast)
+                     begin
+                        state <= end_process;
+                        word_counter <= word_counter; //to avoid writting last data in first line word
+                     end
+                   else
+                     begin
+                        word_counter <= word_counter +1;
+                        state <= load_process;
+                     end
+                 else
+                   begin
+                      word_counter <= word_counter;
+                      state <= load_process;
+                   end
+              end
+
+            end_process://delay for the read_latency of the memories (if the rdata is the last word)
+              state <= idle;
+            
+            
+            default:;
+          endcase
+     end
+   
+   
+   always @*
+     begin
+     axi_arvalid  = 1'b0;
+     axi_rready   = 1'b0;
+     line_load    = 1'b0;
+        case(state)
+
+          idle:
+            begin
+               line_load    = 1'b0;
+               axi_arvalid  = 1'b0;
+               axi_rready   = 1'b0;
+            end
+          
+          init_process:
+            begin
+               line_load   = 1'b1;
+               axi_arvalid = 1'b1;
+               axi_rready  = 1'b1;
+            end
+
+          load_process:
+            begin
+               line_load   = 1'b1;
+               axi_arvalid = 1'b0;
+               axi_rready  = 1'b1;             
+            end
+
+          end_process:
+            line_load = 1'b1; //delay for the memory update (read-latency)
+          
+          default:;
+          
+        endcase
+     end
+   
 endmodule
+
 
 
 module read_process_native
   #(
-`ifdef L1_ID
-    parameter I_OFFSET_W = 2,
-`endif
-`ifdef ASSOC_CACHE
-    parameter NWAY_W = 4,
-`endif
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter N_BYTES  = DATA_W/8,
-    parameter OFFSET_W = 2
+    parameter WORD_OFF_W = 3,
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory 
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    parameter MEM_BYTES_W = $clog2(MEM_NBYTES), //Offset of the Number of Bytes
+    //Cache-Memory base Offset
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W) //burst offset based on the cache word's and memory word size
     )
    (
-    input                 clk,
-    input                 reset,
-`ifdef L1_ID
-    input                 instr_req,
-`endif
-    input [ADDR_W -1: 2]  cache_addr,
-    input                 read_verification, //Read verification FSM state (state == read_verification)
-    input                 cache_miss, //~(|cache_hit)
-    input                 buffer_empty,
-    output reg            data_load,
-    output [OFFSET_W-1:0] select_counter, 
-    //Native Memory interface
-    output [ADDR_W -1:2]  mem_addr,
-    output reg            mem_valid,
-    input                 mem_ready
+    input                                     clk,
+    input                                     reset,
+    input [ADDR_W -1: $clog2(N_BYTES)]        addr,
+    input                                     read_miss, //read access that results in a cache miss
+    input                                     write_empty, //write_process has an empty buffer
+    output reg                                line_load, //load cache line with new data
+    output                                    line_load_en,//Memory enable during the cache line load
+    output reg [MEM_OFFSET_W-1:0]             word_counter,//counter to enable each word in the line
+    output [MEM_DATA_W-1:0]                   line_load_data,//data to load the cache line  
+    //Native memory interface
+    output [MEM_ADDR_W -1:$clog2(MEM_NBYTES)] mem_addr,
+    output reg                                mem_valid,
+    input                                     mem_ready,
+    input [MEM_DATA_W-1:0]                    mem_rdata
     );
 
-
-   reg [OFFSET_W-1:0]     select_counter_reg;
-
-   assign select_counter = select_counter_reg;
-   assign mem_addr  = {cache_addr[ADDR_W -1 : OFFSET_W + 2], select_counter_reg}; // to update sooner
+   assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter};
    
-   //// read fail Auxiliary FSM states and register //// -> Loading Data (to Data line/Block)
+   //Cache Line Load signals
+   assign line_load_en = mem_ready & mem_valid & line_load;
+   assign line_load_data = mem_rdata;
+
    localparam
-     read_stand_by     = 2'd0,
-     read_handshake    = 2'd1,
-     read_handshake_delay = 2'd2;
+     idle             = 2'd0,
+     handshake        = 2'd1, //the process was divided in 2 handshake steps to cause a delay in the
+     handshake_update = 2'd2, //valid signal so it would work with simple "ready" replies of BRAMs
+     end_handshake    = 2'd3; //(always 1 or a delayed valid signal), otherwise it will fail
    
    
-   
-   reg [1:0]              read_state;
+   reg [1:0]                                  state;
 
-   always @ (posedge clk, posedge reset)
+   always @(posedge clk, posedge reset)
      begin
-
-	if (reset)
+        if(reset)
           begin
-	     read_state <= read_stand_by; //reset
-	     data_load <= 1'b0;
-	     //mem_addr  <= {(ADDR_W-2){1'b0}};
-             mem_valid <= 1'b0;
-             select_counter_reg <= {OFFSET_W{1'b0}};     
-	  end	  
-	else
-	  begin
-	     //mem_addr  <= {cache_addr[ADDR_W -1 : OFFSET_W + 2], select_counter_reg};
-             mem_valid <= 1'b0;
-             select_counter_reg <= {OFFSET_W{1'b0}};   
-             //mem_addr  <= {(ADDR_W-2){1'b0}};
-             mem_valid <= 1'b0;
-             select_counter_reg <= {OFFSET_W{1'b0}};
+             state <= idle;
+          end
+        else
+          begin
              
-	     case (read_state)
-	       
-	       read_stand_by://0
-	         begin
-                    if ((read_verification) &&  (cache_miss && buffer_empty))
-		      begin
-		         read_state <= read_handshake;// read-miss
-		         data_load <= 1'b1;
-	                 mem_valid <= 1'b1;
-                         // select_counter <= select_counter + 1;
-		      end
-		    else 
-		      begin
-		         read_state <= read_stand_by; //idle
-		         data_load <= 1'b0;
-		      end
-	         end 
-	       
-               read_handshake://1
-                 begin
-                    //mem_valid <= 1'b1;                   
-                    if (mem_ready)
-                      begin
-                         if (&select_counter_reg)
-                           begin
-                              read_state <= read_stand_by;//ou tem-se que fazer delay de 1 clk?
-                              data_load <= 1'b0;
-                              mem_valid <= 1'b0;
-                              
-                           end
-                         else
-                           begin
-                              //select_counter_reg <= select_counter_reg +1;
-                              select_counter_reg <= select_counter_reg;
-                              read_state <= read_handshake_delay;
-                              mem_valid <= 1'b0;
-                              data_load <= 1'b1;
-                              
-                           end // else: !if(&select_counter_reg)
-                      end
-                    else
-                      begin
-                         read_state <= read_handshake;
-                         select_counter_reg <= select_counter_reg;
-                         data_load <= 1'b1;
-                         mem_valid <=1'b1;
-                         
-                      end // else: !if(&select_counter)
-                 end // case: read_handshake
+             case(state)
 
-               read_handshake_delay://1
+               idle:
                  begin
-                    mem_valid <=1'b1;
-                    read_state <= read_handshake;
-                    data_load <= 1'b1;
-                    //select_counter_reg <= select_counter_reg;
-                    select_counter_reg <= select_counter_reg+1;
+                    if(read_miss) //main_process flag
+                      state <= handshake;
+                    else
+                      state <= idle;
                  end
                
+               handshake:
+                 begin
+                    if(mem_ready)
+                      if(&word_counter)
+                        state <= end_handshake;
+                      else
+                        begin
+                           state <= handshake_update;
+                        end
+                    else
+                      begin
+                         state <= handshake;
+                      end
+                 end
                
-	       default:        
-	         begin
-		    read_state <= read_stand_by;
-	         end
+               handshake_update: //update word-counter
+                 begin
+                    state <= handshake;
+                 end
                
-	     endcase  
-	  end  
-     end                        
+               end_handshake: //read-latency delay (last line word)
+                 begin
+                    state <= idle;
+                 end
+               
+               default:;
+               
+             endcase                                                     
+          end         
+     end
+   
+   
+   always @*
+   begin 
+   word_counter =0;
+   
+     case(state)
+  
+       idle:
+         begin
+            mem_valid = 1'b0;
+            line_load = 1'b0;
+            word_counter = 0;
+         end
 
+       handshake:
+         begin
+            mem_valid = 1'b1;
+            line_load = 1'b1;
+            word_counter = word_counter;
+         end
+       
+       handshake_update:
+         begin
+            mem_valid = 1'b0;
+            line_load =1'b1;
+            word_counter = word_counter +1;
+         end
+
+       end_handshake:
+         begin
+            word_counter = word_counter; //to avoid updating the first word in line with last data
+            line_load = 1'b1; //delay for read-latency
+            mem_valid = 1'b0;
+         end
+       
+       default:;
+       
+     endcase
+   end
+   
 endmodule
 
 
@@ -958,170 +880,198 @@ module write_process_axi
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter N_BYTES  = DATA_W/8,
-    parameter WTBUF_DEPTH_W = 4
+    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    parameter WTBUF_DEPTH_W = 4,
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory 
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    parameter MEM_BYTES_W = $clog2(MEM_NBYTES), //Offset of the Number of Bytes
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0  //AXI ID value
     ) 
    (
-    input                    clk,
-    input                    reset,
-    input [ADDR_W-1:2]       cache_addr,
-    input [N_BYTES-1:0]      cache_wstrb,
-    input [DATA_W-1:0]       cache_wdata,
+    input                            clk,
+    input                            reset,
+    input [ADDR_W-1:$clog2(N_BYTES)] addr,
+    input [N_BYTES-1:0]              wstrb,
+    input [DATA_W-1:0]               wdata,
     // Buffer status
-    output                   buffer_empty,
-    output                   buffer_full,
+    output reg                       write_empty,
+    output                           write_full,
     // Buffer write enable
-    input                    buffer_write_en,
+    input                            write_en,
     // AXI interface 
     // Address Write
-    output [0:0]             AW_ID, 
-    output reg [ADDR_W-1:0]  AW_ADDR,
-    output [7:0]             AW_LEN,
-    output [2:0]             AW_SIZE,
-    output [1:0]             AW_BURST,
-    output [0:0]             AW_LOCK,
-    output [3:0]             AW_CACHE,
-    output [2:0]             AW_PROT,
-    output [3:0]             AW_QOS,
-    output reg               AW_VALID,
-    input                    AW_READY,
+    output [AXI_ID_W-1:0]            axi_awid, 
+    output [MEM_ADDR_W-1:0]          axi_awaddr,
+    output [7:0]                     axi_awlen,
+    output [2:0]                     axi_awsize,
+    output [1:0]                     axi_awburst,
+    output [0:0]                     axi_awlock,
+    output [3:0]                     axi_awcache,
+    output [2:0]                     axi_awprot,
+    output [3:0]                     axi_awqos,
+    output reg                       axi_awvalid,
+    input                            axi_awready,
     //Write                  
-    output reg [DATA_W-1:0]  W_DATA,
-    output reg [N_BYTES-1:0] W_STRB,
-    output reg               W_LAST,
-    output reg               W_VALID, 
-    input                    W_READY,
-    input [0:0]              B_ID,
-    input [1:0]              B_RESP,
-    input                    B_VALID,
-    output reg               B_READY
+    output [MEM_DATA_W-1:0]          axi_wdata,
+    output [MEM_NBYTES-1:0]          axi_wstrb,
+    output                           axi_wlast,
+    output reg                       axi_wvalid, 
+    input                            axi_wready,
+    input [AXI_ID_W-1:0]             axi_bid,
+    input [1:0]                      axi_bresp,
+    input                            axi_bvalid,
+    output reg                       axi_bready
     );
 
-
-   wire [(N_BYTES) + (ADDR_W - 2) + (DATA_W) -1 :0] buffer_data_out, buffer_data_in; // {wstrb, addr [ADDR_W-1:2], word}
-   reg                                              buffer_read_en;
+   //Write-through buffer
+   wire [N_BYTES+(ADDR_W-BYTES_W)+(DATA_W) -1 :0] buffer_dout, buffer_din; 
+   reg                                            buffer_read_en;
+   wire                                           buffer_empty, buffer_full;
    
+   assign buffer_din = {addr,wstrb,wdata};
 
-   assign buffer_data_in = {cache_wstrb, cache_addr, cache_wdata};
-   
+   assign write_full = buffer_full;
    
    //Constant AXI signals
-   assign AW_ID = 1'd0;
-   assign AW_LEN = 8'd0;
-   assign AW_SIZE = 3'b010;
-   assign AW_BURST = 2'd0;
-   assign AW_LOCK = 1'b0; // 00 - Normal Access
-   assign AW_CACHE = 4'b0011;
-   assign AW_PROT = 3'd0;
-   assign AW_QOS = 4'd0;
-
+   assign axi_awid    = AXI_ID;
+   assign axi_awlen   = 8'd0;
+   assign axi_awsize  = 3'b010;
+   assign axi_awburst = 2'd0;
+   assign axi_awlock  = 1'b0; // 00 - Normal Access
+   assign axi_awcache = 4'b0011;
+   assign axi_awprot  = 3'd0;
+   assign axi_awqos   = 4'd0;
+   assign axi_wlast   = axi_wvalid;
    
-
-   //// buffer FSM states and register ////
+   //AXI Buffer Output signals
+assign axi_awaddr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
+   generate
+      if(MEM_DATA_W == DATA_W)
+        begin
+           assign axi_wstrb = buffer_dout[DATA_W +: N_BYTES];
+           assign axi_wdata =  {{(MEM_DATA_W-DATA_W){1'b0}}, buffer_dout[DATA_W-1:0]};
+           
+        end
+      else
+        begin
+           wire [MEM_BYTES_W - BYTES_W -1 :0] addr_shift = buffer_dout[DATA_W+N_BYTES +: (MEM_BYTES_W-BYTES_W)];//addr[BYTES_W +: (MEM_BYTES_W - BYTES_W)]
+           assign axi_wstrb = buffer_dout[DATA_W+N_BYTES -1 -:N_BYTES] << addr_shift * N_BYTES;
+           assign axi_wdata = buffer_dout[DATA_W -1 : 0] << addr_shift * DATA_W;
+        end
+   endgenerate
+   
+   
    localparam
-     buffer_stand_by           = 2'd0,
-     buffer_write_validation   = 2'd1,
-     buffer_write_to_mem       = 2'd2,
-     buffer_write_verification = 2'd3;  
+     idle           = 3'd0,
+     init_process   = 3'd1,
+     addr_process   = 3'd2,
+     write_process  = 3'd3,
+     verif_process  = 3'd4;  
    
-   reg [1:0]                                        buffer_state;
+   reg [3:0]                                  state;
 
-   always @ (posedge clk, posedge reset)
+   
+   always @(posedge clk, posedge reset)
      begin
-        
-	if (reset)
-	  begin 
-	     buffer_state <= buffer_stand_by;
-	     AW_ADDR  <= {(ADDR_W){1'b0}};
-             AW_VALID <= 1'b0;
-             W_VALID  <= 1'b0;
-             W_STRB   <= {N_BYTES{1'b0}};
-             B_READY  <= 1'b1;
-             W_DATA   <= {DATA_W{1'b0}};
-             W_LAST   <= 1'b0;
-             buffer_read_en <= 1'b0;
-          end
-	else
-	  begin
-	     AW_ADDR  <= {(ADDR_W){1'b0}};
-             AW_VALID <= 1'b0;
-             W_VALID  <= 1'b0;
-             W_STRB   <= {N_BYTES{1'b0}};
-             B_READY  <= 1'b1;
-             W_DATA   <= {DATA_W{1'b0}};
-             W_LAST   <= 1'b0;
-             buffer_read_en <= 1'b0;
+        if(reset)
+          state <= idle;
+        else
+          case(state)
 
-             
-	     case (buffer_state)
-	       
-	       buffer_stand_by:
-	         begin
-		    if (buffer_empty) buffer_state <= buffer_stand_by; 
-		    else              buffer_state <= buffer_write_validation;
-	         end 
+            idle:
+              begin
+                 if(buffer_empty)
+                   state <= idle;
+                 else
+                   state <= init_process;
+              end
 
-	       buffer_write_validation:
-	         begin
-		    AW_ADDR  <= {buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W], 2'b00};
-		    AW_VALID <= 1'b1;
-		    if (AW_READY) buffer_state <= buffer_write_to_mem; 
-		    else          buffer_state <= buffer_write_validation;
-	         end        
-	       
-	       buffer_write_to_mem:
-	         begin        //buffer_data_out = {wstrb, address, word_size (DATA_W)}  
-		    W_VALID  <=  1'b1;
-		    W_STRB   <=  buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
-		    W_LAST   <=  1'b1;
-		    W_DATA   <=  buffer_data_out [DATA_W -1 : 0];
-		    if (W_READY) buffer_state <= buffer_write_verification;             
-		    else         buffer_state <= buffer_write_to_mem;
-	         end
+            init_process://update write-through buffer
+              begin
+                 state <= addr_process;
+              end
+            
+            addr_process:
+              begin
+                 if(axi_awready)
+                   state <= write_process;
+                 
+                 else
+                   state <= init_process;
+              end
 
-	       buffer_write_verification:
-	         begin
-		    B_READY <= 1'b1;
-		    if (B_VALID)
-		      if (~B_RESP[1]) //00 or 01 for OKAY response
-                        begin
-		           buffer_state <= buffer_stand_by;
-                           buffer_read_en <= 1'b1;
-                        end
-		      else
-		        buffer_state <= buffer_write_validation; //re-writes, the previous write was unsuccessfull
-		    else
-		      buffer_state <= buffer_write_verification;
-	         end
-	       
-	       default:        
-	         begin
-		    buffer_state <= buffer_stand_by;
-	         end
-	       
-	     endcase  
-	  end  
-     end         
+            write_process:
+              begin
+                 if (axi_wready)
+                   state <= verif_process;
+                 else
+                   state <= write_process;
+              end
 
+            verif_process:
+              begin
+                 if(axi_bvalid)
+                   if(~axi_bresp[1])//00 or 01 - OKAY
+                     if(buffer_empty)
+                       state <= idle;
+                     else
+                       state <= init_process;
+                   else
+                     state <= init_process; //wasn't well written
+                 else
+                   state <= verif_process;
+              end
+
+            default: ;         
+
+          endcase 
+     end // always @ (posedge clk, posedge reset)
    
    
+   always @*
+     begin
+        buffer_read_en = 1'b0;
+        axi_awvalid    = 1'b0;
+        axi_wvalid     = 1'b0;
+        axi_bready     = 1'b0;
+        write_empty    = 1'b0;        
+        case(state)
+          idle:
+            write_empty = buffer_empty;
+          init_process:
+            buffer_read_en = 1'b1;
+          addr_process:
+            axi_awvalid = 1'b1;
+          write_process:
+            axi_wvalid  = 1'b1;
+          verif_process:
+            axi_bready  = 1'b1;
+          default:;
+        endcase
+     end       
 
+   
    iob_async_fifo #(
-		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
+		    .DATA_WIDTH (N_BYTES+ADDR_W-BYTES_W+DATA_W),
 		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
 		    ) 
-   buffer 
+   write_throught_buffer 
      (
-      .rst     (reset                    ),
-      .data_out(buffer_data_out          ), 
-      .empty   (buffer_empty             ),
+      .rst     (reset               ),
+      .data_out(buffer_dout         ), 
+      .empty   (buffer_empty        ),
       .level_r (),
-      .read_en (buffer_read_en           ),
-      .rclk    (clk                      ),    
-      .data_in (buffer_data_in           ), 
-      .full    (buffer_full              ),
+      .read_en (buffer_read_en      ),
+      .rclk    (clk                 ),    
+      .data_in (buffer_din          ), 
+      .full    (buffer_full         ),
       .level_w (),
-      .write_en((|cache_wstrb) && buffer_write_en),
-      .wclk    (clk                      )
+      .write_en((|wstrb) && write_en),
+      .wclk    (clk                 )
       );
 
 endmodule
@@ -1132,816 +1082,494 @@ module write_process_native
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter N_BYTES  = DATA_W/8,
-    parameter WTBUF_DEPTH_W = 4
+    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    parameter WTBUF_DEPTH_W = 4,
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory 
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    parameter MEM_BYTES_W = $clog2(MEM_NBYTES) //Offset of the Number of Bytes
     ) 
    (
-    input                clk,
-    input                reset,
-    input [ADDR_W-1:2]   cache_addr,
-    input [N_BYTES-1:0]  cache_wstrb,
-    input [DATA_W-1:0]   cache_wdata,
+    input                                     clk,
+    input                                     reset,
+    input [ADDR_W-1:$clog2(N_BYTES)]          addr,
+    input [N_BYTES-1:0]                       wstrb,
+    input [DATA_W-1:0]                        wdata,
     // Buffer status
-    output               buffer_empty,
-    output               buffer_full,
+    output reg                                write_empty,
+    output                                    write_full,
     // Buffer write enable
-    input                buffer_write_en,
+    input                                     write_en,
     //Native Memory interface
-    output [ADDR_W -1:2] mem_addr,
-    output reg           mem_valid,
-    input                mem_ready,
-    output [DATA_W-1:0]  mem_wdata,
-    output [N_BYTES-1:0] mem_wstrb
+    output [MEM_ADDR_W -1:$clog2(MEM_NBYTES)] mem_addr,
+    output reg                                mem_valid,
+    input                                     mem_ready,
+    output [MEM_DATA_W-1:0]                   mem_wdata,
+    output reg [MEM_NBYTES-1:0]               mem_wstrb
    
     );
 
-
-   wire [(N_BYTES) + (ADDR_W - 2) + (DATA_W) -1 :0] buffer_data_out, buffer_data_in; // {wstrb, addr [ADDR_W-1:2], word}
-   reg                                              buffer_read_en;
+   //Write-through buffer
+   wire [N_BYTES+(ADDR_W-$clog2(N_BYTES))+(DATA_W) -1 :0] buffer_dout, buffer_din; 
+   reg                                                    buffer_read_en;
+   wire                                                   buffer_empty, buffer_full;
    
+   assign buffer_din = {addr,wstrb,wdata};
 
-   assign buffer_data_in = {cache_wstrb, cache_addr, cache_wdata};
+   assign write_full = buffer_full;
    
-
+   //Native Buffer Output signals
+   assign mem_addr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)]}; 
    
-   //// buffer FSM states and register ////
    localparam
-     buffer_stand_by = 2'd0,
-     buffer_write    = 2'd1,
-     buffer_delay    = 2'd2;
+     idle          = 3'd0,
+     init_process  = 3'd1,
+     write_process = 3'd2;
    
-   reg [1:0]                                        buffer_state;
+   reg [1:0]                                              state;
 
+   generate
+      if(MEM_DATA_W == DATA_W)
+        begin
+           
+           assign mem_wdata = buffer_dout [DATA_W -1 : 0];
+           
+           always @*
+             begin
+                mem_wstrb = 0;
+                case(state)
+                  write_process:
+                    begin
+                       mem_wstrb = buffer_dout [DATA_W +: N_BYTES];
+                    end
+                  default:;
+                endcase // case (state)
+             end // always @ *
+           
+        end
+      else
+        begin
+           
+           wire [MEM_BYTES_W - BYTES_W -1 :0] addr_shift = buffer_dout[DATA_W+N_BYTES +: (MEM_BYTES_W-BYTES_W)];//addr[BYTES_W +: (MEM_BYTES_W - BYTES_W)]
+           assign mem_wdata = buffer_dout [DATA_W -1 : 0] << addr_shift * DATA_W ;
+           
+           always @*
+             begin
+                mem_wstrb = 0;
+                case(state)
+                  write_process:
+                    begin
+                       mem_wstrb = buffer_dout[DATA_W+N_BYTES -1 -:N_BYTES] << addr_shift * N_BYTES;
+                    end
+                  default:;
+                endcase // case (state)
+             end 
+           
+        end
+   endgenerate
 
-   assign mem_addr = {buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W]};
-   assign mem_wdata = buffer_data_out [DATA_W -1 : 0];
-   assign mem_wstrb = (buffer_state == buffer_write)? buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W] : {N_BYTES{1'b0}}; // to avoid writting during a reading access
-
-   
-   always @ (posedge clk, posedge reset)
+   always @(posedge clk, posedge reset)
      begin
-        
-	if (reset)
-	  begin 
-	     buffer_state <= buffer_stand_by; 
-             mem_valid <= 1'b0;
-             buffer_read_en <= 1'b0;        
-          end
-	else
-	  begin
-             //mem_valid <= 1'b0;
-             buffer_read_en <= 1'b0;
-             
-	     case (buffer_state)
-	       
-	       buffer_stand_by:
-	         begin
-                    mem_valid <= 1'b0;                   
-		    if (buffer_empty)
-                      buffer_state <= buffer_stand_by;
-		    else
-                      begin
-                         buffer_state <= buffer_delay;
-                         buffer_read_en <= 1'b1;
-                      end
-	         end 
+        if(reset)
+          state <= idle;
+        else
+          case(state)
 
-	       buffer_write:
-	         begin
-	            //mem_valid <= 1'b1;
-                    // mem_addr <= buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W];
-                    // mem_wdata <= buffer_data_out [DATA_W -1 : 0];
-                    // mem_wstrb <= buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
-                    
-		    if (mem_ready)
-                      begin
-                         buffer_state <= buffer_stand_by;
-                         mem_valid <= 1'b0;                        
-                      end  
-                    else
-                      begin
-                         buffer_state <= buffer_write;
-                      end                         
-	         end 
-	       
-	       buffer_delay:
-	         begin 
-	            buffer_state <= buffer_write;
-                    //mem_addr <= buffer_data_out [(ADDR_W - 2 + DATA_W) - 1 : DATA_W];
-                    //mem_wdata <= buffer_data_out [DATA_W -1 : 0];
-                    //mem_wstrb <= buffer_data_out [(N_BYTES + ADDR_W -2 + DATA_W) -1 : ADDR_W -2 + DATA_W];
-                    mem_valid <= 1'b1;
-	         end
-	       
-	       default:        
-	         begin
-		    buffer_state <= buffer_stand_by;
+            idle:
+              begin
+                 if(buffer_empty)
+                   state <= idle;
+                 else
+                   state <= init_process;
+              end
 
-	         end
-	       
-	     endcase  
-	  end  
-     end         
+            init_process:
+              begin
+                 state <= write_process;
+              end
 
+            write_process:
+              begin
+                 if(mem_ready)
+                   state <= idle;
+                 else
+                   state <= write_process;
+              end
+
+            default:;
+          endcase // case (state)
+     end // always @ (posedge clk, posedge reset)
+
+   always @*
+     begin
+        write_empty    = 1'b0;
+        buffer_read_en = 1'b0;
+        mem_valid      = 1'b0;
+        case(state)
+          idle:
+            write_empty = buffer_empty;
+          init_process:
+            buffer_read_en = 1'b1; //update buffer in it's read port
+          write_process:
+               mem_valid = 1'b1;
+          default:;
+        endcase // case (state)
+     end
    
    
-
    iob_async_fifo #(
-		    .DATA_WIDTH (N_BYTES+ADDR_W-2+DATA_W),
+		    .DATA_WIDTH (N_BYTES+ADDR_W-BYTES_W+DATA_W),
 		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
 		    ) 
-   buffer 
+   write_throught_buffer 
      (
-      .rst     (reset                    ),
-      .data_out(buffer_data_out          ), 
-      .empty   (buffer_empty             ),
+      .rst     (reset               ),
+      .data_out(buffer_dout         ), 
+      .empty   (buffer_empty        ),
       .level_r (),
-      .read_en (buffer_read_en           ),
-      .rclk    (clk                      ),    
-      .data_in (buffer_data_in           ), 
-      .full    (buffer_full              ),
+      .read_en (buffer_read_en      ),
+      .rclk    (clk                 ),    
+      .data_in (buffer_din          ), 
+      .full    (buffer_full         ),
       .level_w (),
-      .write_en((|cache_wstrb) && buffer_write_en),
-      .wclk    (clk                      )
+      .write_en((|wstrb) && write_en),
+      .wclk    (clk                 )
       );
 
 endmodule
 
 
-//////////////////
-// Memory Cache //
-//////////////////
 
+/*----------------*/
+/* Memory Section */
+/*----------------*/
+//Module that contains all the memories as well as the replacement policies in case necessary
 
-module memory_cache 
+module memory_section 
   #(
-    parameter ADDR_W   = 32,
-    parameter DATA_W   = 32,
-    parameter N_BYTES  = DATA_W/8,
-    parameter NLINE_W  = 4,
-    parameter OFFSET_W = 2,
-`ifdef L1_ID
-    parameter I_NLINE_W = 3,
-    parameter I_OFFSET_W = 2,
-`endif
-`ifdef ASSOC_CACHE
-    parameter NWAY_W   = 2,
-`endif
-    parameter WTBUF_DEPTH_W = 4
+    //memory cache's parameters
+    parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
+    parameter DATA_W   = 32,       //Data width - word size used for the cache
+    parameter N_WAYS   = 1,        //Number of Cache Ways
+    parameter LINE_OFF_W  = 6,      //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,       //Word-Offset Width - 2**OFFSET_W total DATA_W words per line 
+    //Do NOT change - memory cache's parameters - dependency
+    parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
+    parameter N_BYTES  = DATA_W/8,      //Number of Bytes per Word
+    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    /*---------------------------------------------------*/
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    //Do NOT change - slave parameters - dependency
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W) //burst offset based on the cache and memory word size
     )
-   (
-    // iob_cache port signals
-    input                    clk,
-    input                    reset,
-    input [DATA_W-1:0]       cache_write_data,
-    input [N_BYTES-1:0]      cache_wstrb,
-    input [ADDR_W-1:2]       cache_addr,
-    output reg [DATA_W-1:0]  cache_read_data,
-    // input signals
-    input                    cache_read_miss, // verification state == read_miss  
-    input                    data_load,
-    input [OFFSET_W-1 :0]    select_counter,
-    input                    cache_invalidate,
-    input                    write_enable, //global enable (from Verification FSM)
-`ifdef L1_ID
-    input                    instr,// cache_ctrl_instr_access
-`endif 
-`ifdef ASSOC_CACHE
-    output [2**NWAY_W -1: 0] cache_hit_output,
-`else
-    output                   cache_hit_output,
-`endif
-    //AXI - input Read signals
-    input [DATA_W-1:0]       cache_line_rdata,
-    input                    cache_line_enable
-    );
+   ( 
+     //master interface
+     input                            clk,
+     input                            reset,
+     input [ADDR_W-1:$clog2(N_BYTES)] addr,
+     input [DATA_W-1:0]               wdata,
+     input [N_BYTES-1:0]              wstrb,
+     output [DATA_W-1:0]              rdata,
+     input                            valid,
+     //slave interface
+     input [MEM_DATA_W-1:0]           line_load_data,
+     //
+     input                            line_load, //process of loading the cache-line
+     input                            line_load_en, //enable for during a cache line load
+     input [MEM_OFFSET_W-1:0]         word_counter, //selects the cache-line words elligible to be written
+     output                           hit, //cache-hit(1), cache-miss(0)
+     input                            write_en, //global enable
+     input                            invalidate   //invalidate entire cache
+     );
    
-   localparam TAG_W = ADDR_W - (NLINE_W + 2 + OFFSET_W);
-   
-   wire [OFFSET_W-1:0]       offset = cache_addr [(OFFSET_W + 1):2];//last 2 bits are 0
-   wire [NLINE_W-1:0]        index = cache_addr [NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [OFFSET_W - 1:0]     word_select= (data_load)? select_counter : offset;
-   //wire [DATA_W -1 : 0]      write_data = (data_load)? R_DATA : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
-   wire [DATA_W -1 : 0]      write_data = (data_load)? cache_line_rdata : cache_write_data; //when a read-fail, the data is read from the main memory, otherwise is the input write data 
+   localparam TAG_W = ADDR_W - (BYTES_W+WORD_OFF_W+LINE_OFF_W);
 
-`ifdef ASSOC_CACHE
-   wire [(2**NWAY_W)*DATA_W*(2**OFFSET_W) - 1: 0] data_read;
-   wire [2**NWAY_W -1: 0]                         cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0]                            nway_hit; // Indicates the way that had a cache_hit
-   wire [NWAY_W -1: 0]                            nway_sel;
- `ifdef L1_ID
-   parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
-   wire [2**NWAY_W -1: 0]                         instr_cache_hit, data_cache_hit;//uses one-hot numenclature
-   wire [NWAY_W -1: 0]                            instr_nway_sel, data_nway_sel;
-   wire [(2**NWAY_W)*DATA_W*(2**I_OFFSET_W) - 1: 0] instr_read;
-   wire [(2**NWAY_W)-1:0]                           instr_v, data_v;
-   wire [(2**NWAY_W)*I_TAG_W-1:0]                   instr_tag;
-   wire [(2**NWAY_W)*TAG_W-1:0]                     data_tag;
-   wire [(2**NWAY_W)-1 : 0]                         instr_tag_val, data_tag_val; //TAG Validation
-   wire [NLINE_W-1:0]                               instr_index = cache_addr[NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [NLINE_W-1:0]                               data_index = cache_addr[NLINE_W + OFFSET_W + 1 : OFFSET_W + 2];
-   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
- `else
-   wire [(2**NWAY_W)-1 : 0]                         tag_val; //TAG Validation
-   wire [(2**NWAY_W)-1:0]                           v;
-   wire [(2**NWAY_W)*TAG_W-1:0]                     tag;
- `endif
-`else 
-   wire [DATA_W*(2**OFFSET_W) - 1: 0]               data_read;
-   wire 					    cache_hit;
- `ifdef L1_ID
-   parameter I_TAG_W = ADDR_W - (I_NLINE_W + I_OFFSET_W + 2); //Instruction TAG Width: last 2 bits are always 00 (4 Bytes = 32 bits)
-   wire 					    data_v, instr_v;
-   wire [TAG_W-1:0]                                 data_tag;
-   wire [I_TAG_W -1:0]                              instr_tag;
-   wire [DATA_W*(2**I_OFFSET_W) - 1: 0]             instr_read;
-   wire [I_OFFSET_W-1:0]                            instr_offset = cache_addr [(I_OFFSET_W + 1):2];//last 2 bits are 0
-   wire [I_NLINE_W-1:0]                             instr_index = cache_addr [I_NLINE_W + I_OFFSET_W + 1 : I_OFFSET_W + 2];
-   wire [I_OFFSET_W - 1:0]                          instr_word_select= (data_load)? select_counter [I_OFFSET_W-1:0] : instr_offset;
- `else // !`ifdef L1_ID
-   wire 					    v;
-   wire [TAG_W-1:0]                                 tag;
- `endif // !`ifdef L1_ID 
-`endif // !`ifdef ASSOC_CACHE
+   wire [N_WAYS-1:0]                  way_hit, v;
+   wire [N_WAYS*TAG_W-1:0]            tag;
+   assign hit = |way_hit;
    
-   assign cache_hit_output = cache_hit;
+   wire [N_WAYS*(2**WORD_OFF_W)*DATA_W-1:0] line_rdata;
+   wire [LINE_OFF_W-1:0]                    line_addr = addr[BYTES_W + WORD_OFF_W +: LINE_OFF_W];
+   wire [TAG_W-1:0]                         line_tag  = addr[            ADDR_W-1 -: TAG_W     ];
+   wire [WORD_OFF_W-1:0]                    line_word_select = addr[      BYTES_W +: WORD_OFF_W];
+   reg [N_WAYS*(2**WORD_OFF_W)*N_BYTES-1:0] line_wstrb;
    
    
-`ifdef L1_ID
-   
- `ifdef ASSOC_CACHE // ASSOCIATIVE CACHE L1 (INSTR CACHE + DATA CACHE)
-
-   assign nway_sel = (instr)? instr_nway_sel : data_nway_sel;
-   
-   reg [NWAY_W-1:0]                                 nway_selector;
-   always @ (posedge clk)
-     begin
-        nway_selector <= nway_hit; // nway_hit start at 1 (hit at position 0)
-        if  (cache_read_miss)
-          nway_selector <= nway_sel;
-     end  
-   
-   assign cache_line_wstrb = (write_enable)? (cache_wstrb) : {N_BYTES{cache_line_enable}}; 
-   genvar 						  i, j;
-   
+   genvar                                   i,j,k;
    generate
-      for (j = 0; j < 2**NWAY_W; j=j+1)
-	begin
-	   //DATA CACHE
-	   for (i = 0; i < 2**OFFSET_W; i=i+1)
-	     begin
-                generable_memory #(
-			           .ADDR_W (NLINE_W),
-                                   .MEM_W (8),
-                                   .N_MEM (N_BYTES)
-			           ) 
-		data_memory 
-		    (
-		     .clk           (clk                                                                    ),
-		     .mem_write_data(write_data                                                             ),
-		     .mem_addr      (index                                                                  ),
-		     .mem_en        (((i == word_select) && (j == nway_selector) && (data_load || cache_hit[j]) && (!instr))? cache_line_wstrb : {N_BYTES{1'b0}}),
-		     .mem_read_data (data_read [(j*(2**OFFSET_W)+(i+1))*DATA_W-1:(j*(2**OFFSET_W)+i)*DATA_W]) 
-		     ); 
-		
-	     end 
-	   
-           generable_memory #(
-			      .ADDR_W (NLINE_W), 
-			      .DATA_W (TAG_W),
-                              .MEM_W (TAG_W),
-                              .N_MEM (1)
-			      ) 
-	   data_mem_tag 
-	     (
-	      .clk           (clk                                         ),
-	      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]         ),
-	      .mem_addr      (index                                       ),
-	      .mem_en        ((j == nway_sel)? data_load&(!instr):1'b0),
-	      .mem_read_data (data_tag[TAG_W*(j+1)-1 : TAG_W*j]           )                                             
-	      );
-
-	   assign data_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == data_tag[TAG_W*(j+1)-1 : TAG_W*j]);
-	   
-
-           generable_reg_file #(
-			        .ADDR_W (NLINE_W), 
-			        .DATA_W (1),
-                                .MEM_W (1),
-                                .N_MEM (1)
-			        ) 
-	   data_valid 
-	     (
-	      .clk         (clk                                           ),
-	      .rst       (reset || cache_invalidate                     ),
-	      .mem_write_data(data_load                                     ),		           
-	      .mem_addr      (index                                         ),
-	      .mem_en        ((j == nway_sel)? data_load & (!instr):1'b0),
-	      .mem_read_data (data_v[j]                        )   
-	      );
-
-
-	   //INSTRUCTION CACHE
-	   for (i = 0; i < 2**I_OFFSET_W; i=i+1)
-	     begin
-                generable_memory #(
-			           .ADDR_W (I_NLINE_W),
-                                   .DATA_W (DATA_W),
-                                   .MEM_W (8),
-                                   .N_MEM (N_BYTES)
-			           ) 
-	        instr_memory 
-		    (
-		     .clk           (clk                                                                    ),
-                     .mem_write_data(write_data                                                             ),
-		     .mem_addr      (instr_index                                                                  ),
-		     .mem_en        (((i == instr_word_select) && (j == nway_selector) && (data_load) & instr)? {N_BYTES{R_READY}} : {N_BYTES{1'b0}} ),
-		     .mem_read_data (instr_read [(j*(2**I_OFFSET_W)+(i+1))*DATA_W-1:(j*(2**I_OFFSET_W)+i)*DATA_W]) 
-		     ); 
-		
-	     end 
-	   
-           generable_memory #(
-			      .ADDR_W (I_NLINE_W), 
-			      .DATA_W (I_TAG_W),
-                              .MEM_W (I_TAG_W),
-                              .N_MEM (1)
-			      ) 
-	   instr_mem_tag 
-	     (
-	      .clk           (clk                                          ),
-              .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]        ),
-	      .mem_addr      (instr_index                                  ),
-	      .mem_en        ((j == nway_sel)? (data_load & instr):1'b0),
-	      .mem_read_data (instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]       )                                             
-	      );
-
-	   assign instr_tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)] == instr_tag[I_TAG_W*(j+1)-1 : I_TAG_W*j]);
-	   
-
-           generable_reg_file #(
-			        .ADDR_W (I_NLINE_W), 
-			        .DATA_W (1),
-                                .MEM_W (1),
-                                .N_MEM (1)
-			        ) 
-	   instr_valid
-	     (
-	      .clk         (clk                                          ),
-	      .rst       (reset || cache_invalidate                    ),
-	      .mem_write_data(data_load                                    ),		        
-	      .mem_addr      (index                                        ),
-	      .mem_en        ((j == nway_sel)? (data_load & instr):1'b0),
-	      .mem_read_data (instr_v[j]                                   )   
-	      );
-
-	   
-	   //DATA + INSTR
-	   assign cache_hit[j] = (instr)? instr_tag_val[j] && instr_v[j] : data_tag_val[j] && data_v[j];//one-hot cache-hit	   	
-	   assign instr_cache_hit[j] = instr_tag_val[j] && instr_v[j];
-	   assign data_cache_hit[j] = data_tag_val[j] && data_v[j];  
-	end     
-   endgenerate
-
-
-   onehot_to_bin #(
-		   .BIN_W (NWAY_W)
-		   ) 
-   onehot_to_bin
-     (
-      .onehot(cache_hit[2**NWAY_W-1:1]),
-      .bin(nway_hit)
-      );
-   
-
-   
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= (instr)? instr_read >> DATA_W*(instr_word_select + (2**I_OFFSET_W)*nway_hit) : data_read >> DATA_W*(word_select + (2**OFFSET_W)*nway_hit);
-
-
-   
- `else // DIRECT ACCESS L1 (INSTR CACHE + DATA CACHE)
-
-   assign cache_hit = (instr)? ((instr_tag == cache_addr [ADDR_W-1 -: I_TAG_W]) && instr_v)  : ((data_tag == cache_addr [ADDR_W-1 -: TAG_W]) && data_v);
-   
-   wire [N_BYTES -1 :0] 	      cache_line_wstrb;  
-   assign cache_line_wstrb = (write_enable)? (cache_wstrb) : {N_BYTES{cache_line_enable}}; 
-   
-   genvar 			      i;
-   
-   //DATA CACHE 
-   generate  
-      for (i = 0; i < 2**OFFSET_W; i=i+1)
+      if(N_WAYS != 1)
         begin
-           generable_memory #(
-			      .ADDR_W (NLINE_W),
-                              .DATA_W (DATA_W),
-                              .MEM_W (8),
-                              .N_MEM (N_BYTES)
-			      ) 
-	   data_memory 
-	       (
-		.clk           (clk                                 ),
-		.mem_write_data(write_data                          ),
-		.mem_addr      (index                               ),
-		.mem_en        (((i == word_select) && (data_load || cache_hit) && (!instr))? cache_line_wstrb : {N_BYTES{1'b0}}), 
-		.mem_read_data (data_read [DATA_W*(i+1)-1: DATA_W*i])   
-		);      
-        end     
-   endgenerate
+           wire [NWAY_W-1:0] way_hit_bin, way_select;//reason for the 2 generates for single vs multiple ways
+           
+           
+           replacement_process #(
+	                         .N_WAYS    (N_WAYS    ),
+	                         .LINE_OFF_W(LINE_OFF_W)
+	                         )
+           replacement_policy_algorithm
+             (
+              .clk       (clk             ),
+              .reset     (reset|invalidate),
+              .write_en  (write_en        ),
+              .way_hit   (way_hit         ),
+              .line_addr (line_addr       ),
+              .way_select(way_select      )
+              );
+           
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)
+                           ) 
+           way_hit_encoder
+             (
+              .onehot(way_hit    ),
+              .bin   (way_hit_bin)
+              );
 
-   generable_memory #(
-		      .ADDR_W (NLINE_W), 
-		      .DATA_W (TAG_W  ),
-                      .MEM_W (TAG_W),
-                      .N_MEM (1)
-		      ) 
-   data_mem_tag 
-     (
-      .clk           (clk                                ),
-      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
-      .mem_addr      (index                              ),
-      .mem_en        ((!instr) & data_load           ),
-      .mem_read_data (data_tag                           )                     
-      );
+           
+           //Read Data Multiplexer
+           assign rdata [DATA_W-1:0] = line_rdata >> DATA_W*(line_word_select + (2**WORD_OFF_W)*way_hit_bin);
+           
+           //Cache Line Write Strobe Shifter
+           always @*
+             if(line_load)
+               line_wstrb = {MEM_NBYTES{1'b1}} << (word_counter*MEM_NBYTES + way_select*(2**WORD_OFF_W)*N_BYTES);
+             else
+               line_wstrb = (wstrb & {N_BYTES{write_en}}) << (line_word_select*N_BYTES + way_hit_bin*(2**WORD_OFF_W)*N_BYTES);
 
+           for (k = 0; k < N_WAYS; k=k+1)
+             begin
+                for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                  begin
+                     for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
+                       begin
+                          iob_sp_mem_be
+                             #(
+                               .NUM_COL   (N_BYTES),
+                               .COL_WIDTH (8),
+                               .ADDR_WIDTH(LINE_OFF_W)
+                               )
+                          cache_memory 
+                             (
+                              .clk (clk),
+                              .en  (valid), //so it can display rdata 1 cycle sooner (otherwise if also used wayt_hit)
+                              .we  (((line_load_en & (k == way_select)) | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
+                              .addr(line_addr),
+                              .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                              .dout(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                              );
+                       end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+                  end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                iob_reg_file
+                  #(
+                    .ADDR_WIDTH(LINE_OFF_W), 
+                    .COL_WIDTH (1),
+                    .NUM_COL   (1)
+	            ) 
+	        valid_memory 
+	          (
+	           .clk  (clk                                ),
+	           .rst  (reset|invalidate                   ),
+	           .wdata(line_load                          ),				       
+	           .addr (line_addr                          ),
+	           .en   ((k == way_select)? line_load : 1'b0),
+	           .rdata(v[k]                               )   
+	           );
 
-   generable_reg_file #(
-		        .ADDR_W (NLINE_W), 
-		        .DATA_W (1),
-                        .MEM_W (1),
-                        .N_MEM (1)
-		        ) 
-   data_valid 
-     (
-      .clk         (clk                      ),
-      .rst       (reset || cache_invalidate),
-      .mem_write_data(data_load                ),				        
-      .mem_addr      (index                    ),
-      .mem_en        ((!instr) & data_load ),
-      .mem_read_data (data_v                   )   
-      );
-   
-   //INSTRUCTION CACHE
-   generate
-      for (i = 0; i < 2**I_OFFSET_W; i=i+1)
-        begin
-           generable_memory #(
-			      .ADDR_W (I_NLINE_W),
-                              .DATA_W (DATA_W),
-                              .MEM_W (8),
-                              .N_MEM (N_BYTES)
-			      ) 
-	   instr_memory 
-	       (
-		.clk           (clk                                  ),
-		.mem_write_data(write_data                           ),
-		.mem_addr      (instr_index                          ),
-		.mem_en        ((((i == instr_word_select) && (data_load)) && instr)? {N_BYTES{cache_line_enable}} : {N_BYTES{1'b0}}), //Instruction cache only is written during cache line memory loads, during read-misses.
-		.mem_read_data (instr_read [DATA_W*(i+1)-1: DATA_W*i])   
-		);      
-        end     
-   endgenerate
+                iob_sp_mem_be
+                  #(
+                    .NUM_COL   (1),
+                    .COL_WIDTH (TAG_W),
+                    .ADDR_WIDTH(LINE_OFF_W)
+                    )
+                tag_memory 
+                  (
+                   .clk (clk                                ),
+                   .en  (valid                              ), 
+                   .we  ((k == way_select)? line_load : 1'b0),
+                   .addr(line_addr                          ),
+                   .din (line_tag                           ),
+                   .dout(tag[TAG_W*k +: TAG_W]              )
+                   );
 
+                //Cache hit signal that indicates which way has had the hit
+                assign way_hit[k] = (line_tag == tag[TAG_W*k +: TAG_W]) &&  v[k]; // to reduce UNDEFINES in simulation
+                
+             end // for (k = 0; k < N_WAYS; k=k+1)
+           
+        end // if (N_WAYS != 1)
+      else
+        begin   
+           
+           //Read Data Multiplexer
+           assign rdata [DATA_W-1:0] = line_rdata >> DATA_W*(line_word_select);
 
-
-   generable_memory #(
-		      .ADDR_W (I_NLINE_W), 
-		      .DATA_W (I_TAG_W  ),
-                      .MEM_W (I_TAG_W),
-                      .N_MEM (1)
-		      ) 
-   instr_mem_tag 
-     (
-      .clk           (clk                                  ),
-      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-I_TAG_W)]),
-      .mem_addr      (instr_index                          ),
-      .mem_en        (data_load & instr                    ),
-      .mem_read_data (instr_tag                            )                     
-      );
-
-
-   generable_reg_file #(
-		        .ADDR_W (I_NLINE_W), 
-		        .DATA_W (1),
-                        .MEM_W (1),
-                        .N_MEM (1)
-		        ) 
-   instr_valid 
-     (
-      .clk           (clk                      ),
-      .rst           (reset || cache_invalidate),
-      .mem_write_data(data_load                ),				        
-      .mem_addr      (instr_index              ),
-      .mem_en        (data_load & instr        ),
-      .mem_read_data (instr_v                  )   
-      );
-
-   
-   //Using shifts to select the correct Data memory from the cache's Data line, avoiding the use of generate. 
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= (instr)? instr_read >> (instr_word_select * DATA_W) : data_read >> (word_select * DATA_W);
-   
-
- `endif   
-   
-`else // L1 CACHE (1 MEMORY)
-   
- `ifdef ASSOC_CACHE //ASSOCIATIVE CACHE (1 Memory for both Data and Instructions)
-   
-   reg [NWAY_W-1:0]                 nway_selector;
-   always @ (posedge clk)
-     begin
-        nway_selector <= nway_hit; // nway_hit start at 1 (hit at position 0)
-        if  (cache_read_miss) //state == read_miss
-          nway_selector <= nway_sel;
-     end  
+           //Cache Line Write Strobe Shifter
+           always @*
+             if(line_load)
+               line_wstrb = {MEM_NBYTES{1'b1}} << (word_counter*MEM_NBYTES);
+             else
+               line_wstrb = wstrb << (line_word_select*N_BYTES);
 
 
-   wire [N_BYTES-1:0] 					  cache_line_wstrb;           
-   assign cache_line_wstrb = (write_enable)? (cache_wstrb) : {N_BYTES{cache_line_enable}}; 
-
-   genvar 						  i, j;
-   generate
-      for (j = 0; j < 2**NWAY_W; j=j+1)
-	begin
-	   for (i = 0; i < 2**OFFSET_W; i=i+1)
-	     begin
-	        generable_memory #(
-			           .ADDR_W (NLINE_W),
-                                   .DATA_W (DATA_W),
-                                   .MEM_W (8),
-                                   .N_MEM (N_BYTES)
-			           ) 
-		data_memory 
-		    (
-		     .clk           (clk                                                                ),
-		     .mem_write_data(write_data                                                         ),
-		     .mem_addr      (index                                                              ),
-		     .mem_en        (((i == word_select) && (j == nway_selector)) && (data_load || cache_hit[j])? cache_line_wstrb : {N_BYTES{1'b0}} ),
-		     .mem_read_data (data_read [(j*(2**OFFSET_W)+(i+1))*DATA_W-1:(j*(2**OFFSET_W)+i)*DATA_W]) 
-		     ); 
-	     end 
-	   
-	   generable_memory  #(
-			       .ADDR_W (NLINE_W), 
-			       .DATA_W (TAG_W),
-                               .MEM_W  (TAG_W),
-                               .N_MEM  (1)
-			       ) 
-	   tag_memory 
-	     (
-	      .clk           (clk                                ), 
-	      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
-	      .mem_addr      (index                              ),
-	      .mem_en        ((j == nway_sel)? data_load : 1'b0  ),
-	      .mem_read_data (tag[TAG_W*(j+1)-1 : TAG_W*j]       )                                             
-	      );
-
-	   assign tag_val[j] = (cache_addr[ADDR_W-1:(ADDR_W-TAG_W)] == tag[TAG_W*(j+1)-1 : TAG_W*j]);
-	   
-
-	   generable_reg_file #(
-			        .ADDR_W (NLINE_W), 
-			        .DATA_W (1),
-                                .MEM_W  (1),
-                                .N_MEM  (1)
-			        ) 
+           for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+             begin
+                for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
+                  begin
+                     iob_sp_mem_be
+                        #(
+                          .NUM_COL   (N_BYTES),
+                          .COL_WIDTH (8),
+                          .ADDR_WIDTH(LINE_OFF_W)
+                          )
+                     cache_memory 
+                        (
+                         .clk (clk),
+                         .en (valid),
+                         .we  ((line_load_en | way_hit)? line_wstrb[(j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}), 
+                         .addr(line_addr),
+                         .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                         .dout(line_rdata[(j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                         );
+                  end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+             end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)  
+           iob_reg_file
+             #(
+               .ADDR_WIDTH(LINE_OFF_W), 
+               .COL_WIDTH (1),
+               .NUM_COL   (1)
+	       ) 
 	   valid_memory 
 	     (
-	      .clk         (clk                              ),
-	      .rst         (reset || cache_invalidate        ),
-	      .mem_write_data(data_load                        ),				       
-	      .mem_addr      (index                            ),
-	      .mem_en        ((j == nway_sel)? data_load : 1'b0),
-	      .mem_read_data (v[j]                             )   
+	      .clk  (clk             ),
+	      .rst  (reset|invalidate),
+	      .wdata(line_load       ),				       
+	      .addr (line_addr       ),
+	      .en   (line_load       ),
+	      .rdata(v               )   
 	      );
-	   
 
-	   assign cache_hit[j] = tag_val[j] && v[j];//one-hot cache-hit	   	
-        end     
+           iob_sp_mem_be
+             #(
+               .NUM_COL   (1),
+               .COL_WIDTH (TAG_W),
+               .ADDR_WIDTH(LINE_OFF_W)
+               )
+           tag_memory 
+             (
+              .clk (clk      ),
+              .en  (valid    ), 
+              .we  (line_load),
+              .addr(line_addr),
+              .din (line_tag ),
+              .dout(tag      )
+              );
+
+           //Cache hit signal that indicates which way has had the hit
+           assign way_hit = (line_tag == tag) & v;
+           
+        end
    endgenerate
-
-   onehot_to_bin #(
-		   .BIN_W (NWAY_W)
-		   ) 
-   onehot_to_bin
-     (
-      .onehot(cache_hit[2**NWAY_W-1:1]),
-      .bin(nway_hit)
-      );
-   
-
-   
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= data_read >> DATA_W*(word_select + (2**OFFSET_W)*nway_hit);
-
-   
- `else  // DIRECT ACCESS CACHE (1 Memory for both Data and Instructions)  
-
-   assign cache_hit = (tag == cache_addr [ADDR_W-1 -: TAG_W]) && v;
-   
-   wire [N_BYTES -1:0] 		      cache_line_wstrb;  
-   assign cache_line_wstrb = (write_enable)? (cache_wstrb) : {N_BYTES{cache_line_enable}}; 
-
-   genvar 			      i;
-   
-   generate
-      for (i = 0; i < 2**OFFSET_W; i=i+1)
-        begin
-	   generable_memory #(
-			      .ADDR_W (NLINE_W),
-                              .DATA_W (DATA_W),
-                              .MEM_W (8),
-                              .N_MEM (N_BYTES)
-			      ) 
-	   data_memory 
-	       (
-		.clk           (clk                                 ),
-		.mem_write_data(write_data                          ),
-		.mem_addr      (index                               ),
-		.mem_en        (((i == word_select) && (data_load || cache_hit))? cache_line_wstrb : {N_BYTES{1'b0}}), 
-		.mem_read_data (data_read [DATA_W*(i+1)-1: DATA_W*i])   
-		);      
-        end     
-   endgenerate
+endmodule // memory_section
 
 
 
-   generable_memory #(
-		      .ADDR_W (NLINE_W), 
-		      .DATA_W (TAG_W),
-                      .MEM_W (TAG_W),
-                      .N_MEM (1)
-		      ) 
-   tag_memory 
-     (
-      .clk           (clk                                ),
-      .mem_write_data(cache_addr[ADDR_W-1:(ADDR_W-TAG_W)]),
-      .mem_addr      (index                              ),
-      .mem_en        (data_load                          ),
-      .mem_read_data (tag                                )                     
-      );
+/*---------------------------*/
+/* One-Hot to Binary Encoder */
+/*---------------------------*/
 
-
-   generable_reg_file #(
-		        .ADDR_W (NLINE_W), 
-		        .DATA_W (1),
-                        .MEM_W (1),
-                        .N_MEM (1)
-		        ) 
-   valid_memory 
-     (
-      .clk         (clk                      ),
-      .rst       (reset || cache_invalidate),
-      .mem_write_data(data_load                ),				        
-      .mem_addr      (index                    ),
-      .mem_en        (data_load                ),
-      .mem_read_data (v                        )   
-      );
-   
-
-   
-   //Using shifts to select the correct Data memory from the cache's Data line, avoiding the use of generate. 
-   always @ (posedge clk)
-     cache_read_data [DATA_W -1:0] <= data_read >> (word_select * DATA_W);
-   
- `endif // !`ifdef ASSOC_CACHE
-   
-
-`endif // !`ifdef L1
-
-   
-`ifdef ASSOC_CACHE   
- `ifdef TAG_BASED //only to be used for testing of the associative cache, not a real replacemente policy
-   assign nway_sel = cache_addr [NWAY_W +1 +NLINE_W: 2+NLINE_W];
-   
- `else
-
-  `ifdef L1_ID
-   
-   replacement_policy_algorithm #(
-				  .NWAY_W(NWAY_W),
-				  .NLINE_W(NLINE_W)
-				  )
-   Data_RP
-     (
-      .cache_hit(data_cache_hit           ),
-      .index    (index                    ),
-      .clk      (clk                      ),
-      .reset    (reset || cache_invalidate),
-      .write_en (write_enable&(!instr)),
-      .nway_sel (data_nway_sel            )
-      );
-   
-   replacement_policy_algorithm #(
-				  .NWAY_W(NWAY_W),
-				  .NLINE_W(I_NLINE_W)
-				  )
-   Instr_RP
-     (
-      .cache_hit(instr_cache_hit          ),
-      .index    (instr_index              ),
-      .clk      (clk                      ),
-      .reset    (reset || cache_invalidate),
-      .write_en (write_enable & instr ),
-      .nway_sel (instr_nway_sel           )
-      );
-
-   
-  `else
-   
-   replacement_policy_algorithm #(
-				  .NWAY_W(NWAY_W),
-				  .NLINE_W(NLINE_W)
-				  )
-   replacement_policy_algorithm
-     (
-      .cache_hit (cache_hit),
-      .index (index),
-      .clk (clk),
-      .reset (reset || cache_invalidate),
-      .write_en (write_enable),
-      .nway_sel (nway_sel)
-      );
-   
-  `endif
- `endif        
-`endif //  `ifdef ASSOC_CACHE
-   
-endmodule
-
-
-////////////////////////
-// Replacement Policy //
-////////////////////////
-
-
-module replacement_policy_algorithm #(
-				      parameter NWAY_W = 2,
-				      parameter NLINE_W = 2
-				      )
+// One-hot to binary encoder (if input is (0)0 or (0)1, the output is 0)
+module onehot_to_bin 
+  #(
+    parameter BIN_W = 2
+    )
    (
-    input [2**NWAY_W-1:0] cache_hit,
-    input [NLINE_W-1:0]   index,
-    input                 clk,
-    input                 reset,
-    input                 write_en,
-    output [NWAY_W-1:0]   nway_sel 
+    input [2**BIN_W-1:0]   onehot,
+    output reg [BIN_W-1:0] bin 
+    );
+   always @ (onehot) begin: onehot_to_binary_encoder
+      integer i;
+      reg [BIN_W-1:0] bin_cnt ;
+      bin_cnt = 0;
+      for (i=0; i<2**BIN_W; i=i+1)
+        if (onehot[i]) bin_cnt = bin_cnt|i;
+      bin = bin_cnt;    
+   end
+endmodule  // onehot_to_bin
+
+
+
+/*--------------------*/
+/* Replacement Policy */
+/*--------------------*/
+// Module that contains all iob-cache's replacement policies
+
+module replacement_process 
+  #(
+    parameter N_WAYS     = 2,
+    parameter LINE_OFF_W = 2,
+    parameter NWAY_W = $clog2(N_WAYS)
+    )
+   (
+    input                  clk,
+    input                  reset,
+    input                  write_en,
+    input [2**NWAY_W-1:0]  way_hit,
+    input [LINE_OFF_W-1:0] line_addr,
+    output [NWAY_W-1:0]    way_select 
     );
 
-   localparam NWAYS = 2**NWAY_W; //number of ways: to simplify in reading the following algorithms
-   
-   
 `ifdef BIT_PLRU
-   wire [NWAYS -1:0]      mru_output;
-   wire [NWAYS -1:0]      mru_input = (&(mru_output | cache_hit))? {NWAYS{1'b0}} : mru_output | cache_hit; //When the cache access results in a hit (or access (wish would be 1 in cache_hit even during a read-miss), it will add to the MRU, if after the the OR with Cache_hit, the entire input is 1s, it resets
-   wire [NWAYS -1:0]      bitplru = (~mru_output); //least recent used
-   wire [0:NWAYS -1]      bitplru_liw = bitplru [NWAYS -1:0]; //LRU Lower-Index-Way priority
-   wire [(NWAYS**2)-1:0]  ext_bitplru;// Extended LRU
-   wire [(NWAYS**2)-(NWAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest index way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
-   wire [NWAYS-1:0]              bitplru_sel;  
+   wire [N_WAYS -1:0]      mru_output;
+   wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
+   wire [N_WAYS -1:0]      bitplru = (~mru_output); //least recent used
+   wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Line_addr-Way priority
+   wire [(N_WAYS**2)-1:0]  ext_bitplru;// Extended LRU
+   wire [(N_WAYS**2)-(N_WAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest line_addr way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
+   wire [N_WAYS-1:0]               bitplru_sel;  
 
-   genvar 			 i;
+   genvar                          i;
    generate
-      for (i = 0; i < NWAYS; i=i+1)
+      for (i = 0; i < N_WAYS; i=i+1)
 	begin
-	   assign ext_bitplru [((i+1)*NWAYS)-1 : i*NWAYS] = bitplru_liw[i] << (NWAYS-1 -i); // extended signal of the LRU, placing the lower indexes in the higher positions (higher priority)
+	   assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
 	end
 
-      assign cmp_bitplru [NWAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(NWAYS)-1: NWAYS] : ext_bitplru[NWAYS -1: 0]; //1st iteration: higher index in lru_liw is the lower indexes in LRU, if the lower index is bit-PLRU, it's stored their extended value
+      assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
       
-      for (i = 2; i < NWAYS; i=i+1)
+      for (i = 2; i < N_WAYS; i=i+1)
 	begin
-	   assign cmp_bitplru [((i)*NWAYS)-1 : (i-1)*NWAYS] = (bitplru_liw[i])? ext_bitplru [((i+1)*NWAYS)-1 : i*NWAYS] : cmp_bitplru [((i-1)*NWAYS)-1 : (i-2)*NWAYS]; //if the Lower index of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
+	   assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
 	end
    endgenerate
-   assign bitplru_sel = cmp_bitplru [(NWAYS**2)-(NWAYS)-1 :(NWAYS**2)-2*(NWAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest index way LRU 
+   assign bitplru_sel = cmp_bitplru [(N_WAYS**2)-(N_WAYS)-1 :(N_WAYS**2)-2*(N_WAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest line_addr way LRU 
 
 
 
 `elsif LRU
 
-   wire [NWAYS*NWAY_W -1:0] mru_output, mru_input;
-   wire [NWAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
-   wire [NWAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
-   wire [NWAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
-   wire 		    mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
-   wire [NWAY_W -1:0]       mru_hit_min [NWAYS :0];
-   wire [NWAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
+   wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
+   wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
+   wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
+   wire [N_WAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
+   wire                      mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
+   wire [NWAY_W -1:0]        mru_hit_min [N_WAYS :0];
+   wire [N_WAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
    assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
-   genvar 		    i;
+   genvar                    i;
    generate
-      for (i = 0; i < NWAYS; i=i+1)
+      for (i = 0; i < N_WAYS; i=i+1)
 	begin
-	   assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way indexes are the least recent (lesser priority)
-	   assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && cache_hit[i]) && (|cache_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
+	   assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
+	   assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
 	   
-	   assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{cache_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
+	   assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
 	   
-	   assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (cache_hit[i])? (NWAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[NWAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
+	   assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
 	   
-	   assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest index (otherwise the first would would be the highest.
+	   assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest line_addr (otherwise the first would would be the highest.
 	end
    endgenerate
    assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
@@ -1950,10 +1578,10 @@ module replacement_policy_algorithm #(
    
 `elsif TREE_PLRU
    
-   wire [NWAYS -1: 1] t_plru, t_plru_output;
-   wire [NWAYS -1: 0] nway_tree [NWAY_W: 0]; // the order of the way index will be [lower; ...; higher way index], for readable reasons
-   wire [NWAYS -1: 0] tplru_sel;
-   genvar 	      i, j, k;
+   wire [N_WAYS -1: 1] t_plru, t_plru_output;
+   wire [N_WAYS -1: 0] nway_tree [NWAY_W: 0]; // the order of the way line_addr will be [lower; ...; higher way line_addr], for readable reasons
+   wire [N_WAYS -1: 0] tplru_sel;
+   genvar              i, j, k;
 
    // Tree-structure: t_plru[i] = tree's bit i (0 - top, towards bottom of the tree)
    generate      
@@ -1961,29 +1589,29 @@ module replacement_policy_algorithm #(
 	begin
 	   for (j = 0; j < (1<<(i-1)) ; j = j + 1)
 	     begin
-		assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|cache_hit[NWAYS-(2*j*(NWAYS>>i)) -1: NWAYS-(2*j+1)*(NWAYS>>i)])) && (~(|cache_hit[(NWAYS-(2*j+1)*(NWAYS>>i)) -1: NWAYS-(2*j+2)*(NWAYS>>i)])); // (t-bit + |cache_hit[top_section]) * (~|cache_hit[lower_section])
+		assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
 	     end
 	end
    endgenerate
    
-   // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the indexes of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
-   assign nway_tree [0] = {NWAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
+   // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the line_addres of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
+   assign nway_tree [0] = {N_WAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
    generate
       for (i = 1; i <= NWAY_W; i = i + 1)
 	begin
 	   for (j = 0; j < (1 << (i-1)); j = j + 1)
 	     begin
-		for (k = 0; k < (NWAYS >> i); k = k + 1)
+		for (k = 0; k < (N_WAYS >> i); k = k + 1)
 		  begin
-		     assign nway_tree [i][j*(NWAYS >> (i-1)) + k] = nway_tree [i-1][j*(NWAYS >> (i-1)) + k] && ~(t_plru [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
-		     assign nway_tree [i][j*(NWAYS >> (i-1)) + k + (NWAYS >> i)] = nway_tree [i-1][j*(NWAYS >> (i-1)) + k] && t_plru [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
+		     assign nway_tree [i][j*(N_WAYS >> (i-1)) + k] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && ~(t_plru_output [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
+		     assign nway_tree [i][j*(N_WAYS >> (i-1)) + k + (N_WAYS >> i)] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && t_plru_output [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
 		  end	
 	     end
 	end 
       // placing the way select wire in the correct order for the onehot-binary encoder
-      for (i = 0; i < NWAYS; i = i + 1)
+      for (i = 0; i < N_WAYS; i = i + 1)
 	begin
-	   assign tplru_sel[i] = nway_tree [NWAY_W][NWAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
+	   assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
 	end 				
    endgenerate
    
@@ -1993,88 +1621,62 @@ module replacement_policy_algorithm #(
 
    //Selects the least recent used way (encoder for one-hot to binary format)
    onehot_to_bin #(
-		   .BIN_W (NWAY_W)	       
-		   ) 
+                   .BIN_W (NWAY_W)	       
+                   ) 
    lru_selector
      (
 `ifdef BIT_PLRU       
-      .onehot(bitplru_sel[NWAYS-1:1]),
+      .onehot(bitplru_sel[N_WAYS-1:0]),
 `elsif LRU     
-      .onehot(lru_sel[NWAYS-1:1]),
+      .onehot(lru_sel[N_WAYS-1:0]),
 `elsif TREE_PLRU
-      .onehot(tplru_sel[NWAYS-1:1]),
+      .onehot(tplru_sel[N_WAYS-1:0]),
 `endif
-      .bin(nway_sel)
+      .bin(way_select)
       );
 
    
    //Most Recently Used (MRU) memory	   
-   generable_reg_file  #(
-		         .ADDR_W (NLINE_W),
+   iob_reg_file
+     #(
+       .ADDR_WIDTH (LINE_OFF_W),
 `ifdef BIT_PLRU
-		         .DATA_W (NWAYS),
-		         .MEM_W  (NWAYS),
+       .COL_WIDTH (N_WAYS),
 `elsif LRU 		
-		         .DATA_W (NWAYS*NWAY_W),
-		         .MEM_W  (NWAYS*NWAY_W),
+       .COL_WIDTH (N_WAYS*NWAY_W),
 `elsif TREE_PLRU
-		         .DATA_W (NWAYS-1),
-		         .MEM_W  (NWAYS-1),
+       .COL_WIDTH (N_WAYS-1),
 `endif
-                         .N_MEM (1)
-		         ) 
+       .NUM_COL (1)
+       ) 
    mru_memory //simply uses the same format as valid memory
      (
-      .clk         (clk          ),
-      .rst         (reset        ),
+      .clk  (clk          ),
+      .rst  (reset        ),
 `ifdef TREE_PLRU
-      .mem_write_data(t_plru       ),
-      .mem_read_data (t_plru_output),
+      .wdata(t_plru       ),
+      .rdata(t_plru_output),
 `else
-      .mem_write_data(mru_input    ),
-      .mem_read_data (mru_output   ),			        
+      .wdata(mru_input    ),
+      .rdata(mru_output   ),			        
 
 `endif      
-      .mem_addr      (index        ),
-      .mem_en        (write_en     )
+      .addr (line_addr    ),
+      .en   (write_en     )
       );
    
 endmodule
 
 
-/*---------------------------*/
-/* One-Hot to Binary Encoder */
-/*---------------------------*/
 
-// One-hot to binary encoder (if input is (0)0 or (0)1, the output is 0)
-module onehot_to_bin #(
-		       parameter BIN_W = 2
-		       )
-   (
-    input [2**BIN_W-1:1]   onehot ,
-    output reg [BIN_W-1:0] bin 
-    );
-   wire [2**BIN_W-1:0]     one_hot = {onehot,1'b0};
-   always @ (onehot) begin: onehot_to_binary_encoder
-      integer i;
-      reg [BIN_W-1:0] bin_cnt ;
-      bin_cnt = 0;
-      for (i=0; i<2**BIN_W; i=i+1)
-        if (one_hot[i]) bin_cnt = bin_cnt|i;
-      bin = bin_cnt;    
-   end
-endmodule  // onehot_to_bin
-
-
-
-//////////////////////
-// Cache Controller //
-//////////////////////
-
+/*------------------*/
+/* Cache Controller */
+/*------------------*/
+//Module responsible for performance measuring, information about the current cache state, and other cache functions (like cache-invalidate)
 
 module cache_controller #(
-			  parameter DATA_W = 32
-			  )
+                          parameter DATA_W = 32
+		          )
    (
     input                       clk,
     input [`CTRL_COUNTER_W-1:0] ctrl_counter_input, 
