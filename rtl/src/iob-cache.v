@@ -107,7 +107,6 @@ module iob_cache
    wire [N_BYTES-1: 0]                       wstrb_int;
    wire                                      instr_int; //Ctrl's counter
    wire                                      ready_int;
-   assign ready = ready_int;
    
    
    wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB      
@@ -119,6 +118,7 @@ module iob_cache
    wire                                      ready_cache, ready_ctrl; 
    assign rdata     = (cache_select)? rdata_cache : rdata_ctrl;
    assign ready_int = (cache_select)? ready_cache : ready_ctrl;
+   assign ready     = ready_int;
    
    //Process connection and controller signals
    wire                                      read_miss, hit, write_full, write_empty, write_en;
@@ -133,56 +133,28 @@ module iob_cache
    generate
       if (LA_INTERF) //Look-Ahead Interface - signal storage
         begin
-           reg [ADDR_W   : $clog2(N_BYTES)]         addr_la;
-           reg                                      valid_la;
-           reg [DATA_W-1 : 0]                       wdata_la;
-           reg [N_BYTES-1: 0]                       wstrb_la;
-           reg                                      instr_la; //Ctrl's counter
 
-           always @(posedge clk, posedge reset) //ready is a reset
-             begin
-                if(reset)
-                  begin
-                     addr_la  <= 0;
-                     valid_la <= 0;
-                     wdata_la <= 0;
-                     wstrb_la <= 0;
-                     instr_la <= 0;
-                  end
-                else
-                  if(ready_int)
-                    begin
-                       addr_la  <= 0;
-                       valid_la <= 0;
-                       wdata_la <= 0;
-                       wstrb_la <= 0;
-                       instr_la <= 0;
-                    end
-                  else
-                    if(valid) //updates
-                      begin
-                         addr_la  <= addr;
-                         valid_la <= 1'b1;
-                         wdata_la <= wdata;
-                         wstrb_la <= wstrb;
-                         instr_la <= instr;
-                      end
-                    else 
-                      begin
-                         addr_la  <= addr_la;
-                         valid_la <= valid_la;
-                         wdata_la <= wdata_la;
-                         wstrb_la <= wstrb_la;
-                         instr_la <= instr_la;
-                      end // else: !if(valid)
-             end // always @ (posedge clk, posedge ready_int)
-           
-           //Internal assignment - Multiplexers (to there is no delay)
-           assign addr_int  = (valid_la)? addr_la  : addr;
-           assign valid_int = (valid_la)? 1'b1     :valid;
-           assign wdata_int = (valid_la)? wdata_la :wdata;
-           assign wstrb_int = (valid_la)? wstrb_la :wstrb;
-           assign instr_int = (valid_la)? instr_la :instr; //only for Controller's counter
+           look_ahead_interface 
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W)
+               )
+           la_if
+             (
+              .clk (clk),
+              .reset(reset),
+              .addr(addr),
+              .valid(valid),
+              .wdata(wdata),
+              .wstrb(wstrb),
+              .instr(instr),
+              .ready_int(ready_int),
+              .addr_int(addr_int),
+              .valid_int(valid_int),
+              .wdata_int(wdata_int),
+              .wstrb_int(wstrb_int),
+              .instr_int(instr_int)
+              );
         end
       else
         begin
@@ -195,7 +167,8 @@ module iob_cache
         end // else: !if(LA_INTERF)
    endgenerate
    
-   
+
+
    main_process main_fsm
      (
       .clk(clk),
@@ -212,8 +185,8 @@ module iob_cache
       .write_en(write_en),
       .ctrl_counter(ctrl_counter)
       );
-   
-   
+
+
    generate
       if(MEM_NATIVE)
         begin
@@ -359,8 +332,8 @@ module iob_cache
               );      
         end
    endgenerate
-   
-   
+
+
    memory_section
      #(
        .ADDR_W(ADDR_W),
@@ -389,7 +362,7 @@ module iob_cache
       .invalidate(invalidate)
       );
 
-   
+
    cache_controller
      #(
        .DATA_W     (DATA_W),
@@ -408,9 +381,89 @@ module iob_cache
       .reset(reset),
       .write_state({write_full,write_empty})
       );
-   
+
 endmodule // iob_cache
 
+/*----------------------*/
+/* Look-ahead Interface */
+/*----------------------*/
+//Stores necessary signals for correct cache's behaviour
+module look_ahead_interface
+  #(
+    parameter ADDR_W = 32,
+    parameter DATA_W = 32,
+    parameter N_BYTES = DATA_W/8
+    )
+   (
+    //Input signals
+    input                           clk,
+    input                           reset,
+    input [ADDR_W:$clog2(N_BYTES)]  addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input [DATA_W-1:0]              wdata,
+    input [N_BYTES-1:0]             wstrb,
+    input                           valid,
+    input                           instr,
+    //Internal stored signals
+    input                           ready_int, //Ready to update registers
+    output [ADDR_W:$clog2(N_BYTES)] addr_int, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    output [DATA_W-1:0]             wdata_int,
+    output [N_BYTES-1:0]            wstrb_int,
+    output                          valid_int,
+    output                          instr_int  
+    );
+   
+   reg [ADDR_W   : $clog2(N_BYTES)] addr_la;
+   reg                              valid_la;
+   reg [DATA_W-1 : 0]               wdata_la;
+   reg [N_BYTES-1: 0]               wstrb_la;
+   reg                              instr_la; //Ctrl's counter
+
+   always @(posedge clk, posedge reset) //ready acts as a reset
+     begin
+        if(reset)
+          begin
+             addr_la  <= 0;
+             valid_la <= 0;
+             wdata_la <= 0;
+             wstrb_la <= 0;
+             instr_la <= 0;
+          end
+        else
+          if(ready_int)
+            begin
+               addr_la  <= 0;
+               valid_la <= 0;
+               wdata_la <= 0;
+               wstrb_la <= 0;
+               instr_la <= 0;
+            end
+          else
+            if(valid) //updates
+              begin
+                 addr_la  <= addr;
+                 valid_la <= 1'b1;
+                 wdata_la <= wdata;
+                 wstrb_la <= wstrb;
+                 instr_la <= instr;
+              end
+            else 
+              begin
+                 addr_la  <= addr_la;
+                 valid_la <= valid_la;
+                 wdata_la <= wdata_la;
+                 wstrb_la <= wstrb_la;
+                 instr_la <= instr_la;
+              end // else: !if(valid)
+     end // always @ (posedge clk, posedge ready_int)
+   
+   //Internal assignment - Multiplexers (to there is no delay)
+   assign addr_int  = (valid_la)? addr_la  : addr;
+   assign valid_int = (valid_la)? 1'b1     :valid;
+   assign wdata_int = (valid_la)? wdata_la :wdata;
+   assign wstrb_int = (valid_la)? wstrb_la :wstrb;
+   assign instr_int = (valid_la)? instr_la :instr; //only for Controller's counter
+   
+endmodule // look_ahead_interface
 
 
 /*--------------*/
