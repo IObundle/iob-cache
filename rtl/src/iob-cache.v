@@ -31,7 +31,11 @@ module iob_cache
     //Cache-Memory base Offset
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
     //Look-ahead Interface - Store Front-End input signals
-    parameter LA_INTERF = (0) 
+    parameter LA_INTERF = 0,
+    /*---------------------------------------------------*/
+    //Controller's options
+    parameter CTRL_CNT_ID = 0, //Counters for both Data and Instruction Hits and Misses
+    parameter CTRL_CNT = 1    //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     ) 
    (
     input                                    clk,
@@ -45,7 +49,7 @@ module iob_cache
     input                                    instr,
     // AXI interface 
     // Address Write
-    output [0:0]                             axi_awid, 
+    output [AXI_ID_W-1:0]                    axi_awid, 
     output [MEM_ADDR_W-1:0]                  axi_awaddr,
     output [7:0]                             axi_awlen,
     output [2:0]                             axi_awsize,
@@ -62,12 +66,12 @@ module iob_cache
     output                                   axi_wlast,
     output                                   axi_wvalid, 
     input                                    axi_wready,
-    input [AXI_ID_W-1:0]                              axi_bid,
+    input [AXI_ID_W-1:0]                     axi_bid,
     input [1:0]                              axi_bresp,
     input                                    axi_bvalid,
     output                                   axi_bready,
     //Address Read
-    output [AXI_ID_W-1:0]                             axi_arid,
+    output [AXI_ID_W-1:0]                    axi_arid,
     output [MEM_ADDR_W-1:0]                  axi_araddr, 
     output [7:0]                             axi_arlen,
     output [2:0]                             axi_arsize,
@@ -79,7 +83,7 @@ module iob_cache
     output                                   axi_arvalid, 
     input                                    axi_arready,
     //Read
-    input [AXI_ID_W-1:0]                              axi_rid,
+    input [AXI_ID_W-1:0]                     axi_rid,
     input [MEM_DATA_W-1:0]                   axi_rdata,
     input [1:0]                              axi_rresp,
     input                                    axi_rlast, 
@@ -385,19 +389,21 @@ module iob_cache
    
    cache_controller
      #(
-       .DATA_W(DATA_W)
+       .DATA_W     (DATA_W),
+       .CTRL_CNT   (CTRL_CNT),
+       .CTRL_CNT_ID(CTRL_CNT_ID)
        )
    cache_control
      (
       .clk(clk),
-      .ctrl_counter_input(ctrl_counter),
-      .ctrl_cache_invalid(invalidate),
-      .ctrl_addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
-      .ctrl_req_data(rdata_ctrl),
-      .ctrl_cpu_req(valid_int & ~cache_select),
-      .ctrl_ack(ready_ctrl),
-      .ctrl_reset(reset),
-      .ctrl_buffer_state({write_full,write_empty})
+      .din(ctrl_counter),
+      .invalidate(invalidate),
+      .addr(addr_int[`ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .dout(rdata_ctrl),
+      .valid(valid_int & ~cache_select),
+      .ready(ready_ctrl),
+      .reset(reset),
+      .write_state({write_full,write_empty})
       );
    
 endmodule // iob_cache
@@ -410,21 +416,25 @@ endmodule // iob_cache
 //Cache's main process, that controls the current cache's state based on the other processes
 
 module main_process
-  (
-   input                            clk,
-   input                            reset,
-   input                            write_access,
-   input                            read_access,
-   output reg                       read_miss, 
-   input                            line_load,
-   input                            hit,
-   input                            write_full,
-   input                            write_empty,
-   input                            instr,
-   output reg                       ready,
-   output reg                       write_en,
-   output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
-   );
+  #(
+    parameter CTRL_CNT_ID = 0,
+    parameter CTRL_CNT = 1
+    )
+   (
+    input                            clk,
+    input                            reset,
+    input                            write_access,
+    input                            read_access,
+    output reg                       read_miss, 
+    input                            line_load,
+    input                            hit,
+    input                            write_full,
+    input                            write_empty,
+    input                            instr,
+    output reg                       ready,
+    output reg                       write_en,
+    output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
+    );
    
    
    localparam
@@ -434,7 +444,7 @@ module main_process
      read_process  = 2'd3;
    
    
-   reg [1:0]                        state;
+   reg [1:0]                         state;
    
    always @(posedge clk, posedge reset)
      begin
@@ -490,14 +500,12 @@ module main_process
      begin
         read_miss = 1'b0;
         ready = 1'b0;
-        ctrl_counter = `CTRL_COUNTER_W'd0;
         write_en = 1'b0;
         
 	case (state)
           idle:
             begin
                ready = 1'b0;
-               ctrl_counter = `CTRL_COUNTER_W'd0;
                write_en = 1'b0;
             end
 
@@ -505,14 +513,6 @@ module main_process
             begin
                ready = ~write_full; // ends process if isn't full, regardless if hit or miss
                write_en = ~write_full;
-               
-               if (~write_full)
-                 if(hit)
-                   ctrl_counter = `DATA_WRITE_HIT;
-                 else
-                   ctrl_counter = `DATA_WRITE_MISS;
-               else
-                 ctrl_counter = `CTRL_COUNTER_W'd0;
             end
           
 
@@ -520,23 +520,8 @@ module main_process
             begin
                ready = hit; // if it was a hit, the data in rdata is the correct one
                write_en = hit; //update replacement policy algorithm
-
-               if (hit)
-                 if(instr)
-                   ctrl_counter = `INSTR_HIT;
-                 else
-                   ctrl_counter = `DATA_READ_HIT;
-               else
-                 if(write_empty)
-                   begin
-                      read_miss = 1'b1; //so the hit signal is properly updated (memory read-latency) and only starts after everything has been written to the top memory
-                      if(instr)
-                        ctrl_counter = `INSTR_MISS;
-                      else
-                        ctrl_counter = `DATA_READ_MISS;
-                   end
-                 else
-                   ctrl_counter = `CTRL_COUNTER_W'd0;
+               if(~hit & write_empty)
+                 read_miss = 1'b1; //so the hit signal is properly updated (memory read-latency) and only starts after everything has been written to the top memory
             end
           
           read_process:
@@ -545,7 +530,81 @@ module main_process
                ready = ~line_load;                           
             end
         endcase
-     end       
+     end
+
+   generate
+      if(CTRL_CNT_ID)
+        begin
+           always @*
+             begin
+                ctrl_counter = `CTRL_COUNTER_W'd0;
+                
+	        case (state)
+                  idle:
+                    ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+                  write_standby:
+                    if (~write_full)
+                      if(hit)
+                        ctrl_counter = `WRITE_HIT;
+                      else
+                        ctrl_counter = `WRITE_MISS;
+                    else
+                      ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+
+                  read_standby:
+                    if (hit)
+                      if(instr)
+                        ctrl_counter = `INSTR_HIT;
+                      else
+                        ctrl_counter = `READ_HIT;
+                    else
+                      if(write_empty)
+                        if(instr)
+                          ctrl_counter = `INSTR_MISS;
+                        else
+                          ctrl_counter = `READ_MISS;
+                      else
+                        ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+                  default:;   
+                endcase
+             end // always @ *
+        end // if (CTRL_CNT_ID)
+      else if (CTRL_CNT)
+        begin
+           always @*
+             begin
+                ctrl_counter = `CTRL_COUNTER_W'd0;
+                
+	        case (state)
+                  idle:
+                    ctrl_counter = `CTRL_COUNTER_W'd0;
+
+                  write_standby:
+                    if (~write_full)
+                      if(hit)
+                        ctrl_counter = `WRITE_HIT;
+                      else
+                        ctrl_counter = `WRITE_MISS;
+                    else
+                      ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+
+                  read_standby:
+                    if (hit)
+                      ctrl_counter = `READ_HIT;
+                    else
+                      if(write_empty)
+                        ctrl_counter = `READ_MISS;
+                      else
+                        ctrl_counter = `CTRL_COUNTER_W'd0;         
+                endcase
+             end   
+        end
+   endgenerate
+   
    
 endmodule            
 
@@ -597,7 +656,7 @@ module read_process_axi
     output reg                         axi_arvalid, 
     input                              axi_arready,
     //Read
-    input [AXI_ID_W-1:0]                 axi_rid,
+    input [AXI_ID_W-1:0]               axi_rid,
     input [MEM_DATA_W-1:0]             axi_rdata,
     input [1:0]                        axi_rresp,
     input                              axi_rlast, 
@@ -612,7 +671,7 @@ module read_process_axi
    assign axi_arprot  = 3'd0;
    assign axi_arqos   = 4'd0;
    //Burst parameters
-  // assign axi_arlen   = (MEM_DATA_W/DATA_W)*2**WORD_OFF_W -1; //will choose the burst lenght depending on the cache's and slave's data width
+   // assign axi_arlen   = (MEM_DATA_W/DATA_W)*2**WORD_OFF_W -1; //will choose the burst lenght depending on the cache's and slave's data width
    assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
    assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
    assign axi_arburst = 2'b01; //incremental burst
@@ -692,9 +751,9 @@ module read_process_axi
    
    always @*
      begin
-     axi_arvalid  = 1'b0;
-     axi_rready   = 1'b0;
-     line_load    = 1'b0;
+        axi_arvalid  = 1'b0;
+        axi_rready   = 1'b0;
+        line_load    = 1'b0;
         case(state)
 
           idle:
@@ -828,43 +887,43 @@ module read_process_native
    
    
    always @*
-   begin 
-   word_counter =0;
-   
-     case(state)
-  
-       idle:
-         begin
-            mem_valid = 1'b0;
-            line_load = 1'b0;
-            word_counter = 0;
-         end
+     begin 
+        word_counter =0;
+        
+        case(state)
+          
+          idle:
+            begin
+               mem_valid = 1'b0;
+               line_load = 1'b0;
+               word_counter = 0;
+            end
 
-       handshake:
-         begin
-            mem_valid = 1'b1;
-            line_load = 1'b1;
-            word_counter = word_counter;
-         end
-       
-       handshake_update:
-         begin
-            mem_valid = 1'b0;
-            line_load =1'b1;
-            word_counter = word_counter +1;
-         end
+          handshake:
+            begin
+               mem_valid = 1'b1;
+               line_load = 1'b1;
+               word_counter = word_counter;
+            end
+          
+          handshake_update:
+            begin
+               mem_valid = 1'b0;
+               line_load =1'b1;
+               word_counter = word_counter +1;
+            end
 
-       end_handshake:
-         begin
-            word_counter = word_counter; //to avoid updating the first word in line with last data
-            line_load = 1'b1; //delay for read-latency
-            mem_valid = 1'b0;
-         end
-       
-       default:;
-       
-     endcase
-   end
+          end_handshake:
+            begin
+               word_counter = word_counter; //to avoid updating the first word in line with last data
+               line_load = 1'b1; //delay for read-latency
+               mem_valid = 1'b0;
+            end
+          
+          default:;
+          
+        endcase
+     end
    
 endmodule
 
@@ -948,7 +1007,7 @@ module write_process_axi
    assign axi_wlast   = axi_wvalid;
    
    //AXI Buffer Output signals
-assign axi_awaddr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
+   assign axi_awaddr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
    generate
       if(MEM_DATA_W == DATA_W)
         begin
@@ -1212,7 +1271,7 @@ module write_process_native
           init_process:
             buffer_read_en = 1'b1; //update buffer in it's read port
           write_process:
-               mem_valid = 1'b1;
+            mem_valid = 1'b1;
           default:;
         endcase // case (state)
      end
@@ -1675,169 +1734,226 @@ endmodule
 //Module responsible for performance measuring, information about the current cache state, and other cache functions (like cache-invalidate)
 
 module cache_controller #(
-                          parameter DATA_W = 32
-		          )
+                          parameter DATA_W = 32,
+                          parameter CTRL_CNT_ID = 0, 
+                          parameter CTRL_CNT = 1
+                          )
    (
     input                       clk,
-    input [`CTRL_COUNTER_W-1:0] ctrl_counter_input, 
-    output reg                  ctrl_cache_invalid,
-    input [`CTRL_ADDR_W-1:0]    ctrl_addr,
-    output reg [DATA_W-1:0]     ctrl_req_data,
-    input                       ctrl_cpu_req,
-    output reg                  ctrl_ack,
-    input                       ctrl_reset, 
-    input [1:0]                 ctrl_buffer_state
+    input [`CTRL_COUNTER_W-1:0] din, 
+    output reg                  invalidate,
+    input [`ADDR_W-1:0]         addr,
+    output reg [DATA_W-1:0]     dout,
+    input                       valid,
+    output reg                  ready,
+    input                       reset, 
+    input [1:0]                 write_state
     );
 
-   reg [DATA_W-1:0]             instr_hit_cnt, instr_miss_cnt;
-   reg [DATA_W-1:0]             data_read_hit_cnt, data_read_miss_cnt, data_write_hit_cnt, data_write_miss_cnt;
-   reg [DATA_W-1:0]             data_hit_cnt, data_miss_cnt; 
-   reg [DATA_W-1:0]             cache_hit_cnt, cache_miss_cnt;
-   reg 				ctrl_counter_reset;
-   
-`ifdef CTRL_CLK
-   reg [2*DATA_W-1:0]           ctrl_clk_cnt;
-   reg 				ctrl_clk_start;
-`endif
+   generate
+      if(CTRL_CNT_ID)
+        begin
+           
+           reg [DATA_W-1:0]             instr_hit_cnt, instr_miss_cnt;
+           reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
+           reg [DATA_W-1:0]             hit_cnt, miss_cnt;
+           reg                          ctrl_counter_reset;
 
-   wire 			ctrl_arst = ctrl_reset | ctrl_counter_reset;
-   
-   always @ (posedge clk, posedge ctrl_arst)
-     begin 		
-	if (ctrl_arst) 
-	  begin
-	     instr_hit_cnt <= {DATA_W{1'b0}};
-  	     instr_miss_cnt <= {DATA_W{1'b0}};
-             data_read_hit_cnt <= {DATA_W{1'b0}};
-	     data_read_miss_cnt <= {DATA_W{1'b0}};
-	     data_write_hit_cnt <= {DATA_W{1'b0}};
-	     data_write_miss_cnt <= {DATA_W{1'b0}};
-	     data_hit_cnt <= {DATA_W{1'b0}};
-	     data_miss_cnt <= {DATA_W{1'b0}};
-	     cache_hit_cnt <= {DATA_W{1'b0}};
-	     cache_miss_cnt <= {DATA_W{1'b0}}; 
-          end 
-	else
-	  begin
-	     if (ctrl_counter_input == `INSTR_HIT)
-	       begin
-		  instr_hit_cnt <= instr_hit_cnt + 1;
-		  cache_hit_cnt <= cache_hit_cnt + 1;
-	       end
-	     else if (ctrl_counter_input == `INSTR_MISS)
-	       begin
-		  instr_miss_cnt <= instr_miss_cnt + 1;
-		  cache_miss_cnt <= cache_miss_cnt + 1;
-	       end 
-	     else if (ctrl_counter_input == `DATA_READ_HIT)
-	       begin
-		  data_read_hit_cnt <= data_read_hit_cnt + 1;
-		  data_hit_cnt <= data_hit_cnt + 1;
-		  cache_hit_cnt <= cache_hit_cnt + 1;	  
-	       end
-	     else if (ctrl_counter_input == `DATA_WRITE_HIT)
-	       begin
-		  data_write_hit_cnt <= data_write_hit_cnt + 1;
-		  data_hit_cnt <= data_hit_cnt + 1;
-		  cache_hit_cnt <= cache_hit_cnt + 1;
-	       end
-	     else if (ctrl_counter_input == `DATA_READ_MISS)
-	       begin
-		  data_read_miss_cnt <= data_read_miss_cnt + 1;
-		  data_miss_cnt <= data_miss_cnt + 1;
-		  cache_miss_cnt <= cache_miss_cnt + 1;
-	       end
-	     else if (ctrl_counter_input == `DATA_WRITE_MISS)
-	       begin
-		  data_write_miss_cnt <= data_write_miss_cnt + 1;
-		  data_miss_cnt <= data_miss_cnt + 1;
-		  cache_miss_cnt <= cache_miss_cnt + 1;
-	       end
-	     else
-	       begin
-		  instr_hit_cnt <= instr_hit_cnt;
-		  instr_miss_cnt <= instr_miss_cnt;
-		  data_read_hit_cnt <= data_read_hit_cnt;
-		  data_read_miss_cnt <= data_read_miss_cnt;
-		  data_write_hit_cnt <= data_write_hit_cnt;
-		  data_write_miss_cnt <= data_write_miss_cnt;
-		  data_hit_cnt <= data_hit_cnt;
-		  data_miss_cnt <= data_miss_cnt;
-		  cache_hit_cnt <= cache_hit_cnt;
-		  cache_miss_cnt <= cache_miss_cnt;
-	       end
-	  end
-     end
+           wire                         ctrl_arst = reset | ctrl_counter_reset;
+           
+           always @ (posedge clk, posedge ctrl_arst)
+             begin 		
+	        if (ctrl_arst) 
+	          begin
+                     hit_cnt  <= {DATA_W{1'b0}};
+	             miss_cnt <= {DATA_W{1'b0}};
+                     read_hit_cnt  <= {DATA_W{1'b0}};
+	             read_miss_cnt <= {DATA_W{1'b0}};
+	             write_hit_cnt  <= {DATA_W{1'b0}};
+	             write_miss_cnt <= {DATA_W{1'b0}};
+                     instr_hit_cnt  <= {DATA_W{1'b0}};
+  	             instr_miss_cnt <= {DATA_W{1'b0}};
+                  end 
+	        else
+	          begin
+                     if (din == `READ_HIT)
+	               begin
+		          read_hit_cnt <= read_hit_cnt + 1;
+		          hit_cnt <= hit_cnt + 1;	  
+	               end
+	             else if (din == `WRITE_HIT)
+	               begin
+		          write_hit_cnt <= write_hit_cnt + 1;
+		          hit_cnt <= hit_cnt + 1;
+	               end
+	             else if (din == `READ_MISS)
+	               begin
+		          read_miss_cnt <= read_miss_cnt + 1;
+		          miss_cnt <= miss_cnt + 1;
+	               end
+	             else if (din == `WRITE_MISS)
+	               begin
+		          write_miss_cnt <= write_miss_cnt + 1;
+		          miss_cnt <= miss_cnt + 1;
+	               end
+                     else if (din == `INSTR_HIT)
+	               begin
+		          instr_hit_cnt <= instr_hit_cnt + 1;
+	                  hit_cnt <= hit_cnt + 1; 
+                       end
+	             else if (din == `INSTR_MISS)
+	               begin
+		          instr_miss_cnt <= instr_miss_cnt + 1;
+                          miss_cnt <= miss_cnt + 1;
+                       end  
+	             else
+	               begin
+		          read_hit_cnt <= read_hit_cnt;
+		          read_miss_cnt <= read_miss_cnt;
+		          write_hit_cnt <= write_hit_cnt;
+		          write_miss_cnt <= write_miss_cnt;
+		          hit_cnt <= hit_cnt;
+		          miss_cnt <= miss_cnt;
+                          instr_hit_cnt <= instr_hit_cnt;
+		          instr_miss_cnt <= instr_miss_cnt;
+	               end
+	          end
+             end
+           
+           always @ (posedge clk)
+             begin
+	        dout <= {DATA_W{1'b0}};
+	        invalidate <= 1'b0;
+	        ctrl_counter_reset <= 1'b0;
+	        ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	        if(valid)
+                  if (addr == `ADDR_CACHE_HIT)
+	            dout <= hit_cnt;
+                  else if (addr == `ADDR_CACHE_MISS)
+	            dout <= miss_cnt;
+	          else if (addr == `ADDR_CACHE_READ_HIT)
+	            dout <= read_hit_cnt;
+	          else if (addr == `ADDR_CACHE_READ_MISS)
+	            dout <= read_miss_cnt;
+	          else if (addr == `ADDR_CACHE_WRITE_HIT)
+	            dout <= write_hit_cnt;
+	          else if (addr == `ADDR_CACHE_WRITE_MISS)
+	            dout <= write_miss_cnt;
+	          else if (addr == `ADDR_RESET_COUNTER)
+	            ctrl_counter_reset <= 1'b1;
+	          else if (addr == `ADDR_CACHE_INVALIDATE)
+	            invalidate <= 1'b1;	
+	          else if (addr == `ADDR_BUFFER_EMPTY)
+                    dout <= write_state[0];
+                  else if (addr == `ADDR_BUFFER_FULL)
+                    dout <= write_state[1];
+                  else if (addr == `ADDR_INSTR_HIT)
+                    dout <= instr_hit_cnt;
+                  else if (addr == `ADDR_INSTR_MISS)
+                    dout <= instr_hit_cnt;
+	     end
+        end  
+      else
+        if(CTRL_CNT)
+          begin
+             
+             reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
+             reg [DATA_W-1:0]             hit_cnt, miss_cnt;
+             reg                          ctrl_counter_reset;
 
-`ifdef CTRL_CLK   
-   always @(posedge clk, posedge ctrl_arst)
-     begin
-	if (ctrl_arst)
-	  ctrl_clk_cnt <= {(2*DATA_W){1'b0}};
-	else 
-	  begin
-	     if (ctrl_clk_start)
-	       ctrl_clk_cnt <= ctrl_clk_cnt +1;
-	     else
-	       ctrl_clk_cnt <= ctrl_clk_cnt;
-	  end
-     end
-`endif
+             wire                         ctrl_arst = reset| ctrl_counter_reset;
+             
+             always @ (posedge clk, posedge ctrl_arst)
+               begin 		
+	          if (ctrl_arst) 
+	            begin
+                       hit_cnt  <= {DATA_W{1'b0}};
+	               miss_cnt <= {DATA_W{1'b0}};
+                       read_hit_cnt  <= {DATA_W{1'b0}};
+	               read_miss_cnt <= {DATA_W{1'b0}};
+	               write_hit_cnt  <= {DATA_W{1'b0}};
+	               write_miss_cnt <= {DATA_W{1'b0}};
+                    end 
+	          else
+	            begin
+                       if (din == `READ_HIT)
+	                 begin
+		            read_hit_cnt <= read_hit_cnt + 1;
+		            hit_cnt <= hit_cnt + 1;	  
+	                 end
+	               else if (din == `WRITE_HIT)
+	                 begin
+		            write_hit_cnt <= write_hit_cnt + 1;
+		            hit_cnt <= hit_cnt + 1;
+	                 end
+	               else if (din == `READ_MISS)
+	                 begin
+		            read_miss_cnt <= read_miss_cnt + 1;
+		            miss_cnt <= miss_cnt + 1;
+	                 end
+	               else if (din == `WRITE_MISS)
+	                 begin
+		            write_miss_cnt <= write_miss_cnt + 1;
+		            miss_cnt <= miss_cnt + 1;
+	                 end
+	               else
+	                 begin
+		            read_hit_cnt <= read_hit_cnt;
+		            read_miss_cnt <= read_miss_cnt;
+		            write_hit_cnt <= write_hit_cnt;
+		            write_miss_cnt <= write_miss_cnt;
+		            hit_cnt <= hit_cnt;
+		            miss_cnt <= miss_cnt;
+	                 end
+	            end // else: !if(ctrl_arst)   
+               end // always @ (posedge clk, posedge ctrl_arst)
+             
+             always @ (posedge clk)
+               begin
+	          dout <= {DATA_W{1'b0}};
+	          invalidate <= 1'b0;
+	          ctrl_counter_reset <= 1'b0;
+	          ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	          if(valid)
+                    if (addr == `ADDR_CACHE_HIT)
+	              dout <= hit_cnt;
+                    else if (addr == `ADDR_CACHE_MISS)
+	              dout <= miss_cnt;
+	            else if (addr == `ADDR_CACHE_READ_HIT)
+	              dout <= read_hit_cnt;
+	            else if (addr == `ADDR_CACHE_READ_MISS)
+	              dout <= read_miss_cnt;
+	            else if (addr == `ADDR_CACHE_WRITE_HIT)
+	              dout <= write_hit_cnt;
+	            else if (addr == `ADDR_CACHE_WRITE_MISS)
+	              dout <= write_miss_cnt;
+	            else if (addr == `ADDR_RESET_COUNTER)
+	              ctrl_counter_reset <= 1'b1;
+	            else if (addr == `ADDR_CACHE_INVALIDATE)
+	              invalidate <= 1'b1;	
+	            else if (addr == `ADDR_BUFFER_EMPTY)
+                      dout <= write_state[0];
+                    else if (addr == `ADDR_BUFFER_FULL)
+                      dout <= write_state[1];   
+               end // always @ (posedge clk)
+          end // if (CTRL_CNT)
+        else
+          begin
+             
+             always @ (posedge clk)
+               begin
+	          dout <= {DATA_W{1'b0}};
+	          invalidate <= 1'b0;
+	          ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	          if(valid)
+	            if (addr == `ADDR_CACHE_INVALIDATE)
+	              invalidate <= 1'b1;	
+	            else if (addr == `ADDR_BUFFER_EMPTY)
+                      dout <= write_state[0];
+                    else if (addr == `ADDR_BUFFER_FULL)
+                      dout <= write_state[1];         
+               end // always @ (posedge clk)
+          end // else: !if(CTRL_CNT)  
+   endgenerate                
    
-   always @ (posedge clk)
-     begin
-	ctrl_req_data <= {DATA_W{1'b0}};
-	ctrl_cache_invalid <= 1'b0;
-	ctrl_counter_reset <= 1'b0;
-	ctrl_ack <= ctrl_cpu_req; // Sends acknowlege the next clock cycle after request (handshake)
-
-        
-`ifdef CTRL_CLK
-	ctrl_clk_start <= ctrl_clk_start;
-`endif	
-	if(ctrl_cpu_req)
-	  begin
-	     if (ctrl_addr == `ADDR_CACHE_HIT)
-	       ctrl_req_data <= cache_hit_cnt;
-	     else if (ctrl_addr == `ADDR_CACHE_MISS)
-	       ctrl_req_data <= cache_miss_cnt;
-	     else if (ctrl_addr == `ADDR_INSTR_HIT)
-	       ctrl_req_data <= instr_hit_cnt;
-	     else if (ctrl_addr == `ADDR_INSTR_MISS)
-	       ctrl_req_data <= instr_miss_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_HIT)
-	       ctrl_req_data <= data_hit_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_MISS)
-	       ctrl_req_data <= data_miss_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_READ_HIT)
-	       ctrl_req_data <= data_read_hit_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_READ_MISS)
-	       ctrl_req_data <= data_read_miss_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_WRITE_HIT)
-	       ctrl_req_data <= data_write_hit_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_WRITE_MISS)
-	       ctrl_req_data <= data_write_miss_cnt;
-	     else if (ctrl_addr == `ADDR_RESET_COUNTER)
-	       ctrl_counter_reset <= 1'b1;
-	     else if (ctrl_addr == `ADDR_CACHE_INVALIDATE)
-	       ctrl_cache_invalid <= 1'b1;	
-	     else if (ctrl_addr == `ADDR_BUFFER_EMPTY)
-               ctrl_req_data <= ctrl_buffer_state[0];
-             else if (ctrl_addr == `ADDR_BUFFER_FULL)
-               ctrl_req_data <= ctrl_buffer_state[1];              
-`ifdef CTRL_CLK
-	     else if (ctrl_addr == `ADDR_CLK_START)
-	       begin
-		  ctrl_counter_reset <= 1'b1;
-		  ctrl_clk_start <= 1'b1;
-	       end
-	     else if (ctrl_addr == `ADDR_CLK_STOP)
-	       ctrl_clk_start <= 1'b0;
-	     else if (ctrl_addr == `ADDR_CLK_UPPER)
-	       ctrl_req_data <= ctrl_clk_cnt [2*DATA_W-1:DATA_W];
-	     else if (ctrl_addr == `ADDR_CLK_LOWER)
-	       ctrl_req_data <= ctrl_clk_cnt [DATA_W-1:0];
-`endif
-	  end
-     end		    
 endmodule // cache_controller
