@@ -14,6 +14,8 @@ module iob_cache
     parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
+    //Replacement policy (N_WAYS > 1)
+    parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
     parameter N_BYTES  = DATA_W/8,       //Number of Bytes per Word
@@ -31,7 +33,11 @@ module iob_cache
     //Cache-Memory base Offset
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
     //Look-ahead Interface - Store Front-End input signals
-    parameter LA_INTERF = (0) 
+    parameter LA_INTERF = 0,
+    /*---------------------------------------------------*/
+    //Controller's options
+    parameter CTRL_CNT_ID = 0, //Counters for both Data and Instruction Hits and Misses
+    parameter CTRL_CNT = 1    //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     ) 
    (
     input                                    clk,
@@ -45,7 +51,7 @@ module iob_cache
     input                                    instr,
     // AXI interface 
     // Address Write
-    output [0:0]                             axi_awid, 
+    output [AXI_ID_W-1:0]                    axi_awid, 
     output [MEM_ADDR_W-1:0]                  axi_awaddr,
     output [7:0]                             axi_awlen,
     output [2:0]                             axi_awsize,
@@ -62,12 +68,12 @@ module iob_cache
     output                                   axi_wlast,
     output                                   axi_wvalid, 
     input                                    axi_wready,
-    input [AXI_ID_W-1:0]                              axi_bid,
+    input [AXI_ID_W-1:0]                     axi_bid,
     input [1:0]                              axi_bresp,
     input                                    axi_bvalid,
     output                                   axi_bready,
     //Address Read
-    output [AXI_ID_W-1:0]                             axi_arid,
+    output [AXI_ID_W-1:0]                    axi_arid,
     output [MEM_ADDR_W-1:0]                  axi_araddr, 
     output [7:0]                             axi_arlen,
     output [2:0]                             axi_arsize,
@@ -79,7 +85,7 @@ module iob_cache
     output                                   axi_arvalid, 
     input                                    axi_arready,
     //Read
-    input [AXI_ID_W-1:0]                              axi_rid,
+    input [AXI_ID_W-1:0]                     axi_rid,
     input [MEM_DATA_W-1:0]                   axi_rdata,
     input [1:0]                              axi_rresp,
     input                                    axi_rlast, 
@@ -101,7 +107,6 @@ module iob_cache
    wire [N_BYTES-1: 0]                       wstrb_int;
    wire                                      instr_int; //Ctrl's counter
    wire                                      ready_int;
-   assign ready = ready_int;
    
    
    wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB      
@@ -113,6 +118,7 @@ module iob_cache
    wire                                      ready_cache, ready_ctrl; 
    assign rdata     = (cache_select)? rdata_cache : rdata_ctrl;
    assign ready_int = (cache_select)? ready_cache : ready_ctrl;
+   assign ready     = ready_int;
    
    //Process connection and controller signals
    wire                                      read_miss, hit, write_full, write_empty, write_en;
@@ -127,56 +133,28 @@ module iob_cache
    generate
       if (LA_INTERF) //Look-Ahead Interface - signal storage
         begin
-           reg [ADDR_W   : $clog2(N_BYTES)]         addr_la;
-           reg                                      valid_la;
-           reg [DATA_W-1 : 0]                       wdata_la;
-           reg [N_BYTES-1: 0]                       wstrb_la;
-           reg                                      instr_la; //Ctrl's counter
 
-           always @(posedge clk, posedge reset) //ready is a reset
-             begin
-                if(reset)
-                  begin
-                     addr_la  <= 0;
-                     valid_la <= 0;
-                     wdata_la <= 0;
-                     wstrb_la <= 0;
-                     instr_la <= 0;
-                  end
-                else
-                  if(ready_int)
-                    begin
-                       addr_la  <= 0;
-                       valid_la <= 0;
-                       wdata_la <= 0;
-                       wstrb_la <= 0;
-                       instr_la <= 0;
-                    end
-                  else
-                    if(valid) //updates
-                      begin
-                         addr_la  <= addr;
-                         valid_la <= 1'b1;
-                         wdata_la <= wdata;
-                         wstrb_la <= wstrb;
-                         instr_la <= instr;
-                      end
-                    else 
-                      begin
-                         addr_la  <= addr_la;
-                         valid_la <= valid_la;
-                         wdata_la <= wdata_la;
-                         wstrb_la <= wstrb_la;
-                         instr_la <= instr_la;
-                      end // else: !if(valid)
-             end // always @ (posedge clk, posedge ready_int)
-           
-           //Internal assignment - Multiplexers (to there is no delay)
-           assign addr_int  = (valid_la)? addr_la  : addr;
-           assign valid_int = (valid_la)? 1'b1     :valid;
-           assign wdata_int = (valid_la)? wdata_la :wdata;
-           assign wstrb_int = (valid_la)? wstrb_la :wstrb;
-           assign instr_int = (valid_la)? instr_la :instr; //only for Controller's counter
+           look_ahead_interface 
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W)
+               )
+           la_if
+             (
+              .clk (clk),
+              .reset(reset),
+              .addr(addr),
+              .valid(valid),
+              .wdata(wdata),
+              .wstrb(wstrb),
+              .instr(instr),
+              .ready_int(ready_int),
+              .addr_int(addr_int),
+              .valid_int(valid_int),
+              .wdata_int(wdata_int),
+              .wstrb_int(wstrb_int),
+              .instr_int(instr_int)
+              );
         end
       else
         begin
@@ -189,7 +167,8 @@ module iob_cache
         end // else: !if(LA_INTERF)
    endgenerate
    
-   
+
+
    main_process main_fsm
      (
       .clk(clk),
@@ -206,8 +185,8 @@ module iob_cache
       .write_en(write_en),
       .ctrl_counter(ctrl_counter)
       );
-   
-   
+
+
    generate
       if(MEM_NATIVE)
         begin
@@ -353,8 +332,8 @@ module iob_cache
               );      
         end
    endgenerate
-   
-   
+
+
    memory_section
      #(
        .ADDR_W(ADDR_W),
@@ -362,7 +341,8 @@ module iob_cache
        .N_WAYS(N_WAYS),
        .LINE_OFF_W(LINE_OFF_W),
        .WORD_OFF_W(WORD_OFF_W),
-       .MEM_DATA_W(MEM_DATA_W)
+       .MEM_DATA_W(MEM_DATA_W),
+       .REP_POLICY(REP_POLICY)
        )
    memory_cache
      (
@@ -382,26 +362,108 @@ module iob_cache
       .invalidate(invalidate)
       );
 
-   
+
    cache_controller
      #(
-       .DATA_W(DATA_W)
+       .DATA_W     (DATA_W),
+       .CTRL_CNT   (CTRL_CNT),
+       .CTRL_CNT_ID(CTRL_CNT_ID)
        )
    cache_control
      (
       .clk(clk),
-      .ctrl_counter_input(ctrl_counter),
-      .ctrl_cache_invalid(invalidate),
-      .ctrl_addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
-      .ctrl_req_data(rdata_ctrl),
-      .ctrl_cpu_req(valid_int & ~cache_select),
-      .ctrl_ack(ready_ctrl),
-      .ctrl_reset(reset),
-      .ctrl_buffer_state({write_full,write_empty})
+      .din(ctrl_counter),
+      .invalidate(invalidate),
+      .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .dout(rdata_ctrl),
+      .valid(valid_int & ~cache_select),
+      .ready(ready_ctrl),
+      .reset(reset),
+      .write_state({write_full,write_empty})
       );
-   
+
 endmodule // iob_cache
 
+/*----------------------*/
+/* Look-ahead Interface */
+/*----------------------*/
+//Stores necessary signals for correct cache's behaviour
+module look_ahead_interface
+  #(
+    parameter ADDR_W = 32,
+    parameter DATA_W = 32,
+    parameter N_BYTES = DATA_W/8
+    )
+   (
+    //Input signals
+    input                           clk,
+    input                           reset,
+    input [ADDR_W:$clog2(N_BYTES)]  addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input [DATA_W-1:0]              wdata,
+    input [N_BYTES-1:0]             wstrb,
+    input                           valid,
+    input                           instr,
+    //Internal stored signals
+    input                           ready_int, //Ready to update registers
+    output [ADDR_W:$clog2(N_BYTES)] addr_int, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    output [DATA_W-1:0]             wdata_int,
+    output [N_BYTES-1:0]            wstrb_int,
+    output                          valid_int,
+    output                          instr_int  
+    );
+   
+   reg [ADDR_W   : $clog2(N_BYTES)] addr_la;
+   reg                              valid_la;
+   reg [DATA_W-1 : 0]               wdata_la;
+   reg [N_BYTES-1: 0]               wstrb_la;
+   reg                              instr_la; //Ctrl's counter
+
+   always @(posedge clk, posedge reset) //ready acts as a reset
+     begin
+        if(reset)
+          begin
+             addr_la  <= 0;
+             valid_la <= 0;
+             wdata_la <= 0;
+             wstrb_la <= 0;
+             instr_la <= 0;
+          end
+        else
+          if(ready_int)
+            begin
+               addr_la  <= 0;
+               valid_la <= 0;
+               wdata_la <= 0;
+               wstrb_la <= 0;
+               instr_la <= 0;
+            end
+          else
+            if(valid) //updates
+              begin
+                 addr_la  <= addr;
+                 valid_la <= 1'b1;
+                 wdata_la <= wdata;
+                 wstrb_la <= wstrb;
+                 instr_la <= instr;
+              end
+            else 
+              begin
+                 addr_la  <= addr_la;
+                 valid_la <= valid_la;
+                 wdata_la <= wdata_la;
+                 wstrb_la <= wstrb_la;
+                 instr_la <= instr_la;
+              end // else: !if(valid)
+     end // always @ (posedge clk, posedge ready_int)
+   
+   //Internal assignment - Multiplexers (to there is no delay)
+   assign addr_int  = (valid_la)? addr_la  : addr;
+   assign valid_int = (valid_la)? 1'b1     :valid;
+   assign wdata_int = (valid_la)? wdata_la :wdata;
+   assign wstrb_int = (valid_la)? wstrb_la :wstrb;
+   assign instr_int = (valid_la)? instr_la :instr; //only for Controller's counter
+   
+endmodule // look_ahead_interface
 
 
 /*--------------*/
@@ -410,21 +472,25 @@ endmodule // iob_cache
 //Cache's main process, that controls the current cache's state based on the other processes
 
 module main_process
-  (
-   input                            clk,
-   input                            reset,
-   input                            write_access,
-   input                            read_access,
-   output reg                       read_miss, 
-   input                            line_load,
-   input                            hit,
-   input                            write_full,
-   input                            write_empty,
-   input                            instr,
-   output reg                       ready,
-   output reg                       write_en,
-   output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
-   );
+  #(
+    parameter CTRL_CNT_ID = 0,
+    parameter CTRL_CNT = 1
+    )
+   (
+    input                            clk,
+    input                            reset,
+    input                            write_access,
+    input                            read_access,
+    output reg                       read_miss, 
+    input                            line_load,
+    input                            hit,
+    input                            write_full,
+    input                            write_empty,
+    input                            instr,
+    output reg                       ready,
+    output reg                       write_en,
+    output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
+    );
    
    
    localparam
@@ -434,7 +500,7 @@ module main_process
      read_process  = 2'd3;
    
    
-   reg [1:0]                        state;
+   reg [1:0]                         state;
    
    always @(posedge clk, posedge reset)
      begin
@@ -490,14 +556,12 @@ module main_process
      begin
         read_miss = 1'b0;
         ready = 1'b0;
-        ctrl_counter = `CTRL_COUNTER_W'd0;
         write_en = 1'b0;
         
 	case (state)
           idle:
             begin
                ready = 1'b0;
-               ctrl_counter = `CTRL_COUNTER_W'd0;
                write_en = 1'b0;
             end
 
@@ -505,14 +569,6 @@ module main_process
             begin
                ready = ~write_full; // ends process if isn't full, regardless if hit or miss
                write_en = ~write_full;
-               
-               if (~write_full)
-                 if(hit)
-                   ctrl_counter = `DATA_WRITE_HIT;
-                 else
-                   ctrl_counter = `DATA_WRITE_MISS;
-               else
-                 ctrl_counter = `CTRL_COUNTER_W'd0;
             end
           
 
@@ -520,23 +576,8 @@ module main_process
             begin
                ready = hit; // if it was a hit, the data in rdata is the correct one
                write_en = hit; //update replacement policy algorithm
-
-               if (hit)
-                 if(instr)
-                   ctrl_counter = `INSTR_HIT;
-                 else
-                   ctrl_counter = `DATA_READ_HIT;
-               else
-                 if(write_empty)
-                   begin
-                      read_miss = 1'b1; //so the hit signal is properly updated (memory read-latency) and only starts after everything has been written to the top memory
-                      if(instr)
-                        ctrl_counter = `INSTR_MISS;
-                      else
-                        ctrl_counter = `DATA_READ_MISS;
-                   end
-                 else
-                   ctrl_counter = `CTRL_COUNTER_W'd0;
+               if(~hit & write_empty)
+                 read_miss = 1'b1; //so the hit signal is properly updated (memory read-latency) and only starts after everything has been written to the top memory
             end
           
           read_process:
@@ -545,7 +586,81 @@ module main_process
                ready = ~line_load;                           
             end
         endcase
-     end       
+     end
+
+   generate
+      if(CTRL_CNT_ID)
+        begin
+           always @*
+             begin
+                ctrl_counter = `CTRL_COUNTER_W'd0;
+                
+	        case (state)
+                  idle:
+                    ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+                  write_standby:
+                    if (~write_full)
+                      if(hit)
+                        ctrl_counter = `WRITE_HIT;
+                      else
+                        ctrl_counter = `WRITE_MISS;
+                    else
+                      ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+
+                  read_standby:
+                    if (hit)
+                      if(instr)
+                        ctrl_counter = `INSTR_HIT;
+                      else
+                        ctrl_counter = `READ_HIT;
+                    else
+                      if(write_empty)
+                        if(instr)
+                          ctrl_counter = `INSTR_MISS;
+                        else
+                          ctrl_counter = `READ_MISS;
+                      else
+                        ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+                  default:;   
+                endcase
+             end // always @ *
+        end // if (CTRL_CNT_ID)
+      else if (CTRL_CNT)
+        begin
+           always @*
+             begin
+                ctrl_counter = `CTRL_COUNTER_W'd0;
+                
+	        case (state)
+                  idle:
+                    ctrl_counter = `CTRL_COUNTER_W'd0;
+
+                  write_standby:
+                    if (~write_full)
+                      if(hit)
+                        ctrl_counter = `WRITE_HIT;
+                      else
+                        ctrl_counter = `WRITE_MISS;
+                    else
+                      ctrl_counter = `CTRL_COUNTER_W'd0;
+                  
+
+                  read_standby:
+                    if (hit)
+                      ctrl_counter = `READ_HIT;
+                    else
+                      if(write_empty)
+                        ctrl_counter = `READ_MISS;
+                      else
+                        ctrl_counter = `CTRL_COUNTER_W'd0;         
+                endcase
+             end   
+        end
+   endgenerate
+   
    
 endmodule            
 
@@ -597,7 +712,7 @@ module read_process_axi
     output reg                         axi_arvalid, 
     input                              axi_arready,
     //Read
-    input [AXI_ID_W-1:0]                 axi_rid,
+    input [AXI_ID_W-1:0]               axi_rid,
     input [MEM_DATA_W-1:0]             axi_rdata,
     input [1:0]                        axi_rresp,
     input                              axi_rlast, 
@@ -612,7 +727,6 @@ module read_process_axi
    assign axi_arprot  = 3'd0;
    assign axi_arqos   = 4'd0;
    //Burst parameters
-  // assign axi_arlen   = (MEM_DATA_W/DATA_W)*2**WORD_OFF_W -1; //will choose the burst lenght depending on the cache's and slave's data width
    assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
    assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
    assign axi_arburst = 2'b01; //incremental burst
@@ -692,9 +806,9 @@ module read_process_axi
    
    always @*
      begin
-     axi_arvalid  = 1'b0;
-     axi_rready   = 1'b0;
-     line_load    = 1'b0;
+        axi_arvalid  = 1'b0;
+        axi_rready   = 1'b0;
+        line_load    = 1'b0;
         case(state)
 
           idle:
@@ -828,43 +942,43 @@ module read_process_native
    
    
    always @*
-   begin 
-   word_counter =0;
-   
-     case(state)
-  
-       idle:
-         begin
-            mem_valid = 1'b0;
-            line_load = 1'b0;
-            word_counter = 0;
-         end
+     begin 
+        word_counter =0;
+        
+        case(state)
+          
+          idle:
+            begin
+               mem_valid = 1'b0;
+               line_load = 1'b0;
+               word_counter = 0;
+            end
 
-       handshake:
-         begin
-            mem_valid = 1'b1;
-            line_load = 1'b1;
-            word_counter = word_counter;
-         end
-       
-       handshake_update:
-         begin
-            mem_valid = 1'b0;
-            line_load =1'b1;
-            word_counter = word_counter +1;
-         end
+          handshake:
+            begin
+               mem_valid = 1'b1;
+               line_load = 1'b1;
+               word_counter = word_counter;
+            end
+          
+          handshake_update:
+            begin
+               mem_valid = 1'b0;
+               line_load =1'b1;
+               word_counter = word_counter +1;
+            end
 
-       end_handshake:
-         begin
-            word_counter = word_counter; //to avoid updating the first word in line with last data
-            line_load = 1'b1; //delay for read-latency
-            mem_valid = 1'b0;
-         end
-       
-       default:;
-       
-     endcase
-   end
+          end_handshake:
+            begin
+               word_counter = word_counter; //to avoid updating the first word in line with last data
+               line_load = 1'b1; //delay for read-latency
+               mem_valid = 1'b0;
+            end
+          
+          default:;
+          
+        endcase
+     end
    
 endmodule
 
@@ -948,7 +1062,7 @@ module write_process_axi
    assign axi_wlast   = axi_wvalid;
    
    //AXI Buffer Output signals
-assign axi_awaddr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
+   assign axi_awaddr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
    generate
       if(MEM_DATA_W == DATA_W)
         begin
@@ -1212,7 +1326,7 @@ module write_process_native
           init_process:
             buffer_read_en = 1'b1; //update buffer in it's read port
           write_process:
-               mem_valid = 1'b1;
+            mem_valid = 1'b1;
           default:;
         endcase // case (state)
      end
@@ -1263,7 +1377,9 @@ module memory_section
     parameter MEM_DATA_W = DATA_W, //Data width of the memory
     parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
     //Do NOT change - slave parameters - dependency
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W) //burst offset based on the cache and memory word size
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W), //burst offset based on the cache and memory word size
+    //Replacement policy (N_WAYS > 1)
+    parameter REP_POLICY = `LRU //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     )
    ( 
      //master interface
@@ -1307,7 +1423,8 @@ module memory_section
            
            replacement_process #(
 	                         .N_WAYS    (N_WAYS    ),
-	                         .LINE_OFF_W(LINE_OFF_W)
+	                         .LINE_OFF_W(LINE_OFF_W),
+                                 .REP_POLICY(REP_POLICY)
 	                         )
            replacement_policy_algorithm
              (
@@ -1508,163 +1625,204 @@ endmodule  // onehot_to_bin
 
 module replacement_process 
   #(
-    parameter N_WAYS     = 2,
-    parameter LINE_OFF_W = 2,
-    parameter NWAY_W = $clog2(N_WAYS)
+    parameter N_WAYS     = 4,
+    parameter LINE_OFF_W = 6,
+    parameter NWAY_W = $clog2(N_WAYS),
+    parameter REP_POLICY = `LRU //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     )
    (
     input                  clk,
     input                  reset,
     input                  write_en,
-    input [2**NWAY_W-1:0]  way_hit,
+    input [N_WAYS-1:0]     way_hit,
     input [LINE_OFF_W-1:0] line_addr,
     output [NWAY_W-1:0]    way_select 
     );
 
-`ifdef BIT_PLRU
-   wire [N_WAYS -1:0]      mru_output;
-   wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
-   wire [N_WAYS -1:0]      bitplru = (~mru_output); //least recent used
-   wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Line_addr-Way priority
-   wire [(N_WAYS**2)-1:0]  ext_bitplru;// Extended LRU
-   wire [(N_WAYS**2)-(N_WAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest line_addr way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
-   wire [N_WAYS-1:0]               bitplru_sel;  
 
-   genvar                          i;
+   genvar                  i, j, k;
+
    generate
-      for (i = 0; i < N_WAYS; i=i+1)
-	begin
-	   assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
-	end
+      if(REP_POLICY == `LRU)
+        begin
 
-      assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
-      
-      for (i = 2; i < N_WAYS; i=i+1)
-	begin
-	   assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
-	end
-   endgenerate
-   assign bitplru_sel = cmp_bitplru [(N_WAYS**2)-(N_WAYS)-1 :(N_WAYS**2)-2*(N_WAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest line_addr way LRU 
+           wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
+           wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
+           wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
+           wire [N_WAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
+           wire                      mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
+           wire [NWAY_W -1:0]        mru_hit_min [N_WAYS :0];
+           wire [N_WAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
+           assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
 
-
-
-`elsif LRU
-
-   wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
-   wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
-   wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
-   wire [N_WAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
-   wire                      mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
-   wire [NWAY_W -1:0]        mru_hit_min [N_WAYS :0];
-   wire [N_WAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
-   assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
-   genvar                    i;
-   generate
-      for (i = 0; i < N_WAYS; i=i+1)
-	begin
-	   assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
-	   assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
-	   
-	   assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
-	   
-	   assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
-	   
-	   assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest line_addr (otherwise the first would would be the highest.
-	end
-   endgenerate
-   assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
-   
-
-   
-`elsif TREE_PLRU
-   
-   wire [N_WAYS -1: 1] t_plru, t_plru_output;
-   wire [N_WAYS -1: 0] nway_tree [NWAY_W: 0]; // the order of the way line_addr will be [lower; ...; higher way line_addr], for readable reasons
-   wire [N_WAYS -1: 0] tplru_sel;
-   genvar              i, j, k;
-
-   // Tree-structure: t_plru[i] = tree's bit i (0 - top, towards bottom of the tree)
-   generate      
-      for (i = 1; i <= NWAY_W; i = i + 1)
-	begin
-	   for (j = 0; j < (1<<(i-1)) ; j = j + 1)
+           for (i = 0; i < N_WAYS; i=i+1)
 	     begin
-		assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
+	        assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
+	        assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
+	        
+	        assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
+	        
+	        assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
+	        
+	        assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest line_addr (otherwise the first would would be the highest.
 	     end
-	end
-   endgenerate
-   
-   // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the line_addres of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
-   assign nway_tree [0] = {N_WAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
-   generate
-      for (i = 1; i <= NWAY_W; i = i + 1)
-	begin
-	   for (j = 0; j < (1 << (i-1)); j = j + 1)
+
+           assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
+           
+
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           lru_select
+             (    
+                  .onehot(lru_sel[N_WAYS-1:0]),
+                  .bin(way_select)
+                  );
+
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),		
+               .COL_WIDTH (N_WAYS*NWAY_W),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(mru_input    ),
+              .rdata(mru_output   ),			             
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+           
+           
+        end // if (REP_POLICY == `LRU)
+      else if (REP_POLICY == `BIT_PLRU)
+        begin
+           
+           wire [N_WAYS -1:0]      mru_output;
+           wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
+           wire [N_WAYS -1:0]      bitplru = (~mru_output); //least recent used
+           wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Line_addr-Way priority
+           wire [(N_WAYS**2)-1:0]  ext_bitplru;// Extended LRU
+           wire [(N_WAYS**2)-(N_WAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest line_addr way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
+           wire [N_WAYS-1:0]               bitplru_sel;  
+
+           for (i = 0; i < N_WAYS; i=i+1)
 	     begin
-		for (k = 0; k < (N_WAYS >> i); k = k + 1)
-		  begin
-		     assign nway_tree [i][j*(N_WAYS >> (i-1)) + k] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && ~(t_plru_output [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
-		     assign nway_tree [i][j*(N_WAYS >> (i-1)) + k + (N_WAYS >> i)] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && t_plru_output [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
-		  end	
+	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
 	     end
-	end 
-      // placing the way select wire in the correct order for the onehot-binary encoder
-      for (i = 0; i < N_WAYS; i = i + 1)
-	begin
-	   assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
-	end 				
+
+           assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
+           
+           for (i = 2; i < N_WAYS; i=i+1)
+	     begin
+	        assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
+	     end
+           
+           assign bitplru_sel = cmp_bitplru [(N_WAYS**2)-(N_WAYS)-1 :(N_WAYS**2)-2*(N_WAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest line_addr way LRU 
+
+           
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           lru_select
+             (      
+                    .onehot(bitplru_sel[N_WAYS-1:0]),
+                    .bin(way_select)
+                    );
+
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),
+               .COL_WIDTH (N_WAYS),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(mru_input    ),
+              .rdata(mru_output   ),			            
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+
+        end // if (REP_POLICY == BIT_PLRU)
+      else // (REP_POLICY == TREE_PLRU)
+        begin
+           
+           wire [N_WAYS -1: 1] t_plru, t_plru_output;
+           wire [N_WAYS -1: 0] nway_tree [NWAY_W: 0]; // the order of the way line_addr will be [lower; ...; higher way line_addr], for readable reasons
+           wire [N_WAYS -1: 0] tplru_sel;
+           
+           // Tree-structure: t_plru[i] = tree's bit i (0 - top, towards bottom of the tree)
+           for (i = 1; i <= NWAY_W; i = i + 1)
+	     begin
+	        for (j = 0; j < (1<<(i-1)) ; j = j + 1)
+	          begin
+		     assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
+	          end
+	     end
+           
+           // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the line_addres of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
+           assign nway_tree [0] = {N_WAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
+           for (i = 1; i <= NWAY_W; i = i + 1)
+	     begin
+	        for (j = 0; j < (1 << (i-1)); j = j + 1)
+	          begin
+		     for (k = 0; k < (N_WAYS >> i); k = k + 1)
+		       begin
+		          assign nway_tree [i][j*(N_WAYS >> (i-1)) + k] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && ~(t_plru_output [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
+		          assign nway_tree [i][j*(N_WAYS >> (i-1)) + k + (N_WAYS >> i)] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && t_plru_output [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
+		       end	
+	          end
+	     end 
+           // placing the way select wire in the correct order for the onehot-binary encoder
+           for (i = 0; i < N_WAYS; i = i + 1)
+	     begin
+	        assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
+	     end
+
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           lru_select
+             (
+              .onehot(tplru_sel[N_WAYS-1:0]),
+              .bin(way_select)
+              );
+
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),
+               .COL_WIDTH (N_WAYS-1),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(t_plru       ),
+              .rdata(t_plru_output),     
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+           
+
+           
+        end // else: !if(REP_POLICY == BIT_PLRU)
    endgenerate
-   
-   
-`endif				      
-   
 
-   //Selects the least recent used way (encoder for one-hot to binary format)
-   onehot_to_bin #(
-                   .BIN_W (NWAY_W)	       
-                   ) 
-   lru_selector
-     (
-`ifdef BIT_PLRU       
-      .onehot(bitplru_sel[N_WAYS-1:0]),
-`elsif LRU     
-      .onehot(lru_sel[N_WAYS-1:0]),
-`elsif TREE_PLRU
-      .onehot(tplru_sel[N_WAYS-1:0]),
-`endif
-      .bin(way_select)
-      );
-
-   
-   //Most Recently Used (MRU) memory	   
-   iob_reg_file
-     #(
-       .ADDR_WIDTH (LINE_OFF_W),
-`ifdef BIT_PLRU
-       .COL_WIDTH (N_WAYS),
-`elsif LRU 		
-       .COL_WIDTH (N_WAYS*NWAY_W),
-`elsif TREE_PLRU
-       .COL_WIDTH (N_WAYS-1),
-`endif
-       .NUM_COL (1)
-       ) 
-   mru_memory //simply uses the same format as valid memory
-     (
-      .clk  (clk          ),
-      .rst  (reset        ),
-`ifdef TREE_PLRU
-      .wdata(t_plru       ),
-      .rdata(t_plru_output),
-`else
-      .wdata(mru_input    ),
-      .rdata(mru_output   ),			        
-
-`endif      
-      .addr (line_addr    ),
-      .en   (write_en     )
-      );
-   
 endmodule
 
 
@@ -1675,169 +1833,226 @@ endmodule
 //Module responsible for performance measuring, information about the current cache state, and other cache functions (like cache-invalidate)
 
 module cache_controller #(
-                          parameter DATA_W = 32
-		          )
+                          parameter DATA_W = 32,
+                          parameter CTRL_CNT_ID = 0, 
+                          parameter CTRL_CNT = 1
+                          )
    (
     input                       clk,
-    input [`CTRL_COUNTER_W-1:0] ctrl_counter_input, 
-    output reg                  ctrl_cache_invalid,
-    input [`CTRL_ADDR_W-1:0]    ctrl_addr,
-    output reg [DATA_W-1:0]     ctrl_req_data,
-    input                       ctrl_cpu_req,
-    output reg                  ctrl_ack,
-    input                       ctrl_reset, 
-    input [1:0]                 ctrl_buffer_state
+    input [`CTRL_COUNTER_W-1:0] din, 
+    output reg                  invalidate,
+    input [`CTRL_ADDR_W-1:0]    addr,
+    output reg [DATA_W-1:0]     dout,
+    input                       valid,
+    output reg                  ready,
+    input                       reset, 
+    input [1:0]                 write_state
     );
 
-   reg [DATA_W-1:0]             instr_hit_cnt, instr_miss_cnt;
-   reg [DATA_W-1:0]             data_read_hit_cnt, data_read_miss_cnt, data_write_hit_cnt, data_write_miss_cnt;
-   reg [DATA_W-1:0]             data_hit_cnt, data_miss_cnt; 
-   reg [DATA_W-1:0]             cache_hit_cnt, cache_miss_cnt;
-   reg 				ctrl_counter_reset;
-   
-`ifdef CTRL_CLK
-   reg [2*DATA_W-1:0]           ctrl_clk_cnt;
-   reg 				ctrl_clk_start;
-`endif
+   generate
+      if(CTRL_CNT_ID)
+        begin
+           
+           reg [DATA_W-1:0]             instr_hit_cnt, instr_miss_cnt;
+           reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
+           reg [DATA_W-1:0]             hit_cnt, miss_cnt;
+           reg                          ctrl_counter_reset;
 
-   wire 			ctrl_arst = ctrl_reset | ctrl_counter_reset;
-   
-   always @ (posedge clk, posedge ctrl_arst)
-     begin 		
-	if (ctrl_arst) 
-	  begin
-	     instr_hit_cnt <= {DATA_W{1'b0}};
-  	     instr_miss_cnt <= {DATA_W{1'b0}};
-             data_read_hit_cnt <= {DATA_W{1'b0}};
-	     data_read_miss_cnt <= {DATA_W{1'b0}};
-	     data_write_hit_cnt <= {DATA_W{1'b0}};
-	     data_write_miss_cnt <= {DATA_W{1'b0}};
-	     data_hit_cnt <= {DATA_W{1'b0}};
-	     data_miss_cnt <= {DATA_W{1'b0}};
-	     cache_hit_cnt <= {DATA_W{1'b0}};
-	     cache_miss_cnt <= {DATA_W{1'b0}}; 
-          end 
-	else
-	  begin
-	     if (ctrl_counter_input == `INSTR_HIT)
-	       begin
-		  instr_hit_cnt <= instr_hit_cnt + 1;
-		  cache_hit_cnt <= cache_hit_cnt + 1;
-	       end
-	     else if (ctrl_counter_input == `INSTR_MISS)
-	       begin
-		  instr_miss_cnt <= instr_miss_cnt + 1;
-		  cache_miss_cnt <= cache_miss_cnt + 1;
-	       end 
-	     else if (ctrl_counter_input == `DATA_READ_HIT)
-	       begin
-		  data_read_hit_cnt <= data_read_hit_cnt + 1;
-		  data_hit_cnt <= data_hit_cnt + 1;
-		  cache_hit_cnt <= cache_hit_cnt + 1;	  
-	       end
-	     else if (ctrl_counter_input == `DATA_WRITE_HIT)
-	       begin
-		  data_write_hit_cnt <= data_write_hit_cnt + 1;
-		  data_hit_cnt <= data_hit_cnt + 1;
-		  cache_hit_cnt <= cache_hit_cnt + 1;
-	       end
-	     else if (ctrl_counter_input == `DATA_READ_MISS)
-	       begin
-		  data_read_miss_cnt <= data_read_miss_cnt + 1;
-		  data_miss_cnt <= data_miss_cnt + 1;
-		  cache_miss_cnt <= cache_miss_cnt + 1;
-	       end
-	     else if (ctrl_counter_input == `DATA_WRITE_MISS)
-	       begin
-		  data_write_miss_cnt <= data_write_miss_cnt + 1;
-		  data_miss_cnt <= data_miss_cnt + 1;
-		  cache_miss_cnt <= cache_miss_cnt + 1;
-	       end
-	     else
-	       begin
-		  instr_hit_cnt <= instr_hit_cnt;
-		  instr_miss_cnt <= instr_miss_cnt;
-		  data_read_hit_cnt <= data_read_hit_cnt;
-		  data_read_miss_cnt <= data_read_miss_cnt;
-		  data_write_hit_cnt <= data_write_hit_cnt;
-		  data_write_miss_cnt <= data_write_miss_cnt;
-		  data_hit_cnt <= data_hit_cnt;
-		  data_miss_cnt <= data_miss_cnt;
-		  cache_hit_cnt <= cache_hit_cnt;
-		  cache_miss_cnt <= cache_miss_cnt;
-	       end
-	  end
-     end
+           wire                         ctrl_arst = reset | ctrl_counter_reset;
+           
+           always @ (posedge clk, posedge ctrl_arst)
+             begin 		
+	        if (ctrl_arst) 
+	          begin
+                     hit_cnt  <= {DATA_W{1'b0}};
+	             miss_cnt <= {DATA_W{1'b0}};
+                     read_hit_cnt  <= {DATA_W{1'b0}};
+	             read_miss_cnt <= {DATA_W{1'b0}};
+	             write_hit_cnt  <= {DATA_W{1'b0}};
+	             write_miss_cnt <= {DATA_W{1'b0}};
+                     instr_hit_cnt  <= {DATA_W{1'b0}};
+  	             instr_miss_cnt <= {DATA_W{1'b0}};
+                  end 
+	        else
+	          begin
+                     if (din == `READ_HIT)
+	               begin
+		          read_hit_cnt <= read_hit_cnt + 1;
+		          hit_cnt <= hit_cnt + 1;	  
+	               end
+	             else if (din == `WRITE_HIT)
+	               begin
+		          write_hit_cnt <= write_hit_cnt + 1;
+		          hit_cnt <= hit_cnt + 1;
+	               end
+	             else if (din == `READ_MISS)
+	               begin
+		          read_miss_cnt <= read_miss_cnt + 1;
+		          miss_cnt <= miss_cnt + 1;
+	               end
+	             else if (din == `WRITE_MISS)
+	               begin
+		          write_miss_cnt <= write_miss_cnt + 1;
+		          miss_cnt <= miss_cnt + 1;
+	               end
+                     else if (din == `INSTR_HIT)
+	               begin
+		          instr_hit_cnt <= instr_hit_cnt + 1;
+	                  hit_cnt <= hit_cnt + 1; 
+                       end
+	             else if (din == `INSTR_MISS)
+	               begin
+		          instr_miss_cnt <= instr_miss_cnt + 1;
+                          miss_cnt <= miss_cnt + 1;
+                       end  
+	             else
+	               begin
+		          read_hit_cnt <= read_hit_cnt;
+		          read_miss_cnt <= read_miss_cnt;
+		          write_hit_cnt <= write_hit_cnt;
+		          write_miss_cnt <= write_miss_cnt;
+		          hit_cnt <= hit_cnt;
+		          miss_cnt <= miss_cnt;
+                          instr_hit_cnt <= instr_hit_cnt;
+		          instr_miss_cnt <= instr_miss_cnt;
+	               end
+	          end
+             end
+           
+           always @ (posedge clk)
+             begin
+	        dout <= {DATA_W{1'b0}};
+	        invalidate <= 1'b0;
+	        ctrl_counter_reset <= 1'b0;
+	        ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	        if(valid)
+                  if (addr == `ADDR_CACHE_HIT)
+	            dout <= hit_cnt;
+                  else if (addr == `ADDR_CACHE_MISS)
+	            dout <= miss_cnt;
+	          else if (addr == `ADDR_CACHE_READ_HIT)
+	            dout <= read_hit_cnt;
+	          else if (addr == `ADDR_CACHE_READ_MISS)
+	            dout <= read_miss_cnt;
+	          else if (addr == `ADDR_CACHE_WRITE_HIT)
+	            dout <= write_hit_cnt;
+	          else if (addr == `ADDR_CACHE_WRITE_MISS)
+	            dout <= write_miss_cnt;
+	          else if (addr == `ADDR_RESET_COUNTER)
+	            ctrl_counter_reset <= 1'b1;
+	          else if (addr == `ADDR_CACHE_INVALIDATE)
+	            invalidate <= 1'b1;	
+	          else if (addr == `ADDR_BUFFER_EMPTY)
+                    dout <= write_state[0];
+                  else if (addr == `ADDR_BUFFER_FULL)
+                    dout <= write_state[1];
+                  else if (addr == `ADDR_INSTR_HIT)
+                    dout <= instr_hit_cnt;
+                  else if (addr == `ADDR_INSTR_MISS)
+                    dout <= instr_hit_cnt;
+	     end
+        end  
+      else
+        if(CTRL_CNT)
+          begin
+             
+             reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
+             reg [DATA_W-1:0]             hit_cnt, miss_cnt;
+             reg                          ctrl_counter_reset;
 
-`ifdef CTRL_CLK   
-   always @(posedge clk, posedge ctrl_arst)
-     begin
-	if (ctrl_arst)
-	  ctrl_clk_cnt <= {(2*DATA_W){1'b0}};
-	else 
-	  begin
-	     if (ctrl_clk_start)
-	       ctrl_clk_cnt <= ctrl_clk_cnt +1;
-	     else
-	       ctrl_clk_cnt <= ctrl_clk_cnt;
-	  end
-     end
-`endif
+             wire                         ctrl_arst = reset| ctrl_counter_reset;
+             
+             always @ (posedge clk, posedge ctrl_arst)
+               begin 		
+	          if (ctrl_arst) 
+	            begin
+                       hit_cnt  <= {DATA_W{1'b0}};
+	               miss_cnt <= {DATA_W{1'b0}};
+                       read_hit_cnt  <= {DATA_W{1'b0}};
+	               read_miss_cnt <= {DATA_W{1'b0}};
+	               write_hit_cnt  <= {DATA_W{1'b0}};
+	               write_miss_cnt <= {DATA_W{1'b0}};
+                    end 
+	          else
+	            begin
+                       if (din == `READ_HIT)
+	                 begin
+		            read_hit_cnt <= read_hit_cnt + 1;
+		            hit_cnt <= hit_cnt + 1;	  
+	                 end
+	               else if (din == `WRITE_HIT)
+	                 begin
+		            write_hit_cnt <= write_hit_cnt + 1;
+		            hit_cnt <= hit_cnt + 1;
+	                 end
+	               else if (din == `READ_MISS)
+	                 begin
+		            read_miss_cnt <= read_miss_cnt + 1;
+		            miss_cnt <= miss_cnt + 1;
+	                 end
+	               else if (din == `WRITE_MISS)
+	                 begin
+		            write_miss_cnt <= write_miss_cnt + 1;
+		            miss_cnt <= miss_cnt + 1;
+	                 end
+	               else
+	                 begin
+		            read_hit_cnt <= read_hit_cnt;
+		            read_miss_cnt <= read_miss_cnt;
+		            write_hit_cnt <= write_hit_cnt;
+		            write_miss_cnt <= write_miss_cnt;
+		            hit_cnt <= hit_cnt;
+		            miss_cnt <= miss_cnt;
+	                 end
+	            end // else: !if(ctrl_arst)   
+               end // always @ (posedge clk, posedge ctrl_arst)
+             
+             always @ (posedge clk)
+               begin
+	          dout <= {DATA_W{1'b0}};
+	          invalidate <= 1'b0;
+	          ctrl_counter_reset <= 1'b0;
+	          ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	          if(valid)
+                    if (addr == `ADDR_CACHE_HIT)
+	              dout <= hit_cnt;
+                    else if (addr == `ADDR_CACHE_MISS)
+	              dout <= miss_cnt;
+	            else if (addr == `ADDR_CACHE_READ_HIT)
+	              dout <= read_hit_cnt;
+	            else if (addr == `ADDR_CACHE_READ_MISS)
+	              dout <= read_miss_cnt;
+	            else if (addr == `ADDR_CACHE_WRITE_HIT)
+	              dout <= write_hit_cnt;
+	            else if (addr == `ADDR_CACHE_WRITE_MISS)
+	              dout <= write_miss_cnt;
+	            else if (addr == `ADDR_RESET_COUNTER)
+	              ctrl_counter_reset <= 1'b1;
+	            else if (addr == `ADDR_CACHE_INVALIDATE)
+	              invalidate <= 1'b1;	
+	            else if (addr == `ADDR_BUFFER_EMPTY)
+                      dout <= write_state[0];
+                    else if (addr == `ADDR_BUFFER_FULL)
+                      dout <= write_state[1];   
+               end // always @ (posedge clk)
+          end // if (CTRL_CNT)
+        else
+          begin
+             
+             always @ (posedge clk)
+               begin
+	          dout <= {DATA_W{1'b0}};
+	          invalidate <= 1'b0;
+	          ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	          if(valid)
+	            if (addr == `ADDR_CACHE_INVALIDATE)
+	              invalidate <= 1'b1;	
+	            else if (addr == `ADDR_BUFFER_EMPTY)
+                      dout <= write_state[0];
+                    else if (addr == `ADDR_BUFFER_FULL)
+                      dout <= write_state[1];         
+               end // always @ (posedge clk)
+          end // else: !if(CTRL_CNT)  
+   endgenerate                
    
-   always @ (posedge clk)
-     begin
-	ctrl_req_data <= {DATA_W{1'b0}};
-	ctrl_cache_invalid <= 1'b0;
-	ctrl_counter_reset <= 1'b0;
-	ctrl_ack <= ctrl_cpu_req; // Sends acknowlege the next clock cycle after request (handshake)
-
-        
-`ifdef CTRL_CLK
-	ctrl_clk_start <= ctrl_clk_start;
-`endif	
-	if(ctrl_cpu_req)
-	  begin
-	     if (ctrl_addr == `ADDR_CACHE_HIT)
-	       ctrl_req_data <= cache_hit_cnt;
-	     else if (ctrl_addr == `ADDR_CACHE_MISS)
-	       ctrl_req_data <= cache_miss_cnt;
-	     else if (ctrl_addr == `ADDR_INSTR_HIT)
-	       ctrl_req_data <= instr_hit_cnt;
-	     else if (ctrl_addr == `ADDR_INSTR_MISS)
-	       ctrl_req_data <= instr_miss_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_HIT)
-	       ctrl_req_data <= data_hit_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_MISS)
-	       ctrl_req_data <= data_miss_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_READ_HIT)
-	       ctrl_req_data <= data_read_hit_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_READ_MISS)
-	       ctrl_req_data <= data_read_miss_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_WRITE_HIT)
-	       ctrl_req_data <= data_write_hit_cnt;
-	     else if (ctrl_addr == `ADDR_DATA_WRITE_MISS)
-	       ctrl_req_data <= data_write_miss_cnt;
-	     else if (ctrl_addr == `ADDR_RESET_COUNTER)
-	       ctrl_counter_reset <= 1'b1;
-	     else if (ctrl_addr == `ADDR_CACHE_INVALIDATE)
-	       ctrl_cache_invalid <= 1'b1;	
-	     else if (ctrl_addr == `ADDR_BUFFER_EMPTY)
-               ctrl_req_data <= ctrl_buffer_state[0];
-             else if (ctrl_addr == `ADDR_BUFFER_FULL)
-               ctrl_req_data <= ctrl_buffer_state[1];              
-`ifdef CTRL_CLK
-	     else if (ctrl_addr == `ADDR_CLK_START)
-	       begin
-		  ctrl_counter_reset <= 1'b1;
-		  ctrl_clk_start <= 1'b1;
-	       end
-	     else if (ctrl_addr == `ADDR_CLK_STOP)
-	       ctrl_clk_start <= 1'b0;
-	     else if (ctrl_addr == `ADDR_CLK_UPPER)
-	       ctrl_req_data <= ctrl_clk_cnt [2*DATA_W-1:DATA_W];
-	     else if (ctrl_addr == `ADDR_CLK_LOWER)
-	       ctrl_req_data <= ctrl_clk_cnt [DATA_W-1:0];
-`endif
-	  end
-     end		    
 endmodule // cache_controller
