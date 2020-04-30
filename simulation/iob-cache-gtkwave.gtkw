@@ -1,0 +1,63 @@
+[*]
+[*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
+[*] Thu Apr 30 23:23:13 2020
+[*]
+[dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/iob_cache.vcd"
+[dumpfile_mtime] "Thu Apr 30 23:21:09 2020"
+[dumpfile_size] 24383592
+[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/iob-cache-gtkwave.gtkw"
+[timestart] 47612310
+[size] 1004 600
+[pos] -1 -1
+*-14.000000 49077920 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] iob_cache_tb.
+[treeopen] iob_cache_tb.cache.
+[sst_width] 234
+[signals_width] 273
+[sst_expanded] 1
+[sst_vpaned_height] 150
+@28
+iob_cache_tb.clk
+@200
+-Front-end
+@22
+iob_cache_tb.addr[14:2]
+iob_cache_tb.wdata[31:0]
+iob_cache_tb.wstrb[3:0]
+iob_cache_tb.rdata[31:0]
+@28
+iob_cache_tb.valid
+iob_cache_tb.ready
+@200
+-
+-Back-end NATIVE
+@22
+iob_cache_tb.mem_addr[13:5]
+iob_cache_tb.mem_wdata[255:0]
+@23
+iob_cache_tb.mem_wstrb[31:0]
+@28
+iob_cache_tb.mem_valid
+iob_cache_tb.mem_ready
+@200
+-
+-Back-end AXI
+-READ
+@22
+iob_cache_tb.axi_araddr[13:0]
+@28
+iob_cache_tb.axi_arready
+iob_cache_tb.axi_arvalid
+iob_cache_tb.axi_rready
+iob_cache_tb.axi_rvalid
+@200
+-WRITE
+@22
+iob_cache_tb.axi_awaddr[13:0]
+@28
+iob_cache_tb.axi_awready
+iob_cache_tb.axi_awvalid
+iob_cache_tb.axi_wvalid
+iob_cache_tb.axi_wready
+[pattern_trace] 1
+[pattern_trace] 0
