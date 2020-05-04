@@ -56,6 +56,35 @@ module iob_cache_tb;
              #2;             
           end // for (i = 0; i < 2**`ADDR_W; i = i + 1)
         $display("Finished reading\n");
+        $display("Testing byte addressing\n");
+        addr <= 0;
+        wdata <= {`N_BYTES{8'd1}};
+        wstrb <= 4'b0001;
+        valid <= 1;
+        #4;
+        addr <= 0;
+        wdata <= {`N_BYTES{8'd2}};
+        wstrb <= 4'b0010;
+        valid <= 1;
+        #4;
+        addr <= 0;
+        wdata <= {`N_BYTES{8'd3}};
+        wstrb <= 4'b0100;
+        valid <= 1;
+        #4;
+        addr <= 0;
+        wdata <= {`N_BYTES{8'd4}};
+        wstrb <= 4'b1000;
+        valid <= 1;
+        #4;
+        $display("Reading result\n");
+        addr <= 0;
+        wdata <= 0;
+        wstrb <= 0;
+        valid <= 1;
+        #4;
+        if(rdata != 32'h04030201)
+          $display("Error in byte-addressing\n");
         $display("Test end\n");
         $finish;
      end

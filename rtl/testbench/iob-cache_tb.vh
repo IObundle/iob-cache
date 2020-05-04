@@ -1,15 +1,15 @@
 `define N_WAYS 4
 `define LINE_OFF_W 6
 `define WORD_OFF_W 3
-`define ADDR_W 14
+`define ADDR_W 12
 `define DATA_W 32
 `define N_BYTES 4
 `define REP_POLICY 0
 `define MEM_NATIVE 0
 
-`define MEM_ADDR_W 14
-`define MEM_DATA_W 256
-`define MEM_N_BYTES 32
+`define MEM_ADDR_W 12
+`define MEM_DATA_W 32
+`define MEM_N_BYTES 4
 
 `define LA 1
 

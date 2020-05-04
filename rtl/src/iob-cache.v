@@ -10,9 +10,9 @@ module iob_cache
     //memory cache's parameters
     parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 4,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 5,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -36,13 +36,15 @@ module iob_cache
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
     //Controller's options
-    parameter CTRL_CNT_ID = 0, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 1    //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
+    parameter CTRL_CNT = 0   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     ) 
    (
     input                                    clk,
     input                                    reset,
-    input [ADDR_W:$clog2(N_BYTES)]           addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    //input [ADDR_W:$clog2(N_BYTES)]           addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input [ADDR_W-1:$clog2(N_BYTES)]         addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input                                    select,
     input [DATA_W-1:0]                       wdata,
     input [N_BYTES-1:0]                      wstrb,
     output [DATA_W-1:0]                      rdata,
@@ -109,7 +111,8 @@ module iob_cache
    wire                                      ready_int;
    
    
-   wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB      
+   // wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB     
+   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
    wire                                      write_access = (cache_select &   (|wstrb_int));
    wire                                      read_access =  (cache_select &  ~(|wstrb_int));
    
@@ -895,27 +898,31 @@ module read_process_native
         if(reset)
           begin
              state <= idle;
+             word_counter <=0;
           end
         else
           begin
+             word_counter <= word_counter;
              
              case(state)
 
                idle:
                  begin
+                    word_counter <= 0;
                     if(read_miss) //main_process flag
-                      state <= handshake;
+                      state <= handshake;                                        
                     else
-                      state <= idle;
+                      state <= idle;                      
                  end
                
                handshake:
                  begin
                     if(mem_ready)
-                      if(&word_counter)
+                      if(word_counter == {MEM_OFFSET_W{1'b1}})
                         state <= end_handshake;
                       else
                         begin
+                           word_counter <= word_counter +1;
                            state <= handshake_update;
                         end
                     else
@@ -932,6 +939,7 @@ module read_process_native
                end_handshake: //read-latency delay (last line word)
                  begin
                     state <= idle;
+                    word_counter <= 0;
                  end
                
                default:;
@@ -943,7 +951,7 @@ module read_process_native
    
    always @*
      begin 
-        word_counter =0;
+        //word_counter =0;
         
         case(state)
           
@@ -951,26 +959,26 @@ module read_process_native
             begin
                mem_valid = 1'b0;
                line_load = 1'b0;
-               word_counter = 0;
+               //word_counter = 0;
             end
 
           handshake:
             begin
                mem_valid = 1'b1;
                line_load = 1'b1;
-               word_counter = word_counter;
+               // word_counter = word_counter;
             end
           
           handshake_update:
             begin
                mem_valid = 1'b0;
                line_load =1'b1;
-               word_counter = word_counter +1;
+               // word_counter = word_counter +1;
             end
 
           end_handshake:
             begin
-               word_counter = word_counter; //to avoid updating the first word in line with last data
+               // word_counter = word_counter; //to avoid updating the first word in line with last data
                line_load = 1'b1; //delay for read-latency
                mem_valid = 1'b0;
             end
@@ -1053,7 +1061,7 @@ module write_process_axi
    //Constant AXI signals
    assign axi_awid    = AXI_ID;
    assign axi_awlen   = 8'd0;
-   assign axi_awsize  = 3'b010;
+   assign axi_awsize  = MEM_BYTES_W; // verify - Writes data of the size of MEM_DATA_W
    assign axi_awburst = 2'd0;
    assign axi_awlock  = 1'b0; // 00 - Normal Access
    assign axi_awcache = 4'b0011;
