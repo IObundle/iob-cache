@@ -11,7 +11,7 @@ module iob_cache
     parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 5,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)

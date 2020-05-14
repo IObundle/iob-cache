@@ -8,15 +8,16 @@ module iob_cache_tb;
    always #1 clk = ~clk;
    reg reset = 1;
 
-   reg [`ADDR_W  :$clog2(`N_BYTES)] addr =0;
-   reg [`DATA_W-1:0]                wdata=0;
-   reg [`N_BYTES-1:0]               wstrb=0;
-   reg                              valid=0;
-   wire [`DATA_W-1:0]                rdata;
-   wire                              ready;
+   reg [`ADDR_W-1  :$clog2(`N_BYTES)] addr =0;
+   reg [`DATA_W-1:0]                  wdata=0;
+   reg [`N_BYTES-1:0]                 wstrb=0;
+   reg                                valid=0;
+   wire [`DATA_W-1:0]                 rdata;
+   wire                               ready;
+   wire                               select = 0;//cache is always selected
    
 
-   integer                          i;
+   integer                            i;
    
    initial 
      begin
@@ -140,12 +141,13 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({1'b0,addr}),
+	  .addr  (addr ),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
 	  .instr (instr),
+          .select(select),
           //
 	  // AXI INTERFACE
           //
