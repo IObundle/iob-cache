@@ -11,6 +11,8 @@
 module L2-ID_2sp
   #(
     //General parameters
+    parameter DATA_W = 32
+    parameter ADDR_W = 32,
     //Look-ahead Interface - Store Front-End input signals
     parameter LA_INTERF = 0,
     //Controller's options
@@ -20,8 +22,8 @@ module L2-ID_2sp
     // L2 parameters //
     ///////////////////
     //Front-End L2 parameters will be equal from the L1 Back-End's
-    parameter L2_ADDR_W   = 32,       //Address width - width that will used for the cache 
-    parameter L2_DATA_W   = 32,       //Data width - word size used for the cache
+    parameter L2_ADDR_W   = ADDR_W,   //Address width - width that will used for the cache 
+    parameter L2_DATA_W   = DATA_W,   //Data width - word size used for the cache
     parameter L2_N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter L2_LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter L2_WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0] if the cache line is equal or less than the Data width in the back-end
@@ -43,11 +45,11 @@ module L2-ID_2sp
     // L1-Instr parameters //
     /////////////////////////
     
-    parameter L1_I_ADDR_W   = 32,       //Address width - width that will used for the cache 
-    parameter L1_I_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter L1_I_N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter L1_I_LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter L1_I_WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter L1_I_ADDR_W   = ADDR_W,   //Address width - width that will used for the cache 
+    parameter L1_I_DATA_W   = DATA_W,   //Data width - word size used for the cache
+    parameter L1_I_N_WAYS     = 1,      //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter L1_I_LINE_OFF_W = 4,      //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter L1_I_WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter L1_I_WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter L1_I_REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -63,11 +65,11 @@ module L2-ID_2sp
     // L1-Data parameters //
     ////////////////////////
     
-    parameter L1_D_ADDR_W   = 32,       //Address width - width that will used for the cache 
-    parameter L1_D_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter L1_D_N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter L1_D_ADDR_W   = ADDR_W,   //Address width - width that will used for the cache 
+    parameter L1_D_DATA_W   = DATA_W,   //Data width - word size used for the cache
+    parameter L1_D_N_WAYS      = 1,     //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter L1_D_LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter L1_D_WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter L1_D_WORD_OFF_W  = 3,     //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter L1_D_WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter L1_D_REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -165,10 +167,10 @@ module L2-ID_2sp
    wire [`L1_D_MEM_N_BYTES-1:0]                        d_mem_wstrb;
    wire                                                d_mem_valid, d_mem_ready;
    //L2
-   wire [`L2_MEM_ADDR_W-1:$clog2(`L2_MEM_N_BYTES)]     addr;
-   wire [`L2_MEM_DATA_W-1:0]                           wdata, rdata;
-   wire [`L2_MEM_N_BYTES-1:0]                          wstrb;
-   wire                                                valid, ready;
+   wire [`L2_MEM_ADDR_W-1:$clog2(`L2_MEM_N_BYTES)]     int_addr;
+   wire [`L2_MEM_DATA_W-1:0]                           int_wdata, int_rdata;
+   wire [`L2_MEM_N_BYTES-1:0]                          int_wstrb;
+   wire                                                int_valid, int_ready;
 
 
    iob_cache #(
@@ -260,8 +262,8 @@ module L2-ID_2sp
      (
       .cat_bus_fe_in  ({{i_mem_valid, i_mem_addr, i_mem_wdata, i_mem_wstrb},{d_mem_valid, d_mem_addr, d_mem_wdata, d_mem_wstrb}}),
       .cat_bus_fe_out ({{i_mem_ready, i_mem_rdata},{d_mem_ready, d_mem_rdata}}),
-      .cat_bus_be_in  ({ready,rdata}),
-      .cat_but_be_out ({valid, addr, wdata, wstrb})
+      .cat_bus_be_in  ({int_ready, int_rdata}),
+      .cat_but_be_out ({int_valid, int_addr, int_wdata, int_wstrb})
       );
    
 
@@ -288,12 +290,12 @@ module L2-ID_2sp
      (
       .clk   (clk),
       .reset (reset),
-      .wdata (wdata),
-      .addr  (addr ),
-      .wstrb (wstrb),
-      .rdata (rdata),
-      .valid (valid),
-      .ready (ready),
+      .wdata (int_wdata),
+      .addr  (int_addr ),
+      .wstrb (int_wstrb),
+      .rdata (int_rdata),
+      .valid (int_valid),
+      .ready (int_ready),
       .instr (1'b0),
       .select(1'b0),
       //
@@ -352,7 +354,7 @@ module L2-ID_2sp
       .mem_ready(mem_ready)
       );
    
-endmodule // L2
+endmodule // L2-ID-2sp
 
 
 
@@ -552,8 +554,6 @@ module leading1_mask_enc
    endgenerate
    
 endmodule // leading1_mask_enc
-
-
 
 
 
