@@ -7,17 +7,19 @@ module iob_cache_tb;
    reg clk = 1;
    always #1 clk = ~clk;
    reg reset = 1;
-
+   
    reg [`ADDR_W-1  :$clog2(`N_BYTES)] addr =0;
+   reg [`ADDR_W  :$clog2(`N_BYTES)]   addr_aux;
    reg [`DATA_W-1:0]                  wdata=0;
    reg [`N_BYTES-1:0]                 wstrb=0;
    reg                                valid=0;
    wire [`DATA_W-1:0]                 rdata;
    wire                               ready;
    wire                               select = 0;//cache is always selected
+   reg                                instr = 0;
    
 
-   integer                            i;
+   integer                            i,j;
    
    initial 
      begin
@@ -28,65 +30,75 @@ module iob_cache_tb;
 `endif  
         repeat (5) @(posedge clk);
         reset <= 0;
-        #10
-        $display("Writing entire memory\n");
+        #10;
+        $display("\nInitializing Cache testing\n");
+        $display("Writing entire memory (entire words)\n");
         for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
-        //for (i = 0; i < 10; i = i + 1)
           begin
              addr <= i;
              wdata <= i;
              wstrb <= {`N_BYTES{1'b1}};
              valid <= 1;
              #2;
+             while (ready == 1'b0) #2;
              valid <=0;
-             #10;
-          end
+             #2;
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+
         
         $display("Reading entire memory\n");
+        addr_aux = 0;
+        addr <= addr_aux [`ADDR_W-1  :$clog2(`N_BYTES)];
+        wdata <= 0;
+        wstrb <= {`N_BYTES{1'b0}};
+
         for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
-          //for (i = 0; i < 10; i = i + 1)
-          begin
+          begin 
              addr <= i;
-             wdata <= 0;
-             wstrb <= {`N_BYTES{1'b0}};
+             #2;
              valid <= 1;
-             #20;
-             if(rdata != i)
-               $display("Error in: %h\n", i);
+             while (ready == 1'b0) #2;
+             if(rdata != addr)
+               $display("Error in: %h\n", addr);
              valid <= 0;
-             #2;             
-          end // for (i = 0; i < 2**`ADDR_W; i = i + 1)
+             #2;
+          end
+        
         $display("Finished reading\n");
-        $display("Testing byte addressing\n");
-        addr <= 0;
-        wdata <= {`N_BYTES{8'd1}};
-        wstrb <= 4'b0001;
-        valid <= 1;
-        #4;
-        addr <= 0;
-        wdata <= {`N_BYTES{8'd2}};
-        wstrb <= 4'b0010;
-        valid <= 1;
-        #4;
-        addr <= 0;
-        wdata <= {`N_BYTES{8'd3}};
-        wstrb <= 4'b0100;
-        valid <= 1;
-        #4;
-        addr <= 0;
-        wdata <= {`N_BYTES{8'd4}};
-        wstrb <= 4'b1000;
-        valid <= 1;
-        #4;
-        $display("Reading result\n");
-        addr <= 0;
+        $display("Testing byte addressing (writing byte per byte)\n");
+        for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+          begin
+             for( j = 0; j < `N_BYTES; j = j + 1)
+               begin
+                  addr <= i;
+                  #2;
+                  wdata <= {`N_BYTES{i[3:0]}};
+                  wstrb <= (1'b1) << j;
+                  valid <= 1;
+                  #2;
+                  while (ready == 1'b0) #2;
+                  valid <= 0;
+                  #2;
+               end // for ( j = 0; j < `N_BYTES; j = j + 1)
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+
+        $display("Reading byte addressing\n");
         wdata <= 0;
         wstrb <= 0;
-        valid <= 1;
-        #4;
-        if(rdata != 32'h04030201)
-          $display("Error in byte-addressing\n");
-        $display("Test end\n");
+        #2;
+        for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+          begin 
+             addr <= i;
+             #2;
+             valid <= 1;
+             while (ready == 1'b0) #2;
+             if(rdata != {`N_BYTES{i[3:0]}})
+               $display("Error in: %h; wrote instead: %h\n", addr, rdata);
+             valid <= 0;
+             #2;
+          end
+        $display("Finished reading byte addressing\n");
+        $display("Cache testing completed\n");
         $finish;
      end
    
@@ -124,7 +136,91 @@ module iob_cache_tb;
    wire                                      mem_valid, mem_ready;
    
    
-
+`ifdef L2
+   
+   L2_ID_1sp #(
+               .ADDR_W(`ADDR_W),
+               .DATA_W(`DATA_W),
+               .MEM_NATIVE(`MEM_NATIVE),
+               .LA_INTERF(`LA),
+               .MEM_ADDR_W(`MEM_ADDR_W),
+               .MEM_DATA_W(`MEM_DATA_W),
+               .L1_LINE_OFF_W(`LINE_OFF_W),
+               .L1_WORD_OFF_W(`WORD_OFF_W),
+               .L2_LINE_OFF_W(`LINE_OFF_W),
+               .L2_WORD_OFF_W(`WORD_OFF_W),
+               .L2_N_WAYS    (`N_WAYS),
+               .REP_POLICY(`REP_POLICY)
+               )
+   cache (
+	  .clk (clk),
+	  .reset (reset),
+	  .wdata (wdata),
+	  .addr  (addr ),
+	  .wstrb (wstrb),
+	  .rdata (rdata),
+	  .valid (valid),
+	  .ready (ready),
+	  .instr (instr),
+          .select(select),
+          //
+	  // AXI INTERFACE
+          //
+          //address write
+          .axi_awid(axi_awid), 
+          .axi_awaddr(axi_awaddr), 
+          .axi_awlen(axi_awlen), 
+          .axi_awsize(axi_awsize), 
+          .axi_awburst(axi_awburst), 
+          .axi_awlock(axi_awlock), 
+          .axi_awcache(axi_awcache), 
+          .axi_awprot(axi_awprot),
+          .axi_awqos(axi_awqos), 
+          .axi_awvalid(axi_awvalid), 
+          .axi_awready(axi_awready), 
+          //write
+          .axi_wdata(axi_wdata), 
+          .axi_wstrb(axi_wstrb), 
+          .axi_wlast(axi_wlast), 
+          .axi_wvalid(axi_wvalid), 
+          .axi_wready(axi_wready), 
+          //write response
+          .axi_bid(axi_bid), 
+          .axi_bresp(axi_bresp), 
+          .axi_bvalid(axi_bvalid), 
+          .axi_bready(axi_bready), 
+          //address read
+          .axi_arid(axi_arid), 
+          .axi_araddr(axi_araddr), 
+          .axi_arlen(axi_arlen), 
+          .axi_arsize(axi_arsize), 
+          .axi_arburst(axi_arburst), 
+          .axi_arlock(axi_arlock), 
+          .axi_arcache(axi_arcache), 
+          .axi_arprot(axi_arprot), 
+          .axi_arqos(axi_arqos), 
+          .axi_arvalid(axi_arvalid), 
+          .axi_arready(axi_arready), 
+          //read 
+          .axi_rid(axi_rid), 
+          .axi_rdata(axi_rdata), 
+          .axi_rresp(axi_rresp), 
+          .axi_rlast(axi_rlast), 
+          .axi_rvalid(axi_rvalid),  
+          .axi_rready(axi_rready),
+          //
+          // NATIVE MEMORY INTERFACE
+          //
+          .mem_addr(mem_addr),
+          .mem_wdata(mem_wdata),
+          .mem_wstrb(mem_wstrb),
+          .mem_rdata(mem_rdata),
+          .mem_valid(mem_valid),
+          .mem_ready(mem_ready)
+	  );
+   
+`else // !`ifdef L2
+   
    iob_cache #(
                .ADDR_W(`ADDR_W),
                .DATA_W(`DATA_W),
@@ -204,7 +300,9 @@ module iob_cache_tb;
           .mem_ready(mem_ready)
 	  );
    
+`endif // !`ifdef L2
 
+   
    axi_ram 
      #(
        .DATA_WIDTH (`MEM_DATA_W),
@@ -263,7 +361,7 @@ module iob_cache_tb;
    iob_sp_mem_be #(
 		   .COL_WIDTH(8),
 		   .NUM_COL(`MEM_DATA_W/8),
-                   .ADDR_WIDTH(`MEM_ADDR_W)
+                   .ADDR_WIDTH(`MEM_ADDR_W-2)
                    )
    iob_gen_memory
      (
@@ -285,6 +383,17 @@ module iob_cache_tb;
         aux_mem_ready <= mem_valid; 
      end  
 
+
+   task cache_wait;
+      input ready;
+      begin
+         wait (ready == 1'b1);
+         #1;
+      end
+   endtask
+   
+   
+   
 
 endmodule // iob_cache_tb
 

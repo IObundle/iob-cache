@@ -1,0 +1,162 @@
+[*]
+[*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
+[*] Sun May 17 19:25:45 2020
+[*]
+[dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/iob_cache.vcd"
+[dumpfile_mtime] "Sun May 17 19:23:54 2020"
+[dumpfile_size] 13367147
+[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/iob-cache-L2-gtkwave.gtkw"
+[timestart] 31216720
+[size] 1855 951
+[pos] -1 -1
+*-13.178367 31262000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] iob_cache_tb.
+[treeopen] iob_cache_tb.cache.
+[treeopen] iob_cache_tb.cache.L1_D.
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[0].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[0].genblk7[0].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[1].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[1].genblk7[0].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[2].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[2].genblk7[0].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[3].
+[treeopen] iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[3].genblk7[0].
+[treeopen] iob_cache_tb.cache.L1_I.
+[sst_width] 45
+[signals_width] 440
+[sst_expanded] 0
+[sst_vpaned_height] 574
+@28
+iob_cache_tb.clk
+@200
+-L2-ID-cache signals
+-Front-end
+@28
+iob_cache_tb.cache.clk
+iob_cache_tb.cache.select
+@22
+iob_cache_tb.cache.addr[11:2]
+iob_cache_tb.cache.wdata[31:0]
+@29
+iob_cache_tb.cache.wstrb[3:0]
+@22
+iob_cache_tb.cache.rdata[31:0]
+@28
+iob_cache_tb.cache.valid
+iob_cache_tb.cache.ready
+iob_cache_tb.cache.instr
+@22
+iob_cache_tb.cache.i_rdata[31:0]
+@28
+iob_cache_tb.cache.i_ready
+@22
+iob_cache_tb.cache.d_rdata[31:0]
+@28
+iob_cache_tb.cache.d_ready
+@200
+-
+-L1 - Instr
+@28
+iob_cache_tb.cache.clk
+@22
+iob_cache_tb.cache.L1_I.addr[11:2]
+iob_cache_tb.cache.L1_I.wdata[31:0]
+iob_cache_tb.cache.L1_I.wstrb[3:0]
+iob_cache_tb.cache.L1_I.rdata[31:0]
+@28
+iob_cache_tb.cache.L1_I.valid
+iob_cache_tb.cache.L1_I.ready
+@22
+iob_cache_tb.cache.i_mem_addr[11:2]
+iob_cache_tb.cache.i_mem_wdata[31:0]
+iob_cache_tb.cache.i_mem_wstrb[3:0]
+iob_cache_tb.cache.i_mem_rdata[31:0]
+@28
+iob_cache_tb.cache.i_mem_valid
+iob_cache_tb.cache.i_mem_ready
+iob_cache_tb.cache.L1_I.select
+iob_cache_tb.cache.L1_I.cache_select
+@200
+-
+-L1 - Data
+@28
+iob_cache_tb.cache.clk
+@22
+iob_cache_tb.cache.L1_D.addr[11:2]
+iob_cache_tb.cache.L1_D.wdata[31:0]
+iob_cache_tb.cache.L1_D.wstrb[3:0]
+iob_cache_tb.cache.L1_D.rdata[31:0]
+@28
+iob_cache_tb.cache.L1_D.valid
+iob_cache_tb.cache.L1_D.ready
+@22
+iob_cache_tb.cache.d_mem_addr[11:2]
+iob_cache_tb.cache.d_mem_wdata[31:0]
+iob_cache_tb.cache.d_mem_wstrb[3:0]
+iob_cache_tb.cache.d_mem_rdata[31:0]
+@28
+iob_cache_tb.cache.d_mem_valid
+iob_cache_tb.cache.d_mem_ready
+iob_cache_tb.cache.L1_D.main_fsm.state[1:0]
+iob_cache_tb.cache.L1_D.main_fsm.ready
+iob_cache_tb.cache.L1_D.ready_cache
+iob_cache_tb.cache.L1_D.ready_int
+iob_cache_tb.cache.L1_D.cache_select
+iob_cache_tb.cache.L1_D.memory_cache.line_load_en
+iob_cache_tb.cache.L1_D.memory_cache.line_load
+iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[0].genblk7[0].cache_memory.en
+@22
+iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[0].genblk7[0].cache_memory.we[3:0]
+iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[1].genblk7[0].cache_memory.we[3:0]
+iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[2].genblk7[0].cache_memory.we[3:0]
+iob_cache_tb.cache.L1_D.memory_cache.genblk5.genblk6[3].genblk7[0].cache_memory.we[3:0]
+iob_cache_tb.cache.L1_D.memory_cache.line_rdata[127:0]
+@200
+-
+-L2
+@22
+iob_cache_tb.cache.int_addr[11:2]
+iob_cache_tb.cache.int_wdata[31:0]
+iob_cache_tb.cache.int_wstrb[3:0]
+iob_cache_tb.cache.int_rdata[31:0]
+@28
+iob_cache_tb.cache.int_valid
+iob_cache_tb.cache.int_ready
+@200
+-
+-
+-Back-end NATIVE
+@28
+iob_cache_tb.mem_valid
+iob_cache_tb.mem_ready
+@200
+-Back-end AXI
+-READ
+@22
+iob_cache_tb.cache.axi_araddr[11:0]
+@28
+iob_cache_tb.axi_arvalid
+iob_cache_tb.axi_arready
+@22
+iob_cache_tb.cache.axi_rdata[31:0]
+@28
+iob_cache_tb.axi_rready
+iob_cache_tb.axi_rvalid
+@200
+-WRITE
+@22
+iob_cache_tb.axi_awaddr[11:0]
+@28
+iob_cache_tb.axi_awvalid
+iob_cache_tb.axi_awready
+@22
+iob_cache_tb.axi_wdata[31:0]
+iob_cache_tb.axi_wstrb[3:0]
+@28
+iob_cache_tb.axi_wvalid
+iob_cache_tb.axi_wready
+iob_cache_tb.cache.ready
+[pattern_trace] 1
+[pattern_trace] 0
