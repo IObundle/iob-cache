@@ -1479,8 +1479,8 @@ module memory_section
                           cache_memory 
                              (
                               .clk (clk),
-                              .en  (valid), //so it can display rdata 1 cycle sooner (otherwise if also used wayt_hit)
-                              .we  (((line_load    & (k == way_select)) | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
+                              .en  (valid), 
+                              .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
                               .addr(line_addr),
                               .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
                               .dout(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])

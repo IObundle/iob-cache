@@ -245,7 +245,7 @@ module L2_ID_1sp
       .mem_ready(d_mem_ready)
       );
    
-   
+  /* 
    merge #(
            .N_MASTERS(2),
            .ADDR_W(L2_ADDR_W),
@@ -259,7 +259,24 @@ module L2_ID_1sp
       .s_resp ({int_ready, int_rdata})
       );
    
-     
+    */
+
+
+
+
+   //Interconnect - Only temporary until merge is fixed - terrible critical path
+   assign int_addr =  (i_mem_valid)? i_mem_addr : d_mem_addr;
+   assign int_wdata = (i_mem_valid)? i_mem_wdata : d_mem_wdata;
+   assign int_wstrb = (i_mem_valid)? i_mem_wstrb : d_mem_wstrb;
+   assign int_valid = i_mem_valid | d_mem_valid;
+   assign i_mem_rdata = int_rdata;
+   assign d_mem_rdata = int_rdata;
+   assign i_mem_ready = int_ready & i_mem_valid;
+   assign d_mem_ready = int_ready & d_mem_valid;
+   
+   
+
+ 
 
    iob_cache #(
                .ADDR_W    (L2_ADDR_W),

@@ -1,6 +1,6 @@
-`define N_WAYS 4
-`define LINE_OFF_W 6
-`define WORD_OFF_W 2
+`define N_WAYS 16
+`define LINE_OFF_W 5
+`define WORD_OFF_W 4
 `define ADDR_W 12
 `define DATA_W 32
 `define N_BYTES 4
