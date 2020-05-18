@@ -84,7 +84,8 @@ module L2_ID_1sp
     input                                            reset,
     // L1  ports
     input [L1_ADDR_W-1:$clog2(L1_DATA_W/8)]          addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input                                            select,
+    input                                            i_select,
+    input                                            d_select,
     input [L1_DATA_W-1:0]                            wdata,
     input [L1_DATA_W/8-1:0]                          wstrb,
     output [L1_DATA_W-1:0]                           rdata,
@@ -185,6 +186,7 @@ module L2_ID_1sp
                .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
                .CTRL_CNT      (L1_I_CTRL_CNT),
+               .CTRL_VAL_IND  (1), 
                .READ_STALL (L1_READ_STALL)
                )
    L1_I
@@ -198,7 +200,7 @@ module L2_ID_1sp
       .valid (valid & instr),
       .ready (i_ready),
       .instr (1'b1  ), // Not necessary
-      .select(select),
+      .select(i_select),
       .wproc (i_wproc),
       .rstall(d_wproc),
       //
@@ -229,6 +231,7 @@ module L2_ID_1sp
                .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
                .CTRL_CNT      (L1_D_CTRL_CNT),
+               .CTRL_VAL_IND  (1),
                .READ_STALL (L1_READ_STALL)
                )
    L1_D
@@ -242,7 +245,7 @@ module L2_ID_1sp
       .valid (valid & (~instr)),
       .ready (d_ready),
       .instr (1'b0), // Not necessary
-      .select(select),
+      .select(d_select),
       .wproc(d_wproc),
       .rstall(i_wproc),
       //

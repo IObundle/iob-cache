@@ -38,6 +38,7 @@ module iob_cache
     //Controller's options
     parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
     parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_VAL_IND = 0, //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
     /*---------------------------------------------------*/
     //Cache - Coherency (simple implementations)
     parameter READ_STALL = 0
@@ -116,11 +117,6 @@ module iob_cache
    wire                                      ready_int;
    
    
-   // wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB     
-   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                      write_access = (cache_select &   (|wstrb_int));
-   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
-   
    //Cache - Memory-Controller signals
    wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
    wire                                      ready_cache, ready_ctrl; 
@@ -135,6 +131,26 @@ module iob_cache
    wire [MEM_OFFSET_W-1:0]                   word_counter;
    wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
    wire                                      invalidate;
+
+
+
+   //Cache - Controller selection
+   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                      write_access = (cache_select &   (|wstrb_int));
+   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
+   wire                                      ctrl_select;
+   generate
+      if (CTRL_VAL_IND)
+        begin
+           assign cache_select = valid_int;
+           assign ctrl_select  = select;
+        end
+      else
+        begin
+           assign cache_select = ~select & valid_int;           
+           assign ctrl_select  =  select & valid_int;
+        end
+   endgenerate
 
    // Cache coherency ports and signals
    assign wproc = ~write_empty;
@@ -391,7 +407,7 @@ module iob_cache
       .invalidate(invalidate),
       .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
       .dout(rdata_ctrl),
-      .valid(valid_int & ~cache_select),
+      .valid(ctrl_select),
       .ready(ready_ctrl),
       .reset(reset),
       .write_state({write_full,write_empty})
