@@ -37,20 +37,25 @@ module iob_cache
     /*---------------------------------------------------*/
     //Controller's options
     parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 0   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    /*---------------------------------------------------*/
+    //Cache - Coherency (simple implementations)
+    parameter READ_STALL = 0
     ) 
    (
     input                                    clk,
     input                                    reset,
-    //input [ADDR_W:$clog2(N_BYTES)]           addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input [ADDR_W-1:$clog2(N_BYTES)]         addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input                                    select,
+    input [ADDR_W-1:$clog2(N_BYTES)]         addr,
+    input                                    select,// selects cache (0) or controller (1)
     input [DATA_W-1:0]                       wdata,
     input [N_BYTES-1:0]                      wstrb,
     output [DATA_W-1:0]                      rdata,
     input                                    valid,
     output                                   ready,
     input                                    instr,
+    //cache-coherency
+    input                                    rstall, //read-stall - signal used to delay the read_process
+    output                                   wproc, //write-in-process - signal used to inform this cache is currently in write_process
     // AXI interface 
     // Address Write
     output [AXI_ID_W-1:0]                    axi_awid, 
@@ -131,6 +136,15 @@ module iob_cache
    wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
    wire                                      invalidate;
 
+   // Cache coherency ports and signals
+   assign wproc = ~write_empty;
+   wire                                      write_empty_int;
+   generate
+      if (READ_STALL)
+        assign write_empty_int = write_empty & (~rstall);
+      else
+        assign write_empty_int = write_empty;
+   endgenerate
 
 
    generate
@@ -182,7 +196,7 @@ module iob_cache
       .line_load(line_load),
       .hit(hit),
       .write_full(write_full),
-      .write_empty(write_empty),
+      .write_empty(write_empty_int),
       .instr(instr_int),
       .ready(ready_cache),
       .write_en(write_en),
@@ -213,8 +227,7 @@ module iob_cache
               .clk(clk),
               .reset(reset),
               .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
-              .read_miss(read_miss), 
-              .write_empty(write_empty), 
+              .read_miss(read_miss),
               .line_load(line_load),
               .line_load_en(line_load_en),
               .word_counter(word_counter),
@@ -268,7 +281,6 @@ module iob_cache
               .reset(reset),
               .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
               .read_miss(read_miss), 
-              .write_empty(write_empty), 
               .line_load(line_load),
               .line_load_en(line_load_en),
               .word_counter(word_counter),
@@ -696,7 +708,6 @@ module read_process_axi
     input                              reset,
     input [ADDR_W -1: $clog2(N_BYTES)] addr,
     input                              read_miss, //read access that results in a cache miss
-    input                              write_empty, //write_process has an empty buffer
     output reg                         line_load, //load cache line with new data
     output                             line_load_en,//Memory enable during the cache line load
     output reg [MEM_OFFSET_W-1:0]      word_counter,//counter to enable each word in the line
@@ -866,7 +877,6 @@ module read_process_native
     input                                     reset,
     input [ADDR_W -1: $clog2(N_BYTES)]        addr,
     input                                     read_miss, //read access that results in a cache miss
-    input                                     write_empty, //write_process has an empty buffer
     output reg                                line_load, //load cache line with new data
     output                                    line_load_en,//Memory enable during the cache line load
     output reg [MEM_OFFSET_W-1:0]             word_counter,//counter to enable each word in the line
