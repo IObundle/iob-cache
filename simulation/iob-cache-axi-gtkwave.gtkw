@@ -1,23 +1,24 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Wed May 20 18:00:14 2020
+[*] Wed May 20 18:18:25 2020
 [*]
 [dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Wed May 20 17:55:17 2020"
-[dumpfile_size] 61526738
-[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/iob-cache-gtkwave.gtkw"
+[dumpfile_mtime] "Wed May 20 18:18:10 2020"
+[dumpfile_size] 61353048
+[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/iob-cache-axi-gtkwave.gtkw"
 [timestart] 0
-[size] 941 600
+[size] 895 942
 [pos] -1 -1
-*-27.000000 8178000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-15.000000 28000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
 [treeopen] iob_cache_tb.cache.genblk6.
 [treeopen] iob_cache_tb.cache.genblk6.write_fsm.
+[treeopen] iob_cache_tb.cache.genblk6.write_fsm.write_throught_buffer.
 [sst_width] 234
 [signals_width] 273
 [sst_expanded] 1
-[sst_vpaned_height] 315
+[sst_vpaned_height] 568
 @28
 iob_cache_tb.clk
 @200
@@ -50,7 +51,7 @@ iob_cache_tb.axi_arready
 iob_cache_tb.axi_arvalid
 iob_cache_tb.axi_rready
 iob_cache_tb.axi_rvalid
-@201
+@200
 -Read_process
 @28
 iob_cache_tb.cache.genblk6.read_fsm.state[1:0]
@@ -63,6 +64,12 @@ iob_cache_tb.cache.genblk6.read_fsm.line_load_en
 iob_cache_tb.cache.genblk6.read_fsm.line_load
 @200
 -
+@28
+iob_cache_tb.cache.clk
+iob_cache_tb.cache.write_access
+@29
+iob_cache_tb.cache.genblk6.write_fsm.write_throught_buffer.write_en
+@200
 -WRITE
 @22
 iob_cache_tb.axi_awaddr[11:0]
