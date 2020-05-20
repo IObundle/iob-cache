@@ -28,7 +28,6 @@ module L2_ID_1sp
     parameter L1_WORD_OFF_W = 2,    //Word-Offset Width - 2**OFFSET_W total DATA_W words per line
     parameter L1_WTBUF_DEPTH_W = 4, //Depth Width of Write-Through Buffer
     parameter L1_REP_POLICY = REP_POLICY, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU (if N_WAYS = 1, this parameter will be ignored)
-    parameter L1_READ_STALL = 1,    //Stall the reads from L1 caches while at least one is writting to L2
   
     ///////////////////
     // L2 parameters //
@@ -167,8 +166,6 @@ module L2_ID_1sp
    assign ready = i_ready | d_ready;
    assign rdata = (d_ready)? d_rdata : i_rdata;
    
-   //L1 coherency signal
-   wire                                              i_wproc, d_wproc;
    
 
    
@@ -186,8 +183,7 @@ module L2_ID_1sp
                .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
                .CTRL_CNT      (L1_I_CTRL_CNT),
-               .CTRL_VAL_IND  (1), 
-               .READ_STALL (L1_READ_STALL)
+               .CTRL_VAL_IND  (1)
                )
    L1_I
      (
@@ -201,8 +197,6 @@ module L2_ID_1sp
       .ready (i_ready),
       .instr (1'b1  ), // Not necessary
       .select(i_select),
-      .wproc (i_wproc),
-      .rstall(d_wproc),
       //
       //       // NATIVE MEMORY INTERFACE
       //
@@ -231,8 +225,7 @@ module L2_ID_1sp
                .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
                .CTRL_CNT      (L1_D_CTRL_CNT),
-               .CTRL_VAL_IND  (1),
-               .READ_STALL (L1_READ_STALL)
+               .CTRL_VAL_IND  (1)
                )
    L1_D
      (
@@ -246,8 +239,6 @@ module L2_ID_1sp
       .ready (d_ready),
       .instr (1'b0), // Not necessary
       .select(d_select),
-      .wproc(d_wproc),
-      .rstall(i_wproc),
       //
       // NATIVE MEMORY INTERFACE
       //
@@ -305,8 +296,7 @@ module L2_ID_1sp
                .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
                .LA_INTERF     (0),
                .CTRL_CNT_ID   (0),
-               .CTRL_CNT      (0),
-               .READ_STALL    (0)
+               .CTRL_CNT      (0)
                )
    L2 
      (

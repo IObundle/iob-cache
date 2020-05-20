@@ -38,10 +38,7 @@ module iob_cache
     //Controller's options
     parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
     parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
-    parameter CTRL_VAL_IND = 0, //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
-    /*---------------------------------------------------*/
-    //Cache - Coherency (simple implementations)
-    parameter READ_STALL = 0
+    parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
     ) 
    (
     input                                    clk,
@@ -54,9 +51,7 @@ module iob_cache
     input                                    valid,
     output                                   ready,
     input                                    instr,
-    //cache-coherency
-    input                                    rstall, //read-stall - signal used to delay the read_process
-    output                                   wproc, //write-in-process - signal used to inform this cache is currently in write_process
+
     // AXI interface 
     // Address Write
     output [AXI_ID_W-1:0]                    axi_awid, 
@@ -158,17 +153,6 @@ module iob_cache
         end
    endgenerate
 
-   // Cache coherency ports and signals
-   assign wproc = ~write_empty;
-   wire                                      write_empty_int;
-   generate
-      if (READ_STALL)
-        assign write_empty_int = write_empty & (~rstall);
-      else
-        assign write_empty_int = write_empty;
-   endgenerate
-
-
    generate
       if (LA_INTERF) //Look-Ahead Interface - signal storage
         begin
@@ -218,7 +202,7 @@ module iob_cache
       .line_load(line_load),
       .hit(hit),
       .write_full(write_full),
-      .write_empty(write_empty_int),
+      .write_empty(write_empty),
       .instr(instr_int),
       .ready(ready_cache),
       .write_en(write_en),
