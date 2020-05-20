@@ -10,10 +10,10 @@ module iob_cache
     //memory cache's parameters
     parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
-    parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
+    parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
@@ -50,7 +50,7 @@ module iob_cache
     input                                    select,// selects cache (0) or controller (1)
     input [DATA_W-1:0]                       wdata,
     input [N_BYTES-1:0]                      wstrb,
-    output [DATA_W-1:0]                      rdata,
+    output reg [DATA_W-1:0]                  rdata,
     input                                    valid,
     output                                   ready,
     input                                    instr,
@@ -119,8 +119,14 @@ module iob_cache
    
    //Cache - Memory-Controller signals
    wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
-   wire                                      ready_cache, ready_ctrl; 
-   assign rdata     = (cache_select)? rdata_cache : rdata_ctrl;
+   wire                                      ready_cache, ready_ctrl;
+   wire [2*DATA_W-1:0]                       rdata_long = {rdata_ctrl, rdata_cache};
+   
+   always@*
+     begin
+        rdata = rdata_long << DATA_W*ctrl_select;
+     end
+   
    assign ready_int = (cache_select)? ready_cache : ready_ctrl;
    assign ready     = ready_int;
    
