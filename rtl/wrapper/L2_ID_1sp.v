@@ -83,7 +83,8 @@ module L2_ID_1sp
     input                                            reset,
     // L1  ports
     input [L1_ADDR_W-1:$clog2(L1_DATA_W/8)]          addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input                                            select,
+    input                                            i_select,
+    input                                            d_select,
     input [L1_DATA_W-1:0]                            wdata,
     input [L1_DATA_W/8-1:0]                          wstrb,
     output [L1_DATA_W-1:0]                           rdata,
@@ -165,7 +166,9 @@ module L2_ID_1sp
    assign ready = i_ready | d_ready;
    assign rdata = (d_ready)? d_rdata : i_rdata;
    
+   
 
+   
    iob_cache #(
                .ADDR_W     (L1_ADDR_W),
                .DATA_W     (L1_DATA_W),
@@ -179,7 +182,8 @@ module L2_ID_1sp
                .LA_INTERF     (L1_I_LA_INTERF),
                .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
-               .CTRL_CNT      (L1_I_CTRL_CNT)
+               .CTRL_CNT      (L1_I_CTRL_CNT),
+               .CTRL_VAL_IND  (1)
                )
    L1_I
      (
@@ -192,7 +196,7 @@ module L2_ID_1sp
       .valid (valid & instr),
       .ready (i_ready),
       .instr (1'b1  ), // Not necessary
-      .select(select),
+      .select(i_select),
       //
       //       // NATIVE MEMORY INTERFACE
       //
@@ -220,7 +224,8 @@ module L2_ID_1sp
                .LA_INTERF     (L1_D_LA_INTERF),
                .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
-               .CTRL_CNT      (L1_D_CTRL_CNT)
+               .CTRL_CNT      (L1_D_CTRL_CNT),
+               .CTRL_VAL_IND  (1)
                )
    L1_D
      (
@@ -233,7 +238,7 @@ module L2_ID_1sp
       .valid (valid & (~instr)),
       .ready (d_ready),
       .instr (1'b0), // Not necessary
-      .select(select),
+      .select(d_select),
       //
       // NATIVE MEMORY INTERFACE
       //
@@ -245,21 +250,38 @@ module L2_ID_1sp
       .mem_ready(d_mem_ready)
       );
    
+   /* 
+    merge #(
+    .N_MASTERS(2),
+    .ADDR_W(L2_ADDR_W),
+    .DATA_W(L2_DATA_W)
+    )
+    cache_inter
+    (
+    .m_req ({{i_mem_valid, i_mem_addr, i_mem_wdata, i_mem_wstrb},{d_mem_valid, d_mem_addr, d_mem_wdata, d_mem_wstrb}}),
+    .m_resp ({{i_mem_ready, i_mem_rdata},{d_mem_ready, d_mem_rdata}}),    
+    .s_req ({int_valid, int_addr, int_wdata, int_wstrb}),
+    .s_resp ({int_ready, int_rdata})
+    );
+    
+    */
+
+
+
+
+   //Interconnect - Only temporary until merge is fixed - terrible critical path
+   assign int_addr =  (i_mem_valid)? i_mem_addr : d_mem_addr;
+   assign int_wdata = (i_mem_valid)? i_mem_wdata : d_mem_wdata;
+   assign int_wstrb = (i_mem_valid)? i_mem_wstrb : d_mem_wstrb;
+   assign int_valid = i_mem_valid | d_mem_valid;
+   assign i_mem_rdata = int_rdata;
+   assign d_mem_rdata = int_rdata;
+   assign i_mem_ready = int_ready & i_mem_valid;
+   assign d_mem_ready = int_ready & d_mem_valid;
    
-   merge #(
-           .N_MASTERS(2),
-           .ADDR_W(L2_ADDR_W),
-           .DATA_W(L2_DATA_W)
-           )
-   cache_inter
-     (
-      .m_req ({{i_mem_valid, i_mem_addr, i_mem_wdata, i_mem_wstrb},{d_mem_valid, d_mem_addr, d_mem_wdata, d_mem_wstrb}}),
-      .m_resp ({{i_mem_ready, i_mem_rdata},{d_mem_ready, d_mem_rdata}}),    
-      .s_req ({int_valid, int_addr, int_wdata, int_wstrb}),
-      .s_resp ({int_ready, int_rdata})
-      );
    
-     
+
+   
 
    iob_cache #(
                .ADDR_W    (L2_ADDR_W),

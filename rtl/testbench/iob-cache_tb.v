@@ -17,6 +17,7 @@ module iob_cache_tb;
    wire                               ready;
    wire                               select = 0;//cache is always selected
    reg                                instr = 0;
+   wire                               i_select =0, d_select =0;
    
 
    integer                            i,j;
@@ -162,7 +163,8 @@ module iob_cache_tb;
 	  .valid (valid),
 	  .ready (ready),
 	  .instr (instr),
-          .select(select),
+          .i_select(i_select),
+          .d_select(d_select),
           //
 	  // AXI INTERFACE
           //

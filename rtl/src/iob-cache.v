@@ -10,10 +10,10 @@ module iob_cache
     //memory cache's parameters
     parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
-    parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
+    parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
@@ -37,20 +37,21 @@ module iob_cache
     /*---------------------------------------------------*/
     //Controller's options
     parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 0   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
     ) 
    (
     input                                    clk,
     input                                    reset,
-    //input [ADDR_W:$clog2(N_BYTES)]           addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input [ADDR_W-1:$clog2(N_BYTES)]         addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input                                    select,
+    input [ADDR_W-1:$clog2(N_BYTES)]         addr,
+    input                                    select,// selects cache (0) or controller (1)
     input [DATA_W-1:0]                       wdata,
     input [N_BYTES-1:0]                      wstrb,
-    output [DATA_W-1:0]                      rdata,
+    output reg [DATA_W-1:0]                  rdata,
     input                                    valid,
     output                                   ready,
     input                                    instr,
+
     // AXI interface 
     // Address Write
     output [AXI_ID_W-1:0]                    axi_awid, 
@@ -111,15 +112,16 @@ module iob_cache
    wire                                      ready_int;
    
    
-   // wire                                      cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB     
-   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                      write_access = (cache_select &   (|wstrb_int));
-   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
-   
    //Cache - Memory-Controller signals
    wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
-   wire                                      ready_cache, ready_ctrl; 
-   assign rdata     = (cache_select)? rdata_cache : rdata_ctrl;
+   wire                                      ready_cache, ready_ctrl;
+   wire [2*DATA_W-1:0]                       rdata_long = {rdata_ctrl, rdata_cache};
+   
+   always@*
+     begin
+        rdata = rdata_long << DATA_W*ctrl_select;
+     end
+   
    assign ready_int = (cache_select)? ready_cache : ready_ctrl;
    assign ready     = ready_int;
    
@@ -132,6 +134,24 @@ module iob_cache
    wire                                      invalidate;
 
 
+
+   //Cache - Controller selection
+   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                      write_access = (cache_select &   (|wstrb_int));
+   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
+   wire                                      ctrl_select;
+   generate
+      if (CTRL_VAL_IND)
+        begin
+           assign cache_select = valid_int;
+           assign ctrl_select  = select;
+        end
+      else
+        begin
+           assign cache_select = ~select & valid_int;           
+           assign ctrl_select  =  select & valid_int;
+        end
+   endgenerate
 
    generate
       if (LA_INTERF) //Look-Ahead Interface - signal storage
@@ -213,8 +233,7 @@ module iob_cache
               .clk(clk),
               .reset(reset),
               .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
-              .read_miss(read_miss), 
-              .write_empty(write_empty), 
+              .read_miss(read_miss),
               .line_load(line_load),
               .line_load_en(line_load_en),
               .word_counter(word_counter),
@@ -268,7 +287,6 @@ module iob_cache
               .reset(reset),
               .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
               .read_miss(read_miss), 
-              .write_empty(write_empty), 
               .line_load(line_load),
               .line_load_en(line_load_en),
               .word_counter(word_counter),
@@ -379,7 +397,7 @@ module iob_cache
       .invalidate(invalidate),
       .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
       .dout(rdata_ctrl),
-      .valid(valid_int & ~cache_select),
+      .valid(ctrl_select),
       .ready(ready_ctrl),
       .reset(reset),
       .write_state({write_full,write_empty})
@@ -696,7 +714,6 @@ module read_process_axi
     input                              reset,
     input [ADDR_W -1: $clog2(N_BYTES)] addr,
     input                              read_miss, //read access that results in a cache miss
-    input                              write_empty, //write_process has an empty buffer
     output reg                         line_load, //load cache line with new data
     output                             line_load_en,//Memory enable during the cache line load
     output reg [MEM_OFFSET_W-1:0]      word_counter,//counter to enable each word in the line
@@ -866,7 +883,6 @@ module read_process_native
     input                                     reset,
     input [ADDR_W -1: $clog2(N_BYTES)]        addr,
     input                                     read_miss, //read access that results in a cache miss
-    input                                     write_empty, //write_process has an empty buffer
     output reg                                line_load, //load cache line with new data
     output                                    line_load_en,//Memory enable during the cache line load
     output reg [MEM_OFFSET_W-1:0]             word_counter,//counter to enable each word in the line
@@ -1479,8 +1495,8 @@ module memory_section
                           cache_memory 
                              (
                               .clk (clk),
-                              .en  (valid), //so it can display rdata 1 cycle sooner (otherwise if also used wayt_hit)
-                              .we  (((line_load    & (k == way_select)) | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
+                              .en  (valid), 
+                              .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
                               .addr(line_addr),
                               .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
                               .dout(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
