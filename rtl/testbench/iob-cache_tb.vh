@@ -11,9 +11,11 @@
 `define MEM_DATA_W 32
 `define MEM_N_BYTES 4
 
-`define L2
+`define WTBUF_DEPTH_W 5
 
-`define LA 1
+//`define L2
+
+//`define LA 1
 
 `define VCD
 

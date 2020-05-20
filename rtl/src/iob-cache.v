@@ -115,15 +115,15 @@ module iob_cache
    //Cache - Memory-Controller signals
    wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
    wire                                      ready_cache, ready_ctrl;
-   wire [2*DATA_W-1:0]                       rdata_long = {rdata_ctrl, rdata_cache};
-   
+   wire [2*DATA_W-1:0]                       rdata_ctrlcache = {rdata_ctrl, rdata_cache};
    always@*
      begin
-        rdata = rdata_long << DATA_W*ctrl_select;
+        rdata = rdata_ctrlcache << DATA_W*ctrl_select; 
      end
    
    assign ready_int = (cache_select)? ready_cache : ready_ctrl;
    assign ready     = ready_int;
+
    
    //Process connection and controller signals
    wire                                      read_miss, hit, write_full, write_empty, write_en;
@@ -132,7 +132,6 @@ module iob_cache
    wire [MEM_OFFSET_W-1:0]                   word_counter;
    wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
    wire                                      invalidate;
-
 
 
    //Cache - Controller selection
@@ -1150,10 +1149,10 @@ module write_process_axi
                    state <= write_process;
               end
 
-            verif_process:
+            verif_process: //needs to be after the last word has been written, so this can't be optim
               begin
                  if(axi_bvalid)
-                   if(~axi_bresp[1])//00 or 01 - OKAY
+                   if(~axi_bresp[1])//00 or 01 - OKAY - needs to be after the last word has been written, so this can't be optimized by removing this state
                      if(buffer_empty)
                        state <= idle;
                      else

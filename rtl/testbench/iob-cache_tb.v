@@ -18,7 +18,8 @@ module iob_cache_tb;
    wire                               select = 0;//cache is always selected
    reg                                instr = 0;
    wire                               i_select =0, d_select =0;
-   
+   reg [31:0]                         test = 0;
+                         
 
    integer                            i,j;
    
@@ -32,41 +33,52 @@ module iob_cache_tb;
         repeat (5) @(posedge clk);
         reset <= 0;
         #10;
-        $display("\nInitializing Cache testing\n");
-        $display("Writing entire memory (entire words)\n");
+        $display("\nInitializing Cache testing - printing errors only\n");
+        $display("Test 1 - Writing entire memory (Data width words)\n");
+        test <= 1;
         for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
           begin
              addr <= i;
-             wdata <= i;
+             wdata <= i+1;
              wstrb <= {`N_BYTES{1'b1}};
              valid <= 1;
              #2;
+`ifdef LA
+             addr <= 0;
+             wdata <= 0;
+             wstrb <= 0;
+             valid <= 0;
+`endif
              while (ready == 1'b0) #2;
-             valid <=0;
+             valid <= 0;
              #2;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
-
-        
-        $display("Reading entire memory\n");
-        addr_aux = 0;
-        addr <= addr_aux [`ADDR_W-1  :$clog2(`N_BYTES)];
+        addr  <= 0;
         wdata <= 0;
-        wstrb <= {`N_BYTES{1'b0}};
-
+        wstrb <= 0;
+        #2;
+        $display("Test 2 - Reading entire memory (Data width words)\n");
+        test <= 2;
+        #2
         for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
           begin 
              addr <= i;
-             #2;
              valid <= 1;
+             #2;
+`ifdef LA
+             addr <= 0;
+             valid <= 0;
+`endif   
              while (ready == 1'b0) #2;
-             if(rdata != addr)
-               $display("Error in: %h\n", addr);
+             if(rdata != (i+1))
+               $display("Error in: %h\n", i);
              valid <= 0;
              #2;
           end
         
-        $display("Finished reading\n");
-        $display("Testing byte addressing (writing byte per byte)\n");
+        $display("Test 3 - Byte addressing (Writting memory using Bytes)\n");
+        test <= 3;
+        #2;
         for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
           begin
              for( j = 0; j < `N_BYTES; j = j + 1)
@@ -77,28 +89,39 @@ module iob_cache_tb;
                   wstrb <= (1'b1) << j;
                   valid <= 1;
                   #2;
+`ifdef LA
+             addr <= 0;
+             wdata <= 0;
+             wstrb <= 0;
+             valid <= 0;
+`endif
                   while (ready == 1'b0) #2;
-                  valid <= 0;
+             valid <= 0;
                   #2;
                end // for ( j = 0; j < `N_BYTES; j = j + 1)
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
-
-        $display("Reading byte addressing\n");
         wdata <= 0;
         wstrb <= 0;
+        #2;
+        $display("Test 4 - Reading Byte Addressing using Data Width Words\n");
+        test <= 4;
         #2;
         for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
           begin 
              addr <= i;
-             #2;
              valid <= 1;
+             #2
+`ifdef LA
+             addr <= 0;
+             valid <= 0;
+`endif   
              while (ready == 1'b0) #2;
              if(rdata != {`N_BYTES{i[3:0]}})
                $display("Error in: %h; wrote instead: %h\n", addr, rdata);
              valid <= 0;
              #2;
-          end
-        $display("Finished reading byte addressing\n");
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+        
         $display("Cache testing completed\n");
         $finish;
      end
@@ -151,7 +174,9 @@ module iob_cache_tb;
                .L2_LINE_OFF_W(`LINE_OFF_W),
                .L2_WORD_OFF_W(`WORD_OFF_W),
                .L2_N_WAYS    (`N_WAYS),
-               .REP_POLICY(`REP_POLICY)
+               .REP_POLICY(`REP_POLICY).
+               .L1_WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+               .L2_WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )
    cache (
 	  .clk (clk),
@@ -233,7 +258,8 @@ module iob_cache_tb;
                .MEM_DATA_W(`MEM_DATA_W),
                .MEM_NATIVE(`MEM_NATIVE),
                .REP_POLICY(`REP_POLICY),
-               .LA_INTERF(`LA)
+               .LA_INTERF(`LA),
+               .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )
    cache (
 	  .clk (clk),
