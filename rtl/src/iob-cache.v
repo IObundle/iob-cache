@@ -112,19 +112,6 @@ module iob_cache
    wire                                      ready_int;
    
    
-   //Cache - Memory-Controller signals
-   wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
-   wire                                      ready_cache, ready_ctrl;
-   wire [2*DATA_W-1:0]                       rdata_ctrlcache = {rdata_ctrl, rdata_cache};
-   always@*
-     begin
-        rdata = rdata_ctrlcache << DATA_W*ctrl_select; 
-     end
-   
-   assign ready_int = (cache_select)? ready_cache : ready_ctrl;
-   assign ready     = ready_int;
-
-   
    //Process connection and controller signals
    wire                                      read_miss, hit, write_full, write_empty, write_en;
    wire                                      line_load, line_load_en;
@@ -152,6 +139,22 @@ module iob_cache
         end
    endgenerate
 
+
+   //Cache - Memory-Controller signals
+   wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
+   wire                                      ready_cache, ready_ctrl;
+   wire [2*DATA_W-1:0]                       rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+   always@*
+     begin
+        rdata = rdata_ctrlcache << DATA_W*ctrl_select; 
+     end
+   
+   assign ready_int = (cache_select)? ready_cache : ready_ctrl;
+   assign ready     = ready_int;
+
+
+
+   
    generate
       if (LA_INTERF) //Look-Ahead Interface - signal storage
         begin
@@ -739,125 +742,242 @@ module read_process_axi
     output reg                         axi_rready
     );
 
-   //Constant AXI signals
-   assign axi_arid    = AXI_ID;
-   assign axi_arlock  = 1'b0;
-   assign axi_arcache = 4'b0011;
-   assign axi_arprot  = 3'd0;
-   assign axi_arqos   = 4'd0;
-   //Burst parameters
-   assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
-   assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
-   assign axi_arburst = 2'b01; //incremental burst
-   assign axi_araddr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W-1:MEM_OFFSET_W + MEM_BYTES_W], {(MEM_OFFSET_W+MEM_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
-
-   //Line Load signals
-   assign line_load_en   = axi_rvalid;
-   assign line_load_data = axi_rdata;
-   
-   
-   localparam
-     idle          = 2'd0,
-     init_process  = 2'd1,
-     load_process  = 2'd2,
-     end_process   = 2'd3;
-   
-   
-   reg [1:0]                           state;
-
-   
-   always @(posedge clk, posedge reset)
-     begin
-        if(reset)
-          begin
-             state <= idle;
-             word_counter <= 0;
-          end
-        else
+   generate
+      if(MEM_OFFSET_W > 0)
+        begin
            
-          case (state)   
-            idle:
-              begin
-                 word_counter <= 0;  
-                 if(read_miss)
-                   state <= init_process;
-                 else
-                   state <= idle;
-              end
+           //Constant AXI signals
+           assign axi_arid    = AXI_ID;
+           assign axi_arlock  = 1'b0;
+           assign axi_arcache = 4'b0011;
+           assign axi_arprot  = 3'd0;
+           assign axi_arqos   = 4'd0;
+           //Burst parameters
+           assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
+           assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
+           assign axi_arburst = 2'b01; //incremental burst
+           assign axi_araddr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W-1:MEM_OFFSET_W + MEM_BYTES_W], {(MEM_OFFSET_W+MEM_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
 
-            init_process:
-              begin
-                 word_counter <= 0;  
-                 if(axi_arready)
-                   state <= load_process;
-                 else
-                   state <= init_process;
-              end
+           //Line Load signals
+           assign line_load_en   = axi_rvalid;
+           assign line_load_data = axi_rdata;
+           
+           
+           localparam
+             idle          = 2'd0,
+             init_process  = 2'd1,
+             load_process  = 2'd2,
+             end_process   = 2'd3;
+           
+           
+           reg [1:0]                           state;
 
-            load_process:
-              begin
-                 if(axi_rvalid)
-                   if(axi_rlast)
-                     begin
-                        state <= end_process;
-                        word_counter <= word_counter; //to avoid writting last data in first line word
-                     end
-                   else
-                     begin
-                        word_counter <= word_counter +1;
-                        state <= load_process;
-                     end
-                 else
-                   begin
-                      word_counter <= word_counter;
-                      state <= load_process;
-                   end
-              end
+           
+           always @(posedge clk, posedge reset)
+             begin
+                if(reset)
+                  begin
+                     state <= idle;
+                     word_counter <= 0;
+                  end
+                else
+                   
+                  case (state)   
+                    idle:
+                      begin
+                         word_counter <= 0;  
+                         if(read_miss)
+                           state <= init_process;
+                         else
+                           state <= idle;
+                      end
 
-            end_process://delay for the read_latency of the memories (if the rdata is the last word)
-              state <= idle;
-            
-            
-            default:;
-          endcase
-     end
-   
-   
-   always @*
-     begin
-        axi_arvalid  = 1'b0;
-        axi_rready   = 1'b0;
-        line_load    = 1'b0;
-        case(state)
+                    init_process:
+                      begin
+                         word_counter <= 0;  
+                         if(axi_arready)
+                           state <= load_process;
+                         else
+                           state <= init_process;
+                      end
 
-          idle:
-            begin
-               line_load    = 1'b0;
-               axi_arvalid  = 1'b0;
-               axi_rready   = 1'b0;
-            end
-          
-          init_process:
-            begin
-               line_load   = 1'b1;
-               axi_arvalid = 1'b1;
-               axi_rready  = 1'b1;
-            end
+                    load_process:
+                      begin
+                         if(axi_rvalid)
+                           if(axi_rlast)
+                             begin
+                                state <= end_process;
+                                word_counter <= word_counter; //to avoid writting last data in first line word
+                             end
+                           else
+                             begin
+                                word_counter <= word_counter +1;
+                                state <= load_process;
+                             end
+                         else
+                           begin
+                              word_counter <= word_counter;
+                              state <= load_process;
+                           end
+                      end
 
-          load_process:
-            begin
-               line_load   = 1'b1;
-               axi_arvalid = 1'b0;
-               axi_rready  = 1'b1;             
-            end
+                    end_process://delay for the read_latency of the memories (if the rdata is the last word)
+                      state <= idle;
+                    
+                    
+                    default:;
+                  endcase
+             end
+           
+           
+           always @*
+             begin
+                axi_arvalid  = 1'b0;
+                axi_rready   = 1'b0;
+                line_load    = 1'b0;
+                case(state)
 
-          end_process:
-            line_load = 1'b1; //delay for the memory update (read-latency)
-          
-          default:;
-          
-        endcase
-     end
+                  idle:
+                    begin
+                       line_load    = 1'b0;
+                       axi_arvalid  = 1'b0;
+                       axi_rready   = 1'b0;
+                    end
+                  
+                  init_process:
+                    begin
+                       line_load   = 1'b1;
+                       axi_arvalid = 1'b1;
+                       axi_rready  = 1'b1;
+                    end
+
+                  load_process:
+                    begin
+                       line_load   = 1'b1;
+                       axi_arvalid = 1'b0;
+                       axi_rready  = 1'b1;             
+                    end
+
+                  end_process:
+                    line_load = 1'b1; //delay for the memory update (read-latency)
+                  
+                  default:;
+                  
+                endcase
+             end // always @ *
+        end // if (MEM_OFFSET_W > 0)
+
+      
+      else
+         
+        begin
+           //Constant AXI signals
+           assign axi_arid    = AXI_ID;
+           assign axi_arlock  = 1'b0;
+           assign axi_arcache = 4'b0011;
+           assign axi_arprot  = 3'd0;
+           assign axi_arqos   = 4'd0;
+           //Burst parameters - single 
+           assign axi_arlen   = 8'd0; //A single burst of Memory data width word
+           assign axi_arsize  = MEM_BYTES_W; //each word will be the width of the memory for maximum bandwidth
+           assign axi_arburst = 2'b00; 
+           assign axi_araddr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W-1:MEM_OFFSET_W + MEM_BYTES_W], {(MEM_OFFSET_W+MEM_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
+
+           //Line Load signals
+           assign line_load_en   = axi_rvalid;
+           assign line_load_data = axi_rdata;
+           
+           
+           localparam
+             idle          = 2'd0,
+             init_process  = 2'd1,
+             load_process  = 2'd2,
+             end_process   = 2'd3;
+           
+           
+           reg [1:0]                           state;
+
+           
+           always @(posedge clk, posedge reset)
+             begin
+                if(reset)
+                   
+                  state <= idle;
+                
+                else
+                   
+                  case (state)   
+                    idle:
+                      begin
+                         if(read_miss)
+                           state <= init_process;
+                         else
+                           state <= idle;
+                      end
+
+                    init_process:
+                      begin                      
+                         if(axi_arready)
+                           state <= load_process;
+                         else
+                           state <= init_process;
+                      end
+
+                    load_process:
+                      begin
+                         if(axi_rvalid)
+                           state <= end_process;
+                         else
+                           state <= load_process;
+                      end
+
+                    end_process://delay for the read_latency of the memories (if the rdata is the last word)
+                      state <= idle;
+                    
+                    
+                    default:;
+                  endcase
+             end
+           
+           
+           always @*
+             begin
+                axi_arvalid  = 1'b0;
+                axi_rready   = 1'b0;
+                line_load    = 1'b0;
+                case(state)
+
+                  idle:
+                    begin
+                       line_load    = 1'b0;
+                       axi_arvalid  = 1'b0;
+                       axi_rready   = 1'b0;
+                    end
+                  
+                  init_process:
+                    begin
+                       line_load   = 1'b1;
+                       axi_arvalid = 1'b1;
+                       axi_rready  = 1'b1;
+                    end
+
+                  load_process:
+                    begin
+                       line_load   = 1'b1;
+                       axi_arvalid = 1'b0;
+                       axi_rready  = 1'b1;             
+                    end
+
+                  end_process:
+                    line_load = 1'b1; //delay for the memory update (read-latency)
+                  
+                  default:;
+                  
+                endcase
+             end // always @ *
+           
+        end     
+   endgenerate 
    
 endmodule
 
@@ -893,115 +1013,204 @@ module read_process_native
     input [MEM_DATA_W-1:0]                    mem_rdata
     );
 
-   assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter};
-   
-   //Cache Line Load signals
-   assign line_load_en = mem_ready & mem_valid & line_load;
-   assign line_load_data = mem_rdata;
+   generate
+      if (MEM_OFFSET_W > 0)
+        begin
+           assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter};
+           
+           //Cache Line Load signals
+           assign line_load_en = mem_ready & mem_valid & line_load;
+           assign line_load_data = mem_rdata;
 
-   localparam
-     idle             = 2'd0,
-     handshake        = 2'd1, //the process was divided in 2 handshake steps to cause a delay in the
-     handshake_update = 2'd2, //valid signal so it would work with simple "ready" replies of BRAMs
-     end_handshake    = 2'd3; //(always 1 or a delayed valid signal), otherwise it will fail
-   
-   
-   reg [1:0]                                  state;
+           localparam
+             idle             = 2'd0,
+             handshake        = 2'd1, //the process was divided in 2 handshake steps to cause a delay in the
+             handshake_update = 2'd2, //valid signal so it would work with simple "ready" replies of BRAMs
+             end_handshake    = 2'd3; //(always 1 or a delayed valid signal), otherwise it will fail
+           
+           
+           reg [1:0]                                  state;
 
-   always @(posedge clk, posedge reset)
-     begin
-        if(reset)
-          begin
-             state <= idle;
-             word_counter <=0;
-          end
-        else
-          begin
-             word_counter <= word_counter;
-             
-             case(state)
+           always @(posedge clk, posedge reset)
+             begin
+                if(reset)
+                  begin
+                     state <= idle;
+                     word_counter <=0;
+                  end
+                else
+                  begin
+                     word_counter <= word_counter;
+                     
+                     case(state)
 
-               idle:
-                 begin
-                    word_counter <= 0;
-                    if(read_miss) //main_process flag
-                      state <= handshake;                                        
-                    else
-                      state <= idle;                      
-                 end
-               
-               handshake:
-                 begin
-                    if(mem_ready)
-                      if(word_counter == {MEM_OFFSET_W{1'b1}})
-                        state <= end_handshake;
-                      else
-                        begin
-                           word_counter <= word_counter +1;
-                           state <= handshake_update;
-                        end
-                    else
-                      begin
-                         state <= handshake;
-                      end
-                 end
-               
-               handshake_update: //update word-counter
-                 begin
-                    state <= handshake;
-                 end
-               
-               end_handshake: //read-latency delay (last line word)
-                 begin
-                    state <= idle;
-                    word_counter <= 0;
-                 end
-               
-               default:;
-               
-             endcase                                                     
-          end         
-     end
-   
-   
-   always @*
-     begin 
-        //word_counter =0;
-        
-        case(state)
-          
-          idle:
-            begin
-               mem_valid = 1'b0;
-               line_load = 1'b0;
-               //word_counter = 0;
-            end
+                       idle:
+                         begin
+                            word_counter <= 0;
+                            if(read_miss) //main_process flag
+                              state <= handshake;                                        
+                            else
+                              state <= idle;                      
+                         end
+                       
+                       handshake:
+                         begin
+                            if(mem_ready)
+                              if(word_counter == {MEM_OFFSET_W{1'b1}})
+                                state <= end_handshake;
+                              else
+                                begin
+                                   word_counter <= word_counter +1;
+                                   state <= handshake_update;
+                                end
+                            else
+                              begin
+                                 state <= handshake;
+                              end
+                         end
+                       
+                       handshake_update: //update word-counter
+                         begin
+                            state <= handshake;
+                         end
+                       
+                       end_handshake: //read-latency delay (last line word)
+                         begin
+                            state <= idle;
+                            word_counter <= 0;
+                         end
+                       
+                       default:;
+                       
+                     endcase                                                     
+                  end         
+             end
+           
+           
+           always @*
+             begin 
+                //word_counter =0;
+                
+                case(state)
+                  
+                  idle:
+                    begin
+                       mem_valid = 1'b0;
+                       line_load = 1'b0;
+                       //word_counter = 0;
+                    end
 
-          handshake:
-            begin
-               mem_valid = 1'b1;
-               line_load = 1'b1;
-               // word_counter = word_counter;
-            end
-          
-          handshake_update:
-            begin
-               mem_valid = 1'b0;
-               line_load =1'b1;
-               // word_counter = word_counter +1;
-            end
+                  handshake:
+                    begin
+                       mem_valid = 1'b1;
+                       line_load = 1'b1;
+                       // word_counter = word_counter;
+                    end
+                  
+                  handshake_update:
+                    begin
+                       mem_valid = 1'b0;
+                       line_load =1'b1;
+                       // word_counter = word_counter +1;
+                    end
 
-          end_handshake:
-            begin
-               // word_counter = word_counter; //to avoid updating the first word in line with last data
-               line_load = 1'b1; //delay for read-latency
-               mem_valid = 1'b0;
-            end
-          
-          default:;
-          
-        endcase
-     end
+                  end_handshake:
+                    begin
+                       // word_counter = word_counter; //to avoid updating the first word in line with last data
+                       line_load = 1'b1; //delay for read-latency
+                       mem_valid = 1'b0;
+                    end
+                  
+                  default:;
+                  
+                endcase
+             end
+        end // if (MEM_OFF_W > 0)
+      else
+        begin
+           assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], {MEM_BYTES_W{1'b0}}};
+           
+           //Cache Line Load signals
+           assign line_load_en = mem_ready & mem_valid & line_load;
+           assign line_load_data = mem_rdata;
+
+           localparam
+             idle             = 2'd0,
+             handshake        = 2'd1, //the process was divided in 2 handshake steps to cause a delay in the
+             end_handshake    = 2'd2; //(always 1 or a delayed valid signal), otherwise it will fail
+           
+           
+           reg [1:0]                                  state;
+
+           always @(posedge clk, posedge reset)
+             begin
+                if(reset)
+                  state <= idle;
+                else
+                  begin
+                     case(state)
+
+                       idle:
+                         begin
+                            
+                            if(read_miss) //main_process flag
+                              state <= handshake;                                        
+                            else
+                              state <= idle;                      
+                         end
+                       
+                       handshake:
+                         begin
+                            if(mem_ready)
+                              state <= end_handshake;
+                            else
+                              state <= handshake;
+                         end
+                       
+                       end_handshake: //read-latency delay (last line word)
+                         begin
+                            state <= idle;
+                            word_counter <= 0;
+                         end
+                       
+                       default:;
+                       
+                     endcase                                                     
+                  end         
+             end
+           
+           
+           always @*
+             begin 
+                
+                
+                case(state)
+                  
+                  idle:
+                    begin
+                       mem_valid = 1'b0;
+                       line_load = 1'b0;
+                    end
+
+                  handshake:
+                    begin
+                       mem_valid = 1'b1;
+                       line_load = 1'b1;
+                    end
+                  
+                  end_handshake:
+                    begin
+                       line_load = 1'b1; //delay for read-latency
+                       mem_valid = 1'b0;
+                    end
+                  
+                  default:;
+                  
+                endcase
+             end
+           
+        end // else: !if(MEM_OFF_W > 0)
+   endgenerate
    
 endmodule
 
@@ -1439,7 +1648,182 @@ module memory_section
    
    genvar                                   i,j,k;
    generate
-      if(N_WAYS != 1)
+      if (MEM_OFFSET_W > 0)
+        begin
+           if(N_WAYS != 1)
+             begin
+                wire [NWAY_W-1:0] way_hit_bin, way_select;//reason for the 2 generates for single vs multiple ways
+                
+                
+                replacement_process #(
+	                              .N_WAYS    (N_WAYS    ),
+	                              .LINE_OFF_W(LINE_OFF_W),
+                                      .REP_POLICY(REP_POLICY)
+	                              )
+                replacement_policy_algorithm
+                  (
+                   .clk       (clk             ),
+                   .reset     (reset|invalidate),
+                   .write_en  (write_en        ),
+                   .way_hit   (way_hit         ),
+                   .line_addr (line_addr       ),
+                   .way_select(way_select      )
+                   );
+                
+                onehot_to_bin #(
+                                .BIN_W (NWAY_W)
+                                ) 
+                way_hit_encoder
+                  (
+                   .onehot(way_hit    ),
+                   .bin   (way_hit_bin)
+                   );
+
+                
+                //Read Data Multiplexer
+                assign rdata [DATA_W-1:0] = line_rdata >> DATA_W*(line_word_select + (2**WORD_OFF_W)*way_hit_bin);
+                
+                //Cache Line Write Strobe Shifter
+                always @*
+                  if(line_load)
+                    line_wstrb = {MEM_NBYTES{line_load_en}} << (word_counter*MEM_NBYTES + way_select*(2**WORD_OFF_W)*N_BYTES);
+                  else
+                    line_wstrb = (wstrb & {N_BYTES{write_en}}) << (line_word_select*N_BYTES + way_hit_bin*(2**WORD_OFF_W)*N_BYTES);
+
+                for (k = 0; k < N_WAYS; k=k+1)
+                  begin
+                     for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                       begin
+                          for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
+                            begin
+                               iob_sp_mem_be
+                                  #(
+                                    .NUM_COL   (N_BYTES),
+                                    .COL_WIDTH (8),
+                                    .ADDR_WIDTH(LINE_OFF_W)
+                                    )
+                               cache_memory 
+                                  (
+                                   .clk (clk),
+                                   .en  (valid), 
+                                   .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
+                                   .addr(line_addr),
+                                   .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                                   .dout(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                                   );
+                            end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+                       end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                     iob_reg_file
+                       #(
+                         .ADDR_WIDTH(LINE_OFF_W), 
+                         .COL_WIDTH (1),
+                         .NUM_COL   (1)
+	                 ) 
+	             valid_memory 
+	               (
+	                .clk  (clk                                ),
+	                .rst  (reset|invalidate                   ),
+	                .wdata(line_load                          ),				       
+	                .addr (line_addr                          ),
+	                .en   ((k == way_select)? line_load : 1'b0),
+	                .rdata(v[k]                               )   
+	                );
+
+                     iob_sp_mem_be
+                       #(
+                         .NUM_COL   (1),
+                         .COL_WIDTH (TAG_W),
+                         .ADDR_WIDTH(LINE_OFF_W)
+                         )
+                     tag_memory 
+                       (
+                        .clk (clk                                ),
+                        .en  (valid                              ), 
+                        .we  ((k == way_select)? line_load : 1'b0),
+                        .addr(line_addr                          ),
+                        .din (line_tag                           ),
+                        .dout(tag[TAG_W*k +: TAG_W]              )
+                        );
+
+                     //Cache hit signal that indicates which way has had the hit
+                     assign way_hit[k] = (line_tag == tag[TAG_W*k +: TAG_W]) &&  v[k]; // to reduce UNDEFINES in simulation
+                     
+                  end // for (k = 0; k < N_WAYS; k=k+1)
+                
+             end // if (N_WAYS != 1)
+           else
+             begin   
+                
+                //Read Data Multiplexer
+                assign rdata [DATA_W-1:0] = line_rdata >> DATA_W*(line_word_select);
+
+                //Cache Line Write Strobe Shifter
+                always @*
+                  if(line_load)
+                    line_wstrb = {MEM_NBYTES{line_load_en}} << (word_counter*MEM_NBYTES);
+                  else
+                    line_wstrb = wstrb << (line_word_select*N_BYTES);
+
+
+                for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                  begin
+                     for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
+                       begin
+                          iob_sp_mem_be
+                             #(
+                               .NUM_COL   (N_BYTES),
+                               .COL_WIDTH (8),
+                               .ADDR_WIDTH(LINE_OFF_W)
+                               )
+                          cache_memory 
+                             (
+                              .clk (clk),
+                              .en (valid),
+                              .we  ((line_load  | way_hit)? line_wstrb[(j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}), 
+                              .addr(line_addr),
+                              .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                              .dout(line_rdata[(j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                              );
+                       end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+                  end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)  
+                iob_reg_file
+                  #(
+                    .ADDR_WIDTH(LINE_OFF_W), 
+                    .COL_WIDTH (1),
+                    .NUM_COL   (1)
+	            ) 
+	        valid_memory 
+	          (
+	           .clk  (clk             ),
+	           .rst  (reset|invalidate),
+	           .wdata(line_load       ),				       
+	           .addr (line_addr       ),
+	           .en   (line_load       ),
+	           .rdata(v               )   
+	           );
+
+                iob_sp_mem_be
+                  #(
+                    .NUM_COL   (1),
+                    .COL_WIDTH (TAG_W),
+                    .ADDR_WIDTH(LINE_OFF_W)
+                    )
+                tag_memory 
+                  (
+                   .clk (clk      ),
+                   .en  (valid    ), 
+                   .we  (line_load),
+                   .addr(line_addr),
+                   .din (line_tag ),
+                   .dout(tag      )
+                   );
+
+                //Cache hit signal that indicates which way has had the hit
+                assign way_hit = (line_tag == tag) & v;
+                
+             end // else: !if(N_WAYS != 1)         
+        end
+      else if(N_WAYS != 1)
         begin
            wire [NWAY_W-1:0] way_hit_bin, way_select;//reason for the 2 generates for single vs multiple ways
            
@@ -1475,7 +1859,7 @@ module memory_section
            //Cache Line Write Strobe Shifter
            always @*
              if(line_load)
-               line_wstrb = {MEM_NBYTES{line_load_en}} << (word_counter*MEM_NBYTES + way_select*(2**WORD_OFF_W)*N_BYTES);
+               line_wstrb = {MEM_NBYTES{line_load_en}} << (way_select*(2**WORD_OFF_W)*N_BYTES);
              else
                line_wstrb = (wstrb & {N_BYTES{write_en}}) << (line_word_select*N_BYTES + way_hit_bin*(2**WORD_OFF_W)*N_BYTES);
 
@@ -1549,7 +1933,7 @@ module memory_section
            //Cache Line Write Strobe Shifter
            always @*
              if(line_load)
-               line_wstrb = {MEM_NBYTES{line_load_en}} << (word_counter*MEM_NBYTES);
+               line_wstrb = {MEM_NBYTES{line_load_en}};
              else
                line_wstrb = wstrb << (line_word_select*N_BYTES);
 
@@ -1581,8 +1965,8 @@ module memory_section
                .COL_WIDTH (1),
                .NUM_COL   (1)
 	       ) 
-	   valid_memory 
-	     (
+           valid_memory 
+             (
 	      .clk  (clk             ),
 	      .rst  (reset|invalidate),
 	      .wdata(line_load       ),				       
