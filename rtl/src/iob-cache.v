@@ -771,7 +771,8 @@ module read_process_axi
            
            
            reg [1:0]                           state;
-
+           reg                                 error;//axi error during reply (axi_rresp[1] == 1) - burst can't be interrupted, so a flag needs to be active
+           
            
            always @(posedge clk, posedge reset)
              begin
@@ -779,56 +780,66 @@ module read_process_axi
                   begin
                      state <= idle;
                      word_counter <= 0;
+                     error <= 0;
                   end
                 else
-                   
-                  case (state)   
-                    idle:
-                      begin
-                         word_counter <= 0;  
-                         if(read_miss)
+                  begin
+                     error <= error;
+                     case (state)   
+                       idle:
+                         begin
+                            error <= 0;
+                            word_counter <= 0;  
+                            if(read_miss)
+                              state <= init_process;
+                            else
+                              state <= idle;
+                         end
+
+                       init_process:
+                         begin
+                            error <= 0;
+                            word_counter <= 0;  
+                            if(axi_arready)
+                              state <= load_process;
+                            else
+                              state <= init_process;
+                         end
+
+                       load_process:
+                         begin
+                            if(axi_rvalid)
+                              if(axi_rlast)
+                                begin
+                                   state <= end_process;
+                                   word_counter <= word_counter; //to avoid writting last data in first line word
+                                   if(axi_rresp[1]) //error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                                     error <= 1;
+                                end
+                                else
+                                  begin
+                                     word_counter <= word_counter +1;
+                                     state <= load_process;
+                                     if(axi_rresp[1]) //error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                                       error <= 1;
+                                  end
+                            else
+                              begin
+                                 word_counter <= word_counter;
+                                 state <= load_process;
+                              end
+                         end
+
+                       end_process://delay for the read_latency of the memories (if the rdata is the last word)
+                         if (error)
                            state <= init_process;
                          else
                            state <= idle;
-                      end
-
-                    init_process:
-                      begin
-                         word_counter <= 0;  
-                         if(axi_arready)
-                           state <= load_process;
-                         else
-                           state <= init_process;
-                      end
-
-                    load_process:
-                      begin
-                         if(axi_rvalid)
-                           if(axi_rlast)
-                             begin
-                                state <= end_process;
-                                word_counter <= word_counter; //to avoid writting last data in first line word
-                             end
-                           else
-                             begin
-                                word_counter <= word_counter +1;
-                                state <= load_process;
-                             end
-                         else
-                           begin
-                              word_counter <= word_counter;
-                              state <= load_process;
-                           end
-                      end
-
-                    end_process://delay for the read_latency of the memories (if the rdata is the last word)
-                      state <= idle;
-                    
-                    
-                    default:;
-                  endcase
+                       
+                       default:;
+                     endcase
+                  end
              end
-           
            
            always @*
              begin
@@ -926,7 +937,10 @@ module read_process_axi
                     load_process:
                       begin
                          if(axi_rvalid)
-                           state <= end_process;
+                           if(axi_rresp[1]) //error - received at the same time as valid
+                             state <= init_process;
+                           else
+                             state <= end_process;
                          else
                            state <= load_process;
                       end
@@ -1696,7 +1710,7 @@ module memory_section
                        begin
                           for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                             begin
-                               iob_sp_mem_be
+                               iob_sp_ram_be
                                   #(
                                     .NUM_COL   (N_BYTES),
                                     .COL_WIDTH (8),
@@ -1729,7 +1743,7 @@ module memory_section
 	                .rdata(v[k]                               )   
 	                );
 
-                     iob_sp_mem_be
+                     iob_sp_ram_be
                        #(
                          .NUM_COL   (1),
                          .COL_WIDTH (TAG_W),
@@ -1769,7 +1783,7 @@ module memory_section
                   begin
                      for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                        begin
-                          iob_sp_mem_be
+                          iob_sp_ram_be
                              #(
                                .NUM_COL   (N_BYTES),
                                .COL_WIDTH (8),
@@ -1802,7 +1816,7 @@ module memory_section
 	           .rdata(v               )   
 	           );
 
-                iob_sp_mem_be
+                iob_sp_ram_be
                   #(
                     .NUM_COL   (1),
                     .COL_WIDTH (TAG_W),
@@ -1869,7 +1883,7 @@ module memory_section
                   begin
                      for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                        begin
-                          iob_sp_mem_be
+                          iob_sp_ram_be
                              #(
                                .NUM_COL   (N_BYTES),
                                .COL_WIDTH (8),
@@ -1902,7 +1916,7 @@ module memory_section
 	           .rdata(v[k]                               )   
 	           );
 
-                iob_sp_mem_be
+                iob_sp_ram_be
                   #(
                     .NUM_COL   (1),
                     .COL_WIDTH (TAG_W),
@@ -1942,7 +1956,7 @@ module memory_section
              begin
                 for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                   begin
-                     iob_sp_mem_be
+                     iob_sp_ram_be
                         #(
                           .NUM_COL   (N_BYTES),
                           .COL_WIDTH (8),
@@ -1975,7 +1989,7 @@ module memory_section
 	      .rdata(v               )   
 	      );
 
-           iob_sp_mem_be
+           iob_sp_ram_be
              #(
                .NUM_COL   (1),
                .COL_WIDTH (TAG_W),

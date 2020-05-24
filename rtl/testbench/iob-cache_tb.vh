@@ -1,21 +1,29 @@
+//Cache parameters (including front-end's)
 `define N_WAYS 16
 `define LINE_OFF_W 5
 `define WORD_OFF_W 3
 `define ADDR_W 12
 `define DATA_W 32
 `define N_BYTES 4
+// Replacement Policy (N_WAYS > 1 only) - check below the values
 `define REP_POLICY 0
+
+//Back-end Memory interface (0 - AXI, 1 - Native)
 `define MEM_NATIVE 0
 
+//Cache back-end parameters
 `define MEM_ADDR_W 12
 `define MEM_DATA_W 256
 `define MEM_N_BYTES 32
 
+//Write-through Buffer depth
 `define WTBUF_DEPTH_W 4
 
-//`define L2
+//L2 Cache
+`define L2
 
-//`define LA 1
+// Look-ahead -- Uncomment to use
+//`define LA
 
 `define VCD
 
