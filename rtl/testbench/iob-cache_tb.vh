@@ -6,7 +6,7 @@
 `define DATA_W 32
 `define N_BYTES 4
 // Replacement Policy (N_WAYS > 1 only) - check below the values
-`define REP_POLICY 0
+`define REP_POLICY 1
 
 //Back-end Memory interface (0 - AXI, 1 - Native)
 `define MEM_NATIVE 0
@@ -20,7 +20,7 @@
 `define WTBUF_DEPTH_W 4
 
 //L2 Cache
-`define L2
+//`define L2
 
 // Look-ahead -- Uncomment to use
 //`define LA

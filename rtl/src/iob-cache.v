@@ -2135,10 +2135,10 @@ module replacement_process
            for (i = 0; i < N_WAYS; i=i+1)
 	     begin
 	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
-	     end
-
+	     
            assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
-           
+             end
+                
            for (i = 2; i < N_WAYS; i=i+1)
 	     begin
 	        assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
