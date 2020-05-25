@@ -19,7 +19,7 @@ module iob_cache_tb;
    reg                                instr = 0;
    wire                               i_select =0, d_select =0;
    reg [31:0]                         test = 0;
-                         
+   
 
    integer                            i,j;
    
@@ -60,21 +60,21 @@ module iob_cache_tb;
         $display("Test 2 - Reading entire memory (Data width words)\n");
         test <= 2;
         #2
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
-          begin 
-             addr <= i;
-             valid <= 1;
-             #2;
+          for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+            begin 
+               addr <= i;
+               valid <= 1;
+               #2;
 `ifdef LA
-             addr <= 0;
-             valid <= 0;
+               addr <= 0;
+               valid <= 0;
 `endif   
-             while (ready == 1'b0) #2;
-             if(rdata != (i+1))
-               $display("Error in: %h\n", i);
-             valid <= 0;
-             #2;
-          end
+               while (ready == 1'b0) #2;
+               if(rdata != (i+1))
+                 $display("Error in: %h\n", i);
+               valid <= 0;
+               #2;
+            end
         
         $display("Test 3 - Byte addressing (Writting memory using Bytes)\n");
         test <= 3;
@@ -90,13 +90,13 @@ module iob_cache_tb;
                   valid <= 1;
                   #2;
 `ifdef LA
-             addr <= 0;
-             wdata <= 0;
-             wstrb <= 0;
-             valid <= 0;
+                  addr <= 0;
+                  wdata <= 0;
+                  wstrb <= 0;
+                  valid <= 0;
 `endif
                   while (ready == 1'b0) #2;
-             valid <= 0;
+                  valid <= 0;
                   #2;
                end // for ( j = 0; j < `N_BYTES; j = j + 1)
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
@@ -112,7 +112,7 @@ module iob_cache_tb;
              valid <= 1;
              #2
 `ifdef LA
-             addr <= 0;
+               addr <= 0;
              valid <= 0;
 `endif   
              while (ready == 1'b0) #2;
@@ -165,16 +165,20 @@ module iob_cache_tb;
    L2_ID_1sp #(
                .ADDR_W(`ADDR_W),
                .DATA_W(`DATA_W),
-               .MEM_NATIVE(`MEM_NATIVE),
-               .LA_INTERF(`LA),
                .MEM_ADDR_W(`MEM_ADDR_W),
                .MEM_DATA_W(`MEM_DATA_W),
+               .MEM_NATIVE(`MEM_NATIVE),
+               .REP_POLICY(`REP_POLICY),
+ `ifdef LA
+               .LA_INTERF(1),
+ `else
+               .LA_INTERF(0),
+ `endif
                .L1_LINE_OFF_W(`LINE_OFF_W),
                .L1_WORD_OFF_W(`WORD_OFF_W),
                .L2_LINE_OFF_W(`LINE_OFF_W),
                .L2_WORD_OFF_W(`WORD_OFF_W),
                .L2_N_WAYS    (`N_WAYS),
-               .REP_POLICY(`REP_POLICY).
                .L1_WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
                .L2_WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )
@@ -258,7 +262,11 @@ module iob_cache_tb;
                .MEM_DATA_W(`MEM_DATA_W),
                .MEM_NATIVE(`MEM_NATIVE),
                .REP_POLICY(`REP_POLICY),
-               .LA_INTERF(`LA),
+ `ifdef LA
+               .LA_INTERF(1),
+ `else
+               .LA_INTERF(0),
+ `endif
                .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )
    cache (
@@ -386,7 +394,7 @@ module iob_cache_tb;
            ); 
 
 
-   iob_sp_mem_be #(
+   iob_sp_ram_be #(
 		   .COL_WIDTH(8),
 		   .NUM_COL(`MEM_DATA_W/8),
                    .ADDR_WIDTH(`MEM_ADDR_W-2)

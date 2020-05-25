@@ -11,8 +11,8 @@
 module L2_ID_1sp
   #(
     //Universal parameters -- faster configuration
-    parameter DATA_W = 32,       //Address width - width that will used for the cache - every cache's front-end
-    parameter ADDR_W = 32,       //Data width - word size used for the cache          - every cache's front-end
+    parameter ADDR_W = 32,       //Address width - width that will used for the cache - every cache's front-end
+    parameter DATA_W = 32,       //Data width - word size used for the cache          - every cache's front-end
     parameter MEM_DATA_W = 32,   //Data width of the memory                           - L2's  back-end
     parameter MEM_ADDR_W = 32,   //Address width of the higher hierarchy memory       - L2's  back-end
     parameter MEM_NATIVE = 0,    //Cache's higher level memory interface: AXI(0-default), Native(1) - L2's back-end
@@ -250,11 +250,9 @@ module L2_ID_1sp
       .mem_ready(d_mem_ready)
       );
    
-   /* 
+/*    
     merge #(
-    .N_MASTERS(2),
-    .ADDR_W(L2_ADDR_W),
-    .DATA_W(L2_DATA_W)
+    .N_MASTERS(2)
     )
     cache_inter
     (
@@ -263,8 +261,8 @@ module L2_ID_1sp
     .s_req ({int_valid, int_addr, int_wdata, int_wstrb}),
     .s_resp ({int_ready, int_rdata})
     );
+*/    
     
-    */
 
 
 
@@ -278,7 +276,7 @@ module L2_ID_1sp
    assign d_mem_rdata = int_rdata;
    assign i_mem_ready = int_ready & i_mem_valid;
    assign d_mem_ready = int_ready & d_mem_valid;
-   
+ 
    
 
    

@@ -771,7 +771,8 @@ module read_process_axi
            
            
            reg [1:0]                           state;
-
+           reg                                 error;//axi error during reply (axi_rresp[1] == 1) - burst can't be interrupted, so a flag needs to be active
+           
            
            always @(posedge clk, posedge reset)
              begin
@@ -779,56 +780,66 @@ module read_process_axi
                   begin
                      state <= idle;
                      word_counter <= 0;
+                     error <= 0;
                   end
                 else
-                   
-                  case (state)   
-                    idle:
-                      begin
-                         word_counter <= 0;  
-                         if(read_miss)
+                  begin
+                     error <= error;
+                     case (state)   
+                       idle:
+                         begin
+                            error <= 0;
+                            word_counter <= 0;  
+                            if(read_miss)
+                              state <= init_process;
+                            else
+                              state <= idle;
+                         end
+
+                       init_process:
+                         begin
+                            error <= 0;
+                            word_counter <= 0;  
+                            if(axi_arready)
+                              state <= load_process;
+                            else
+                              state <= init_process;
+                         end
+
+                       load_process:
+                         begin
+                            if(axi_rvalid)
+                              if(axi_rlast)
+                                begin
+                                   state <= end_process;
+                                   word_counter <= word_counter; //to avoid writting last data in first line word
+                                   if(axi_rresp[1]) //error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                                     error <= 1;
+                                end
+                              else
+                                begin
+                                   word_counter <= word_counter +1;
+                                   state <= load_process;
+                                   if(axi_rresp[1]) //error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                                     error <= 1;
+                                end
+                            else
+                              begin
+                                 word_counter <= word_counter;
+                                 state <= load_process;
+                              end
+                         end
+
+                       end_process://delay for the read_latency of the memories (if the rdata is the last word)
+                         if (error)
                            state <= init_process;
                          else
                            state <= idle;
-                      end
-
-                    init_process:
-                      begin
-                         word_counter <= 0;  
-                         if(axi_arready)
-                           state <= load_process;
-                         else
-                           state <= init_process;
-                      end
-
-                    load_process:
-                      begin
-                         if(axi_rvalid)
-                           if(axi_rlast)
-                             begin
-                                state <= end_process;
-                                word_counter <= word_counter; //to avoid writting last data in first line word
-                             end
-                           else
-                             begin
-                                word_counter <= word_counter +1;
-                                state <= load_process;
-                             end
-                         else
-                           begin
-                              word_counter <= word_counter;
-                              state <= load_process;
-                           end
-                      end
-
-                    end_process://delay for the read_latency of the memories (if the rdata is the last word)
-                      state <= idle;
-                    
-                    
-                    default:;
-                  endcase
+                       
+                       default:;
+                     endcase
+                  end
              end
-           
            
            always @*
              begin
@@ -926,7 +937,10 @@ module read_process_axi
                     load_process:
                       begin
                          if(axi_rvalid)
-                           state <= end_process;
+                           if(axi_rresp[1]) //error - received at the same time as valid
+                             state <= init_process;
+                           else
+                             state <= end_process;
                          else
                            state <= load_process;
                       end
@@ -1696,7 +1710,7 @@ module memory_section
                        begin
                           for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                             begin
-                               iob_sp_mem_be
+                               iob_sp_ram_be
                                   #(
                                     .NUM_COL   (N_BYTES),
                                     .COL_WIDTH (8),
@@ -1729,7 +1743,7 @@ module memory_section
 	                .rdata(v[k]                               )   
 	                );
 
-                     iob_sp_mem_be
+                     iob_sp_ram_be
                        #(
                          .NUM_COL   (1),
                          .COL_WIDTH (TAG_W),
@@ -1769,11 +1783,10 @@ module memory_section
                   begin
                      for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                        begin
-                          iob_sp_mem_be
+                          iob_gen_sp_ram
                              #(
-                               .NUM_COL   (N_BYTES),
-                               .COL_WIDTH (8),
-                               .ADDR_WIDTH(LINE_OFF_W)
+                               .DATA_W(DATA_W),
+                               .ADDR_W(LINE_OFF_W)
                                )
                           cache_memory 
                              (
@@ -1781,8 +1794,8 @@ module memory_section
                               .en (valid),
                               .we  ((line_load  | way_hit)? line_wstrb[(j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}), 
                               .addr(line_addr),
-                              .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
-                              .dout(line_rdata[(j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                              .data_in ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                              .data_out(line_rdata[(j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
                               );
                        end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
                   end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)  
@@ -1802,7 +1815,7 @@ module memory_section
 	           .rdata(v               )   
 	           );
 
-                iob_sp_mem_be
+                iob_sp_ram_be
                   #(
                     .NUM_COL   (1),
                     .COL_WIDTH (TAG_W),
@@ -1869,11 +1882,10 @@ module memory_section
                   begin
                      for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                        begin
-                          iob_sp_mem_be
+                          iob_gen_sp_ram
                              #(
-                               .NUM_COL   (N_BYTES),
-                               .COL_WIDTH (8),
-                               .ADDR_WIDTH(LINE_OFF_W)
+                               .DATA_W(DATA_W),
+                               .ADDR_W(LINE_OFF_W)
                                )
                           cache_memory 
                              (
@@ -1881,8 +1893,8 @@ module memory_section
                               .en  (valid), 
                               .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
                               .addr(line_addr),
-                              .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
-                              .dout(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                              .data_in ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                              .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
                               );
                        end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
                   end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)
@@ -1902,20 +1914,19 @@ module memory_section
 	           .rdata(v[k]                               )   
 	           );
 
-                iob_sp_mem_be
+                iob_sp_ram
                   #(
-                    .NUM_COL   (1),
-                    .COL_WIDTH (TAG_W),
-                    .ADDR_WIDTH(LINE_OFF_W)
+                    .DATA_W(TAG_W),
+                    .ADDR_W(LINE_OFF_W)
                     )
                 tag_memory 
                   (
-                   .clk (clk                                ),
-                   .en  (valid                              ), 
-                   .we  ((k == way_select)? line_load : 1'b0),
-                   .addr(line_addr                          ),
-                   .din (line_tag                           ),
-                   .dout(tag[TAG_W*k +: TAG_W]              )
+                   .clk     (clk                                ),
+                   .en      (valid                              ), 
+                   .we      ((k == way_select)? line_load : 1'b0),
+                   .addr    (line_addr                          ),
+                   .data_in (line_tag                           ),
+                   .data_out(tag[TAG_W*k +: TAG_W]              )
                    );
 
                 //Cache hit signal that indicates which way has had the hit
@@ -1942,11 +1953,10 @@ module memory_section
              begin
                 for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                   begin
-                     iob_sp_mem_be
+                     iob_gen_sp_ram
                         #(
-                          .NUM_COL   (N_BYTES),
-                          .COL_WIDTH (8),
-                          .ADDR_WIDTH(LINE_OFF_W)
+                          .DATA_W(DATA_W),   
+                          .ADDR_W(LINE_OFF_W)
                           )
                      cache_memory 
                         (
@@ -1954,8 +1964,8 @@ module memory_section
                          .en (valid),
                          .we  ((line_load  | way_hit)? line_wstrb[(j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}), 
                          .addr(line_addr),
-                         .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
-                         .dout(line_rdata[(j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                         .data_in ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                         .data_out(line_rdata[(j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
                          );
                   end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
              end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)  
@@ -1975,20 +1985,19 @@ module memory_section
 	      .rdata(v               )   
 	      );
 
-           iob_sp_mem_be
+           iob_sp_ram
              #(
-               .NUM_COL   (1),
-               .COL_WIDTH (TAG_W),
-               .ADDR_WIDTH(LINE_OFF_W)
+               .DATA_W(TAG_W),
+               .ADDR_W(LINE_OFF_W)
                )
            tag_memory 
              (
-              .clk (clk      ),
-              .en  (valid    ), 
-              .we  (line_load),
-              .addr(line_addr),
-              .din (line_tag ),
-              .dout(tag      )
+              .clk     (clk      ),
+              .en      (valid    ), 
+              .we      (line_load),
+              .addr    (line_addr),
+              .data_in (line_tag ),
+              .data_out(tag      )
               );
 
            //Cache hit signal that indicates which way has had the hit
@@ -2121,9 +2130,9 @@ module replacement_process
            for (i = 0; i < N_WAYS; i=i+1)
 	     begin
 	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
-	     end
-
-           assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
+	        
+                assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
+             end
            
            for (i = 2; i < N_WAYS; i=i+1)
 	     begin
@@ -2463,3 +2472,40 @@ module cache_controller #(
    endgenerate                
    
 endmodule // cache_controller
+
+
+module iob_gen_sp_ram #(
+                        parameter DATA_W = 32,
+                        parameter ADDR_W = 32
+                        )  
+   (                
+                    input                     clk,
+                    input                     en, 
+                    input [DATA_W/8-1:0]      we, 
+                    input [(ADDR_W-1):0]      addr,
+                    output reg [(DATA_W-1):0] data_out,
+                    input [(DATA_W-1):0]      data_in
+                    );
+
+   genvar                                     i;
+   generate
+      for (i = 0; i < (DATA_W/8); i = i + 1)
+        begin
+           iob_sp_ram
+               #(
+                 .DATA_W(8),
+                 .ADDR_W(ADDR_W)
+                 )
+           iob_cache_mem
+               (
+                .clk (clk),
+                .en  (en),
+                .we  (we[i]),
+                .addr(addr),
+                .data_out(data_out[8*i +: 8]),
+                .data_in (data_in[8*i +: 8])
+                );
+        end
+   endgenerate
+
+endmodule // iob_gen_sp_ram
