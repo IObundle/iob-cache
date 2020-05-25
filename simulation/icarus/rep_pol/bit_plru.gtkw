@@ -1,0 +1,38 @@
+[*]
+[*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
+[*] Sun May 24 22:15:26 2020
+[*]
+[dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/rep_pol/rep_pol.vcd"
+[dumpfile_mtime] "Sun May 24 22:09:16 2020"
+[dumpfile_size] 126942
+[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/rep_pol/bit_plru.gtkw"
+[timestart] 0
+[size] 1855 951
+[pos] -856 -1
+*-14.000000 66000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] rep_pol_tb.
+[treeopen] rep_pol_tb.replacement_policy_algorithm.
+[treeopen] rep_pol_tb.replacement_policy_algorithm.genblk4.
+[sst_width] 234
+[signals_width] 315
+[sst_expanded] 1
+[sst_vpaned_height] 274
+@28
+rep_pol_tb.replacement_policy_algorithm.clk
+rep_pol_tb.replacement_policy_algorithm.reset
+rep_pol_tb.replacement_policy_algorithm.way_hit[7:0]
+rep_pol_tb.replacement_policy_algorithm.write_en
+@25
+rep_pol_tb.replacement_policy_algorithm.way_select[2:0]
+@22
+rep_pol_tb.replacement_policy_algorithm.genblk4.bitplru[7:0]
+rep_pol_tb.replacement_policy_algorithm.genblk4.bitplru_liw[0:7]
+@28
+rep_pol_tb.replacement_policy_algorithm.genblk4.bitplru_sel[7:0]
+@22
+rep_pol_tb.replacement_policy_algorithm.genblk4.cmp_bitplru[55:0]
+rep_pol_tb.replacement_policy_algorithm.genblk4.mru_input[7:0]
+rep_pol_tb.replacement_policy_algorithm.genblk4.ext_bitplru[63:0]
+rep_pol_tb.replacement_policy_algorithm.genblk4.mru_output[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
