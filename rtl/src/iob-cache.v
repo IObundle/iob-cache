@@ -2076,7 +2076,7 @@ module replacement_process
 	        assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
 	        assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
 	        
-	        assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, get's the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
+	        assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, gets the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
 	        
 	        assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
 	        
@@ -2118,28 +2118,28 @@ module replacement_process
         end // if (REP_POLICY == `LRU)
       else if (REP_POLICY == `BIT_PLRU)
         begin
-           
+
            wire [N_WAYS -1:0]      mru_output;
            wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
            wire [N_WAYS -1:0]      bitplru = (~mru_output); //least recent used
-           wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Line_addr-Way priority
+           wire [0:N_WAYS -1]      bitplru_liw = bitplru [N_WAYS -1:0]; //LRU Lower-Index-Way priority
            wire [(N_WAYS**2)-1:0]  ext_bitplru;// Extended LRU
-           wire [(N_WAYS**2)-(N_WAYS)-1:0] cmp_bitplru;//Result for the comparision of the LRU values (lru_liw), to choose the lowest line_addr way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
+           wire [N_WAYS-1:0] cmp_bitplru[N_WAYS-1:1];//Result for the comparision of the LRU values (lru_liw), to choose the lowest index way for replacement. All the results of the comparision will be placed in the wire. This way the comparing all the Ways will take 1 clock cycle, instead of 2**NWAY_W cycles.
            wire [N_WAYS-1:0]               bitplru_sel;  
 
            for (i = 0; i < N_WAYS; i=i+1)
 	     begin
-	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower line_addres in the higher positions (higher priority)
-	        
-                assign cmp_bitplru [N_WAYS-1:0] = (bitplru_liw[i])? ext_bitplru[2*(N_WAYS)-1: N_WAYS] : ext_bitplru[N_WAYS -1: 0]; //1st iteration: higher line_addr in lru_liw is the lower line_addres in LRU, if the lower line_addr is bit-PLRU, it's stored their extended value
-             end
-           
+	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower indexes in the higher positions (higher priority)
+	     end  
+             
+           assign cmp_bitplru [1] = (bitplru_liw[1])? ext_bitplru [N_WAYS +: N_WAYS] : ext_bitplru [0 +: N_WAYS]; //1st iteration: higher index in lru_liw is the lower indexes in LRU, if the lower index is bit-PLRU, it's stored their extended value
+                      
            for (i = 2; i < N_WAYS; i=i+1)
 	     begin
-	        assign cmp_bitplru [((i)*N_WAYS)-1 : (i-1)*N_WAYS] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [(i-2)*N_WAYS +: N_WAYS]; //if the Lower line_addr of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
+	        assign cmp_bitplru [i] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [i-1]; //if the Lower index of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
 	     end
            
-           assign bitplru_sel = cmp_bitplru [(N_WAYS**2)-(N_WAYS)-1 :(N_WAYS**2)-2*(N_WAYS)]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest line_addr way LRU 
+           assign bitplru_sel = cmp_bitplru [N_WAYS-1]; //the way to be replaced is the last word in cmp_lru, after all the comparisions, having there the lowest index way LRU 
 
            
            //Selects the least recent used way (encoder for one-hot to binary format)
@@ -2170,6 +2170,7 @@ module replacement_process
               .en   (write_en     )
               );
 
+           
         end // if (REP_POLICY == BIT_PLRU)
       else // (REP_POLICY == TREE_PLRU)
         begin
