@@ -13,9 +13,15 @@ module rep_pol_tb;
    reg                        write_en = 0;
    reg [31:0]                 test = 0;
    wire [`N_WAYS -1:0]        way_select_bin = 1 << way_select;
-   reg [$clog2(`N_WAYS) :0] random = `LFSR_IN; // linear-feedback-shift-register for random number generation
-   wire [`N_WAYS -1:0]        way_random_bin = 1 << random[$clog2(`N_WAYS):1];
-                     
+
+   
+
+   // linear-feedback-shift-register for random number generation
+   reg [31 :0]                random = `LFSR_IN;
+   reg [$clog2(`N_WAYS) :0] random_sel; //store random singal in a specific period
+   wire [`N_WAYS -1:0]        way_random_bin = 1 << random_sel[$clog2(`N_WAYS):1];
+   
+   
 
    integer                            i,j;
    
@@ -43,31 +49,36 @@ module rep_pol_tb;
              write_en <= 0;
           end
         
-
+        
         $display("\nTest 2 - Replacement Policy behaviour with random hits\n");
         test <= 2;
         for (i = 0; i < (`N_CYCLES*`N_WAYS); i = i + 1)
           begin
+             #6;
+             random_sel <= random;
+             #2;
              $display("%d:", i);
              $display("- way-hit:    %b  ", way_random_bin);
-             way_hit <= 1<<random;
+             way_hit <= way_random_bin;
              #2;
              write_en <= 1;
              #2;
              write_en <= 0;
-             #4;
+             #6;
              $display("- way-select: %b\n", way_select_bin);
              #2;
           end
+         
+         
         $display("Replacement Policy testing completed\n");
         $finish;
      end      
 
-        replacement_process #(
-	                              .N_WAYS    (`N_WAYS    ),
-	                              .LINE_OFF_W(0         ),
-                                      .REP_POLICY(`REP_POLICY)
-	                              )
+   replacement_process #(
+	                 .N_WAYS    (`N_WAYS    ),
+	                 .LINE_OFF_W(0          ),
+                         .REP_POLICY(`REP_POLICY)
+	                 )
                 replacement_policy_algorithm
                   (
                    .clk       (clk       ),
@@ -82,7 +93,7 @@ module rep_pol_tb;
    
    //Linear-Feedback-Shift-Register - Random signal generator
    generate
-      for (f = 1; f < $clog2(`N_WAYS); f = f + 1)
+      for (f = 1; f < 32; f = f + 1)
         begin
            always @(posedge clk)
              random [f] <= random [f-1];
@@ -90,7 +101,7 @@ module rep_pol_tb;
    endgenerate
    
    always @(posedge clk)
-             random [0] <= random[$clog2(`N_WAYS)-1] ^ random[$clog2(`N_WAYS)-2];
+             random [0] <= random[31] ^ random[28]; //PSRB31 = x^31 + x^28 + 1
       
 endmodule // rep_pol_tb
 

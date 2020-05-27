@@ -1,7 +1,7 @@
 `define N_CYCLES 2//Number of cycles of read-misses during simulation
 
 //Replacement policy parameters
-`define N_WAYS 4
+`define N_WAYS 8
 `define REP_POLICY 1 // check Replacement Policy
 
 //Linear-Feedback-Shift-Register - Random generator
