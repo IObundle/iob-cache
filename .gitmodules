@@ -4,3 +4,6 @@
 [submodule "submodules/iob-interconnect"]
 	path = submodules/iob-interconnect
 	url = https://github.com/jjts/iob-interconnect
+[submodule "submodules/iob-mem"]
+	path = submodules/iob-mem
+	url = git@github.com:jjts/iob-mem.git
