@@ -15,7 +15,7 @@ module L2_ID_1sp
     parameter DATA_W = 32,       //Data width - word size used for the cache          - every cache's front-end
     parameter MEM_DATA_W = 32,   //Data width of the memory                           - L2's  back-end
     parameter MEM_ADDR_W = 32,   //Address width of the higher hierarchy memory       - L2's  back-end
-    parameter MEM_NATIVE = 0,    //Cache's higher level memory interface: AXI(0-default), Native(1) - L2's back-end
+    parameter AXI_INTERF = 1,    //Back-End Memory interface (1 - AXI, 0 - Native)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU - caches' replacement policy (mostly for L2)
     parameter LA_INTERF = 0,    //Look-ahead Interface - Store Front-End input signal
     parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses (L1 caches only)
@@ -41,8 +41,7 @@ module L2_ID_1sp
     parameter L2_WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter L2_REP_POLICY = REP_POLICY, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
-    //Back-End L2 parameters - Higher hierarchy memory (slave) interface parameters 
-    parameter L2_MEM_NATIVE = MEM_NATIVE, //Cache's higher level memory interface: AXI(0-default), Native(1)
+    //Back-End L2 parameters - Higher hierarchy memory (slave) interface parameters
     parameter L2_MEM_ADDR_W = MEM_ADDR_W, //Address width of the higher hierarchy memory
     parameter L2_MEM_DATA_W = MEM_DATA_W, //Data width of the memory 
     //AXI specific parameters
@@ -155,7 +154,7 @@ module L2_ID_1sp
    wire [L2_MEM_DATA_W/8-1:0]    d_mem_wstrb;
    wire                          d_mem_valid, d_mem_ready;
    //L2
-   wire [L2_ADDR_W-1:0]           int_addr;
+   wire [L2_ADDR_W-1:0]          int_addr;
    wire [L2_DATA_W-1:0]          int_wdata, int_rdata;
    wire [L2_DATA_W/8-1:0]        int_wstrb;
    wire                          int_valid, int_ready;
@@ -180,7 +179,6 @@ module L2_ID_1sp
                .REP_POLICY (L1_I_REP_POLICY),
                .WTBUF_DEPTH_W (L1_I_WTBUF_DEPTH_W),
                .LA_INTERF     (L1_I_LA_INTERF),
-               .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
                .CTRL_CNT      (L1_I_CTRL_CNT),
                .CTRL_VAL_IND  (1)
@@ -222,7 +220,6 @@ module L2_ID_1sp
                .REP_POLICY (L1_D_REP_POLICY),
                .WTBUF_DEPTH_W (L1_D_WTBUF_DEPTH_W),
                .LA_INTERF     (L1_D_LA_INTERF),
-               .MEM_NATIVE    (1),
                .CTRL_CNT_ID   (0),
                .CTRL_CNT      (L1_D_CTRL_CNT),
                .CTRL_VAL_IND  (1)
@@ -250,7 +247,7 @@ module L2_ID_1sp
       .mem_ready(d_mem_ready)
       );
    
-/*    
+   /*    
     merge #(
     .N_MASTERS(2)
     )
@@ -261,8 +258,8 @@ module L2_ID_1sp
     .s_req ({int_valid, int_addr, int_wdata, int_wstrb}),
     .s_resp ({int_ready, int_rdata})
     );
-*/    
-    
+    */    
+   
 
 
 
@@ -276,92 +273,127 @@ module L2_ID_1sp
    assign d_mem_rdata = int_rdata;
    assign i_mem_ready = int_ready & i_mem_valid;
    assign d_mem_ready = int_ready & d_mem_valid;
- 
+   
    
 
-   
+   generate
+      if (AXI_INTERF)
+        begin
 
-   iob_cache #(
-               .ADDR_W    (L2_ADDR_W),
-               .DATA_W    (L2_DATA_W),
-               .N_WAYS    (L2_N_WAYS),
-               .LINE_OFF_W(L2_LINE_OFF_W),
-               .WORD_OFF_W(L2_WORD_OFF_W),
-               .MEM_ADDR_W(L2_MEM_ADDR_W),
-               .MEM_DATA_W(L2_MEM_DATA_W),
-               .MEM_NATIVE(L2_MEM_NATIVE),
-               .REP_POLICY(L2_REP_POLICY),
-               .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
-               .LA_INTERF     (0),
-               .CTRL_CNT_ID   (0),
-               .CTRL_CNT      (0)
-               )
-   L2 
-     (
-      .clk   (clk),
-      .reset (reset),
-      .wdata (int_wdata),
-      .addr  (int_addr ),
-      .wstrb (int_wstrb),
-      .rdata (int_rdata),
-      .valid (int_valid),
-      .ready (int_ready),
-      .instr (1'b0),
-      .select(1'b0),
-      //
-      // AXI INTERFACE
-      //
-      //address write
-      .axi_awid   (axi_awid), 
-      .axi_awaddr (axi_awaddr), 
-      .axi_awlen  (axi_awlen), 
-      .axi_awsize (axi_awsize), 
-      .axi_awburst(axi_awburst), 
-      .axi_awlock (axi_awlock), 
-      .axi_awcache(axi_awcache), 
-      .axi_awprot (axi_awprot),
-      .axi_awqos  (axi_awqos), 
-      .axi_awvalid(axi_awvalid), 
-      .axi_awready(axi_awready), 
-      //write
-      .axi_wdata (axi_wdata), 
-      .axi_wstrb (axi_wstrb), 
-      .axi_wlast (axi_wlast), 
-      .axi_wvalid(axi_wvalid), 
-      .axi_wready(axi_wready), 
-      //write response
-      .axi_bid   (axi_bid), 
-      .axi_bresp (axi_bresp), 
-      .axi_bvalid(axi_bvalid), 
-      .axi_bready(axi_bready), 
-      //address read
-      .axi_arid   (axi_arid), 
-      .axi_araddr (axi_araddr), 
-      .axi_arlen  (axi_arlen), 
-      .axi_arsize (axi_arsize), 
-      .axi_arburst(axi_arburst), 
-      .axi_arlock (axi_arlock), 
-      .axi_arcache(axi_arcache), 
-      .axi_arprot (axi_arprot), 
-      .axi_arqos  (axi_arqos), 
-      .axi_arvalid(axi_arvalid), 
-      .axi_arready(axi_arready), 
-      //read 
-      .axi_rid   (axi_rid), 
-      .axi_rdata (axi_rdata), 
-      .axi_rresp (axi_rresp), 
-      .axi_rlast (axi_rlast), 
-      .axi_rvalid(axi_rvalid),  
-      .axi_rready(axi_rready),
-      //
-      // NATIVE MEMORY INTERFACE
-      //
-      .mem_addr (mem_addr),
-      .mem_wdata(mem_wdata),
-      .mem_wstrb(mem_wstrb),
-      .mem_rdata(mem_rdata),
-      .mem_valid(mem_valid),
-      .mem_ready(mem_ready)
-      );
+           iob_cache_axi #(
+                           .ADDR_W    (L2_ADDR_W),
+                           .DATA_W    (L2_DATA_W),
+                           .N_WAYS    (L2_N_WAYS),
+                           .LINE_OFF_W(L2_LINE_OFF_W),
+                           .WORD_OFF_W(L2_WORD_OFF_W),
+                           .MEM_ADDR_W(L2_MEM_ADDR_W),
+                           .MEM_DATA_W(L2_MEM_DATA_W),
+                           .REP_POLICY(L2_REP_POLICY),
+                           .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
+                           .LA_INTERF     (0),
+                           .CTRL_CNT_ID   (0),
+                           .CTRL_CNT      (0)
+                           )
+           L2 
+             (
+              .clk   (clk),
+              .reset (reset),
+              .wdata (int_wdata),
+              .addr  (int_addr ),
+              .wstrb (int_wstrb),
+              .rdata (int_rdata),
+              .valid (int_valid),
+              .ready (int_ready),
+              .instr (1'b0),
+              .select(1'b0),
+              //
+              // AXI INTERFACE
+              //
+              //address write
+              .axi_awid   (axi_awid), 
+              .axi_awaddr (axi_awaddr), 
+              .axi_awlen  (axi_awlen), 
+              .axi_awsize (axi_awsize), 
+              .axi_awburst(axi_awburst), 
+              .axi_awlock (axi_awlock), 
+              .axi_awcache(axi_awcache), 
+              .axi_awprot (axi_awprot),
+              .axi_awqos  (axi_awqos), 
+              .axi_awvalid(axi_awvalid), 
+              .axi_awready(axi_awready), 
+              //write
+              .axi_wdata (axi_wdata), 
+              .axi_wstrb (axi_wstrb), 
+              .axi_wlast (axi_wlast), 
+              .axi_wvalid(axi_wvalid), 
+              .axi_wready(axi_wready), 
+              //write response
+              .axi_bid   (axi_bid), 
+              .axi_bresp (axi_bresp), 
+              .axi_bvalid(axi_bvalid), 
+              .axi_bready(axi_bready), 
+              //address read
+              .axi_arid   (axi_arid), 
+              .axi_araddr (axi_araddr), 
+              .axi_arlen  (axi_arlen), 
+              .axi_arsize (axi_arsize), 
+              .axi_arburst(axi_arburst), 
+              .axi_arlock (axi_arlock), 
+              .axi_arcache(axi_arcache), 
+              .axi_arprot (axi_arprot), 
+              .axi_arqos  (axi_arqos), 
+              .axi_arvalid(axi_arvalid), 
+              .axi_arready(axi_arready), 
+              //read 
+              .axi_rid   (axi_rid), 
+              .axi_rdata (axi_rdata), 
+              .axi_rresp (axi_rresp), 
+              .axi_rlast (axi_rlast), 
+              .axi_rvalid(axi_rvalid),  
+              .axi_rready(axi_rready)
+              );
+        end
+      else
+        begin
+           
+           iob_cache #(
+                       .ADDR_W    (L2_ADDR_W),
+                       .DATA_W    (L2_DATA_W),
+                       .N_WAYS    (L2_N_WAYS),
+                       .LINE_OFF_W(L2_LINE_OFF_W),
+                       .WORD_OFF_W(L2_WORD_OFF_W),
+                       .MEM_ADDR_W(L2_MEM_ADDR_W),
+                       .MEM_DATA_W(L2_MEM_DATA_W),
+                       .REP_POLICY(L2_REP_POLICY),
+                       .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
+                       .LA_INTERF     (0),
+                       .CTRL_CNT_ID   (0),
+                       .CTRL_CNT      (0)
+                       )
+           L2 
+             (
+              .clk   (clk),
+              .reset (reset),
+              .wdata (int_wdata),
+              .addr  (int_addr ),
+              .wstrb (int_wstrb),
+              .rdata (int_rdata),
+              .valid (int_valid),
+              .ready (int_ready),
+              .instr (1'b0),
+              .select(1'b0),
+              //
+              // NATIVE MEMORY INTERFACE
+              //
+              .mem_addr (mem_addr),
+              .mem_wdata(mem_wdata),
+              .mem_wstrb(mem_wstrb),
+              .mem_rdata(mem_rdata),
+              .mem_valid(mem_valid),
+              .mem_ready(mem_ready)
+              );
+           
+        end // if (!AXI_INTERF)
+   endgenerate
    
 endmodule // L2-ID-2sp

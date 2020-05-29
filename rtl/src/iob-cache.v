@@ -22,7 +22,6 @@ module iob_cache
     parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
     /*---------------------------------------------------*/
     //Higher hierarchy memory (slave) interface parameters 
-    parameter MEM_NATIVE = 0,      //Cache's higher level memory interface: AXI(0-default), Native(1)
     parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
     parameter MEM_DATA_W = DATA_W, //Data width of the memory 
     parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
@@ -51,49 +50,6 @@ module iob_cache
     input                   valid,
     output                  ready,
     input                   instr,
-
-    // AXI interface 
-    // Address Write
-    output [AXI_ID_W-1:0]   axi_awid, 
-    output [MEM_ADDR_W-1:0] axi_awaddr,
-    output [7:0]            axi_awlen,
-    output [2:0]            axi_awsize,
-    output [1:0]            axi_awburst,
-    output [0:0]            axi_awlock,
-    output [3:0]            axi_awcache,
-    output [2:0]            axi_awprot,
-    output [3:0]            axi_awqos,
-    output                  axi_awvalid,
-    input                   axi_awready,
-    //Write
-    output [MEM_DATA_W-1:0] axi_wdata,
-    output [MEM_NBYTES-1:0] axi_wstrb,
-    output                  axi_wlast,
-    output                  axi_wvalid, 
-    input                   axi_wready,
-    input [AXI_ID_W-1:0]    axi_bid,
-    input [1:0]             axi_bresp,
-    input                   axi_bvalid,
-    output                  axi_bready,
-    //Address Read
-    output [AXI_ID_W-1:0]   axi_arid,
-    output [MEM_ADDR_W-1:0] axi_araddr, 
-    output [7:0]            axi_arlen,
-    output [2:0]            axi_arsize,
-    output [1:0]            axi_arburst,
-    output [0:0]            axi_arlock,
-    output [3:0]            axi_arcache,
-    output [2:0]            axi_arprot,
-    output [3:0]            axi_arqos,
-    output                  axi_arvalid, 
-    input                   axi_arready,
-    //Read
-    input [AXI_ID_W-1:0]    axi_rid,
-    input [MEM_DATA_W-1:0]  axi_rdata,
-    input [1:0]             axi_rresp,
-    input                   axi_rlast, 
-    input                   axi_rvalid, 
-    output                  axi_rready,
     //Native interface
     output [MEM_ADDR_W-1:0] mem_addr,
     output                  mem_valid,
@@ -212,10 +168,7 @@ module iob_cache
       );
 
 
-   generate
-      if(MEM_NATIVE)
-        begin
-           
+            
            wire [MEM_ADDR_W-1:0] mem_addr_read,  mem_addr_write;
            wire                  mem_valid_read, mem_valid_write;
            
@@ -270,9 +223,260 @@ module iob_cache
               .mem_wdata(mem_wdata),
               .mem_wstrb(mem_wstrb)
               );
+   
+
+   memory_section
+     #(
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),
+       .N_WAYS(N_WAYS),
+       .LINE_OFF_W(LINE_OFF_W),
+       .WORD_OFF_W(WORD_OFF_W),
+       .MEM_DATA_W(MEM_DATA_W),
+       .REP_POLICY(REP_POLICY)
+       )
+   memory_cache
+     (
+      .clk  (clk),
+      .reset(reset),
+      .addr (addr_int),
+      .wdata(wdata_int),
+      .wstrb(wstrb_int),
+      .rdata(rdata_cache),
+      .valid(valid_int & cache_select),
+      .line_load_data(line_load_data),
+      .line_load(line_load),
+      .line_load_en(line_load_en),
+      .word_counter(word_counter),
+      .hit(hit),
+      .write_en(write_en),
+      .invalidate(invalidate)
+      );
+
+
+   cache_controller
+     #(
+       .DATA_W     (DATA_W),
+       .CTRL_CNT   (CTRL_CNT),
+       .CTRL_CNT_ID(CTRL_CNT_ID)
+       )
+   cache_control
+     (
+      .clk(clk),
+      .din(ctrl_counter),
+      .invalidate(invalidate),
+      .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .dout(rdata_ctrl),
+      .valid(ctrl_select),
+      .ready(ready_ctrl),
+      .reset(reset),
+      .write_state({write_full,write_empty})
+      );
+
+endmodule // iob_cache
+
+
+
+module iob_cache_axi 
+  #(
+    //memory cache's parameters
+    parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
+    parameter DATA_W   = 32,       //Data width - word size used for the cache
+    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
+    //Replacement policy (N_WAYS > 1)
+    parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    //Do NOT change - memory cache's parameters - dependency
+    parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
+    parameter N_BYTES  = DATA_W/8,       //Number of Bytes per Word
+    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    /*---------------------------------------------------*/
+    //Higher hierarchy memory (slave) interface parameters 
+    parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
+    parameter MEM_DATA_W = DATA_W, //Data width of the memory 
+    parameter MEM_NBYTES = MEM_DATA_W/8, //Number of bytes
+    parameter MEM_BYTES_W = $clog2(MEM_NBYTES), //Offset of Number of Bytes
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0, //AXI ID value
+    //Cache-Memory base Offset
+    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(MEM_DATA_W/DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
+    //Look-ahead Interface - Store Front-End input signals
+    parameter LA_INTERF = 0,
+    /*---------------------------------------------------*/
+    //Controller's options
+    parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
+    parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
+    ) 
+   (
+    input                   clk,
+    input                   reset,
+    input [ADDR_W-1:0]      addr,
+    input                   select,// selects cache (0) or controller (1)
+    input [DATA_W-1:0]      wdata,
+    input [N_BYTES-1:0]     wstrb,
+    output reg [DATA_W-1:0] rdata,
+    input                   valid,
+    output                  ready,
+    input                   instr,
+
+    // AXI interface 
+    // Address Write
+    output [AXI_ID_W-1:0]   axi_awid, 
+    output [MEM_ADDR_W-1:0] axi_awaddr,
+    output [7:0]            axi_awlen,
+    output [2:0]            axi_awsize,
+    output [1:0]            axi_awburst,
+    output [0:0]            axi_awlock,
+    output [3:0]            axi_awcache,
+    output [2:0]            axi_awprot,
+    output [3:0]            axi_awqos,
+    output                  axi_awvalid,
+    input                   axi_awready,
+    //Write
+    output [MEM_DATA_W-1:0] axi_wdata,
+    output [MEM_NBYTES-1:0] axi_wstrb,
+    output                  axi_wlast,
+    output                  axi_wvalid, 
+    input                   axi_wready,
+    input [AXI_ID_W-1:0]    axi_bid,
+    input [1:0]             axi_bresp,
+    input                   axi_bvalid,
+    output                  axi_bready,
+    //Address Read
+    output [AXI_ID_W-1:0]   axi_arid,
+    output [MEM_ADDR_W-1:0] axi_araddr, 
+    output [7:0]            axi_arlen,
+    output [2:0]            axi_arsize,
+    output [1:0]            axi_arburst,
+    output [0:0]            axi_arlock,
+    output [3:0]            axi_arcache,
+    output [2:0]            axi_arprot,
+    output [3:0]            axi_arqos,
+    output                  axi_arvalid, 
+    input                   axi_arready,
+    //Read
+    input [AXI_ID_W-1:0]    axi_rid,
+    input [MEM_DATA_W-1:0]  axi_rdata,
+    input [1:0]             axi_rresp,
+    input                   axi_rlast, 
+    input                   axi_rvalid, 
+    output                  axi_rready
+    );
+   
+   //Internal signals
+   wire [ADDR_W-1   : $clog2(N_BYTES)]       addr_int;
+   wire                                      valid_int;
+   wire [DATA_W-1 : 0]                       wdata_int;
+   wire [N_BYTES-1: 0]                       wstrb_int;
+   wire                                      instr_int; //Ctrl's counter
+   wire                                      ready_int;
+   
+   
+   //Process connection and controller signals
+   wire                                      read_miss, hit, write_full, write_empty, write_en;
+   wire                                      line_load, line_load_en;
+   wire [MEM_DATA_W-1:0]                     line_load_data;
+   wire [MEM_OFFSET_W-1:0]                   word_counter;
+   wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
+   wire                                      invalidate;
+
+
+   //Cache - Controller selection
+   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                      write_access = (cache_select &   (|wstrb_int));
+   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
+   wire                                      ctrl_select;
+   generate
+      if (CTRL_VAL_IND)
+        begin
+           assign cache_select = valid_int;
+           assign ctrl_select  = select;
         end
       else
         begin
+           assign cache_select = ~select & valid_int;           
+           assign ctrl_select  =  select & valid_int;
+        end
+   endgenerate
+
+
+   //Cache - Memory-Controller signals
+   wire [DATA_W-1:0]                         rdata_cache, rdata_ctrl;
+   wire                                      ready_cache, ready_ctrl;
+   wire [2*DATA_W-1:0]                       rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+   always@*
+     begin
+        rdata = rdata_ctrlcache << DATA_W*ctrl_select; 
+     end
+   
+   assign ready_int = (cache_select)? ready_cache : ready_ctrl;
+   assign ready     = ready_int;
+
+
+
+   
+   generate
+      if (LA_INTERF) //Look-Ahead Interface - signal storage
+        begin
+
+           look_ahead_interface 
+             #(
+               .ADDR_W(ADDR_W),
+               .DATA_W(DATA_W)
+               )
+           la_if
+             (
+              .clk (clk),
+              .reset(reset),
+              .addr(addr[ADDR_W-1:$clog2(N_BYTES)]),
+              .valid(valid),
+              .wdata(wdata),
+              .wstrb(wstrb),
+              .instr(instr),
+              .ready_int(ready_int),
+              .addr_int(addr_int),
+              .valid_int(valid_int),
+              .wdata_int(wdata_int),
+              .wstrb_int(wstrb_int),
+              .instr_int(instr_int)
+              );
+        end
+      else
+        begin
+           //Internal assignment - Direct wiring
+           assign addr_int  = addr[ADDR_W-1:$clog2(N_BYTES)];
+           assign valid_int = valid;
+           assign wdata_int = wdata;
+           assign wstrb_int = wstrb;
+           assign instr_int = instr; //only for Controller's counter
+        end // else: !if(LA_INTERF)
+   endgenerate
+   
+
+
+   main_process main_fsm
+     (
+      .clk(clk),
+      .reset(reset),
+      .write_access(write_access),
+      .read_access(read_access),
+      .read_miss(read_miss),
+      .line_load(line_load),
+      .hit(hit),
+      .write_full(write_full),
+      .write_empty(write_empty),
+      .instr(instr_int),
+      .ready(ready_cache),
+      .write_en(write_en),
+      .ctrl_counter(ctrl_counter)
+      );
+
+
+ 
            read_process_axi
              #(
                .ADDR_W(ADDR_W),
@@ -353,9 +557,7 @@ module iob_cache
               .axi_bvalid(axi_bvalid), 
               .axi_bready(axi_bready)  
               );      
-        end
-   endgenerate
-
+     
 
    memory_section
      #(
@@ -371,7 +573,7 @@ module iob_cache
      (
       .clk  (clk),
       .reset(reset),
-      .addr (addr_int[ADDR_W-1:$clog2(N_BYTES)]),
+      .addr (addr_int),
       .wdata(wdata_int),
       .wstrb(wstrb_int),
       .rdata(rdata_cache),
@@ -405,7 +607,10 @@ module iob_cache
       .write_state({write_full,write_empty})
       );
 
-endmodule // iob_cache
+endmodule // iob_cache_axi
+
+
+
 
 /*----------------------*/
 /* Look-ahead Interface */

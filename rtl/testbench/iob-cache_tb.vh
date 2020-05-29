@@ -8,8 +8,8 @@
 // Replacement Policy (N_WAYS > 1 only) - check below the values
 `define REP_POLICY 0
 
-//Back-end Memory interface (0 - AXI, 1 - Native)
-`define MEM_NATIVE 0
+//Back-end Memory interface AXI or Native
+//`define AXI
 
 //Cache back-end parameters
 `define MEM_ADDR_W 13
