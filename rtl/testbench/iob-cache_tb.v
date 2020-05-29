@@ -8,10 +8,9 @@ module iob_cache_tb;
    always #1 clk = ~clk;
    reg reset = 1;
    
-   reg [`ADDR_W-1  :$clog2(`N_BYTES)] addr =0;
-   reg [`ADDR_W  :$clog2(`N_BYTES)]   addr_aux;
+   reg [`ADDR_W-1  :$clog2(`DATA_W/8)] addr =0;
    reg [`DATA_W-1:0]                  wdata=0;
-   reg [`N_BYTES-1:0]                 wstrb=0;
+   reg [`DATA_W/8-1:0]                 wstrb=0;
    reg                                valid=0;
    wire [`DATA_W-1:0]                 rdata;
    wire                               ready;
@@ -36,11 +35,11 @@ module iob_cache_tb;
         $display("\nInitializing Cache testing - printing errors only\n");
         $display("Test 1 - Writing entire memory (Data width words)\n");
         test <= 1;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
           begin
              addr <= i;
              wdata <= i+1;
-             wstrb <= {`N_BYTES{1'b1}};
+             wstrb <= {`DATA_W/8{1'b1}};
              valid <= 1;
              #2;
 `ifdef LA
@@ -52,7 +51,7 @@ module iob_cache_tb;
              while (ready == 1'b0) #2;
              valid <= 0;
              #2;
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         addr  <= 0;
         wdata <= 0;
         wstrb <= 0;
@@ -60,7 +59,7 @@ module iob_cache_tb;
         $display("Test 2 - Reading entire memory (Data width words)\n");
         test <= 2;
         #2
-          for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+          for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
             begin 
                addr <= i;
                valid <= 1;
@@ -79,13 +78,13 @@ module iob_cache_tb;
         $display("Test 3 - Byte addressing (Writting memory using Bytes)\n");
         test <= 3;
         #2;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
           begin
-             for( j = 0; j < `N_BYTES; j = j + 1)
+             for( j = 0; j < `DATA_W/8; j = j + 1)
                begin
                   addr <= i;
                   #2;
-                  wdata <= {`N_BYTES{i[3:0]}};
+                  wdata <= {`DATA_W/8{i[3:0]}};
                   wstrb <= (1'b1) << j;
                   valid <= 1;
                   #2;
@@ -98,15 +97,15 @@ module iob_cache_tb;
                   while (ready == 1'b0) #2;
                   valid <= 0;
                   #2;
-               end // for ( j = 0; j < `N_BYTES; j = j + 1)
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+               end // for ( j = 0; j < `DATA_W/8; j = j + 1)
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         wdata <= 0;
         wstrb <= 0;
         #2;
         $display("Test 4 - Reading Byte Addressing using Data Width Words\n");
         test <= 4;
         #2;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
           begin 
              addr <= i;
              valid <= 1;
@@ -116,11 +115,11 @@ module iob_cache_tb;
              valid <= 0;
 `endif   
              while (ready == 1'b0) #2;
-             if(rdata != {`N_BYTES{i[3:0]}})
+             if(rdata != {`DATA_W/8{i[3:0]}})
                $display("Error in: %h; wrote instead: %h\n", addr, rdata);
              valid <= 0;
              #2;
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`N_BYTES)); i = i + 1)
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         
         $display("Cache testing completed\n");
         $finish;
@@ -154,10 +153,10 @@ module iob_cache_tb;
    wire [2:0]                      axi_awsize;
    wire [1:0]                      axi_awburst;
    //Native connections
-   wire [`MEM_ADDR_W-1:$clog2(`MEM_N_BYTES)] mem_addr;
-   wire [`MEM_DATA_W-1:0]                    mem_wdata, mem_rdata;
-   wire [`MEM_N_BYTES-1:0]                   mem_wstrb;
-   wire                                      mem_valid, mem_ready;
+   wire [`MEM_ADDR_W-1:0]          mem_addr;
+   wire [`MEM_DATA_W-1:0]          mem_wdata, mem_rdata;
+   wire [`MEM_N_BYTES-1:0]         mem_wstrb;
+   wire                            mem_valid, mem_ready;
    
    
 `ifdef L2
@@ -186,7 +185,7 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  (addr ),
+	  .addr  ({addr,{$clog2(`DATA_W/8){1'b0}}}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
@@ -273,7 +272,7 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  (addr ),
+	  .addr  ({addr,{$clog2(`DATA_W/8){1'b0}}}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
@@ -402,7 +401,7 @@ module iob_cache_tb;
    iob_gen_memory
      (
       .din(mem_wdata),
-      .addr(mem_addr),
+      .addr(mem_addr[`MEM_ADDR_W-1:$clog2(`MEM_DATA_W/8)]),
       .we(mem_wstrb), 
       .en(mem_valid),
       .clk(clk), 
@@ -411,7 +410,7 @@ module iob_cache_tb;
 
 
 
-   reg                                       aux_mem_ready;
+   reg                             aux_mem_ready;
    assign mem_ready = aux_mem_ready;
    
    always @(posedge clk) 

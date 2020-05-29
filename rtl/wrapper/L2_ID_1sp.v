@@ -79,90 +79,90 @@ module L2_ID_1sp
     )
    (
     // General ports
-    input                                            clk,
-    input                                            reset,
+    input                        clk,
+    input                        reset,
     // L1  ports
-    input [L1_ADDR_W-1:$clog2(L1_DATA_W/8)]          addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input                                            i_select,
-    input                                            d_select,
-    input [L1_DATA_W-1:0]                            wdata,
-    input [L1_DATA_W/8-1:0]                          wstrb,
-    output [L1_DATA_W-1:0]                           rdata,
-    input                                            valid,
-    input                                            instr,
-    output                                           ready,
+    input [L1_ADDR_W-1:0]        addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
+    input                        i_select,
+    input                        d_select,
+    input [L1_DATA_W-1:0]        wdata,
+    input [L1_DATA_W/8-1:0]      wstrb,
+    output [L1_DATA_W-1:0]       rdata,
+    input                        valid,
+    input                        instr,
+    output                       ready,
    
     // L2  ports
     // AXI interface 
     // Address Write
-    output [L2_AXI_ID_W-1:0]                         axi_awid, 
-    output [L2_MEM_ADDR_W-1:0]                       axi_awaddr,
-    output [7:0]                                     axi_awlen,
-    output [2:0]                                     axi_awsize,
-    output [1:0]                                     axi_awburst,
-    output [0:0]                                     axi_awlock,
-    output [3:0]                                     axi_awcache,
-    output [2:0]                                     axi_awprot,
-    output [3:0]                                     axi_awqos,
-    output                                           axi_awvalid,
-    input                                            axi_awready,
+    output [L2_AXI_ID_W-1:0]     axi_awid, 
+    output [L2_MEM_ADDR_W-1:0]   axi_awaddr,
+    output [7:0]                 axi_awlen,
+    output [2:0]                 axi_awsize,
+    output [1:0]                 axi_awburst,
+    output [0:0]                 axi_awlock,
+    output [3:0]                 axi_awcache,
+    output [2:0]                 axi_awprot,
+    output [3:0]                 axi_awqos,
+    output                       axi_awvalid,
+    input                        axi_awready,
     //Write
-    output [L2_MEM_DATA_W-1:0]                       axi_wdata,
-    output [L2_MEM_DATA_W/8-1:0]                     axi_wstrb,
-    output                                           axi_wlast,
-    output                                           axi_wvalid, 
-    input                                            axi_wready,
-    input [L2_AXI_ID_W-1:0]                          axi_bid,
-    input [1:0]                                      axi_bresp,
-    input                                            axi_bvalid,
-    output                                           axi_bready,
+    output [L2_MEM_DATA_W-1:0]   axi_wdata,
+    output [L2_MEM_DATA_W/8-1:0] axi_wstrb,
+    output                       axi_wlast,
+    output                       axi_wvalid, 
+    input                        axi_wready,
+    input [L2_AXI_ID_W-1:0]      axi_bid,
+    input [1:0]                  axi_bresp,
+    input                        axi_bvalid,
+    output                       axi_bready,
     //Address Read
-    output [L2_AXI_ID_W-1:0]                         axi_arid,
-    output [L2_MEM_ADDR_W-1:0]                       axi_araddr, 
-    output [7:0]                                     axi_arlen,
-    output [2:0]                                     axi_arsize,
-    output [1:0]                                     axi_arburst,
-    output [0:0]                                     axi_arlock,
-    output [3:0]                                     axi_arcache,
-    output [2:0]                                     axi_arprot,
-    output [3:0]                                     axi_arqos,
-    output                                           axi_arvalid, 
-    input                                            axi_arready,
+    output [L2_AXI_ID_W-1:0]     axi_arid,
+    output [L2_MEM_ADDR_W-1:0]   axi_araddr, 
+    output [7:0]                 axi_arlen,
+    output [2:0]                 axi_arsize,
+    output [1:0]                 axi_arburst,
+    output [0:0]                 axi_arlock,
+    output [3:0]                 axi_arcache,
+    output [2:0]                 axi_arprot,
+    output [3:0]                 axi_arqos,
+    output                       axi_arvalid, 
+    input                        axi_arready,
     //Read
-    input [L2_AXI_ID_W-1:0]                          axi_rid,
-    input [L2_MEM_DATA_W-1:0]                        axi_rdata,
-    input [1:0]                                      axi_rresp,
-    input                                            axi_rlast, 
-    input                                            axi_rvalid, 
-    output                                           axi_rready,
+    input [L2_AXI_ID_W-1:0]      axi_rid,
+    input [L2_MEM_DATA_W-1:0]    axi_rdata,
+    input [1:0]                  axi_rresp,
+    input                        axi_rlast, 
+    input                        axi_rvalid, 
+    output                       axi_rready,
     //Native interface
-    output [L2_MEM_ADDR_W-1:$clog2(L2_MEM_DATA_W/8)] mem_addr,
-    output                                           mem_valid,
-    input                                            mem_ready,
-    output [L2_MEM_DATA_W-1:0]                       mem_wdata,
-    output [L2_MEM_DATA_W/8-1:0]                     mem_wstrb,
-    input [L2_MEM_DATA_W-1:0]                        mem_rdata
+    output [L2_MEM_ADDR_W-1:0]   mem_addr,
+    output                       mem_valid,
+    input                        mem_ready,
+    output [L2_MEM_DATA_W-1:0]   mem_wdata,
+    output [L2_MEM_DATA_W/8-1:0] mem_wstrb,
+    input [L2_MEM_DATA_W-1:0]    mem_rdata
     );
    
    //L1-I
-   wire [L2_ADDR_W-1:$clog2(L2_DATA_W/8)]            i_mem_addr;
-   wire [L2_DATA_W-1:0]                              i_mem_wdata, i_mem_rdata;
-   wire [L2_DATA_W/8-1:0]                            i_mem_wstrb;
-   wire                                              i_mem_valid, i_mem_ready;
+   wire [L2_ADDR_W-1:0]          i_mem_addr;
+   wire [L2_DATA_W-1:0]          i_mem_wdata, i_mem_rdata;
+   wire [L2_DATA_W/8-1:0]        i_mem_wstrb;
+   wire                          i_mem_valid, i_mem_ready;
    //L1-D
-   wire [L2_MEM_ADDR_W-1:$clog2(L2_DATA_W/8)]        d_mem_addr;
-   wire [L2_MEM_DATA_W-1:0]                          d_mem_wdata, d_mem_rdata;
-   wire [L2_MEM_DATA_W/8-1:0]                        d_mem_wstrb;
-   wire                                              d_mem_valid, d_mem_ready;
+   wire [L2_MEM_ADDR_W-1:0]      d_mem_addr;
+   wire [L2_MEM_DATA_W-1:0]      d_mem_wdata, d_mem_rdata;
+   wire [L2_MEM_DATA_W/8-1:0]    d_mem_wstrb;
+   wire                          d_mem_valid, d_mem_ready;
    //L2
-   wire [L2_ADDR_W-1:$clog2(L2_DATA_W/8)]            int_addr;
-   wire [L2_DATA_W-1:0]                              int_wdata, int_rdata;
-   wire [L2_DATA_W/8-1:0]                            int_wstrb;
-   wire                                              int_valid, int_ready;
+   wire [L2_ADDR_W-1:0]           int_addr;
+   wire [L2_DATA_W-1:0]          int_wdata, int_rdata;
+   wire [L2_DATA_W/8-1:0]        int_wstrb;
+   wire                          int_valid, int_ready;
 
    //ready signal
-   wire                                              i_ready, d_ready;
-   wire [L1_DATA_W -1 : 0]                           i_rdata, d_rdata;
+   wire                          i_ready, d_ready;
+   wire [L1_DATA_W -1 : 0]       i_rdata, d_rdata;
    assign ready = i_ready | d_ready;
    assign rdata = (d_ready)? d_rdata : i_rdata;
    
