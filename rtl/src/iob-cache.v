@@ -1915,11 +1915,10 @@ module memory_section
                        begin
                           for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                             begin
-                               iob_sp_ram_be
+                               iob_gen_sp_ram
                                   #(
-                                    .NUM_COL   (N_BYTES),
-                                    .COL_WIDTH (8),
-                                    .ADDR_WIDTH(LINE_OFF_W)
+                                    .DATA_W(DATA_W),
+                                    .ADDR_W(LINE_OFF_W)
                                     )
                                cache_memory 
                                   (
@@ -1927,8 +1926,8 @@ module memory_section
                                    .en  (valid), 
                                    .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*N_BYTES +: N_BYTES] : {N_BYTES{1'b0}}),
                                    .addr(line_addr),
-                                   .din ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
-                                   .dout(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                                   .data_in ((line_load)? line_load_data[i*DATA_W +: DATA_W] : wdata),
+                                   .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(MEM_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
                                    );
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
                        end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)
@@ -1948,11 +1947,10 @@ module memory_section
 	                .rdata(v[k]                               )   
 	                );
 
-                     iob_sp_ram_be
+                     iob_sp_ram
                        #(
-                         .NUM_COL   (1),
-                         .COL_WIDTH (TAG_W),
-                         .ADDR_WIDTH(LINE_OFF_W)
+                         .DATA_W(TAG_W),
+                         .ADDR_W(LINE_OFF_W)
                          )
                      tag_memory 
                        (
@@ -1960,8 +1958,8 @@ module memory_section
                         .en  (valid                              ), 
                         .we  ((k == way_select)? line_load : 1'b0),
                         .addr(line_addr                          ),
-                        .din (line_tag                           ),
-                        .dout(tag[TAG_W*k +: TAG_W]              )
+                        .data_in (line_tag                       ),
+                        .data_out(tag[TAG_W*k +: TAG_W]          )
                         );
 
                      //Cache hit signal that indicates which way has had the hit
@@ -1988,7 +1986,7 @@ module memory_section
                   begin
                      for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                        begin
-                          iob_gen_sp_ram
+                       iob_gen_sp_ram 
                              #(
                                .DATA_W(DATA_W),
                                .ADDR_W(LINE_OFF_W)
@@ -2020,11 +2018,10 @@ module memory_section
 	           .rdata(v               )   
 	           );
 
-                iob_sp_ram_be
+                iob_sp_ram
                   #(
-                    .NUM_COL   (1),
-                    .COL_WIDTH (TAG_W),
-                    .ADDR_WIDTH(LINE_OFF_W)
+                    .DATA_W(TAG_W),
+                    .ADDR_W(LINE_OFF_W)
                     )
                 tag_memory 
                   (
@@ -2032,8 +2029,8 @@ module memory_section
                    .en  (valid    ), 
                    .we  (line_load),
                    .addr(line_addr),
-                   .din (line_tag ),
-                   .dout(tag      )
+                   .data_in (line_tag ),
+                   .data_out(tag      )
                    );
 
                 //Cache hit signal that indicates which way has had the hit
