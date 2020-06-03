@@ -60,28 +60,28 @@ module iob_cache
     );
    
    //Internal signals
-   wire [ADDR_W-1   : $clog2(N_BYTES)]       addr_int;
-   wire                                      valid_int;
-   wire [DATA_W-1 : 0]                       wdata_int;
-   wire [N_BYTES-1: 0]                       wstrb_int;
-   wire                                      instr_int; //Ctrl's counter
-   wire                                      ready_int;
+   wire [ADDR_W-1   : $clog2(N_BYTES)] addr_int;
+   wire                                valid_int;
+   wire [DATA_W-1 : 0]                 wdata_int;
+   wire [N_BYTES-1: 0]                 wstrb_int;
+   wire                                instr_int; //Ctrl's counter
+   wire                                ready_int;
    
    
    //Process connection and controller signals
-   wire                                      read_miss, hit, write_full, write_empty, write_en;
-   wire                                      line_load, line_load_en;
-   wire [MEM_DATA_W-1:0]                     line_load_data;
-   wire [MEM_OFFSET_W-1:0]                   word_counter;
-   wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
-   wire                                      invalidate;
+   wire                                read_miss, hit, write_full, write_empty, write_en;
+   wire                                line_load, line_load_en;
+   wire [MEM_DATA_W-1:0]               line_load_data;
+   wire [MEM_OFFSET_W-1:0]             word_counter;
+   wire [`CTRL_COUNTER_W-1:0]          ctrl_counter;
+   wire                                invalidate;
 
 
    //Cache - Controller selection
-   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                      write_access = (cache_select &   (|wstrb_int));
-   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
-   wire                                      ctrl_select;
+   wire                                cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                write_access = (cache_select &   (|wstrb_int));
+   wire                                read_access =  (cache_select &  ~(|wstrb_int));
+   wire                                ctrl_select;
    generate
       if (CTRL_VAL_IND)
         begin
@@ -168,61 +168,61 @@ module iob_cache
       );
 
 
-            
-           wire [MEM_ADDR_W-1:0] mem_addr_read,  mem_addr_write;
-           wire                  mem_valid_read, mem_valid_write;
-           
-           assign mem_addr =  (line_load)? mem_addr_read : mem_addr_write;
-           assign mem_valid = (line_load)? mem_valid_read: mem_valid_write;                   
-           
-           read_process_native
-             #(
-               .ADDR_W(ADDR_W),
-               .DATA_W(DATA_W),  
-               .WORD_OFF_W(WORD_OFF_W),
-               .MEM_ADDR_W (MEM_ADDR_W),
-               .MEM_DATA_W (MEM_DATA_W)
-               )
-           read_fsm
-             (
-              .clk(clk),
-              .reset(reset),
-              .addr(addr_int),
-              .read_miss(read_miss),
-              .line_load(line_load),
-              .line_load_en(line_load_en),
-              .word_counter(word_counter),
-              .line_load_data(line_load_data),
-              .mem_addr(mem_addr_read),
-              .mem_valid(mem_valid_read),
-              .mem_ready(mem_ready),
-              .mem_rdata(mem_rdata)  
-              );
+   
+   wire [MEM_ADDR_W-1:0] mem_addr_read,  mem_addr_write;
+   wire                  mem_valid_read, mem_valid_write;
+   
+   assign mem_addr =  (line_load)? mem_addr_read : mem_addr_write;
+   assign mem_valid = (line_load)? mem_valid_read: mem_valid_write;                   
+   
+   read_process_native
+     #(
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),  
+       .WORD_OFF_W(WORD_OFF_W),
+       .MEM_ADDR_W (MEM_ADDR_W),
+       .MEM_DATA_W (MEM_DATA_W)
+       )
+   read_fsm
+     (
+      .clk(clk),
+      .reset(reset),
+      .addr(addr_int),
+      .read_miss(read_miss),
+      .line_load(line_load),
+      .line_load_en(line_load_en),
+      .word_counter(word_counter),
+      .line_load_data(line_load_data),
+      .mem_addr(mem_addr_read),
+      .mem_valid(mem_valid_read),
+      .mem_ready(mem_ready),
+      .mem_rdata(mem_rdata)  
+      );
 
-           write_process_native
-             #(
-               .ADDR_W(ADDR_W),
-               .DATA_W(DATA_W),
-               .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
-               .MEM_ADDR_W (MEM_ADDR_W),
-               .MEM_DATA_W (MEM_DATA_W)
-               )
-           write_fsm
-             (
-              .clk(clk),
-              .reset(reset),
-              .addr(addr_int),
-              .wstrb(wstrb_int),
-              .wdata(wdata_int),
-              .write_empty(write_empty),
-              .write_full(write_full),
-              .write_en(write_en),
-              .mem_addr(mem_addr_write),
-              .mem_valid(mem_valid_write),
-              .mem_ready(mem_ready),
-              .mem_wdata(mem_wdata),
-              .mem_wstrb(mem_wstrb)
-              );
+   write_process_native
+     #(
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),
+       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+       .MEM_ADDR_W (MEM_ADDR_W),
+       .MEM_DATA_W (MEM_DATA_W)
+       )
+   write_fsm
+     (
+      .clk(clk),
+      .reset(reset),
+      .addr(addr_int),
+      .wstrb(wstrb_int),
+      .wdata(wdata_int),
+      .write_empty(write_empty),
+      .write_full(write_full),
+      .write_en(write_en),
+      .mem_addr(mem_addr_write),
+      .mem_valid(mem_valid_write),
+      .mem_ready(mem_ready),
+      .mem_wdata(mem_wdata),
+      .mem_wstrb(mem_wstrb)
+      );
    
 
    memory_section
@@ -368,28 +368,28 @@ module iob_cache_axi
     );
    
    //Internal signals
-   wire [ADDR_W-1   : $clog2(N_BYTES)]       addr_int;
-   wire                                      valid_int;
-   wire [DATA_W-1 : 0]                       wdata_int;
-   wire [N_BYTES-1: 0]                       wstrb_int;
-   wire                                      instr_int; //Ctrl's counter
-   wire                                      ready_int;
+   wire [ADDR_W-1   : $clog2(N_BYTES)] addr_int;
+   wire                                valid_int;
+   wire [DATA_W-1 : 0]                 wdata_int;
+   wire [N_BYTES-1: 0]                 wstrb_int;
+   wire                                instr_int; //Ctrl's counter
+   wire                                ready_int;
    
    
    //Process connection and controller signals
-   wire                                      read_miss, hit, write_full, write_empty, write_en;
-   wire                                      line_load, line_load_en;
-   wire [MEM_DATA_W-1:0]                     line_load_data;
-   wire [MEM_OFFSET_W-1:0]                   word_counter;
-   wire [`CTRL_COUNTER_W-1:0]                ctrl_counter;
-   wire                                      invalidate;
+   wire                                read_miss, hit, write_full, write_empty, write_en;
+   wire                                line_load, line_load_en;
+   wire [MEM_DATA_W-1:0]               line_load_data;
+   wire [MEM_OFFSET_W-1:0]             word_counter;
+   wire [`CTRL_COUNTER_W-1:0]          ctrl_counter;
+   wire                                invalidate;
 
 
    //Cache - Controller selection
-   wire                                      cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                      write_access = (cache_select &   (|wstrb_int));
-   wire                                      read_access =  (cache_select &  ~(|wstrb_int));
-   wire                                      ctrl_select;
+   wire                                cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                write_access = (cache_select &   (|wstrb_int));
+   wire                                read_access =  (cache_select &  ~(|wstrb_int));
+   wire                                ctrl_select;
    generate
       if (CTRL_VAL_IND)
         begin
@@ -476,88 +476,88 @@ module iob_cache_axi
       );
 
 
- 
-           read_process_axi
-             #(
-               .ADDR_W(ADDR_W),
-               .DATA_W(DATA_W),  
-               .WORD_OFF_W(WORD_OFF_W),
-               .MEM_ADDR_W (MEM_ADDR_W),
-               .MEM_DATA_W (MEM_DATA_W),
-               .AXI_ID_W(AXI_ID_W),
-               .AXI_ID(AXI_ID)
-               )
-           read_fsm
-             (
-              .clk(clk),
-              .reset(reset),
-              .addr(addr_int),
-              .read_miss(read_miss), 
-              .line_load(line_load),
-              .line_load_en(line_load_en),
-              .word_counter(word_counter),
-              .line_load_data (line_load_data),
-              .axi_arid(axi_arid),
-              .axi_araddr(axi_araddr), 
-              .axi_arlen(axi_arlen),
-              .axi_arsize(axi_arsize),
-              .axi_arburst(axi_arburst),
-              .axi_arlock(axi_arlock),
-              .axi_arcache(axi_arcache),
-              .axi_arprot(axi_arprot),
-              .axi_arqos(axi_arqos),
-              .axi_arvalid(axi_arvalid), 
-              .axi_arready(axi_arready),
-              .axi_rid(axi_rid),
-              .axi_rdata(axi_rdata),
-              .axi_rresp(axi_rresp),
-              .axi_rlast(axi_rlast), 
-              .axi_rvalid(axi_rvalid), 
-              .axi_rready(axi_rready)  
-              );
+   
+   read_process_axi
+     #(
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),  
+       .WORD_OFF_W(WORD_OFF_W),
+       .MEM_ADDR_W (MEM_ADDR_W),
+       .MEM_DATA_W (MEM_DATA_W),
+       .AXI_ID_W(AXI_ID_W),
+       .AXI_ID(AXI_ID)
+       )
+   read_fsm
+     (
+      .clk(clk),
+      .reset(reset),
+      .addr(addr_int),
+      .read_miss(read_miss), 
+      .line_load(line_load),
+      .line_load_en(line_load_en),
+      .word_counter(word_counter),
+      .line_load_data (line_load_data),
+      .axi_arid(axi_arid),
+      .axi_araddr(axi_araddr), 
+      .axi_arlen(axi_arlen),
+      .axi_arsize(axi_arsize),
+      .axi_arburst(axi_arburst),
+      .axi_arlock(axi_arlock),
+      .axi_arcache(axi_arcache),
+      .axi_arprot(axi_arprot),
+      .axi_arqos(axi_arqos),
+      .axi_arvalid(axi_arvalid), 
+      .axi_arready(axi_arready),
+      .axi_rid(axi_rid),
+      .axi_rdata(axi_rdata),
+      .axi_rresp(axi_rresp),
+      .axi_rlast(axi_rlast), 
+      .axi_rvalid(axi_rvalid), 
+      .axi_rready(axi_rready)  
+      );
 
-           write_process_axi
-             #(
-               .ADDR_W(ADDR_W),
-               .DATA_W(DATA_W),
-               .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
-               .MEM_ADDR_W (MEM_ADDR_W),
-               .MEM_DATA_W (MEM_DATA_W),
-               .AXI_ID_W(AXI_ID_W),
-               .AXI_ID(AXI_ID)
-               )
-           write_fsm
-             (
-              .clk(clk),
-              .reset(reset),
-              .addr(addr_int),
-              .wstrb(wstrb_int),
-              .wdata(wdata_int),
-              .write_empty(write_empty),
-              .write_full(write_full),
-              .write_en(write_en),
-              .axi_awid(axi_awid),
-              .axi_awaddr(axi_awaddr), 
-              .axi_awlen(axi_awlen),
-              .axi_awsize(axi_awsize),
-              .axi_awburst(axi_awburst),
-              .axi_awlock(axi_awlock),
-              .axi_awcache(axi_awcache),
-              .axi_awprot(axi_awprot),
-              .axi_awqos(axi_awqos),
-              .axi_awvalid(axi_awvalid), 
-              .axi_awready(axi_awready),
-              .axi_wdata(axi_wdata),
-              .axi_wstrb(axi_wstrb),
-              .axi_wlast(axi_wlast),
-              .axi_wvalid(axi_wvalid),
-              .axi_wready(axi_wready),
-              .axi_bid(axi_bid),
-              .axi_bresp(axi_bresp),
-              .axi_bvalid(axi_bvalid), 
-              .axi_bready(axi_bready)  
-              );      
-     
+   write_process_axi
+     #(
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),
+       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+       .MEM_ADDR_W (MEM_ADDR_W),
+       .MEM_DATA_W (MEM_DATA_W),
+       .AXI_ID_W(AXI_ID_W),
+       .AXI_ID(AXI_ID)
+       )
+   write_fsm
+     (
+      .clk(clk),
+      .reset(reset),
+      .addr(addr_int),
+      .wstrb(wstrb_int),
+      .wdata(wdata_int),
+      .write_empty(write_empty),
+      .write_full(write_full),
+      .write_en(write_en),
+      .axi_awid(axi_awid),
+      .axi_awaddr(axi_awaddr), 
+      .axi_awlen(axi_awlen),
+      .axi_awsize(axi_awsize),
+      .axi_awburst(axi_awburst),
+      .axi_awlock(axi_awlock),
+      .axi_awcache(axi_awcache),
+      .axi_awprot(axi_awprot),
+      .axi_awqos(axi_awqos),
+      .axi_awvalid(axi_awvalid), 
+      .axi_awready(axi_awready),
+      .axi_wdata(axi_wdata),
+      .axi_wstrb(axi_wstrb),
+      .axi_wlast(axi_wlast),
+      .axi_wvalid(axi_wvalid),
+      .axi_wready(axi_wready),
+      .axi_bid(axi_bid),
+      .axi_bresp(axi_bresp),
+      .axi_bvalid(axi_bvalid), 
+      .axi_bready(axi_bready)  
+      );      
+   
 
    memory_section
      #(
@@ -1328,7 +1328,7 @@ module read_process_native
                   
                   handshake_update:
                     begin
-                       mem_valid = 1'b0;
+                       mem_valid = 1'b1;
                        line_load =1'b1;
                        // word_counter = word_counter +1;
                     end
@@ -1943,7 +1943,7 @@ module memory_section
 	                .rst  (reset|invalidate                   ),
 	                .wdata(line_load                          ),				       
 	                .addr (line_addr                          ),
-	                .en   ((k == way_select)? line_load : 1'b0),
+	                .en   ((k == way_select)? line_load_en : 1'b0),
 	                .rdata(v[k]                               )   
 	                );
 
@@ -1956,7 +1956,7 @@ module memory_section
                        (
                         .clk (clk                                ),
                         .en  (valid                              ), 
-                        .we  ((k == way_select)? line_load : 1'b0),
+                        .we  ((k == way_select)? line_load_en : 1'b0),
                         .addr(line_addr                          ),
                         .data_in (line_tag                       ),
                         .data_out(tag[TAG_W*k +: TAG_W]          )
@@ -1986,7 +1986,7 @@ module memory_section
                   begin
                      for(i = 0; i < MEM_DATA_W/DATA_W; i=i+1)
                        begin
-                       iob_gen_sp_ram 
+                          iob_gen_sp_ram 
                              #(
                                .DATA_W(DATA_W),
                                .ADDR_W(LINE_OFF_W)
