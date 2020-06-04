@@ -160,6 +160,8 @@ module iob_cache_tb;
    wire                            mem_valid, mem_ready;
 `endif  
    
+
+   
 `ifdef L2
    
    L2_ID_1sp #(
@@ -190,14 +192,12 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({addr,{$clog2(`DATA_W/8){1'b0}}}),
+	  .addr  ({select, addr,{$clog2(`DATA_W/8){1'b0}}}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
 	  .instr (instr),
-          .i_select(i_select),
-          .d_select(d_select),
           //
 	  // AXI INTERFACE
           //
@@ -276,13 +276,12 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({addr,{$clog2(`DATA_W/8){1'b0}}}),
+	  .addr  ({select, addr,{$clog2(`DATA_W/8){1'b0}}}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
 	  .instr (instr),
-          .select(select),
           //
 	  // AXI INTERFACE
           //
@@ -353,13 +352,12 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({addr,{$clog2(`DATA_W/8){1'b0}}}),
+	  .addr  ({select, addr,{$clog2(`DATA_W/8){1'b0}}}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
 	  .instr (instr),
-          .select(select),
           //
           // NATIVE MEMORY INTERFACE
           //

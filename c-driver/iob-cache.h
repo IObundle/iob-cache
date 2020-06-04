@@ -1,9 +1,9 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#define CACHEFUNC(cache_base, func) (*((volatile int*) (cache_base + (func * sizeof(int)))))
-
 static int cache_base;
+
+#define CACHEFUNC(cache_base, func) (*((volatile int*) (cache_base + (func * sizeof(int)))))
 
 //Function's memory map
 #define INVALIDATE      0
@@ -20,30 +20,16 @@ static int cache_base;
 #define INSTR_MISS      11 //for CTRL_CNT_ID only
 
 // Cache Controllers's functions
-//Static functions - system with singular cache
 void cache_init(int cache_addr); // initialized the cache_base static integer
-#define cache_invalidate    CACHEFUNC(cache_base,INVALIDATE)
-#define cache_buffer_empty  CACHEFUNC(cache_base,BUFFER_EMPTY)
-#define cache_buffer_full   CACHEFUNC(cache_base,BUFFER_FULL)
-#define cache_hit           CACHEFUNC(cache_base,HIT)
-#define cache_miss          CACHEFUNC(cache_base,MISS)
-#define cache_read_hit      CACHEFUNC(cache_base,READ_HIT)
-#define cache_read_miss     CACHEFUNC(cache_base,READ_MISS)
-#define cache_write_hit     CACHEFUNC(cache_base,WRITE_HIT)
-#define cache_write_miss    CACHEFUNC(cache_base,WRITE_MISS)
-#define cache_counter_reset CACHEFUNC(cache_base,COUNTER_RESET)
-#define cache_instr_hit     CACHEFUNC(cache_base,INSTR_HIT)
-#define cache_instr_miss    CACHEFUNC(cache_base,INSTR_MISS)
-//Addressable functions - system with multiple caches
-#define cache_addr_invalidate(base)    CACHE_FUNC(base,INVALIDATE)
-#define cache_addr_buffer_empty(base)  CACHE_FUNC(base,BUFFER_EMPTY)
-#define cache_addr_buffer_full(base)   CACHE_FUNC(base,BUFFER_FULL)
-#define cache_addr_hit(base)           CACHE_FUNC(base,HIT)
-#define cache_addr_miss(base)          CACHE_FUNC(base,MISS)
-#define cache_addr_read_hit(base)      CACHE_FUNC(base,READ_HIT)
-#define cache_addr_read_miss(base)     CACHE_FUNC(base,READ_MISS)
-#define cache_addr_write_hit(base)     CACHE_FUNC(base,WRITE_HIT)
-#define cache_addr_write_miss(base)    CACHE_FUNC(base,WRITE_MISS)
-#define cache_addr_counter_reset(base) CACHE_FUNC(base,COUNTER_RESET)
-#define cache_addr_instr_hit(base)     CACHE_FUNC(base,INSTR_HIT)
-#define cache_addr_instr_miss(base)    CACHE_FUNC(base,INSTR_MISS)
+int cache_invalidate(); 
+int cache_buffer_empty();    
+int cache_buffer_full();
+int cache_hit();        
+int cache_miss();                       
+int cache_read_hit();    
+int cache_read_miss(); 
+int cache_write_hit();  
+int cache_write_miss();  
+int cache_counter_reset();  
+int cache_instr_hit();       
+int cache_instr_miss();

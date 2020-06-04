@@ -81,9 +81,7 @@ module L2_ID_1sp
     input                        clk,
     input                        reset,
     // L1  ports
-    input [L1_ADDR_W-1:0]        addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
-    input                        i_select,
-    input                        d_select,
+    input [L1_ADDR_W :0]         addr, // cache_addr[ADDR_W] (MSB) selects cache (0) or controller (1)
     input [L1_DATA_W-1:0]        wdata,
     input [L1_DATA_W/8-1:0]      wstrb,
     output [L1_DATA_W-1:0]       rdata,
@@ -135,7 +133,7 @@ module L2_ID_1sp
     input                        axi_rvalid, 
     output                       axi_rready,
     //Native interface
-    output [L2_MEM_ADDR_W-1:0]   mem_addr,
+    output [L2_MEM_ADDR_W :0]    mem_addr,
     output                       mem_valid,
     input                        mem_ready,
     output [L2_MEM_DATA_W-1:0]   mem_wdata,
@@ -144,17 +142,17 @@ module L2_ID_1sp
     );
    
    //L1-I
-   wire [L2_ADDR_W-1:0]          i_mem_addr;
+   wire [L2_ADDR_W  :0]          i_mem_addr;
    wire [L2_DATA_W-1:0]          i_mem_wdata, i_mem_rdata;
    wire [L2_DATA_W/8-1:0]        i_mem_wstrb;
    wire                          i_mem_valid, i_mem_ready;
    //L1-D
-   wire [L2_MEM_ADDR_W-1:0]      d_mem_addr;
+   wire [L2_MEM_ADDR_W  :0]      d_mem_addr;
    wire [L2_MEM_DATA_W-1:0]      d_mem_wdata, d_mem_rdata;
    wire [L2_MEM_DATA_W/8-1:0]    d_mem_wstrb;
    wire                          d_mem_valid, d_mem_ready;
    //L2
-   wire [L2_ADDR_W-1:0]          int_addr;
+   wire [L2_ADDR_W  :0]          int_addr;
    wire [L2_DATA_W-1:0]          int_wdata, int_rdata;
    wire [L2_DATA_W/8-1:0]        int_wstrb;
    wire                          int_valid, int_ready;
@@ -174,7 +172,7 @@ module L2_ID_1sp
                .N_WAYS     (L1_I_N_WAYS),
                .LINE_OFF_W (L1_I_LINE_OFF_W),
                .WORD_OFF_W (L1_I_WORD_OFF_W),
-               .MEM_ADDR_W (L2_ADDR_W),
+               .MEM_ADDR_W (L2_ADDR_W+1),
                .MEM_DATA_W (L2_DATA_W),
                .REP_POLICY (L1_I_REP_POLICY),
                .WTBUF_DEPTH_W (L1_I_WTBUF_DEPTH_W),
@@ -193,8 +191,7 @@ module L2_ID_1sp
       .rdata (i_rdata),
       .valid (valid & instr),
       .ready (i_ready),
-      .instr (1'b1  ), // Not necessary
-      .select(i_select),
+      .instr (1'b0  ), // Not necessary
       //
       //       // NATIVE MEMORY INTERFACE
       //
@@ -215,7 +212,7 @@ module L2_ID_1sp
                .N_WAYS     (L1_D_N_WAYS),
                .LINE_OFF_W (L1_D_LINE_OFF_W),
                .WORD_OFF_W (L1_D_WORD_OFF_W),
-               .MEM_ADDR_W (L2_ADDR_W),
+               .MEM_ADDR_W (L2_ADDR_W+1),
                .MEM_DATA_W (L2_DATA_W),
                .REP_POLICY (L1_D_REP_POLICY),
                .WTBUF_DEPTH_W (L1_D_WTBUF_DEPTH_W),
@@ -235,7 +232,6 @@ module L2_ID_1sp
       .valid (valid & (~instr)),
       .ready (d_ready),
       .instr (1'b0), // Not necessary
-      .select(d_select),
       //
       // NATIVE MEMORY INTERFACE
       //
@@ -305,7 +301,6 @@ module L2_ID_1sp
               .valid (int_valid),
               .ready (int_ready),
               .instr (1'b0),
-              .select(1'b0),
               //
               // AXI INTERFACE
               //
