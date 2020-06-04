@@ -9,7 +9,7 @@
 `define REP_POLICY 0
 
 //Back-end Memory interface AXI or Native
-`define AXI
+//`define AXI
 
 //Cache back-end parameters
 `define MEM_ADDR_W 13
@@ -20,7 +20,7 @@
 `define WTBUF_DEPTH_W 4
 
 //L2 Cache
-`define L2
+//`define L2
 
 // Look-ahead -- Uncomment to use
 //`define LA
