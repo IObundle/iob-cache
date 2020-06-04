@@ -21,7 +21,7 @@ static int cache_base;
 
 // Cache Controllers's functions
 //Static functions - system with singular cache
-void cache_init( cache_addr); // initialized the cache_base static integer
+void cache_init(int cache_addr); // initialized the cache_base static integer
 #define cache_invalidate    CACHEFUNC(cache_base,INVALIDATE)
 #define cache_buffer_empty  CACHEFUNC(cache_base,BUFFER_EMPTY)
 #define cache_buffer_full   CACHEFUNC(cache_base,BUFFER_FULL)
