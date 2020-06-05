@@ -9,17 +9,17 @@ module iob_cache
   #(
     //memory cache's parameters
     parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
-    parameter DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter DATA_W   = 16,       //Data width - word size used for the cache
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 5,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
-    parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
+    parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
-    parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
-    parameter N_BYTES  = DATA_W/8,       //Number of Bytes per Word
-    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
+    parameter N_BYTES  = DATA_W/8,        //Number of Bytes per Word
+    parameter BYTES_W  = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
     /*---------------------------------------------------*/
     //Higher hierarchy memory (slave) interface parameters 
     parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
@@ -35,8 +35,8 @@ module iob_cache
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
     //Controller's options
-    parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_CNT_ID = 0, //Counters for both Data and Instruction Hits and Misses
+    parameter CTRL_CNT = 1,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
     ) 
    (
@@ -1229,7 +1229,7 @@ module read_process_native
    generate
       if (MEM_OFFSET_W > 0)
         begin
-           assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter, {$clog2(MEM_NBYTES){1'b0}}};
+           assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter, {MEM_BYTES_W{1'b0}}};
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1670,23 +1670,23 @@ module write_process_native
     );
 
    //Write-through buffer
-   wire [N_BYTES+(ADDR_W-$clog2(N_BYTES))+(DATA_W) -1 :0] buffer_dout, buffer_din; 
-   reg                                                    buffer_read_en;
-   wire                                                   buffer_empty, buffer_full;
+   wire [N_BYTES+(ADDR_W-BYTES_W)+(DATA_W) -1 :0] buffer_dout, buffer_din; 
+   reg                                            buffer_read_en;
+   wire                                           buffer_empty, buffer_full;
    
    assign buffer_din = {addr,wstrb,wdata};
 
    assign write_full = buffer_full;
    
    //Native Buffer Output signals
-   assign mem_addr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {$clog2(MEM_NBYTES){1'b0}}}; 
+   assign mem_addr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
    
    localparam
      idle          = 3'd0,
      init_process  = 3'd1,
      write_process = 3'd2;
    
-   reg [1:0]                                              state;
+   reg [1:0]                                      state;
 
    generate
       if(MEM_DATA_W == DATA_W)
@@ -2676,15 +2676,15 @@ module iob_gen_sp_ram #(
                         parameter ADDR_W = 32
                         )  
    (                
-                    input                     clk,
-                    input                     en, 
-                    input [DATA_W/8-1:0]      we, 
-                    input [(ADDR_W-1):0]      addr,
-                    output reg [(DATA_W-1):0] data_out,
-                    input [(DATA_W-1):0]      data_in
+                    input                 clk,
+                    input                 en, 
+                    input [DATA_W/8-1:0]  we, 
+                    input [(ADDR_W-1):0]  addr,
+                    output [(DATA_W-1):0] data_out,
+                    input [(DATA_W-1):0]  data_in
                     );
 
-   genvar                                     i;
+   genvar                                 i;
    generate
       for (i = 0; i < (DATA_W/8); i = i + 1)
         begin
