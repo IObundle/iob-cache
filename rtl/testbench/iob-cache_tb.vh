@@ -19,7 +19,7 @@
 //Write-through Buffer depth
 `define WTBUF_DEPTH_W 4
 
-//L2 Cache
+//L2 Cache -- currently only works with `define AXI
 `define L2
 
 // Look-ahead -- Uncomment to use

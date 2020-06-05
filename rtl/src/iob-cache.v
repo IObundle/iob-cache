@@ -9,17 +9,17 @@ module iob_cache
   #(
     //memory cache's parameters
     parameter ADDR_W   = 32,       //Address width - width that will used for the cache 
-    parameter DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter DATA_W   = 16,       //Data width - word size used for the cache
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 5,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
-    parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
+    parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
-    parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
-    parameter N_BYTES  = DATA_W/8,       //Number of Bytes per Word
-    parameter BYTES_W = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
+    parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
+    parameter N_BYTES  = DATA_W/8,        //Number of Bytes per Word
+    parameter BYTES_W  = $clog2(N_BYTES), //Offset of the Number of Bytes per Word
     /*---------------------------------------------------*/
     //Higher hierarchy memory (slave) interface parameters 
     parameter MEM_ADDR_W = ADDR_W, //Address width of the higher hierarchy memory
@@ -35,15 +35,14 @@ module iob_cache
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
     //Controller's options
-    parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
+    parameter CTRL_CNT_ID = 0, //Counters for both Data and Instruction Hits and Misses
+    parameter CTRL_CNT = 1,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
     ) 
    (
     input                   clk,
     input                   reset,
-    input [ADDR_W-1:0]      addr,
-    input                   select,// selects cache (0) or controller (1)
+    input [ADDR_W :0]       addr, //MSB is used for Controller selection
     input [DATA_W-1:0]      wdata,
     input [N_BYTES-1:0]     wstrb,
     output reg [DATA_W-1:0] rdata,
@@ -60,7 +59,7 @@ module iob_cache
     );
    
    //Internal signals
-   wire [ADDR_W-1   : $clog2(N_BYTES)] addr_int;
+   wire [ADDR_W     : $clog2(N_BYTES)] addr_int;  //MSB is the Ctrl's select
    wire                                valid_int;
    wire [DATA_W-1 : 0]                 wdata_int;
    wire [N_BYTES-1: 0]                 wstrb_int;
@@ -78,20 +77,18 @@ module iob_cache
 
 
    //Cache - Controller selection
-   wire                                cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
    wire                                write_access = (cache_select &   (|wstrb_int));
    wire                                read_access =  (cache_select &  ~(|wstrb_int));
    wire                                ctrl_select;
    generate
       if (CTRL_VAL_IND)
         begin
-           assign cache_select = valid_int;
-           assign ctrl_select  = select;
+           assign ctrl_select  = addr_int[ADDR_W]; //only requires the address access, without needing the valid
         end
       else
-        begin
-           assign cache_select = ~select & valid_int;           
-           assign ctrl_select  =  select & valid_int;
+        begin         
+           assign ctrl_select  = addr_int[ADDR_W] & valid_int;
         end
    endgenerate
 
@@ -124,7 +121,7 @@ module iob_cache
              (
               .clk (clk),
               .reset(reset),
-              .addr(addr[ADDR_W-1:$clog2(N_BYTES)]),
+              .addr(addr[ADDR_W:$clog2(N_BYTES)]),
               .valid(valid),
               .wdata(wdata),
               .wstrb(wstrb),
@@ -140,7 +137,7 @@ module iob_cache
       else
         begin
            //Internal assignment - Direct wiring
-           assign addr_int  = addr[ADDR_W-1:$clog2(N_BYTES)];
+           assign addr_int  = addr[ADDR_W:$clog2(N_BYTES)];
            assign valid_int = valid;
            assign wdata_int = wdata;
            assign wstrb_int = wstrb;
@@ -187,7 +184,7 @@ module iob_cache
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int),
+      .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
       .read_miss(read_miss),
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -211,7 +208,7 @@ module iob_cache
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int),
+      .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
       .wstrb(wstrb_int),
       .wdata(wdata_int),
       .write_empty(write_empty),
@@ -239,7 +236,7 @@ module iob_cache
      (
       .clk  (clk),
       .reset(reset),
-      .addr (addr_int),
+      .addr (addr_int[ADDR_W-1:$clog2(N_BYTES)]),
       .wdata(wdata_int),
       .wstrb(wstrb_int),
       .rdata(rdata_cache),
@@ -265,7 +262,7 @@ module iob_cache
       .clk(clk),
       .din(ctrl_counter),
       .invalidate(invalidate),
-      .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .addr(addr_int[$clog2(N_BYTES) +:`CTRL_ADDR_W]),
       .dout(rdata_ctrl),
       .valid(ctrl_select),
       .ready(ready_ctrl),
@@ -314,8 +311,7 @@ module iob_cache_axi
    (
     input                   clk,
     input                   reset,
-    input [ADDR_W-1:0]      addr,
-    input                   select,// selects cache (0) or controller (1)
+    input [ADDR_W :0]       addr, // MSB is for Controller selection
     input [DATA_W-1:0]      wdata,
     input [N_BYTES-1:0]     wstrb,
     output reg [DATA_W-1:0] rdata,
@@ -368,38 +364,36 @@ module iob_cache_axi
     );
    
    //Internal signals
-   wire [ADDR_W-1   : $clog2(N_BYTES)] addr_int;
-   wire                                valid_int;
-   wire [DATA_W-1 : 0]                 wdata_int;
-   wire [N_BYTES-1: 0]                 wstrb_int;
-   wire                                instr_int; //Ctrl's counter
-   wire                                ready_int;
+   wire [ADDR_W   : $clog2(N_BYTES)] addr_int;
+   wire                              valid_int;
+   wire [DATA_W-1 : 0]               wdata_int;
+   wire [N_BYTES-1: 0]               wstrb_int;
+   wire                              instr_int; //Ctrl's counter
+   wire                              ready_int;
    
    
    //Process connection and controller signals
-   wire                                read_miss, hit, write_full, write_empty, write_en;
-   wire                                line_load, line_load_en;
-   wire [MEM_DATA_W-1:0]               line_load_data;
-   wire [MEM_OFFSET_W-1:0]             word_counter;
-   wire [`CTRL_COUNTER_W-1:0]          ctrl_counter;
-   wire                                invalidate;
+   wire                              read_miss, hit, write_full, write_empty, write_en;
+   wire                              line_load, line_load_en;
+   wire [MEM_DATA_W-1:0]             line_load_data;
+   wire [MEM_OFFSET_W-1:0]           word_counter;
+   wire [`CTRL_COUNTER_W-1:0]        ctrl_counter;
+   wire                              invalidate;
 
 
    //Cache - Controller selection
-   wire                                cache_select = ~select & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                write_access = (cache_select &   (|wstrb_int));
-   wire                                read_access =  (cache_select &  ~(|wstrb_int));
-   wire                                ctrl_select;
+   wire                              cache_select = ~addr_int[ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                              write_access = (cache_select &   (|wstrb_int));
+   wire                              read_access =  (cache_select &  ~(|wstrb_int));
+   wire                              ctrl_select;
    generate
       if (CTRL_VAL_IND)
         begin
-           assign cache_select = valid_int;
-           assign ctrl_select  = select;
+           assign ctrl_select  = addr_int[ADDR_W];
         end
       else
-        begin
-           assign cache_select = ~select & valid_int;           
-           assign ctrl_select  =  select & valid_int;
+        begin         
+           assign ctrl_select  = addr_int[ADDR_W] & valid_int;
         end
    endgenerate
 
@@ -432,7 +426,7 @@ module iob_cache_axi
              (
               .clk (clk),
               .reset(reset),
-              .addr(addr[ADDR_W-1:$clog2(N_BYTES)]),
+              .addr(addr[ADDR_W:$clog2(N_BYTES)]),
               .valid(valid),
               .wdata(wdata),
               .wstrb(wstrb),
@@ -448,7 +442,7 @@ module iob_cache_axi
       else
         begin
            //Internal assignment - Direct wiring
-           assign addr_int  = addr[ADDR_W-1:$clog2(N_BYTES)];
+           assign addr_int  = addr[ADDR_W:$clog2(N_BYTES)];
            assign valid_int = valid;
            assign wdata_int = wdata;
            assign wstrb_int = wstrb;
@@ -491,7 +485,7 @@ module iob_cache_axi
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int),
+      .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
       .read_miss(read_miss), 
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -530,7 +524,7 @@ module iob_cache_axi
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int),
+      .addr(addr_int[ADDR_W-1:$clog2(N_BYTES)]),
       .wstrb(wstrb_int),
       .wdata(wdata_int),
       .write_empty(write_empty),
@@ -573,7 +567,7 @@ module iob_cache_axi
      (
       .clk  (clk),
       .reset(reset),
-      .addr (addr_int),
+      .addr (addr_int[ADDR_W-1:$clog2(N_BYTES)]),
       .wdata(wdata_int),
       .wstrb(wstrb_int),
       .rdata(rdata_cache),
@@ -599,7 +593,7 @@ module iob_cache_axi
       .clk(clk),
       .din(ctrl_counter),
       .invalidate(invalidate),
-      .addr(addr_int[`CTRL_ADDR_W-1 + $clog2(N_BYTES):$clog2(N_BYTES)]),
+      .addr(addr_int[$clog2(N_BYTES) +: `CTRL_ADDR_W]),
       .dout(rdata_ctrl),
       .valid(ctrl_select),
       .ready(ready_ctrl),
@@ -633,14 +627,14 @@ module look_ahead_interface
     input                            instr,
     //Internal stored signals
     input                            ready_int, //Ready to update registers
-    output [ADDR_W:$clog2(N_BYTES)]  addr_int,
+    output [ADDR_W:$clog2(N_BYTES)]  addr_int, //MSB is Ctrl's select
     output [DATA_W-1:0]              wdata_int,
     output [N_BYTES-1:0]             wstrb_int,
     output                           valid_int,
     output                           instr_int  
     );
    
-   reg [ADDR_W-1   : $clog2(N_BYTES)] addr_la;
+   reg [ADDR_W     : $clog2(N_BYTES)] addr_la;
    reg                                valid_la;
    reg [DATA_W-1 : 0]                 wdata_la;
    reg [N_BYTES-1: 0]                 wstrb_la;
@@ -684,7 +678,7 @@ module look_ahead_interface
               end // else: !if(valid)
      end // always @ (posedge clk, posedge ready_int)
    
-   //Internal assignment - Multiplexers (to there is no delay)
+   //Internal assignment - Multiplexers (so there is no delay)
    assign addr_int  = (valid_la)? addr_la  : addr;
    assign valid_int = (valid_la)? 1'b1     :valid;
    assign wdata_int = (valid_la)? wdata_la :wdata;
@@ -1235,7 +1229,7 @@ module read_process_native
    generate
       if (MEM_OFFSET_W > 0)
         begin
-           assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter, {$clog2(MEM_NBYTES){1'b0}}};
+           assign mem_addr  = {{(MEM_ADDR_W-ADDR_W){1'b0}}, addr[ADDR_W -1: MEM_BYTES_W + MEM_OFFSET_W], word_counter, {MEM_BYTES_W{1'b0}}};
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1676,23 +1670,23 @@ module write_process_native
     );
 
    //Write-through buffer
-   wire [N_BYTES+(ADDR_W-$clog2(N_BYTES))+(DATA_W) -1 :0] buffer_dout, buffer_din; 
-   reg                                                    buffer_read_en;
-   wire                                                   buffer_empty, buffer_full;
+   wire [N_BYTES+(ADDR_W-BYTES_W)+(DATA_W) -1 :0] buffer_dout, buffer_din; 
+   reg                                            buffer_read_en;
+   wire                                           buffer_empty, buffer_full;
    
    assign buffer_din = {addr,wstrb,wdata};
 
    assign write_full = buffer_full;
    
    //Native Buffer Output signals
-   assign mem_addr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {$clog2(MEM_NBYTES){1'b0}}}; 
+   assign mem_addr = {{(MEM_ADDR_W-ADDR_W){1'b0}}, buffer_dout[DATA_W+N_BYTES + (MEM_BYTES_W-BYTES_W) +: ADDR_W-(MEM_BYTES_W)], {MEM_BYTES_W{1'b0}}}; 
    
    localparam
      idle          = 3'd0,
      init_process  = 3'd1,
      write_process = 3'd2;
    
-   reg [1:0]                                              state;
+   reg [1:0]                                      state;
 
    generate
       if(MEM_DATA_W == DATA_W)
@@ -2682,15 +2676,15 @@ module iob_gen_sp_ram #(
                         parameter ADDR_W = 32
                         )  
    (                
-                    input                     clk,
-                    input                     en, 
-                    input [DATA_W/8-1:0]      we, 
-                    input [(ADDR_W-1):0]      addr,
-                    output reg [(DATA_W-1):0] data_out,
-                    input [(DATA_W-1):0]      data_in
+                    input                 clk,
+                    input                 en, 
+                    input [DATA_W/8-1:0]  we, 
+                    input [(ADDR_W-1):0]  addr,
+                    output [(DATA_W-1):0] data_out,
+                    input [(DATA_W-1):0]  data_in
                     );
 
-   genvar                                     i;
+   genvar                                 i;
    generate
       for (i = 0; i < (DATA_W/8); i = i + 1)
         begin
