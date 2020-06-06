@@ -11,18 +11,18 @@
 module L2_ID_1sp
   #(
     //Universal parameters -- faster configuration
-    parameter ADDR_W = 32,       //Address width - width that will used for the cache - every cache's front-end
-    parameter DATA_W = 32,       //Data width - word size used for the cache          - every cache's front-end
-    parameter MEM_DATA_W = 32,   //Data width of the memory                           - L2's  back-end
-    parameter MEM_ADDR_W = 32,   //Address width of the higher hierarchy memory       - L2's  back-end
+    parameter FE_ADDR_W = 32,       //Address width - width that will used for the cache - every cache's front-end
+    parameter FE_DATA_W = 32,       //Data width - word size used for the cache          - every cache's front-end
+    parameter BE_DATA_W = 32,   //Data width of the memory                           - L2's  back-end
+    parameter BE_ADDR_W = 32,   //Address width of the higher hierarchy memory       - L2's  back-end
     parameter AXI_INTERF = 1,    //Back-End Memory interface (1 - AXI, 0 - Native)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU - caches' replacement policy (mostly for L2)
     parameter LA_INTERF = 0,    //Look-ahead Interface - Store Front-End input signal
     parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses (L1 caches only)
   
     // L1 - General parameters
-    parameter L1_ADDR_W = ADDR_W,   //Address width - width that will used for the cache 
-    parameter L1_DATA_W = DATA_W,   //Data width - word size used for the cache
+    parameter L1_ADDR_W = FE_ADDR_W,   //Address width - width that will used for the cache 
+    parameter L1_DATA_W = FE_DATA_W,   //Data width - word size used for the cache
     parameter L1_N_WAYS = 1,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter L1_LINE_OFF_W = 3,    //Line-Offset Width - 2**NLINE_W total cache lines
     parameter L1_WORD_OFF_W = 2,    //Word-Offset Width - 2**OFFSET_W total DATA_W words per line
@@ -33,8 +33,8 @@ module L2_ID_1sp
     // L2 parameters //
     ///////////////////
     //Front-End L2 parameters will be equal from the L1 Back-End's
-    parameter L2_ADDR_W   = ADDR_W,   //Address width - width that will used for the cache 
-    parameter L2_DATA_W   = DATA_W,   //Data width - word size used for the cache
+    parameter L2_ADDR_W   = FE_ADDR_W,   //Address width - width that will used for the cache 
+    parameter L2_DATA_W   = FE_DATA_W,   //Data width - word size used for the cache
     parameter L2_N_WAYS   = 4,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter L2_LINE_OFF_W  = 3,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter L2_WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0] if the cache line is equal or less than the Data width in the back-end
@@ -42,8 +42,8 @@ module L2_ID_1sp
     //Replacement policy (N_WAYS > 1)
     parameter L2_REP_POLICY = REP_POLICY, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Back-End L2 parameters - Higher hierarchy memory (slave) interface parameters
-    parameter L2_MEM_ADDR_W = MEM_ADDR_W, //Address width of the higher hierarchy memory
-    parameter L2_MEM_DATA_W = MEM_DATA_W, //Data width of the memory 
+    parameter L2_MEM_ADDR_W = BE_ADDR_W, //Address width of the higher hierarchy memory
+    parameter L2_MEM_DATA_W = BE_DATA_W, //Data width of the memory 
     //AXI specific parameters
     parameter L2_AXI_ID_W                 = 1, //AXI ID (identification) width
     parameter [L2_AXI_ID_W-1:0] L2_AXI_ID = 0, //AXI ID value
@@ -139,7 +139,7 @@ module L2_ID_1sp
     output [L2_MEM_DATA_W-1:0]   mem_wdata,
     output [L2_MEM_DATA_W/8-1:0] mem_wstrb,
     input [L2_MEM_DATA_W-1:0]    mem_rdata
-    );
+  );
    
    //L1-I
    wire [L2_ADDR_W  :0]          i_mem_addr;
@@ -148,8 +148,8 @@ module L2_ID_1sp
    wire                          i_mem_valid, i_mem_ready;
    //L1-D
    wire [L2_MEM_ADDR_W  :0]      d_mem_addr;
-   wire [L2_MEM_DATA_W-1:0]      d_mem_wdata, d_mem_rdata;
-   wire [L2_MEM_DATA_W/8-1:0]    d_mem_wstrb;
+   wire [L2_DATA_W-1:0]          d_mem_wdata, d_mem_rdata;
+   wire [L2_DATA_W/8-1:0]        d_mem_wstrb;
    wire                          d_mem_valid, d_mem_ready;
    //L2
    wire [L2_ADDR_W  :0]          int_addr;
@@ -167,13 +167,13 @@ module L2_ID_1sp
 
    
    iob_cache #(
-               .ADDR_W     (L1_ADDR_W),
-               .DATA_W     (L1_DATA_W),
+               .FE_ADDR_W     (L1_ADDR_W),
+               .FE_DATA_W     (L1_DATA_W),
                .N_WAYS     (L1_I_N_WAYS),
                .LINE_OFF_W (L1_I_LINE_OFF_W),
                .WORD_OFF_W (L1_I_WORD_OFF_W),
-               .MEM_ADDR_W (L2_ADDR_W+1),
-               .MEM_DATA_W (L2_DATA_W),
+               .BE_ADDR_W (L2_ADDR_W+1),
+               .BE_DATA_W (L2_DATA_W),
                .REP_POLICY (L1_I_REP_POLICY),
                .WTBUF_DEPTH_W (L1_I_WTBUF_DEPTH_W),
                .LA_INTERF     (L1_I_LA_INTERF),
@@ -207,13 +207,13 @@ module L2_ID_1sp
 
    
    iob_cache #(
-               .ADDR_W     (L1_ADDR_W),
-               .DATA_W     (L1_DATA_W),
+               .FE_ADDR_W     (L1_ADDR_W),
+               .FE_DATA_W     (L1_DATA_W),
                .N_WAYS     (L1_D_N_WAYS),
                .LINE_OFF_W (L1_D_LINE_OFF_W),
                .WORD_OFF_W (L1_D_WORD_OFF_W),
-               .MEM_ADDR_W (L2_ADDR_W+1),
-               .MEM_DATA_W (L2_DATA_W),
+               .BE_ADDR_W (L2_ADDR_W+1),
+               .BE_DATA_W (L2_DATA_W),
                .REP_POLICY (L1_D_REP_POLICY),
                .WTBUF_DEPTH_W (L1_D_WTBUF_DEPTH_W),
                .LA_INTERF     (L1_D_LA_INTERF),
@@ -277,13 +277,13 @@ module L2_ID_1sp
         begin
 
            iob_cache_axi #(
-                           .ADDR_W    (L2_ADDR_W),
-                           .DATA_W    (L2_DATA_W),
+                           .FE_ADDR_W    (L2_ADDR_W),
+                           .FE_DATA_W    (L2_DATA_W),
                            .N_WAYS    (L2_N_WAYS),
                            .LINE_OFF_W(L2_LINE_OFF_W),
                            .WORD_OFF_W(L2_WORD_OFF_W),
-                           .MEM_ADDR_W(L2_MEM_ADDR_W),
-                           .MEM_DATA_W(L2_MEM_DATA_W),
+                           .BE_ADDR_W(L2_MEM_ADDR_W),
+                           .BE_DATA_W(L2_MEM_DATA_W),
                            .REP_POLICY(L2_REP_POLICY),
                            .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
                            .LA_INTERF     (0),
@@ -352,13 +352,13 @@ module L2_ID_1sp
         begin
            
            iob_cache #(
-                       .ADDR_W    (L2_ADDR_W),
-                       .DATA_W    (L2_DATA_W),
+                       .FE_ADDR_W    (L2_ADDR_W),
+                       .FE_DATA_W    (L2_DATA_W),
                        .N_WAYS    (L2_N_WAYS),
                        .LINE_OFF_W(L2_LINE_OFF_W),
                        .WORD_OFF_W(L2_WORD_OFF_W),
-                       .MEM_ADDR_W(L2_MEM_ADDR_W),
-                       .MEM_DATA_W(L2_MEM_DATA_W),
+                       .BE_ADDR_W(L2_MEM_ADDR_W),
+                       .BE_DATA_W(L2_MEM_DATA_W),
                        .REP_POLICY(L2_REP_POLICY),
                        .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
                        .LA_INTERF     (0),

@@ -165,10 +165,10 @@ module iob_cache_tb;
 `ifdef L2
    
    L2_ID_1sp #(
-               .ADDR_W(`ADDR_W),
-               .DATA_W(`DATA_W),
-               .MEM_ADDR_W(`MEM_ADDR_W),
-               .MEM_DATA_W(`MEM_DATA_W),
+               .FE_ADDR_W(`ADDR_W),
+               .FE_DATA_W(`DATA_W),
+               .BE_ADDR_W(`MEM_ADDR_W),
+               .BE_DATA_W(`MEM_DATA_W),
  `ifdef AXI
                .AXI_INTERF(1),
  `else
@@ -257,13 +257,13 @@ module iob_cache_tb;
 `else // !`ifdef L2
  `ifdef AXI  
    iob_cache_axi #(
-                   .ADDR_W(`ADDR_W),
-                   .DATA_W(`DATA_W),
+                   .FE_ADDR_W(`ADDR_W),
+                   .FE_DATA_W(`DATA_W),
                    .N_WAYS(`N_WAYS),
                    .LINE_OFF_W(`LINE_OFF_W),
                    .WORD_OFF_W(`WORD_OFF_W),
-                   .MEM_ADDR_W(`MEM_ADDR_W),
-                   .MEM_DATA_W(`MEM_DATA_W),
+                   .BE_ADDR_W(`MEM_ADDR_W),
+                   .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
   `ifdef LA
                    .LA_INTERF(1),
@@ -333,13 +333,13 @@ module iob_cache_tb;
  `else // !`ifdef AXI
    
    iob_cache #(
-               .ADDR_W(`ADDR_W),
-               .DATA_W(`DATA_W),
+               .FE_ADDR_W(`ADDR_W),
+               .FE_DATA_W(`DATA_W),
                .N_WAYS(`N_WAYS),
                .LINE_OFF_W(`LINE_OFF_W),
                .WORD_OFF_W(`WORD_OFF_W),
-               .MEM_ADDR_W(`MEM_ADDR_W),
-               .MEM_DATA_W(`MEM_DATA_W),
+               .BE_ADDR_W(`MEM_ADDR_W),
+               .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
   `ifdef LA
                .LA_INTERF(1),
@@ -443,7 +443,7 @@ module iob_cache_tb;
 
 `else
 
-     iob_sp_ram_be #(
+   iob_sp_ram_be #(
 		   .COL_WIDTH(8),
 		   .NUM_COL(`MEM_DATA_W/8),
                    .ADDR_WIDTH(`MEM_ADDR_W-2)
