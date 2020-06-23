@@ -2399,7 +2399,7 @@ module replacement_process
 	     end 
            // placing the way select wire in the correct order for the onehot-binary encoder
            for (i = 0; i < N_WAYS; i = i + 1)
-	     begin
+	     begin : way_selector
 	        assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
 	     end
 
@@ -2687,7 +2687,7 @@ endmodule // cache_controller
    genvar                                i;
    generate
       for (i = 0; i < (DATA_W/8); i = i + 1)
-        begin
+        begin : ram
            iob_sp_ram
                #(
                  .DATA_W(8),
