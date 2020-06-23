@@ -1904,11 +1904,11 @@ module memory_section
                     line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
 
                 for (k = 0; k < N_WAYS; k=k+1)
-                  begin
+                  begin : line_way
                      for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
-                       begin
+                       begin : line_word_number
                           for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
-                            begin
+                            begin : line_word_width
                                iob_gen_sp_ram
                                   #(
                                     .DATA_W(FE_DATA_W),
@@ -1977,9 +1977,9 @@ module memory_section
 
 
                 for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
-                  begin
+                  begin : line_word_number
                      for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
-                       begin
+                       begin : line_word_width
                           iob_gen_sp_ram 
                              #(
                                .DATA_W(FE_DATA_W),
@@ -2073,11 +2073,11 @@ module memory_section
                line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
 
            for (k = 0; k < N_WAYS; k=k+1)
-             begin
+             begin : line_way
                 for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
-                  begin
+                  begin : line_word_number
                      for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
-                       begin
+                       begin : line_word_width
                           iob_gen_sp_ram
                              #(
                                .DATA_W(FE_DATA_W),
@@ -2146,9 +2146,9 @@ module memory_section
 
 
            for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
-             begin
+             begin : line_word_number
                 for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
-                  begin
+                  begin : line_word_width
                      iob_gen_sp_ram
                         #(
                           .DATA_W(FE_DATA_W),   
@@ -2268,7 +2268,7 @@ module replacement_process
            assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
 
            for (i = 0; i < N_WAYS; i=i+1)
-	     begin
+	     begin : lru_matrix
 	        assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
 	        assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
 	        
@@ -2324,14 +2324,14 @@ module replacement_process
            wire [N_WAYS-1:0]       bitplru_sel;  
 
            for (i = 0; i < N_WAYS; i=i+1)
-	     begin
+	     begin : bitplru_extension
 	        assign ext_bitplru [((i+1)*N_WAYS)-1 : i*N_WAYS] = bitplru_liw[i] << (N_WAYS-1 -i); // extended signal of the LRU, placing the lower indexes in the higher positions (higher priority)
 	     end  
            
            assign cmp_bitplru [1] = (bitplru_liw[1])? ext_bitplru [N_WAYS +: N_WAYS] : ext_bitplru [0 +: N_WAYS]; //1st iteration: higher index in lru_liw is the lower indexes in LRU, if the lower index is bit-PLRU, it's stored their extended value
            
            for (i = 2; i < N_WAYS; i=i+1)
-	     begin
+	     begin : bitplru_comparision
 	        assign cmp_bitplru [i] = (bitplru_liw[i])? ext_bitplru [i*N_WAYS +: N_WAYS] : cmp_bitplru [i-1]; //if the Lower index of LRU is valid for replacement (LRU), it's placed, otherwise keeps the previous value
 	     end
            
@@ -2377,9 +2377,9 @@ module replacement_process
            
            // Tree-structure: t_plru[i] = tree's bit i (0 - top, towards bottom of the tree)
            for (i = 1; i <= NWAY_W; i = i + 1)
-	     begin
+	     begin : tree_bit
 	        for (j = 0; j < (1<<(i-1)) ; j = j + 1)
-	          begin
+	          begin : tree_structure
 		     assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
 	          end
 	     end
@@ -2387,11 +2387,11 @@ module replacement_process
            // Tree's Encoder (to translate it into selectable way) -- nway_tree will represent the line_addres of the way to be selected, but it's order is inverted to be more readable (check treeplru_sel)
            assign nway_tree [0] = {N_WAYS{1'b1}}; // the first position of the tree's matrix will be all 1s, for the AND logic of the following algorithm work properlly
            for (i = 1; i <= NWAY_W; i = i + 1)
-	     begin
+	     begin : encoder_bit
 	        for (j = 0; j < (1 << (i-1)); j = j + 1)
-	          begin
+	          begin :  encoder_microposition
 		     for (k = 0; k < (N_WAYS >> i); k = k + 1)
-		       begin
+		       begin : encoder_macroposition
 		          assign nway_tree [i][j*(N_WAYS >> (i-1)) + k] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && ~(t_plru_output [(1 << (i-1)) + j]); // the first half will be the Tree's bit inverted (0 equal Left (upper position)
 		          assign nway_tree [i][j*(N_WAYS >> (i-1)) + k + (N_WAYS >> i)] = nway_tree [i-1][j*(N_WAYS >> (i-1)) + k] && t_plru_output [(1 << (i-1)) + j]; //second half of the same Tree's bit (1 equals Right (lower position))
 		       end	
