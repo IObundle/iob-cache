@@ -1,4 +1,4 @@
-SIM_DIR = simulation/icarus
+SIM_DIR = hardware/simulation/icarus
 
 sim:
 	make -C $(SIM_DIR) 
