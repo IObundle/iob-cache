@@ -1,0 +1,9 @@
+[submodule "submodules/iob-mem"]
+	path = submodules/iob-mem
+	url = git@github.com:IObundle/iob-mem.git
+[submodule "submodules/iob-interconnect"]
+	path = submodules/iob-interconnect
+	url = git@github.com:IObundle/iob-interconnect.git
+[submodule "submodules/axi-mem"]
+	path = submodules/axi-mem
+	url = git@github.com:IObundle/verilog-axi.git
