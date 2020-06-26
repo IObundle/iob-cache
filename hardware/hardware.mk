@@ -8,11 +8,11 @@ CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
 INCLUDE+=$(incdir) $(CACHE_INC_DIR)
 
 #headers
-VHDR+=$(CACHE_INC_DIR)/*.vh
+VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
 #sources
 CACHE_SRC_DIR:=$(CACHE_DIR)/hardware/src
-VSRC+=$(CACHE_HW_DIR)/src/*.v \
+VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v) \
 $(AXI_MEM_DIR)/rtl/axi_ram.v \
 $(MEM_DIR)/reg_file/iob_reg_file.v \
 $(MEM_DIR)/fifo/afifo/afifo.v \
