@@ -1238,8 +1238,7 @@ module read_process_native
            localparam
              idle             = 2'd0,
              handshake        = 2'd1, //the process was divided in 2 handshake steps to cause a delay in the
-             handshake_update = 2'd2, //valid signal so it would work with simple "ready" replies of BRAMs
-             end_handshake    = 2'd3; //(always 1 or a delayed valid signal), otherwise it will fail
+             end_handshake    = 2'd2; //(always 1 or a delayed valid signal), otherwise it will fail
            
            
            reg [1:0]                                  state;
@@ -1274,17 +1273,12 @@ module read_process_native
                               else
                                 begin
                                    word_counter <= word_counter +1;
-                                   state <= handshake_update;
+                                   state <= handshake;
                                 end
                             else
                               begin
                                  state <= handshake;
                               end
-                         end
-                       
-                       handshake_update: //update word-counter
-                         begin
-                            state <= handshake;
                          end
                        
                        end_handshake: //read-latency delay (last line word)
@@ -1320,14 +1314,7 @@ module read_process_native
                        // word_counter = word_counter;
                     end
                   
-                  handshake_update:
-                    begin
-                       mem_valid = 1'b1;
-                       line_load =1'b1;
-                       // word_counter = word_counter +1;
-                    end
-
-                  end_handshake:
+                   end_handshake:
                     begin
                        // word_counter = word_counter; //to avoid updating the first word in line with last data
                        line_load = 1'b1; //delay for read-latency
