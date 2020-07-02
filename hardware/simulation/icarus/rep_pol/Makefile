@@ -1,24 +1,35 @@
-#file paths
-ROOT_DIR := ../../..
-RTL_DIR := $(ROOT_DIR)/rtl
-SUBMODULES_DIR := $(ROOT_DIR)/submodules
+#module paths
+CACHE_DIR:=../../../..
+INTERCON_DIR:=$(CACHE_DIR)/submodules/iob-interconnect
+MEM_DIR:=$(CACHE_DIR)/submodules/iob-mem
+AXI_MEM_DIR:=$(CACHE_DIR)/submodules/axi-mem
+#testbench
+VSRC+=$(CACHE_HW_DIR)/testbench/rep_pol_tb.v
+
+incdir:=-I
+define:=-D
 
 
-#hw includes
-HW_INCLUDE :=	-I. -I$(RTL_DIR)/testbench/ -I$(RTL_DIR)/include/ 
+#core
+include $(CACHE_DIR)/hardware/hardware.mk
 
+#additional includes
+INCLUDE+=$(incdir)$(CACHE_HW_DIR)/testbench/
+VHDR+=$(CACHE_HW_DIR)/testbench/rep_pol_tb.vh
+
+#additional defines
+DEFINE+=$(define)DATA_W=32 $(define)ADDR_W=32
 
 #icarus verilog simulator
-VLOG = 	iverilog -W all -g2005-sv -DVCD
+VLOG = 	iverilog -W all -g2005-sv
 
-#hardware sources
-VSRC :=	$(RTL_DIR)/testbench/rep_pol_tb.v $(RTL_DIR)/src/*.v  $(SUBMODULES_DIR)/iob-mem/sp_ram_be/iob_sp_ram_be.v	$(SUBMODULES_DIR)/iob-mem/fifo/afifo/afifo.v	$(SUBMODULES_DIR)/iob-mem/reg_file/iob_reg_file.v
+all: a.out
+	./$< +vcd
 
-all:	$(VSRC)
-	$(VLOG) $(HW_INCLUDE)	-o rep_pol_tb $(VSRC)
-	./rep_pol_tb +vcd
+a.out:	$(VSRC) $(VHDR)
+	$(VLOG) $(INCLUDE) $(DEFINE) $(VSRC)
 
 clean:
-	@rm -f *# *~ *.vcd rep_pol*
+	@rm -f *# *~ *.vcd a.out *_tb
 
-.PHONY: sim clean
+.PHONY: all clean
