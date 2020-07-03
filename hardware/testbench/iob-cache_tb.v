@@ -443,30 +443,23 @@ module iob_cache_tb;
 
 `else
 
-   iob_sp_ram_be #(
+   iob_reg_file #(
 		   .COL_WIDTH(8),
 		   .NUM_COL(`MEM_DATA_W/8),
                    .ADDR_WIDTH(`MEM_ADDR_W-2)
                    )
    iob_gen_memory
      (
-      .din(mem_wdata),
+      .clk(clk),
+      .rst(reset),
+      .wdata(mem_wdata),
       .addr(mem_addr[`MEM_ADDR_W-1:$clog2(`MEM_DATA_W/8)]),
-      .we(mem_wstrb), 
-      .en(mem_valid),
-      .clk(clk), 
-      .dout(mem_rdata)
+      .en((mem_valid)? mem_wstrb : 0), 
+      .rdata(mem_rdata)
       );
 
+   assign mem_ready = mem_valid; //0 read-latency
 
-
-   reg                             aux_mem_ready;
-   assign mem_ready = aux_mem_ready;
-   
-   always @(posedge clk) 
-     begin
-        aux_mem_ready <= mem_valid; 
-     end  
 `endif
 
 endmodule // iob_cache_tb

@@ -19,6 +19,6 @@ a.out:	$(VSRC) $(VHDR)
 	$(VLOG) $(INCLUDE) $(DEFINE) $(VSRC)
 
 clean:
-	@rm -f *# *~ *.vcd a.out
+	@rm -f *# *~ *.vcd a.out *_tb
 
 .PHONY: all clean
