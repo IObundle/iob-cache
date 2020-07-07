@@ -111,7 +111,7 @@ module iob_cache
            
         end // else: !if(CTRL_CACHE)
    endgenerate
-   
+
    assign ready = ready_int;
 
    
@@ -275,6 +275,7 @@ module iob_cache
          );
    endgenerate
    
+
 endmodule // iob_cache
 
 
@@ -608,6 +609,7 @@ module iob_cache_axi
          );
    endgenerate
    
+
 endmodule // iob_cache_axi
 
 
