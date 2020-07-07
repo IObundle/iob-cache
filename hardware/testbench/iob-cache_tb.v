@@ -14,8 +14,8 @@ module iob_cache_tb;
    reg                                 valid=0;
    wire [`DATA_W-1:0]                  rdata;
    wire                                ready;
+   reg                                 instr =0;
    wire                                select = 0;//cache is always selected
-   reg                                 instr = 0;
    wire                                i_select =0, d_select =0;
    reg [31:0]                          test = 0;
    
@@ -186,18 +186,20 @@ module iob_cache_tb;
                .L2_WORD_OFF_W(`WORD_OFF_W),
                .L2_N_WAYS    (`N_WAYS),
                .L1_WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
-               .L2_WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
+               .L2_WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+               .CTRL_CNT(0)
+               
                )
    cache (
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({select, addr,{$clog2(`DATA_W/8){1'b0}}}),
+	  .addr  ({select, addr}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
-	  .instr (instr),
+          .instr (instr),
           //
 	  // AXI INTERFACE
           //
@@ -276,12 +278,11 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({select, addr,{$clog2(`DATA_W/8){1'b0}}}),
+	  .addr  ({select, addr}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
-	  .instr (instr),
           //
 	  // AXI INTERFACE
           //
@@ -352,12 +353,11 @@ module iob_cache_tb;
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (wdata),
-	  .addr  ({select, addr,{$clog2(`DATA_W/8){1'b0}}}),
+	  .addr  ({select, addr}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
 	  .valid (valid),
 	  .ready (ready),
-	  .instr (instr),
           //
           // NATIVE MEMORY INTERFACE
           //
