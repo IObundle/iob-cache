@@ -1481,7 +1481,7 @@ module write_process_axi
             verif_process: //needs to be after the last word has been written, so this can't be optim
               begin
                  if(axi_bvalid)
-                   if(~axi_bresp[1])//00 or 01 - OKAY - needs to be after the last word has been written, so this can't be optimized by removing this state
+                   if(axi_bresp == 2'b00)//00 or 01 - OKAY - needs to be after the last word has been written, so this can't be optimized by removing this state
                      if(buffer_empty)
                        state <= idle;
                      else
