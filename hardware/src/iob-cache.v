@@ -35,27 +35,24 @@ module iob_cache
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
     //Controller's options
-    parameter CTRL_CNT_ID = 0, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 1,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
-    parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
+    parameter CTRL_CNT = 1   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
-    input                      clk,
-    input                      reset,
-    input [FE_ADDR_W :0]       addr, //MSB is used for Controller selection
-    input [FE_DATA_W-1:0]      wdata,
-    input [FE_NBYTES-1:0]      wstrb,
-    output reg [FE_DATA_W-1:0] rdata,
-    input                      valid,
-    output                     ready,
-    input                      instr,
+    input                               clk,
+    input                               reset,
+    input [FE_ADDR_W:$clog2(FE_NBYTES)] addr, //MSB is used for Controller selection
+    input [FE_DATA_W-1:0]               wdata,
+    input [FE_NBYTES-1:0]               wstrb,
+    output reg [FE_DATA_W-1:0]          rdata,
+    input                               valid,
+    output                              ready,
     //Native interface
-    output [BE_ADDR_W-1:0]     mem_addr,
-    output                     mem_valid,
-    input                      mem_ready,
-    output [BE_DATA_W-1:0]     mem_wdata,
-    output [BE_NBYTES-1:0]     mem_wstrb,
-    input [BE_DATA_W-1:0]      mem_rdata
+    output [BE_ADDR_W-1:0]              mem_addr,
+    output                              mem_valid,
+    input                               mem_ready,
+    output [BE_DATA_W-1:0]              mem_wdata,
+    output [BE_NBYTES-1:0]              mem_wstrb,
+    input [BE_DATA_W-1:0]               mem_rdata
     );
    
    //Internal signals
@@ -63,7 +60,6 @@ module iob_cache
    wire                                     valid_int;
    wire [FE_DATA_W-1 : 0]                   wdata_int;
    wire [FE_NBYTES-1: 0]                    wstrb_int;
-   wire                                     instr_int; //Ctrl's counter
    wire                                     ready_int;
    
    
@@ -80,23 +76,15 @@ module iob_cache
    wire                                     cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
    wire                                     write_access = (cache_select &   (|wstrb_int));
    wire                                     read_access =  (cache_select &  ~(|wstrb_int));
-   wire                                     ctrl_select;
-   generate
-      if (CTRL_VAL_IND)
-        begin
-           assign ctrl_select  = addr_int[FE_ADDR_W]; //only requires the address access, without needing the valid
-        end
-      else
-        begin         
-           assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
-        end
-   endgenerate
+   wire                                     ctrl_select;      
+   assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
+
 
 
    //Cache - Memory-Controller signals
-   wire [FE_DATA_W-1:0]                         rdata_cache, rdata_ctrl;
-   wire                                         ready_cache, ready_ctrl;
-   wire [2*FE_DATA_W-1:0]                       rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+   wire [FE_DATA_W-1:0]                     rdata_cache, rdata_ctrl;
+   wire                                     ready_cache, ready_ctrl;
+   wire [2*FE_DATA_W-1:0]                   rdata_ctrlcache = {rdata_ctrl, rdata_cache};
    always@*
      begin
         rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
@@ -125,13 +113,10 @@ module iob_cache
               .valid(valid),
               .wdata(wdata),
               .wstrb(wstrb),
-              .instr(instr),
               .ready_int(ready_int),
               .addr_int(addr_int),
               .valid_int(valid_int),
-              .wdata_int(wdata_int),
-              .wstrb_int(wstrb_int),
-              .instr_int(instr_int)
+              .wdata_int(wdata_int)
               );
         end
       else
@@ -141,7 +126,6 @@ module iob_cache
            assign valid_int = valid;
            assign wdata_int = wdata;
            assign wstrb_int = wstrb;
-           assign instr_int = instr; //only for Controller's counter
         end // else: !if(LA_INTERF)
    endgenerate
    
@@ -158,7 +142,6 @@ module iob_cache
       .hit(hit),
       .write_full(write_full),
       .write_empty(write_empty),
-      .instr(instr_int),
       .ready(ready_cache),
       .write_en(write_en),
       .ctrl_counter(ctrl_counter)
@@ -254,8 +237,7 @@ module iob_cache
    cache_controller
      #(
        .FE_DATA_W     (FE_DATA_W),
-       .CTRL_CNT   (CTRL_CNT),
-       .CTRL_CNT_ID(CTRL_CNT_ID)
+       .CTRL_CNT   (CTRL_CNT)
        )
    cache_control
      (
@@ -304,63 +286,60 @@ module iob_cache_axi
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
     //Controller's options
-    parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses
-    parameter CTRL_CNT = 0,   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
-    parameter CTRL_VAL_IND = 0 //Controller's validation independant of the signal "Valid", using only "select" as validation, allowing the access of Instruction Caches
+    parameter CTRL_CNT = 0   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     ) 
    (
-    input                      clk,
-    input                      reset,
-    input [FE_ADDR_W :0]       addr, // MSB is for Controller selection
-    input [FE_DATA_W-1:0]      wdata,
-    input [FE_NBYTES-1:0]      wstrb,
-    output reg [FE_DATA_W-1:0] rdata,
-    input                      valid,
-    output                     ready,
-    input                      instr,
+    input                               clk,
+    input                               reset,
+    input [FE_ADDR_W:$clog2(FE_NBYTES)] addr, // MSB is for Controller selection
+    input [FE_DATA_W-1:0]               wdata,
+    input [FE_NBYTES-1:0]               wstrb,
+    output reg [FE_DATA_W-1:0]          rdata,
+    input                               valid,
+    output                              ready,
 
     // AXI interface 
     // Address Write
-    output [AXI_ID_W-1:0]      axi_awid, 
-    output [BE_ADDR_W-1:0]     axi_awaddr,
-    output [7:0]               axi_awlen,
-    output [2:0]               axi_awsize,
-    output [1:0]               axi_awburst,
-    output [0:0]               axi_awlock,
-    output [3:0]               axi_awcache,
-    output [2:0]               axi_awprot,
-    output [3:0]               axi_awqos,
-    output                     axi_awvalid,
-    input                      axi_awready,
+    output [AXI_ID_W-1:0]               axi_awid, 
+    output [BE_ADDR_W-1:0]              axi_awaddr,
+    output [7:0]                        axi_awlen,
+    output [2:0]                        axi_awsize,
+    output [1:0]                        axi_awburst,
+    output [0:0]                        axi_awlock,
+    output [3:0]                        axi_awcache,
+    output [2:0]                        axi_awprot,
+    output [3:0]                        axi_awqos,
+    output                              axi_awvalid,
+    input                               axi_awready,
     //Write
-    output [BE_DATA_W-1:0]     axi_wdata,
-    output [BE_NBYTES-1:0]     axi_wstrb,
-    output                     axi_wlast,
-    output                     axi_wvalid, 
-    input                      axi_wready,
-    input [AXI_ID_W-1:0]       axi_bid,
-    input [1:0]                axi_bresp,
-    input                      axi_bvalid,
-    output                     axi_bready,
+    output [BE_DATA_W-1:0]              axi_wdata,
+    output [BE_NBYTES-1:0]              axi_wstrb,
+    output                              axi_wlast,
+    output                              axi_wvalid, 
+    input                               axi_wready,
+    input [AXI_ID_W-1:0]                axi_bid,
+    input [1:0]                         axi_bresp,
+    input                               axi_bvalid,
+    output                              axi_bready,
     //Address Read
-    output [AXI_ID_W-1:0]      axi_arid,
-    output [BE_ADDR_W-1:0]     axi_araddr, 
-    output [7:0]               axi_arlen,
-    output [2:0]               axi_arsize,
-    output [1:0]               axi_arburst,
-    output [0:0]               axi_arlock,
-    output [3:0]               axi_arcache,
-    output [2:0]               axi_arprot,
-    output [3:0]               axi_arqos,
-    output                     axi_arvalid, 
-    input                      axi_arready,
+    output [AXI_ID_W-1:0]               axi_arid,
+    output [BE_ADDR_W-1:0]              axi_araddr, 
+    output [7:0]                        axi_arlen,
+    output [2:0]                        axi_arsize,
+    output [1:0]                        axi_arburst,
+    output [0:0]                        axi_arlock,
+    output [3:0]                        axi_arcache,
+    output [2:0]                        axi_arprot,
+    output [3:0]                        axi_arqos,
+    output                              axi_arvalid, 
+    input                               axi_arready,
     //Read
-    input [AXI_ID_W-1:0]       axi_rid,
-    input [BE_DATA_W-1:0]      axi_rdata,
-    input [1:0]                axi_rresp,
-    input                      axi_rlast, 
-    input                      axi_rvalid, 
-    output                     axi_rready
+    input [AXI_ID_W-1:0]                axi_rid,
+    input [BE_DATA_W-1:0]               axi_rdata,
+    input [1:0]                         axi_rresp,
+    input                               axi_rlast, 
+    input                               axi_rvalid, 
+    output                              axi_rready
     );
    
    //Internal signals
@@ -368,7 +347,6 @@ module iob_cache_axi
    wire                                   valid_int;
    wire [FE_DATA_W-1 : 0]                 wdata_int;
    wire [FE_NBYTES-1: 0]                  wstrb_int;
-   wire                                   instr_int; //Ctrl's counter
    wire                                   ready_int;
    
    
@@ -385,23 +363,14 @@ module iob_cache_axi
    wire                                   cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
    wire                                   write_access = (cache_select &   (|wstrb_int));
    wire                                   read_access =  (cache_select &  ~(|wstrb_int));
-   wire                                   ctrl_select;
-   generate
-      if (CTRL_VAL_IND)
-        begin
-           assign ctrl_select  = addr_int[FE_ADDR_W];
-        end
-      else
-        begin         
-           assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
-        end
-   endgenerate
+   wire                                   ctrl_select;        
+   assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
 
 
    //Cache - Memory-Controller signals
-   wire [FE_DATA_W-1:0]                         rdata_cache, rdata_ctrl;
-   wire                                         ready_cache, ready_ctrl;
-   wire [2*FE_DATA_W-1:0]                       rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+   wire [FE_DATA_W-1:0]                   rdata_cache, rdata_ctrl;
+   wire                                   ready_cache, ready_ctrl;
+   wire [2*FE_DATA_W-1:0]                 rdata_ctrlcache = {rdata_ctrl, rdata_cache};
    always@*
      begin
         rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
@@ -430,13 +399,11 @@ module iob_cache_axi
               .valid(valid),
               .wdata(wdata),
               .wstrb(wstrb),
-              .instr(instr),
               .ready_int(ready_int),
               .addr_int(addr_int),
               .valid_int(valid_int),
               .wdata_int(wdata_int),
-              .wstrb_int(wstrb_int),
-              .instr_int(instr_int)
+              .wstrb_int(wstrb_int)
               );
         end
       else
@@ -446,7 +413,6 @@ module iob_cache_axi
            assign valid_int = valid;
            assign wdata_int = wdata;
            assign wstrb_int = wstrb;
-           assign instr_int = instr; //only for Controller's counter
         end // else: !if(LA_INTERF)
    endgenerate
    
@@ -463,7 +429,6 @@ module iob_cache_axi
       .hit(hit),
       .write_full(write_full),
       .write_empty(write_empty),
-      .instr(instr_int),
       .ready(ready_cache),
       .write_en(write_en),
       .ctrl_counter(ctrl_counter)
@@ -585,8 +550,7 @@ module iob_cache_axi
    cache_controller
      #(
        .FE_DATA_W  (FE_DATA_W),
-       .CTRL_CNT   (CTRL_CNT),
-       .CTRL_CNT_ID(CTRL_CNT_ID)
+       .CTRL_CNT   (CTRL_CNT)
        )
    cache_control
      (
@@ -624,7 +588,6 @@ module look_ahead_interface
     input [FE_DATA_W-1:0]                 wdata,
     input [FE_NBYTES-1:0]                 wstrb,
     input                                 valid,
-    input                                 instr,
     //Internal stored signals
     input                                 ready_int, //Ready to update registers
     output [FE_ADDR_W:$clog2(FE_NBYTES)]  addr_int, //MSB is Ctrl's select
@@ -638,7 +601,6 @@ module look_ahead_interface
    reg                                     valid_la;
    reg [FE_DATA_W-1 : 0]                   wdata_la;
    reg [FE_NBYTES-1: 0]                    wstrb_la;
-   reg                                     instr_la; 
 
    always @(posedge clk, posedge reset) //ready acts as a reset
      begin
@@ -648,7 +610,6 @@ module look_ahead_interface
              valid_la <= 0;
              wdata_la <= 0;
              wstrb_la <= 0;
-             instr_la <= 0;
           end
         else
           if(ready_int)
@@ -657,7 +618,6 @@ module look_ahead_interface
                valid_la <= 0;
                wdata_la <= 0;
                wstrb_la <= 0;
-               instr_la <= 0;
             end
           else
             if(valid) //updates
@@ -666,7 +626,6 @@ module look_ahead_interface
                  valid_la <= 1'b1;
                  wdata_la <= wdata;
                  wstrb_la <= wstrb;
-                 instr_la <= instr;
               end
             else 
               begin
@@ -674,7 +633,6 @@ module look_ahead_interface
                  valid_la <= valid_la;
                  wdata_la <= wdata_la;
                  wstrb_la <= wstrb_la;
-                 instr_la <= instr_la;
               end // else: !if(valid)
      end // always @ (posedge clk, posedge ready_int)
    
@@ -683,7 +641,6 @@ module look_ahead_interface
    assign valid_int = (valid_la)? 1'b1     :valid;
    assign wdata_int = (valid_la)? wdata_la :wdata;
    assign wstrb_int = (valid_la)? wstrb_la :wstrb;
-   assign instr_int = (valid_la)? instr_la :instr; //only for Controller's counter
    
 endmodule // look_ahead_interface
 
@@ -695,7 +652,6 @@ endmodule // look_ahead_interface
 
 module main_process
   #(
-    parameter CTRL_CNT_ID = 0,
     parameter CTRL_CNT = 1
     )
    (
@@ -708,7 +664,6 @@ module main_process
     input                            hit,
     input                            write_full,
     input                            write_empty,
-    input                            instr,
     output reg                       ready,
     output reg                       write_en,
     output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
@@ -811,46 +766,7 @@ module main_process
      end
 
    generate
-      if(CTRL_CNT_ID)
-        begin
-           always @*
-             begin
-                ctrl_counter = `CTRL_COUNTER_W'd0;
-                
-	        case (state)
-                  idle:
-                    ctrl_counter = `CTRL_COUNTER_W'd0;
-                  
-                  write_standby:
-                    if (~write_full)
-                      if(hit)
-                        ctrl_counter = `WRITE_HIT;
-                      else
-                        ctrl_counter = `WRITE_MISS;
-                    else
-                      ctrl_counter = `CTRL_COUNTER_W'd0;
-                  
-
-                  read_standby:
-                    if (hit)
-                      if(instr)
-                        ctrl_counter = `INSTR_HIT;
-                      else
-                        ctrl_counter = `READ_HIT;
-                    else
-                      if(write_empty)
-                        if(instr)
-                          ctrl_counter = `INSTR_MISS;
-                        else
-                          ctrl_counter = `READ_MISS;
-                      else
-                        ctrl_counter = `CTRL_COUNTER_W'd0;
-                  
-                  default:;   
-                endcase
-             end // always @ *
-        end // if (CTRL_CNT_ID)
-      else if (CTRL_CNT)
+      if (CTRL_CNT)
         begin
            always @*
              begin
@@ -1314,14 +1230,18 @@ module read_process_native
                        // word_counter = word_counter;
                     end
                   
-                   end_handshake:
+                  end_handshake:
                     begin
                        // word_counter = word_counter; //to avoid updating the first word in line with last data
                        line_load = 1'b1; //delay for read-latency
                        mem_valid = 1'b0;
                     end
                   
-                  default:;
+                  default:
+                    begin
+                       line_load = 1'b0;
+                       mem_valid = 1'b0;
+                    end
                   
                 endcase
              end
@@ -2305,16 +2225,16 @@ module replacement_process
            wire [N_WAYS -1:0]      mru_output;
            wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
            wire [N_WAYS -1:0]      bitplru; //least recent used
-          
-      
+           
+           
            assign bitplru[0] = ~mru_output;
-                      
+           
            for (i = 1; i < N_WAYS; i=i+1)
 	     begin : bitplru_priority
 	        assign bitplru [i] = ~mru_output[i] & (&mru_output[i-1:0]); //verifies priority (lower index)
 	     end  
 
-                      
+           
            //Selects the least recent used way (encoder for one-hot to binary format)
            onehot_to_bin #(
                            .BIN_W (NWAY_W)	       
@@ -2424,14 +2344,13 @@ endmodule
 
 module cache_controller #(
                           parameter FE_DATA_W = 32,
-                          parameter CTRL_CNT_ID = 0, 
                           parameter CTRL_CNT = 1
                           )
    (
     input                       clk,
     input [`CTRL_COUNTER_W-1:0] din, 
     output reg                  invalidate,
-    input [`CTRL_ADDR_W-1:0] addr,
+    input [`CTRL_ADDR_W-1:0]    addr,
     output reg [FE_DATA_W-1:0]  dout,
     input                       valid,
     output reg                  ready,
@@ -2440,15 +2359,14 @@ module cache_controller #(
     );
 
    generate
-      if(CTRL_CNT_ID)
+      if(CTRL_CNT)
         begin
            
-           reg [FE_DATA_W-1:0]             instr_hit_cnt, instr_miss_cnt;
            reg [FE_DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
            reg [FE_DATA_W-1:0]             hit_cnt, miss_cnt;
            reg                             ctrl_counter_reset;
 
-           wire                            ctrl_arst = reset | ctrl_counter_reset;
+           wire                            ctrl_arst = reset| ctrl_counter_reset;
            
            always @ (posedge clk, posedge ctrl_arst)
              begin 		
@@ -2460,8 +2378,6 @@ module cache_controller #(
 	             read_miss_cnt <= {FE_DATA_W{1'b0}};
 	             write_hit_cnt  <= {FE_DATA_W{1'b0}};
 	             write_miss_cnt <= {FE_DATA_W{1'b0}};
-                     instr_hit_cnt  <= {FE_DATA_W{1'b0}};
-  	             instr_miss_cnt <= {FE_DATA_W{1'b0}};
                   end 
 	        else
 	          begin
@@ -2485,16 +2401,6 @@ module cache_controller #(
 		          write_miss_cnt <= write_miss_cnt + 1;
 		          miss_cnt <= miss_cnt + 1;
 	               end
-                     else if (din == `INSTR_HIT)
-	               begin
-		          instr_hit_cnt <= instr_hit_cnt + 1;
-	                  hit_cnt <= hit_cnt + 1; 
-                       end
-	             else if (din == `INSTR_MISS)
-	               begin
-		          instr_miss_cnt <= instr_miss_cnt + 1;
-                          miss_cnt <= miss_cnt + 1;
-                       end  
 	             else
 	               begin
 		          read_hit_cnt <= read_hit_cnt;
@@ -2503,11 +2409,9 @@ module cache_controller #(
 		          write_miss_cnt <= write_miss_cnt;
 		          hit_cnt <= hit_cnt;
 		          miss_cnt <= miss_cnt;
-                          instr_hit_cnt <= instr_hit_cnt;
-		          instr_miss_cnt <= instr_miss_cnt;
 	               end
-	          end
-             end
+	          end // else: !if(ctrl_arst)   
+             end // always @ (posedge clk, posedge ctrl_arst)
            
            always @ (posedge clk)
              begin
@@ -2535,123 +2439,35 @@ module cache_controller #(
 	          else if (addr == `ADDR_BUFFER_EMPTY)
                     dout <= write_state[0];
                   else if (addr == `ADDR_BUFFER_FULL)
-                    dout <= write_state[1];
-                  else if (addr == `ADDR_INSTR_HIT)
-                    dout <= instr_hit_cnt;
-                  else if (addr == `ADDR_INSTR_MISS)
-                    dout <= instr_hit_cnt;
-	     end
-        end  
+                    dout <= write_state[1];   
+             end // always @ (posedge clk)
+        end // if (CTRL_CNT)
       else
-        if(CTRL_CNT)
-          begin
-             
-             reg [FE_DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
-             reg [FE_DATA_W-1:0]             hit_cnt, miss_cnt;
-             reg                             ctrl_counter_reset;
-
-             wire                            ctrl_arst = reset| ctrl_counter_reset;
-             
-             always @ (posedge clk, posedge ctrl_arst)
-               begin 		
-	          if (ctrl_arst) 
-	            begin
-                       hit_cnt  <= {FE_DATA_W{1'b0}};
-	               miss_cnt <= {FE_DATA_W{1'b0}};
-                       read_hit_cnt  <= {FE_DATA_W{1'b0}};
-	               read_miss_cnt <= {FE_DATA_W{1'b0}};
-	               write_hit_cnt  <= {FE_DATA_W{1'b0}};
-	               write_miss_cnt <= {FE_DATA_W{1'b0}};
-                    end 
-	          else
-	            begin
-                       if (din == `READ_HIT)
-	                 begin
-		            read_hit_cnt <= read_hit_cnt + 1;
-		            hit_cnt <= hit_cnt + 1;	  
-	                 end
-	               else if (din == `WRITE_HIT)
-	                 begin
-		            write_hit_cnt <= write_hit_cnt + 1;
-		            hit_cnt <= hit_cnt + 1;
-	                 end
-	               else if (din == `READ_MISS)
-	                 begin
-		            read_miss_cnt <= read_miss_cnt + 1;
-		            miss_cnt <= miss_cnt + 1;
-	                 end
-	               else if (din == `WRITE_MISS)
-	                 begin
-		            write_miss_cnt <= write_miss_cnt + 1;
-		            miss_cnt <= miss_cnt + 1;
-	                 end
-	               else
-	                 begin
-		            read_hit_cnt <= read_hit_cnt;
-		            read_miss_cnt <= read_miss_cnt;
-		            write_hit_cnt <= write_hit_cnt;
-		            write_miss_cnt <= write_miss_cnt;
-		            hit_cnt <= hit_cnt;
-		            miss_cnt <= miss_cnt;
-	                 end
-	            end // else: !if(ctrl_arst)   
-               end // always @ (posedge clk, posedge ctrl_arst)
-             
-             always @ (posedge clk)
-               begin
-	          dout <= {FE_DATA_W{1'b0}};
-	          invalidate <= 1'b0;
-	          ctrl_counter_reset <= 1'b0;
-	          ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
-	          if(valid)
-                    if (addr == `ADDR_CACHE_HIT)
-	              dout <= hit_cnt;
-                    else if (addr == `ADDR_CACHE_MISS)
-	              dout <= miss_cnt;
-	            else if (addr == `ADDR_CACHE_READ_HIT)
-	              dout <= read_hit_cnt;
-	            else if (addr == `ADDR_CACHE_READ_MISS)
-	              dout <= read_miss_cnt;
-	            else if (addr == `ADDR_CACHE_WRITE_HIT)
-	              dout <= write_hit_cnt;
-	            else if (addr == `ADDR_CACHE_WRITE_MISS)
-	              dout <= write_miss_cnt;
-	            else if (addr == `ADDR_RESET_COUNTER)
-	              ctrl_counter_reset <= 1'b1;
-	            else if (addr == `ADDR_CACHE_INVALIDATE)
-	              invalidate <= 1'b1;	
-	            else if (addr == `ADDR_BUFFER_EMPTY)
-                      dout <= write_state[0];
-                    else if (addr == `ADDR_BUFFER_FULL)
-                      dout <= write_state[1];   
-               end // always @ (posedge clk)
-          end // if (CTRL_CNT)
-        else
-          begin
-             
-             always @ (posedge clk)
-               begin
-	          dout <= {FE_DATA_W{1'b0}};
-	          invalidate <= 1'b0;
-	          ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
-	          if(valid)
-	            if (addr == `ADDR_CACHE_INVALIDATE)
-	              invalidate <= 1'b1;	
-	            else if (addr == `ADDR_BUFFER_EMPTY)
-                      dout <= write_state[0];
-                    else if (addr == `ADDR_BUFFER_FULL)
-                      dout <= write_state[1];         
-               end // always @ (posedge clk)
-          end // else: !if(CTRL_CNT)  
+        begin
+           
+           always @ (posedge clk)
+             begin
+	        dout <= {FE_DATA_W{1'b0}};
+	        invalidate <= 1'b0;
+	        ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)               
+	        if(valid)
+	          if (addr == `ADDR_CACHE_INVALIDATE)
+	            invalidate <= 1'b1;	
+	          else if (addr == `ADDR_BUFFER_EMPTY)
+                    dout <= write_state[0];
+                  else if (addr == `ADDR_BUFFER_FULL)
+                    dout <= write_state[1];         
+             end // always @ (posedge clk)
+        end // else: !if(CTRL_CNT)  
    endgenerate                
    
 endmodule // cache_controller
 
 
-   module iob_gen_sp_ram #(
-                           parameter DATA_W = 32,
-                           parameter ADDR_W = 10
-                           )  
+module iob_gen_sp_ram #(
+                        parameter DATA_W = 32,
+                        parameter ADDR_W = 10
+                        )  
    (                
                     input                clk,
                     input                en, 

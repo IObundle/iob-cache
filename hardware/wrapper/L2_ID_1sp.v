@@ -18,7 +18,7 @@ module L2_ID_1sp
     parameter AXI_INTERF = 1,    //Back-End Memory interface (1 - AXI, 0 - Native)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU - caches' replacement policy (mostly for L2)
     parameter LA_INTERF = 0,    //Look-ahead Interface - Store Front-End input signal
-    parameter CTRL_CNT_ID = 1, //Counters for both Data and Instruction Hits and Misses (L1 caches only)
+    parameter CTRL_CNT = 1,    
   
     // L1 - General parameters
     parameter L1_ADDR_W = FE_ADDR_W,   //Address width - width that will used for the cache 
@@ -60,8 +60,8 @@ module L2_ID_1sp
     //Look-ahead Interface - Store Front-End input signals
     parameter L1_I_LA_INTERF = LA_INTERF, //default value
     //Controller counters
-    parameter L1_I_CTRL_CNT = CTRL_CNT_ID,//default value
-  
+    parameter L1_I_CTRL_CNT = 0,
+    
     ////////////////////////
     // L1-Data parameters //
     ////////////////////////
@@ -74,7 +74,7 @@ module L2_ID_1sp
     //Look-ahead Interface - Store Front-End input signals
     parameter L1_D_LA_INTERF = LA_INTERF, //default value
     //Controller counters
-    parameter L1_D_CTRL_CNT = CTRL_CNT_ID//default value 
+    parameter L1_D_CTRL_CNT = CTRL_CNT
     )
    (
     // General ports
@@ -177,9 +177,7 @@ module L2_ID_1sp
                .REP_POLICY (L1_I_REP_POLICY),
                .WTBUF_DEPTH_W (L1_I_WTBUF_DEPTH_W),
                .LA_INTERF     (L1_I_LA_INTERF),
-               .CTRL_CNT_ID   (0),
-               .CTRL_CNT      (L1_I_CTRL_CNT),
-               .CTRL_VAL_IND  (1)
+               .CTRL_CNT      (L1_I_CTRL_CNT)
                )
    L1_I
      (
@@ -191,7 +189,6 @@ module L2_ID_1sp
       .rdata (i_rdata),
       .valid (valid & instr),
       .ready (i_ready),
-      .instr (1'b0  ), // Not necessary
       //
       //       // NATIVE MEMORY INTERFACE
       //
@@ -217,9 +214,7 @@ module L2_ID_1sp
                .REP_POLICY (L1_D_REP_POLICY),
                .WTBUF_DEPTH_W (L1_D_WTBUF_DEPTH_W),
                .LA_INTERF     (L1_D_LA_INTERF),
-               .CTRL_CNT_ID   (0),
-               .CTRL_CNT      (L1_D_CTRL_CNT),
-               .CTRL_VAL_IND  (1)
+               .CTRL_CNT      (L1_D_CTRL_CNT)
                )
    L1_D
      (
@@ -231,7 +226,6 @@ module L2_ID_1sp
       .rdata (d_rdata),
       .valid (valid & (~instr)),
       .ready (d_ready),
-      .instr (1'b0), // Not necessary
       //
       // NATIVE MEMORY INTERFACE
       //
@@ -286,9 +280,7 @@ module L2_ID_1sp
                            .BE_DATA_W(L2_MEM_DATA_W),
                            .REP_POLICY(L2_REP_POLICY),
                            .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
-                           .LA_INTERF     (0),
-                           .CTRL_CNT_ID   (0),
-                           .CTRL_CNT      (0)
+                           .CTRL_CNT (0)
                            )
            L2 
              (
@@ -300,7 +292,6 @@ module L2_ID_1sp
               .rdata (int_rdata),
               .valid (int_valid),
               .ready (int_ready),
-              .instr (1'b0),
               //
               // AXI INTERFACE
               //
@@ -362,7 +353,6 @@ module L2_ID_1sp
                        .REP_POLICY(L2_REP_POLICY),
                        .WTBUF_DEPTH_W (L2_WTBUF_DEPTH_W),
                        .LA_INTERF     (0),
-                       .CTRL_CNT_ID   (0),
                        .CTRL_CNT      (0)
                        )
            L2 
@@ -375,7 +365,6 @@ module L2_ID_1sp
               .rdata (int_rdata),
               .valid (int_valid),
               .ready (int_ready),
-              .instr (1'b0),
               .select(1'b0),
               //
               // NATIVE MEMORY INTERFACE

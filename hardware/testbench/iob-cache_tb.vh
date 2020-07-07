@@ -20,7 +20,7 @@
 `define WTBUF_DEPTH_W 4
 
 //L2 Cache -- currently only works with `define AXI
-//`define L2
+//`define L2 //Currently not working since addr only receives the word.
 
 // Look-ahead -- Uncomment to use
 //`define LA
