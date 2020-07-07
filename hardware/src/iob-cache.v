@@ -1314,15 +1314,19 @@ module read_process_native
                        // word_counter = word_counter;
                     end
                   
-                   end_handshake:
+                  end_handshake:
                     begin
                        // word_counter = word_counter; //to avoid updating the first word in line with last data
                        line_load = 1'b1; //delay for read-latency
                        mem_valid = 1'b0;
                     end
                   
-                  default:;
-                  
+                  default:
+                    begin
+                       line_load = 1'b0;
+                       mem_valid = 1'b0;
+                    end
+                 
                 endcase
              end
         end // if (MEM_OFF_W > 0)
