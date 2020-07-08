@@ -105,7 +105,8 @@ module iob_cache
         end // if (CTRL_CACHE)
       else 
         begin
-           
+
+           assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
 
@@ -248,7 +249,7 @@ module iob_cache
       .wdata(wdata_int),
       .wstrb(wstrb_int),
       .rdata(rdata_cache),
-      .valid(valid_int & cache_select),
+      .valid(cache_select),
       .line_load_data(line_load_data),
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -420,7 +421,7 @@ module iob_cache_axi
         end // if (CTRL_CACHE)
       else 
         begin
-           
+           assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
 
@@ -589,7 +590,7 @@ module iob_cache_axi
       .wdata(wdata_int),
       .wstrb(wstrb_int),
       .rdata(rdata_cache),
-      .valid(valid_int & cache_select),
+      .valid(cache_select),
       .line_load_data(line_load_data),
       .line_load(line_load),
       .line_load_en(line_load_en),
