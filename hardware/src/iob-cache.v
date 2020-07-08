@@ -72,23 +72,31 @@ module iob_cache
    wire [MEM_OFFSET_W-1:0]                  word_counter;
    wire [`CTRL_COUNTER_W-1:0]               ctrl_counter;
    wire                                     invalidate;
-
+   
+   //Cache - Controller selection
+   wire                                     cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                     write_access;
+   wire                                     read_access;
+   wire                                     ctrl_select;        
+   
+   
+   //Cache - Memory-Controller signals
+   wire [FE_DATA_W-1:0]                     rdata_cache, rdata_ctrl;
+   wire                                     ready_cache, ready_ctrl;
+   wire [2*FE_DATA_W-1:0]                   rdata_ctrlcache;
 
    generate
       if(CTRL_CACHE) 
         begin
            //Cache - Controller selection
-           wire                                   cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-           wire                                   write_access = (cache_select &   (|wstrb_int));
-           wire                                   read_access =  (cache_select &  ~(|wstrb_int));
-           wire                                   ctrl_select;        
+           assign cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+           assign write_access = (cache_select &   (|wstrb_int));
+           assign read_access =  (cache_select &  ~(|wstrb_int));
            assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
 
-
            //Cache - Memory-Controller signals
-           wire [FE_DATA_W-1:0]                   rdata_cache, rdata_ctrl;
-           wire                                   ready_cache, ready_ctrl;
-           wire [2*FE_DATA_W-1:0]                 rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+           assign rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+           
            always@*
              rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
            
@@ -98,12 +106,9 @@ module iob_cache
       else 
         begin
            
-           wire                                   write_access = (valid_int &   (|wstrb_int));
-           wire                                   read_access =  (valid_int &  ~(|wstrb_int));
+           assign write_access = (valid_int &   (|wstrb_int));
+           assign read_access =  (valid_int &  ~(|wstrb_int));
 
-           //Cache -  signals
-           wire [FE_DATA_W-1:0]                   rdata_cache;
-           wire                                   ready_cache;
            always@*
              rdata = rdata_cache;
            
@@ -383,21 +388,30 @@ module iob_cache_axi
    wire [`CTRL_COUNTER_W-1:0]             ctrl_counter;
    wire                                   invalidate;
 
+   //Cache - Controller selection
+   wire                                   cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                   write_access;
+   wire                                   read_access;
+   wire                                   ctrl_select;        
+   
+   
+   //Cache - Memory-Controller signals
+   wire [FE_DATA_W-1:0]                   rdata_cache, rdata_ctrl;
+   wire                                   ready_cache, ready_ctrl;
+   wire [2*FE_DATA_W-1:0]                 rdata_ctrlcache;
+
    generate
       if(CTRL_CACHE) 
         begin
            //Cache - Controller selection
-           wire                                   cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-           wire                                   write_access = (cache_select &   (|wstrb_int));
-           wire                                   read_access =  (cache_select &  ~(|wstrb_int));
-           wire                                   ctrl_select;        
+           assign cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+           assign write_access = (cache_select &   (|wstrb_int));
+           assign read_access =  (cache_select &  ~(|wstrb_int));
            assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
 
-
            //Cache - Memory-Controller signals
-           wire [FE_DATA_W-1:0]                   rdata_cache, rdata_ctrl;
-           wire                                   ready_cache, ready_ctrl;
-           wire [2*FE_DATA_W-1:0]                 rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+           assign rdata_ctrlcache = {rdata_ctrl, rdata_cache};
+           
            always@*
              rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
            
@@ -407,12 +421,9 @@ module iob_cache_axi
       else 
         begin
            
-           wire                                   write_access = (valid_int &   (|wstrb_int));
-           wire                                   read_access =  (valid_int &  ~(|wstrb_int));
+           assign write_access = (valid_int &   (|wstrb_int));
+           assign read_access =  (valid_int &  ~(|wstrb_int));
 
-           //Cache -  signals
-           wire [FE_DATA_W-1:0]                   rdata_cache;
-           wire                                   ready_cache;
            always@*
              rdata = rdata_cache;
            
@@ -420,7 +431,7 @@ module iob_cache_axi
            
         end // else: !if(CTRL_CACHE)
    endgenerate
-   
+
    assign ready = ready_int;
 
    
