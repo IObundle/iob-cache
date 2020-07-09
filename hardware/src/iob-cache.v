@@ -10,8 +10,8 @@ module iob_cache
     //memory cache's parameters
     parameter FE_ADDR_W   = 30,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
@@ -193,7 +193,7 @@ module iob_cache
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1:$clog2(FE_NBYTES)]),
+      .addr(addr_int[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W]),
       .read_miss(read_miss),
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -291,9 +291,9 @@ module iob_cache_axi
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -503,7 +503,7 @@ module iob_cache_axi
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1:$clog2(FE_NBYTES)]),
+      .addr(addr_int[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W]),
       .read_miss(read_miss), 
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -881,33 +881,33 @@ module read_process_axi
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache's word and memory word size
     )
    (
-    input                                   clk,
-    input                                   reset,
-    input [FE_ADDR_W -1: $clog2(FE_NBYTES)] addr,
-    input                                   read_miss, //read access that results in a cache miss
-    output reg                              line_load, //load cache line with new data
-    output                                  line_load_en,//Memory enable during the cache line load
-    output reg [MEM_OFFSET_W-1:0]           word_counter,//counter to enable each word in the line
-    output [BE_DATA_W-1:0]                  line_load_data,//data to load the cache line  
+    input                                           clk,
+    input                                           reset,
+    input [FE_ADDR_W -1: MEM_OFFSET_W + BE_BYTES_W] addr,
+    input                                           read_miss, //read access that results in a cache miss
+    output reg                                      line_load, //load cache line with new data
+    output                                          line_load_en,//Memory enable during the cache line load
+    output reg [MEM_OFFSET_W-1:0]                   word_counter,//counter to enable each word in the line
+    output [BE_DATA_W-1:0]                          line_load_data,//data to load the cache line  
     // AXI interface  
     //Address Read
-    output [AXI_ID_W-1:0]                   axi_arid,
-    output [BE_ADDR_W-1:0]                  axi_araddr, 
-    output [7:0]                            axi_arlen,
-    output [2:0]                            axi_arsize,
-    output [1:0]                            axi_arburst,
-    output [0:0]                            axi_arlock,
-    output [3:0]                            axi_arcache,
-    output [2:0]                            axi_arprot,
-    output [3:0]                            axi_arqos,
-    output reg                              axi_arvalid, 
-    input                                   axi_arready,
+    output [AXI_ID_W-1:0]                           axi_arid,
+    output [BE_ADDR_W-1:0]                          axi_araddr, 
+    output [7:0]                                    axi_arlen,
+    output [2:0]                                    axi_arsize,
+    output [1:0]                                    axi_arburst,
+    output [0:0]                                    axi_arlock,
+    output [3:0]                                    axi_arcache,
+    output [2:0]                                    axi_arprot,
+    output [3:0]                                    axi_arqos,
+    output reg                                      axi_arvalid, 
+    input                                           axi_arready,
     //Read
-    input [BE_DATA_W-1:0]                   axi_rdata,
-    input [1:0]                             axi_rresp,
-    input                                   axi_rlast, 
-    input                                   axi_rvalid, 
-    output reg                              axi_rready
+    input [BE_DATA_W-1:0]                           axi_rdata,
+    input [1:0]                                     axi_rresp,
+    input                                           axi_rlast, 
+    input                                           axi_rvalid, 
+    output reg                                      axi_rready
     );
 
    generate
@@ -1180,19 +1180,19 @@ module read_process_native
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
     )
    (
-    input                                   clk,
-    input                                   reset,
-    input [FE_ADDR_W -1: $clog2(FE_NBYTES)] addr,
-    input                                   read_miss, //read access that results in a cache miss
-    output reg                              line_load, //load cache line with new data
-    output                                  line_load_en,//Memory enable during the cache line load
-    output reg [MEM_OFFSET_W-1:0]           word_counter,//counter to enable each word in the line
-    output [BE_DATA_W-1:0]                  line_load_data,//data to load the cache line  
+    input                                           clk,
+    input                                           reset,
+    input [FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W] addr,
+    input                                           read_miss, //read access that results in a cache miss
+    output reg                                      line_load, //load cache line with new data
+    output                                          line_load_en,//Memory enable during the cache line load
+    output reg [MEM_OFFSET_W-1:0]                   word_counter,//counter to enable each word in the line
+    output [BE_DATA_W-1:0]                          line_load_data,//data to load the cache line  
     //Native memory interface
-    output [BE_ADDR_W -1:0]                 mem_addr,
-    output reg                              mem_valid,
-    input                                   mem_ready,
-    input [BE_DATA_W-1:0]                   mem_rdata
+    output [BE_ADDR_W -1:0]                         mem_addr,
+    output reg                                      mem_valid,
+    input                                           mem_ready,
+    input [BE_DATA_W-1:0]                           mem_rdata
     );
 
    generate
@@ -1807,7 +1807,7 @@ module memory_section
    
    localparam TAG_W = FE_ADDR_W - (BYTES_W+WORD_OFF_W+LINE_OFF_W);
 
-   wire [N_WAYS-1:0]                       way_hit, v;
+   wire [N_WAYS-1:0]                       way_hit, v, way_select;
    wire [N_WAYS*TAG_W-1:0]                 tag;
    assign hit = |way_hit;
    
@@ -1824,7 +1824,7 @@ module memory_section
         begin
            if(N_WAYS != 1)
              begin
-                wire [NWAY_W-1:0] way_hit_bin, way_select;//reason for the 2 generates for single vs multiple ways
+                wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
                 
                 
                 replacement_process #(
@@ -1839,7 +1839,8 @@ module memory_section
                    .write_en  (write_en        ),
                    .way_hit   (way_hit         ),
                    .line_addr (line_addr       ),
-                   .way_select(way_select      )
+                   .way_select(way_select      ),
+                   .way_select_bin(way_select_bin)
                    );
                 
                 onehot_to_bin #(
@@ -1847,7 +1848,7 @@ module memory_section
                                 ) 
                 way_hit_encoder
                   (
-                   .onehot(way_hit    ),
+                   .onehot(way_hit[N_WAYS-1:1]),
                    .bin   (way_hit_bin)
                    );
 
@@ -1858,7 +1859,7 @@ module memory_section
                 //Cache Line Write Strobe Shifter
                 always @*
                   if(line_load)
-                    line_wstrb = {BE_NBYTES{line_load_en}} << (word_counter*BE_NBYTES + way_select*(2**WORD_OFF_W)*FE_NBYTES);
+                    line_wstrb = {BE_NBYTES{line_load_en}} << (word_counter*BE_NBYTES + way_select_bin*(2**WORD_OFF_W)*FE_NBYTES);
                   else
                     line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
 
@@ -1896,7 +1897,7 @@ module memory_section
 	                .rst  (reset|invalidate                   ),
 	                .wdata(line_load                          ),				       
 	                .addr (line_addr                          ),
-	                .en   ((k == way_select)? line_load_en : 1'b0),
+	                .en   ((way_select[k])? line_load_en : 1'b0),
 	                .rdata(v[k]                               )   
 	                );
 
@@ -1909,7 +1910,7 @@ module memory_section
                        (
                         .clk (clk                                ),
                         .en  (valid                              ), 
-                        .we  ((k == way_select)? line_load_en : 1'b0),
+                        .we  ((way_select[k])? line_load_en : 1'b0),
                         .addr(line_addr                          ),
                         .data_in (line_tag                       ),
                         .data_out(tag[TAG_W*k +: TAG_W]          )
@@ -1993,7 +1994,7 @@ module memory_section
         end
       else if(N_WAYS != 1)
         begin
-           wire [NWAY_W-1:0] way_hit_bin, way_select;//reason for the 2 generates for single vs multiple ways
+           wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
            
            
            replacement_process #(
@@ -2008,7 +2009,8 @@ module memory_section
               .write_en  (write_en        ),
               .way_hit   (way_hit         ),
               .line_addr (line_addr       ),
-              .way_select(way_select      )
+              .way_select(way_select      ),
+              .way_select_bin(way_select_bin)
               );
            
            onehot_to_bin #(
@@ -2016,7 +2018,7 @@ module memory_section
                            ) 
            way_hit_encoder
              (
-              .onehot(way_hit    ),
+              .onehot(way_hit[N_WAYS-1:1]),
               .bin   (way_hit_bin)
               );
 
@@ -2027,7 +2029,7 @@ module memory_section
            //Cache Line Write Strobe Shifter
            always @*
              if(line_load)
-               line_wstrb = {BE_NBYTES{line_load_en}} << (way_select*(2**WORD_OFF_W)*FE_NBYTES);
+               line_wstrb = {BE_NBYTES{line_load_en}} << (way_select_bin*(2**WORD_OFF_W)*FE_NBYTES);
              else
                line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
 
@@ -2065,7 +2067,7 @@ module memory_section
 	           .rst  (reset|invalidate                   ),
 	           .wdata(line_load                          ),				       
 	           .addr (line_addr                          ),
-	           .en   ((k == way_select)? line_load : 1'b0),
+	           .en   ((way_select[k])? line_load : 1'b0),
 	           .rdata(v[k]                               )   
 	           );
 
@@ -2078,7 +2080,7 @@ module memory_section
                   (
                    .clk     (clk                                ),
                    .en      (valid                              ), 
-                   .we      ((k == way_select)? line_load : 1'b0),
+                   .we      ((way_select[k])? line_load : 1'b0),
                    .addr    (line_addr                          ),
                    .data_in (line_tag                           ),
                    .data_out(tag[TAG_W*k +: TAG_W]              )
@@ -2174,14 +2176,14 @@ module onehot_to_bin
     parameter BIN_W = 2
     )
    (
-    input [2**BIN_W-1:0]   onehot,
+    input [2**BIN_W-1:1]   onehot,
     output reg [BIN_W-1:0] bin 
     );
    always @ (onehot) begin: onehot_to_binary_encoder
       integer i;
       reg [BIN_W-1:0] bin_cnt ;
       bin_cnt = 0;
-      for (i=0; i<2**BIN_W; i=i+1)
+      for (i=1; i<2**BIN_W; i=i+1)
         if (onehot[i]) bin_cnt = bin_cnt|i;
       bin = bin_cnt;    
    end
@@ -2207,7 +2209,8 @@ module replacement_process
     input                  write_en,
     input [N_WAYS-1:0]     way_hit,
     input [LINE_OFF_W-1:0] line_addr,
-    output [NWAY_W-1:0]    way_select 
+    output [N_WAYS-1:0]    way_select,
+    output [NWAY_W-1:0]    way_select_bin 
     );
 
 
@@ -2241,14 +2244,16 @@ module replacement_process
            assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
            
 
+           assign way_select = lru_sel;
+           
            //Selects the least recent used way (encoder for one-hot to binary format)
            onehot_to_bin #(
                            .BIN_W (NWAY_W)	       
                            ) 
            lru_select
              (    
-                  .onehot(lru_sel[N_WAYS-1:0]),
-                  .bin(way_select)
+                  .onehot(lru_sel[N_WAYS-1:1]),
+                  .bin(way_select_bin)
                   );
 
            
@@ -2279,13 +2284,15 @@ module replacement_process
            wire [N_WAYS -1:0]      bitplru; //least recent used
            
            
-           assign bitplru[0] = ~mru_output;
+           assign bitplru[0] = ~mru_output[0];
            
            for (i = 1; i < N_WAYS; i=i+1)
 	     begin : bitplru_priority
 	        assign bitplru [i] = ~mru_output[i] & (&mru_output[i-1:0]); //verifies priority (lower index)
 	     end  
 
+
+           assign way_select = bitplru;
            
            //Selects the least recent used way (encoder for one-hot to binary format)
            onehot_to_bin #(
@@ -2293,8 +2300,8 @@ module replacement_process
                            ) 
            lru_select
              (      
-                    .onehot(bitplru[N_WAYS-1:0]),
-                    .bin(way_select)
+                    .onehot(bitplru[N_WAYS-1:1]),
+                    .bin(way_select_bin)
                     );
 
            
@@ -2352,14 +2359,17 @@ module replacement_process
 	        assign tplru_sel[i] = nway_tree [NWAY_W][N_WAYS - i -1];//the last row of nway_tree has the result of the Tree's encoder
 	     end
 
+
+           assign way_select = tplru_sel;
+           
            //Selects the least recent used way (encoder for one-hot to binary format)
            onehot_to_bin #(
                            .BIN_W (NWAY_W)	       
                            ) 
            lru_select
              (
-              .onehot(tplru_sel[N_WAYS-1:0]),
-              .bin(way_select)
+              .onehot(tplru_sel[N_WAYS-1:1]),
+              .bin(way_select_bin)
               );
 
            

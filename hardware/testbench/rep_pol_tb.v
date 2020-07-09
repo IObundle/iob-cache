@@ -9,10 +9,10 @@ module rep_pol_tb;
    reg reset = 1;
    
    reg [`N_WAYS-1:0] way_hit = 0;
-   reg [$clog2(`N_WAYS) -1:0] way_select;
+   reg [$clog2(`N_WAYS) -1:0] way_select_bin;
    reg                        write_en = 0;
    reg [31:0]                 test = 0;
-   wire [`N_WAYS -1:0]        way_select_bin = 1 << way_select;
+   wire [`N_WAYS -1:0]        way_select;
 
    
 
@@ -41,8 +41,8 @@ module rep_pol_tb;
         for (i = 0; i < (`N_CYCLES*`N_WAYS); i = i + 1)
           begin
              #4;
-             $display("%d: %b", i,way_select_bin);
-             way_hit <= 1 << way_select;
+             $display("%d: %b", i,way_select);
+             way_hit <= way_select;
              #2;
              write_en <= 1;
              #2;
@@ -65,7 +65,7 @@ module rep_pol_tb;
              #2;
              write_en <= 0;
              #6;
-             $display("- way-select: %b\n", way_select_bin);
+             $display("- way-select: %b\n", way_select);
              #2;
           end
          
@@ -86,7 +86,8 @@ module rep_pol_tb;
                    .write_en  (write_en  ),
                    .way_hit   (way_hit   ),
                    .line_addr (1'b0      ),
-                   .way_select(way_select)
+                   .way_select(way_select),
+                   .way_select_bin(way_select_bin)
                    );
      
    genvar f;
