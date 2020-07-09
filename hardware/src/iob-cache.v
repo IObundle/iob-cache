@@ -2361,7 +2361,7 @@ module replacement_process
 
 
            assign way_select = tplru_sel;
-                      
+           
            //Selects the least recent used way (encoder for one-hot to binary format)
            onehot_to_bin #(
                            .BIN_W (NWAY_W)	       
