@@ -105,7 +105,7 @@ module iob_cache
         end // if (CTRL_CACHE)
       else 
         begin
-
+           assign invalidate = 1'b0;
            assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
@@ -421,6 +421,7 @@ module iob_cache_axi
         end // if (CTRL_CACHE)
       else 
         begin
+           assign invalidate = 1'b0;
            assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
