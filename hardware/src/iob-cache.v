@@ -10,8 +10,8 @@ module iob_cache
     //memory cache's parameters
     parameter FE_ADDR_W   = 30,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
@@ -193,7 +193,7 @@ module iob_cache
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1:$clog2(FE_NBYTES)]),
+      .addr(addr_int[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W]),
       .read_miss(read_miss),
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -291,9 +291,9 @@ module iob_cache_axi
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 16,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 6,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 4,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -503,7 +503,7 @@ module iob_cache_axi
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1:$clog2(FE_NBYTES)]),
+      .addr(addr_int[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W]),
       .read_miss(read_miss), 
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -881,33 +881,33 @@ module read_process_axi
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache's word and memory word size
     )
    (
-    input                                   clk,
-    input                                   reset,
-    input [FE_ADDR_W -1: $clog2(FE_NBYTES)] addr,
-    input                                   read_miss, //read access that results in a cache miss
-    output reg                              line_load, //load cache line with new data
-    output                                  line_load_en,//Memory enable during the cache line load
-    output reg [MEM_OFFSET_W-1:0]           word_counter,//counter to enable each word in the line
-    output [BE_DATA_W-1:0]                  line_load_data,//data to load the cache line  
+    input                                           clk,
+    input                                           reset,
+    input [FE_ADDR_W -1: MEM_OFFSET_W + BE_BYTES_W] addr,
+    input                                           read_miss, //read access that results in a cache miss
+    output reg                                      line_load, //load cache line with new data
+    output                                          line_load_en,//Memory enable during the cache line load
+    output reg [MEM_OFFSET_W-1:0]                   word_counter,//counter to enable each word in the line
+    output [BE_DATA_W-1:0]                          line_load_data,//data to load the cache line  
     // AXI interface  
     //Address Read
-    output [AXI_ID_W-1:0]                   axi_arid,
-    output [BE_ADDR_W-1:0]                  axi_araddr, 
-    output [7:0]                            axi_arlen,
-    output [2:0]                            axi_arsize,
-    output [1:0]                            axi_arburst,
-    output [0:0]                            axi_arlock,
-    output [3:0]                            axi_arcache,
-    output [2:0]                            axi_arprot,
-    output [3:0]                            axi_arqos,
-    output reg                              axi_arvalid, 
-    input                                   axi_arready,
+    output [AXI_ID_W-1:0]                           axi_arid,
+    output [BE_ADDR_W-1:0]                          axi_araddr, 
+    output [7:0]                                    axi_arlen,
+    output [2:0]                                    axi_arsize,
+    output [1:0]                                    axi_arburst,
+    output [0:0]                                    axi_arlock,
+    output [3:0]                                    axi_arcache,
+    output [2:0]                                    axi_arprot,
+    output [3:0]                                    axi_arqos,
+    output reg                                      axi_arvalid, 
+    input                                           axi_arready,
     //Read
-    input [BE_DATA_W-1:0]                   axi_rdata,
-    input [1:0]                             axi_rresp,
-    input                                   axi_rlast, 
-    input                                   axi_rvalid, 
-    output reg                              axi_rready
+    input [BE_DATA_W-1:0]                           axi_rdata,
+    input [1:0]                                     axi_rresp,
+    input                                           axi_rlast, 
+    input                                           axi_rvalid, 
+    output reg                                      axi_rready
     );
 
    generate
@@ -1180,19 +1180,19 @@ module read_process_native
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
     )
    (
-    input                                   clk,
-    input                                   reset,
-    input [FE_ADDR_W -1: $clog2(FE_NBYTES)] addr,
-    input                                   read_miss, //read access that results in a cache miss
-    output reg                              line_load, //load cache line with new data
-    output                                  line_load_en,//Memory enable during the cache line load
-    output reg [MEM_OFFSET_W-1:0]           word_counter,//counter to enable each word in the line
-    output [BE_DATA_W-1:0]                  line_load_data,//data to load the cache line  
+    input                                           clk,
+    input                                           reset,
+    input [FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W] addr,
+    input                                           read_miss, //read access that results in a cache miss
+    output reg                                      line_load, //load cache line with new data
+    output                                          line_load_en,//Memory enable during the cache line load
+    output reg [MEM_OFFSET_W-1:0]                   word_counter,//counter to enable each word in the line
+    output [BE_DATA_W-1:0]                          line_load_data,//data to load the cache line  
     //Native memory interface
-    output [BE_ADDR_W -1:0]                 mem_addr,
-    output reg                              mem_valid,
-    input                                   mem_ready,
-    input [BE_DATA_W-1:0]                   mem_rdata
+    output [BE_ADDR_W -1:0]                         mem_addr,
+    output reg                                      mem_valid,
+    input                                           mem_ready,
+    input [BE_DATA_W-1:0]                           mem_rdata
     );
 
    generate
