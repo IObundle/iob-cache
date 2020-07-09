@@ -348,7 +348,6 @@ module iob_cache_axi
     output                              axi_wlast,
     output                              axi_wvalid, 
     input                               axi_wready,
-    input [AXI_ID_W-1:0]                axi_bid,
     input [1:0]                         axi_bresp,
     input                               axi_bvalid,
     output                              axi_bready,
@@ -365,7 +364,6 @@ module iob_cache_axi
     output                              axi_arvalid, 
     input                               axi_arready,
     //Read
-    input [AXI_ID_W-1:0]                axi_rid,
     input [BE_DATA_W-1:0]               axi_rdata,
     input [1:0]                         axi_rresp,
     input                               axi_rlast, 
@@ -522,7 +520,6 @@ module iob_cache_axi
       .axi_arqos(axi_arqos),
       .axi_arvalid(axi_arvalid), 
       .axi_arready(axi_arready),
-      .axi_rid(axi_rid),
       .axi_rdata(axi_rdata),
       .axi_rresp(axi_rresp),
       .axi_rlast(axi_rlast), 
@@ -566,7 +563,6 @@ module iob_cache_axi
       .axi_wlast(axi_wlast),
       .axi_wvalid(axi_wvalid),
       .axi_wready(axi_wready),
-      .axi_bid(axi_bid),
       .axi_bresp(axi_bresp),
       .axi_bvalid(axi_bvalid), 
       .axi_bready(axi_bready)  
@@ -907,7 +903,6 @@ module read_process_axi
     output reg                              axi_arvalid, 
     input                                   axi_arready,
     //Read
-    input [AXI_ID_W-1:0]                    axi_rid,
     input [BE_DATA_W-1:0]                   axi_rdata,
     input [1:0]                             axi_rresp,
     input                                   axi_rlast, 
@@ -993,7 +988,7 @@ module read_process_axi
                                 begin
                                    word_counter <= word_counter +1;
                                    state <= load_process;
-                                   if(axi_rresp[1]) //error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                                   if(axi_rresp != 2'b00) //error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                                      error <= 1;
                                 end
                             else
@@ -1445,7 +1440,6 @@ module write_process_axi
     output                                axi_wlast,
     output reg                            axi_wvalid, 
     input                                 axi_wready,
-    input [AXI_ID_W-1:0]                  axi_bid,
     input [1:0]                           axi_bresp,
     input                                 axi_bvalid,
     output reg                            axi_bready
