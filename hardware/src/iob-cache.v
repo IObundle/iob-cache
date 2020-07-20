@@ -105,7 +105,7 @@ module iob_cache
         end // if (CTRL_CACHE)
       else 
         begin
-           assign invalidate = 1'b0;
+           assign invalidate = addr_int[FE_ADDR_W];
            assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
@@ -424,7 +424,7 @@ module iob_cache_axi
         end // if (CTRL_CACHE)
       else 
         begin
-           assign invalidate = 1'b0;
+           assign invalidate = addr_int[FE_ADDR_W];
            assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
@@ -935,7 +935,7 @@ module read_process_axi
            assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
            assign axi_arsize  = BE_BYTES_W; //each word will be the width of the memory for maximum bandwidth
            assign axi_arburst = 2'b01; //incremental burst
-           assign axi_araddr  = {{(BE_ADDR_W-FE_ADDR_W){1'b0}}, addr[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W], {(MEM_OFFSET_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
+           assign axi_araddr  = {{BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W], {(MEM_OFFSET_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
 
            //Line Load signals
            assign line_load_en   = axi_rvalid;
@@ -1071,7 +1071,7 @@ module read_process_axi
            assign axi_arlen   = 8'd0; //A single burst of Memory data width word
            assign axi_arsize  = BE_BYTES_W; //each word will be the width of the memory for maximum bandwidth
            assign axi_arburst = 2'b00; 
-           assign axi_araddr  = {{(BE_ADDR_W-FE_ADDR_W){1'b0}}, addr[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W], {(MEM_OFFSET_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
+           assign axi_araddr  = {{BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W], {(MEM_OFFSET_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
 
            //Line Load signals
            assign line_load_en   = axi_rvalid;
@@ -1209,7 +1209,7 @@ module read_process_native
    generate
       if (MEM_OFFSET_W > 0)
         begin
-           assign mem_addr  = {{(BE_ADDR_W-FE_ADDR_W){1'b0}}, addr[FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W], word_counter, {BE_BYTES_W{1'b0}}};
+           assign mem_addr  = { {BE_ADDR_W{1'b0}}+addr[FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W], word_counter, {BE_BYTES_W{1'b0}} };
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1312,7 +1312,7 @@ module read_process_native
         end // if (MEM_OFF_W > 0)
       else
         begin
-           assign mem_addr  = {{(BE_ADDR_W-FE_ADDR_W){1'b0}}, addr[FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W], {BE_BYTES_W{1'b0}}};
+           assign mem_addr  = { {BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W], {BE_BYTES_W{1'b0}}};
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1477,12 +1477,12 @@ module write_process_axi
    assign axi_wlast   = axi_wvalid;
    
    //AXI Buffer Output signals
-   assign axi_awaddr = {{(BE_ADDR_W-FE_ADDR_W){1'b0}}, buffer_dout[FE_DATA_W+FE_NBYTES + (BE_BYTES_W-BYTES_W) +: FE_ADDR_W-(BE_BYTES_W)], {BE_BYTES_W{1'b0}}}; 
+   assign axi_awaddr = {{BE_ADDR_W{1'b0}}+buffer_dout[FE_DATA_W+FE_NBYTES + (BE_BYTES_W-BYTES_W) +: FE_ADDR_W-(BE_BYTES_W)], {BE_BYTES_W{1'b0}}}; 
    generate
       if(BE_DATA_W == FE_DATA_W)
         begin
            assign axi_wstrb = buffer_dout[FE_DATA_W +: FE_NBYTES];
-           assign axi_wdata =  {{(BE_DATA_W-FE_DATA_W){1'b0}}, buffer_dout[FE_DATA_W-1:0]};
+           assign axi_wdata =  {{BE_DATA_W{1'b0}}+buffer_dout[FE_DATA_W-1:0]};
            
         end
       else
@@ -1649,7 +1649,7 @@ module write_process_native
    assign write_full = buffer_full;
    
    //Native Buffer Output signals
-   assign mem_addr = {{(BE_ADDR_W-FE_ADDR_W){1'b0}}, buffer_dout[FE_DATA_W+FE_NBYTES + (BE_BYTES_W-BYTES_W) +: FE_ADDR_W-(BE_BYTES_W)], {BE_BYTES_W{1'b0}}}; 
+   assign mem_addr = {{BE_ADDR_W{1'b0}}+buffer_dout[FE_DATA_W+FE_NBYTES + (BE_BYTES_W-BYTES_W) +: FE_ADDR_W-(BE_BYTES_W)], {BE_BYTES_W{1'b0}}}; 
    
    localparam
      idle          = 3'd0,
