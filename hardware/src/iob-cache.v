@@ -15,7 +15,7 @@ module iob_cache
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `LRU, //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `LRU, //LRU - Least Recently Used (shift); LRU_add (LRU with Adders instead) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
@@ -36,8 +36,8 @@ module iob_cache
     /*---------------------------------------------------*/
   
     //Controller's options
-    parameter CTRL_CACHE = 1, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 1   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
+    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
     input                               clk,
@@ -157,7 +157,12 @@ module iob_cache
    
 
 
-   main_process main_fsm
+   main_process
+     #(
+       .CTRL_CACHE(CTRL_CACHE),
+       .CTRL_CNT(CTRL_CNT)
+       )
+   main_fsm
      (
       .clk(clk),
       .reset(reset),
@@ -471,7 +476,12 @@ module iob_cache_axi
    
 
 
-   main_process main_fsm
+   main_process
+     #(
+       .CTRL_CACHE(CTRL_CACHE),
+       .CTRL_CNT(CTRL_CNT)
+       )
+   main_fsm
      (
       .clk(clk),
       .reset(reset),
@@ -706,6 +716,7 @@ endmodule // look_ahead_interface
 
 module main_process
   #(
+    parameter CTRL_CACHE = 1,
     parameter CTRL_CNT = 1
     )
    (
@@ -820,37 +831,37 @@ module main_process
      end
 
    generate
-      if (CTRL_CNT)
-        begin
-           always @*
-             begin
-                ctrl_counter = `CTRL_COUNTER_W'd0;
-                
-	        case (state)
-                  idle:
-                    ctrl_counter = `CTRL_COUNTER_W'd0;
-
-                  write_standby:
-                    if (~write_full)
-                      if(hit)
-                        ctrl_counter = `WRITE_HIT;
-                      else
-                        ctrl_counter = `WRITE_MISS;
-                    else
-                      ctrl_counter = `CTRL_COUNTER_W'd0;
+        if (CTRL_CACHE & CTRL_CNT)
+          begin
+             always @*
+               begin
+                  ctrl_counter = `CTRL_COUNTER_W'd0;
                   
+	          case (state)
+                    idle:
+                      ctrl_counter = `CTRL_COUNTER_W'd0;
 
-                  read_standby:
-                    if (hit)
-                      ctrl_counter = `READ_HIT;
-                    else
-                      if(write_empty)
-                        ctrl_counter = `READ_MISS;
+                    write_standby:
+                      if (~write_full)
+                        if(hit)
+                          ctrl_counter = `WRITE_HIT;
+                        else
+                          ctrl_counter = `WRITE_MISS;
                       else
-                        ctrl_counter = `CTRL_COUNTER_W'd0;         
-                endcase
-             end   
-        end
+                        ctrl_counter = `CTRL_COUNTER_W'd0;
+                    
+
+                    read_standby:
+                      if (hit)
+                        ctrl_counter = `READ_HIT;
+                      else
+                        if(write_empty)
+                          ctrl_counter = `READ_MISS;
+                        else
+                          ctrl_counter = `CTRL_COUNTER_W'd0;         
+                  endcase
+               end   
+          end
    endgenerate
    
    
@@ -1783,7 +1794,7 @@ module memory_section
     //Do NOT change - slave parameters - dependency
     parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `LRU //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `LRU //LRU - Least Recently Used (stack/shift); LRU_add (1) - LRU with adders ; BIT_PLRU (2) - bit-based pseudoLRU; TREE_PLRU (3) - tree-based pseudoLRU
     )
    ( 
      //master interface
@@ -1855,6 +1866,7 @@ module memory_section
                 
                 //Read Data Multiplexer
                 assign rdata [FE_DATA_W-1:0] = line_rdata >> FE_DATA_W*(line_word_select + (2**WORD_OFF_W)*way_hit_bin);
+                  
                 
                 //Cache Line Write Strobe Shifter
                 always @*
@@ -2198,7 +2210,7 @@ endmodule  // onehot_to_bin
 
 module replacement_process 
   #(
-    parameter N_WAYS     = 4,
+    parameter N_WAYS     = 16,
     parameter LINE_OFF_W = 6,
     parameter NWAY_W = $clog2(N_WAYS),
     parameter REP_POLICY = `LRU //LRU - Least Recently Used ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -2220,6 +2232,62 @@ module replacement_process
       if(REP_POLICY == `LRU)
         begin
 
+           wire [N_WAYS-1:0] mru_check;
+           wire [NWAY_W-1:0] way_hit_bin;
+           
+           wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
+           wire [N_WAYS*NWAY_W -1:0] mru_init;
+           wire [N_WAYS*NWAY_W -1:0] mru_shift [N_WAYS-1:1] ;
+           wire [N_WAYS*NWAY_W -1:0] mru_cnt   [N_WAYS-1:0] ;
+           wire [NWAY_W-1:0]         lru;
+           
+                     
+           for (i=0; i < N_WAYS; i = i+1)
+             begin: mru_init_position_check
+                assign mru_init [i*NWAY_W +: NWAY_W] = (|mru_output)? mru_output [i*NWAY_W +: NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
+                assign mru_check[i] = (1<<(mru_init[i*NWAY_W +: NWAY_W]) == way_hit)? 1'b1: 1'b0; //checks the current position of the MRU way, one-hot nomenclature
+             end
+
+           assign mru_cnt[0] = {(N_WAYS*NWAY_W){mru_check[0]}} & {mru_init[0 +: NWAY_W], mru_init[N_WAYS*NWAY_W-1 : NWAY_W]};         
+           
+           for (i=1; i < N_WAYS-1; i=i+1)
+             begin: MRU_block_shift_counter
+                assign mru_shift [i] = {(N_WAYS*NWAY_W){mru_check[i]}} &  {mru_init[i*NWAY_W +: NWAY_W], mru_init [N_WAYS*NWAY_W-1 : (i+1)*NWAY_W], mru_init[i*NWAY_W -1 : 0]};
+                assign mru_cnt [i] = mru_shift[i] | mru_cnt[i-1];
+             end
+           
+           assign mru_shift [N_WAYS-1] = {(N_WAYS*NWAY_W){mru_check[N_WAYS-1]}} & {mru_init[N_WAYS*NWAY_W-1 -: NWAY_W], mru_init [(N_WAYS-1)*NWAY_W-1 : 0]}; 
+           assign mru_cnt [N_WAYS-1] = mru_shift [N_WAYS-1] | mru_cnt[N_WAYS-2];  
+
+           //The least recently used way are the LSBs of the mru_cnt in the last layer
+           assign mru_input = mru_cnt[N_WAYS-1];
+           assign lru = mru_output[0 +: NWAY_W];
+           assign way_select_bin =  lru;//binary
+           assign way_select = 1 << lru;//one-hot
+           
+     
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),		
+               .COL_WIDTH (N_WAYS*NWAY_W),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(mru_input    ),
+              .rdata(mru_output   ),			             
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+           
+           
+        end // if (REP_POLICY == `LRU)
+      else if (REP_POLICY == `LRU_add)
+        begin
+           
            wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
            wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
            wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
@@ -2256,7 +2324,7 @@ module replacement_process
                   .bin(way_select_bin)
                   );
 
-           
+          
            //Most Recently Used (MRU) memory	   
            iob_reg_file
              #(
@@ -2274,22 +2342,20 @@ module replacement_process
               .en   (write_en     )
               );
            
-           
-        end // if (REP_POLICY == `LRU)
+        end // if (REP_POLICU == `LRU_add)
       else if (REP_POLICY == `BIT_PLRU)
         begin
 
            wire [N_WAYS -1:0]      mru_output;
            wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
-           wire [N_WAYS -1:0]      bitplru; //least recent used
-           
+           wire [N_WAYS -1:0]      bitplru; //least recent used 
            
            assign bitplru[0] = ~mru_output[0];
-           
+
            for (i = 1; i < N_WAYS; i=i+1)
 	     begin : bitplru_priority
-	        assign bitplru [i] = ~mru_output[i] & (&mru_output[i-1:0]); //verifies priority (lower index)
-	     end  
+                assign bitplru [i] = ~mru_output[i] & (&mru_output[i-1:0]); //verifies priority (lower index)
+             end  
 
 
            assign way_select = bitplru;
@@ -2304,7 +2370,7 @@ module replacement_process
                     .bin(way_select_bin)
                     );
 
-           
+          
            //Most Recently Used (MRU) memory	   
            iob_reg_file
              #(
@@ -2336,7 +2402,7 @@ module replacement_process
 	     begin : tree_bit
 	        for (j = 0; j < (1<<(i-1)) ; j = j + 1)
 	          begin : tree_structure
-		     assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)])) && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)])); // (t-bit + |way_hit[top_section]) * (~|way_hit[lower_section])
+		     assign t_plru [(1<<(i-1))+j] = (t_plru_output[(1<<(i-1))+j] && (~(|way_hit[(N_WAYS-(2*j+1)*(N_WAYS>>i)) -1: N_WAYS-(2*j+2)*(N_WAYS>>i)]))) || (|way_hit[N_WAYS-(2*j*(N_WAYS>>i)) -1: N_WAYS-(2*j+1)*(N_WAYS>>i)]); // (t-bit * (~|way_hit[lower_section]) + |way_hit[top_section])
 	          end
 	     end
            
@@ -2389,9 +2455,7 @@ module replacement_process
               .addr (line_addr    ),
               .en   (write_en     )
               );
-           
-
-           
+                     
         end // else: !if(REP_POLICY == BIT_PLRU)
    endgenerate
 
