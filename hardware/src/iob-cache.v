@@ -2233,30 +2233,24 @@ module replacement_process
         begin
            
            wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
-           wire [N_WAYS*NWAY_W -1:0] mru_check; //For checking the MRU line, to initialize it if it wasn't
+           wire [N_WAYS*NWAY_W -1:0] mru_init; //Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
            wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
-           wire [N_WAYS -1:0]        mru_cnt_way_en; //Checks if decrementation should be done, if there isn't any way that received an hit while already being highest priority
-           wire                      mru_cnt_en = &mru_cnt_way_en; //checks if the hit was in a way that wasn't the highest priority
-           wire [NWAY_W -1:0]        mru_hit_min [N_WAYS :0];
-           wire [N_WAYS -1:0]        lru_sel; //selects the way to be replaced, using the LSB of each Way's section
-           assign mru_hit_min [0] [NWAY_W -1:0] = {NWAY_W{1'b0}};
-
-           for (i = 0; i < N_WAYS; i=i+1)
-	     begin : lru_matrix
-	        assign mru_check [(i+1)*NWAY_W -1: i*NWAY_W] = (|mru_output)? mru_output [(i+1)*NWAY_W -1: i*NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
-	        assign mru_cnt_way_en [i] = ~(&(mru_check [NWAY_W*(i+1) -1 : i*NWAY_W]) && way_hit[i]) && (|way_hit); //verifies if there is an hit, and if the hit is the MRU way ({NWAY_{1'b1}} => & MRU = 1,) (to avoid updating during write-misses)
-	        
-	        assign mru_hit_min [i+1][NWAY_W -1:0] = mru_hit_min[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //in case of a write hit, gets the minimum value that can be decreased in mru_cnt, to avoid (subtracting) overflows
-	        
-	        assign mru_cnt [(i+1)*NWAY_W -1: i*NWAY_W] = (way_hit[i])? (N_WAYS-1) : ((mru_check[(i+1)*NWAY_W -1: i*NWAY_W] > mru_hit_min[N_WAYS][NWAY_W -1:0])? (mru_check [(i+1)*NWAY_W -1: i*NWAY_W] - 1) : mru_check [(i+1)*NWAY_W -1: i*NWAY_W]); //if the way was used, put it's in the highest value, otherwise reduces if the value of the position is higher than the previous value that was hit
-	        
-	        assign lru_sel [i] =&(~mru_check[(i+1)*NWAY_W -1: i*NWAY_W]); // The way is selected if it's value is 0s; the check is used since itś either the output, or, it this is unintialized, places the LRU as the lowest line_addr (otherwise the first would would be the highest.
-	     end
-
-           assign mru_input = (mru_cnt_en)? mru_cnt : mru_output; //If an hit occured, and the way hitted wasn't the MRU, then it updates.
+           wire [NWAY_W -1:0]        mru_hit_val [N_WAYS :0]; //Value of the MRU way
+           wire [N_WAYS -1:0]        lru_sel; //LRU way, selected form the one with the lowest MRU value
+           assign mru_hit_val [0] [NWAY_W -1:0] = {NWAY_W{1'b0}}; //
            
+           for (i = 0; i < N_WAYS; i=i+1)
+	     begin : lru_counter_algorithm
+	        assign mru_init [i*NWAY_W +: NWAY_W] = (|mru_output)? mru_output [i*NWAY_W +: NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values
+                assign mru_hit_val [i+1][NWAY_W -1:0]  = mru_hit_val[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru_init[(i+1)*NWAY_W -1: i*NWAY_W]); //stores the value of the MRU way
+                assign mru_cnt [i*NWAY_W +: NWAY_W] = (way_hit[i])? {NWAY_W{1'b1}} : (mru_init [i*NWAY_W +: NWAY_W] > mru_hit_val [N_WAYS]) ? mru_init [i*NWAY_W +: NWAY_W] - 1 : mru_init [i*NWAY_W +: NWAY_W];// the MRU way gets updated to the the highest value; the remaining, if their value was bigger than the MRU previous value, they get decremented
 
+                assign lru_sel [i] = ~(|mru_init[i*NWAY_W +: NWAY_W]); //selects the way that has the lowest priority (mru_init = 0)              
+             end
+           
            assign way_select = lru_sel;
+           
+           assign mru_input = (|way_hit)? mru_cnt : mru_output; //If an hit occured, then it updates, to avoid updating during a write-miss
            
            //Selects the least recent used way (encoder for one-hot to binary format)
            onehot_to_bin #(

@@ -4,6 +4,7 @@
 
 #select top module and FPGA decive
 set TOP iob_cache
+## examples of TOP: iob_cache; iob_cache_axi; replacement_process;...
 set PART xcku040-fbva676-1-c
 
 set HW_INCLUDE [lindex $argv 0]
