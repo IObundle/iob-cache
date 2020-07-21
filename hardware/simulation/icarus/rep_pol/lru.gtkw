@@ -1,0 +1,36 @@
+[*]
+[*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
+[*] Sun Jul 19 23:34:03 2020
+[*]
+[dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/hardware/simulation/icarus/rep_pol/rep_pol_tb.vcd"
+[dumpfile_mtime] "Sun Jul 19 23:33:11 2020"
+[dumpfile_size] 220962
+[savefile] "/home/jroque/sandbox/iob-cache-roquefork/hardware/simulation/icarus/rep_pol/lru.gtkw"
+[timestart] 0
+[size] 1855 951
+[pos] -856 -324
+*-14.000000 24000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] iob_cache.
+[treeopen] iob_cache.memory_cache.genblk2.replacement_policy_algorithm.
+[treeopen] iob_cache.memory_cache.genblk2.replacement_policy_algorithm.genblk5.
+[treeopen] rep_pol_tb.
+[treeopen] rep_pol_tb.replacement_policy_algorithm.
+[treeopen] rep_pol_tb.replacement_policy_algorithm.genblk1.
+[sst_width] 234
+[signals_width] 378
+[sst_expanded] 1
+[sst_vpaned_height] 574
+@28
+rep_pol_tb.replacement_policy_algorithm.clk
+rep_pol_tb.replacement_policy_algorithm.way_select_bin[1:0]
+rep_pol_tb.replacement_policy_algorithm.way_select[3:0]
+rep_pol_tb.replacement_policy_algorithm.write_en
+rep_pol_tb.replacement_policy_algorithm.way_hit[3:0]
+@23
+rep_pol_tb.replacement_policy_algorithm.genblk1.mru_check[3:0]
+@28
+rep_pol_tb.replacement_policy_algorithm.genblk1.mru_init[7:0]
+rep_pol_tb.replacement_policy_algorithm.genblk1.mru_input[7:0]
+rep_pol_tb.replacement_policy_algorithm.genblk1.mru_output[7:0]
+[pattern_trace] 1
+[pattern_trace] 0

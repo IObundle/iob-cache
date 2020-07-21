@@ -29,7 +29,7 @@ module rep_pol_tb;
      begin
         
 `ifdef VCD
-	$dumpfile("rep_pol_tb.vcd");
+	$dumpfile("rep_pol.vcd");
 	$dumpvars();
 `endif  
         repeat (5) @(posedge clk);

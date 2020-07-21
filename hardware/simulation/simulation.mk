@@ -1,9 +1,9 @@
 #core
-include $(CACHE_DIR)/hardware/hardware.mk
+include $(ROOT_DIR)/hardware/hardware.mk
 
 #testbench
 VSRC+=$(CACHE_HW_DIR)/testbench/iob-cache_tb.v \
-$(AXI_MEM_DIR)/rtl/axi_ram.v 
+$(ROOT_DIR)/submodules/axi-mem/rtl/axi_ram.v 
 #$(CACHE_HW_DIR)/wrapper/L2_ID_1sp.v \
 
 #additional includes

@@ -1,8 +1,5 @@
 #module paths
-CACHE_DIR:=../../../..
-INTERCON_DIR:=$(CACHE_DIR)/submodules/iob-interconnect
-MEM_DIR:=$(CACHE_DIR)/submodules/iob-mem
-AXI_MEM_DIR:=$(CACHE_DIR)/submodules/axi-mem
+ROOT_DIR:=../../../..
 #testbench
 VSRC+=$(CACHE_HW_DIR)/testbench/rep_pol_tb.v
 
@@ -11,7 +8,7 @@ define:=-D
 
 
 #core
-include $(CACHE_DIR)/hardware/hardware.mk
+include $(ROOT_DIR)/hardware/hardware.mk
 
 #additional includes
 INCLUDE+=$(incdir)$(CACHE_HW_DIR)/testbench/
