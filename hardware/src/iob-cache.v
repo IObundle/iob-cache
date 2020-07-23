@@ -1209,7 +1209,7 @@ module read_process_native
    generate
       if (MEM_OFFSET_W > 0)
         begin
-           assign mem_addr  = { {BE_ADDR_W{1'b0}}+addr[FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W], word_counter, {BE_BYTES_W{1'b0}} };
+           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W], word_counter, {BE_BYTES_W{1'b0}} };
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1312,7 +1312,7 @@ module read_process_native
         end // if (MEM_OFF_W > 0)
       else
         begin
-           assign mem_addr  = { {BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W], {BE_BYTES_W{1'b0}}};
+           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W], {BE_BYTES_W{1'b0}}};
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1649,7 +1649,7 @@ module write_process_native
    assign write_full = buffer_full;
    
    //Native Buffer Output signals
-   assign mem_addr = {{BE_ADDR_W{1'b0}}+buffer_dout[FE_DATA_W+FE_NBYTES + (BE_BYTES_W-BYTES_W) +: FE_ADDR_W-(BE_BYTES_W)], {BE_BYTES_W{1'b0}}}; 
+   assign mem_addr = {BE_ADDR_W{1'b0}} + {buffer_dout[FE_DATA_W+FE_NBYTES + (BE_BYTES_W-BYTES_W) +: FE_ADDR_W-(BE_BYTES_W)], {BE_BYTES_W{1'b0}}}; 
    
    localparam
      idle          = 3'd0,
