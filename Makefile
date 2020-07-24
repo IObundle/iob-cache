@@ -1,23 +1,24 @@
-SIM_DIR = hardware/simulation/icarus
-FPGA_DIR = hardware/fpga/AES-KU040-DB-G
+CACHE_DIR:=.
+include ./cache.mk
 
 sim:
-	make -C $(SIM_DIR) 
+	make -C $(CACHE_SIM_DIR)
+
 rp_sim:
-	make -C $(SIM_DIR)/rep_pol/
+	make -C $(CACHE_SIM_DIR)/rep_pol/
 
 gtkwave:
-	gtkwave $(SIM_DIR)/iob_cache.vcd
+	gtkwave $(CACHE_SIM_DIR)/iob_cache.vcd
 
 gtkwave_rp:
-	gtkwave $(SIM_DIR)/rep_pol/rep_pol.vcd
+	gtkwave $(CACHE_SIM_DIR)/rep_pol/rep_pol.vcd
 
 synth:
-	make -C $(FPGA_DIR) synth
+	make -C $(CACHE_FPGA_DIR) synth
 
 clean: 
-	make -C $(FPGA_DIR) clean
-	make -C $(SIM_DIR) clean
-	make -C $(SIM_DIR)/rep_pol/ clean
+	make -C $(CACHE_FPGA_DIR) clean
+	make -C $(CACHE_SIM_DIR) clean
+	make -C $(CACHE_SIM_DIR)/rep_pol/ clean
 
 .PHONY: sim clean

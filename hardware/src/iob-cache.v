@@ -8,7 +8,7 @@
 module iob_cache 
   #(
     //memory cache's parameters
-    parameter FE_ADDR_W   = 30,       //Address width - width that will used for the cache 
+    parameter FE_ADDR_W   = 30,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
@@ -36,7 +36,7 @@ module iob_cache
     /*---------------------------------------------------*/
   
     //Controller's options
-    parameter CTRL_CACHE = 1, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
+    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
     parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
@@ -113,6 +113,7 @@ module iob_cache
              rdata = rdata_cache;
            
            assign ready_int = ready_cache;
+           assign invalidate = 1'b0;
            
         end // else: !if(CTRL_CACHE)
    endgenerate
@@ -432,6 +433,7 @@ module iob_cache_axi
              rdata = rdata_cache;
            
            assign ready_int = ready_cache;
+           assign invalidate = 1'b0;
            
         end // else: !if(CTRL_CACHE)
    endgenerate
