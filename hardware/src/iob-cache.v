@@ -113,6 +113,7 @@ module iob_cache
              rdata = rdata_cache;
            
            assign ready_int = ready_cache;
+           assign invalidate = 1'b0;
            
         end // else: !if(CTRL_CACHE)
    endgenerate
@@ -432,6 +433,7 @@ module iob_cache_axi
              rdata = rdata_cache;
            
            assign ready_int = ready_cache;
+           assign invalidate = 1'b0;
            
         end // else: !if(CTRL_CACHE)
    endgenerate

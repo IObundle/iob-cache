@@ -10,3 +10,5 @@ $(CACHE_DIR)/submodules/axi-mem/rtl/axi_ram.v
 INCLUDE+=$(incdir)$(CACHE_HW_DIR)/testbench/
 VHDR+=$(CACHE_HW_DIR)/testbench/iob-cache_tb.vh
 
+#additional defines
+DEFINE+=$(define)DATA_W=32 $(define)ADDR_W=32

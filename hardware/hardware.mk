@@ -1,5 +1,9 @@
 include $(CACHE_DIR)/cache.mk
 
+#CACHE_HW_DIR:=$(CACHE_DIR)/hardware
+
+#submodules
+include $(INTERCON_DIR)/hardware/hardware.mk
 
 #include
 CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
