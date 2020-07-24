@@ -1,5 +1,5 @@
 #module paths
-ROOT_DIR:=../../../..
+CACHE_DIR:=../../../..
 #testbench
 VSRC+=$(CACHE_HW_DIR)/testbench/rep_pol_tb.v
 
@@ -8,7 +8,7 @@ define:=-D
 
 
 #core
-include $(ROOT_DIR)/hardware/hardware.mk
+include $(CACHE_DIR)/hardware/hardware.mk
 
 #additional includes
 INCLUDE+=$(incdir)$(CACHE_HW_DIR)/testbench/

@@ -1,5 +1,5 @@
-CACHE_HW_DIR:=$(ROOT_DIR)/hardware
-MEM_DIR:=$(ROOT_DIR)/submodules/iob-mem
+CACHE_HW_DIR:=$(CACHE_DIR)/hardware
+MEM_DIR:=$(CACHE_DIR)/submodules/iob-mem
 #submodules
 #include $(INTERCON_DIR)/hardware/hardware.mk
 
@@ -11,7 +11,7 @@ INCLUDE+=$(incdir) $(CACHE_INC_DIR)
 VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
 #sources
-CACHE_SRC_DIR:=$(ROOT_DIR)/hardware/src
+CACHE_SRC_DIR:=$(CACHE_DIR)/hardware/src
 VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v) \
 $(MEM_DIR)/reg_file/iob_reg_file.v \
 $(MEM_DIR)/fifo/afifo/afifo.v \
