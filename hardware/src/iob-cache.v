@@ -8,7 +8,7 @@
 module iob_cache 
   #(
     //memory cache's parameters
-    parameter FE_ADDR_W   = 30,       //Address width - width that will used for the cache 
+    parameter FE_ADDR_W   = 30,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
@@ -46,7 +46,7 @@ module iob_cache
     input [FE_DATA_W-1:0]                               wdata,
     input [FE_NBYTES-1:0]                               wstrb,
     output reg [FE_DATA_W-1:0]                          rdata,
-    input                                               valid,
+     input                                               valid,
     output                                              ready,
     //Native interface
     output [BE_ADDR_W-1:0]                              mem_addr,
