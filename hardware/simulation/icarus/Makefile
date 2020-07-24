@@ -1,5 +1,5 @@
 #module paths
-ROOT_DIR:=../../..
+CACHE_DIR:=../../..
 
 incdir:=-I
 define:=-D

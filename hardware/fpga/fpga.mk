@@ -1,4 +1,4 @@
-include $(ROOT_DIR)/hardware/hardware.mk
+include $(CACHE_DIR)/hardware/hardware.mk
 
 
 clean: fpga-clean

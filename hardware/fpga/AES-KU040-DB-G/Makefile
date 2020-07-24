@@ -1,4 +1,4 @@
-ROOT_DIR:=../../..
+CACHE_DIR:=../../..
 
 include ../fpga.mk
 

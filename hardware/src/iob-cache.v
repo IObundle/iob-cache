@@ -36,63 +36,63 @@ module iob_cache
     /*---------------------------------------------------*/
   
     //Controller's options
-    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CACHE = 1, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
+    parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
-    input                               clk,
-    input                               reset,
-    input [FE_ADDR_W:$clog2(FE_NBYTES)] addr, //MSB is used for Controller selection
-    input [FE_DATA_W-1:0]               wdata,
-    input [FE_NBYTES-1:0]               wstrb,
-    output reg [FE_DATA_W-1:0]          rdata,
-    input                               valid,
-    output                              ready,
+    input                                               clk,
+    input                                               reset,
+    input [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)] addr, //MSB is used for Controller selection
+    input [FE_DATA_W-1:0]                               wdata,
+    input [FE_NBYTES-1:0]                               wstrb,
+    output reg [FE_DATA_W-1:0]                          rdata,
+    input                                               valid,
+    output                                              ready,
     //Native interface
-    output [BE_ADDR_W-1:0]              mem_addr,
-    output                              mem_valid,
-    input                               mem_ready,
-    output [BE_DATA_W-1:0]              mem_wdata,
-    output [BE_NBYTES-1:0]              mem_wstrb,
-    input [BE_DATA_W-1:0]               mem_rdata
+    output [BE_ADDR_W-1:0]                              mem_addr,
+    output                                              mem_valid,
+    input                                               mem_ready,
+    output [BE_DATA_W-1:0]                              mem_wdata,
+    output [BE_NBYTES-1:0]                              mem_wstrb,
+    input [BE_DATA_W-1:0]                               mem_rdata
     );
    
    //Internal signals
-   wire [FE_ADDR_W     : $clog2(FE_NBYTES)] addr_int;  //MSB is the Ctrl's select
-   wire                                     valid_int;
-   wire [FE_DATA_W-1 : 0]                   wdata_int;
-   wire [FE_NBYTES-1: 0]                    wstrb_int;
-   wire                                     ready_int;
+   wire [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)]   addr_int;  //MSB is the Ctrl's select
+   wire                                                 valid_int;
+   wire [FE_DATA_W-1 : 0]                               wdata_int;
+   wire [FE_NBYTES-1: 0]                                wstrb_int;
+   wire                                                 ready_int;
    
    
    //Process connection and controller signals
-   wire                                     read_miss, hit, write_full, write_empty, write_en;
-   wire                                     line_load, line_load_en;
-   wire [BE_DATA_W-1:0]                     line_load_data;
-   wire [MEM_OFFSET_W-1:0]                  word_counter;
-   wire [`CTRL_COUNTER_W-1:0]               ctrl_counter;
-   wire                                     invalidate;
+   wire                                                 read_miss, hit, write_full, write_empty, write_en;
+   wire                                                 line_load, line_load_en;
+   wire [BE_DATA_W-1:0]                                 line_load_data;
+   wire [MEM_OFFSET_W-1:0]                              word_counter;
+   wire [`CTRL_COUNTER_W-1:0]                           ctrl_counter;
+   wire                                                 invalidate;
    
    //Cache - Controller selection
-   wire                                     cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                     write_access;
-   wire                                     read_access;
-   wire                                     ctrl_select;        
+   wire                                                 cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                                 write_access;
+   wire                                                 read_access;
+   wire                                                 ctrl_select;        
    
    
    //Cache - Memory-Controller signals
-   wire [FE_DATA_W-1:0]                     rdata_cache, rdata_ctrl;
-   wire                                     ready_cache, ready_ctrl;
-   wire [2*FE_DATA_W-1:0]                   rdata_ctrlcache;
+   wire [FE_DATA_W-1:0]                                 rdata_cache, rdata_ctrl;
+   wire                                                 ready_cache, ready_ctrl;
+   wire [2*FE_DATA_W-1:0]                               rdata_ctrlcache;
 
    generate
       if(CTRL_CACHE) 
         begin
            //Cache - Controller selection
-           assign cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+           assign cache_select = ~addr_int[CTRL_CACHE + FE_ADDR_W -1] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
            assign write_access = (cache_select &   (|wstrb_int));
            assign read_access =  (cache_select &  ~(|wstrb_int));
-           assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
+           assign ctrl_select  = addr_int[CTRL_CACHE + FE_ADDR_W -1] & valid_int;
 
            //Cache - Memory-Controller signals
            assign rdata_ctrlcache = {rdata_ctrl, rdata_cache};
@@ -105,7 +105,6 @@ module iob_cache
         end // if (CTRL_CACHE)
       else 
         begin
-           assign invalidate = addr_int[FE_ADDR_W];
            assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
@@ -128,13 +127,14 @@ module iob_cache
            look_ahead_interface 
              #(
                .FE_ADDR_W(FE_ADDR_W),
-               .FE_DATA_W(FE_DATA_W)
+               .FE_DATA_W(FE_DATA_W),
+               .CTRL_CACHE(CTRL_CACHE)
                )
            la_if
              (
               .clk (clk),
               .reset(reset),
-              .addr(addr[FE_ADDR_W:$clog2(FE_NBYTES)]),
+              .addr(addr[CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)]),
               .valid(valid),
               .wdata(wdata),
               .wstrb(wstrb),
@@ -148,7 +148,7 @@ module iob_cache
       else
         begin
            //Internal assignment - Direct wiring
-           assign addr_int  = addr[FE_ADDR_W:$clog2(FE_NBYTES)];
+           assign addr_int  = addr[CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)];
            assign valid_int = valid;
            assign wdata_int = wdata;
            assign wstrb_int = wstrb;
@@ -325,93 +325,93 @@ module iob_cache_axi
     parameter CTRL_CNT = 1   //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidations
     ) 
    (
-    input                               clk,
-    input                               reset,
-    input [FE_ADDR_W:$clog2(FE_NBYTES)] addr, // MSB is for Controller selection
-    input [FE_DATA_W-1:0]               wdata,
-    input [FE_NBYTES-1:0]               wstrb,
-    output reg [FE_DATA_W-1:0]          rdata,
-    input                               valid,
-    output                              ready,
+    input                                               clk,
+    input                                               reset,
+    input [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)] addr, // MSB is for Controller selection
+    input [FE_DATA_W-1:0]                               wdata,
+    input [FE_NBYTES-1:0]                               wstrb,
+    output reg [FE_DATA_W-1:0]                          rdata,
+    input                                               valid,
+    output                                              ready,
 
     // AXI interface 
     // Address Write
-    output [AXI_ID_W-1:0]               axi_awid, 
-    output [BE_ADDR_W-1:0]              axi_awaddr,
-    output [7:0]                        axi_awlen,
-    output [2:0]                        axi_awsize,
-    output [1:0]                        axi_awburst,
-    output [0:0]                        axi_awlock,
-    output [3:0]                        axi_awcache,
-    output [2:0]                        axi_awprot,
-    output [3:0]                        axi_awqos,
-    output                              axi_awvalid,
-    input                               axi_awready,
+    output [AXI_ID_W-1:0]                               axi_awid, 
+    output [BE_ADDR_W-1:0]                              axi_awaddr,
+    output [7:0]                                        axi_awlen,
+    output [2:0]                                        axi_awsize,
+    output [1:0]                                        axi_awburst,
+    output [0:0]                                        axi_awlock,
+    output [3:0]                                        axi_awcache,
+    output [2:0]                                        axi_awprot,
+    output [3:0]                                        axi_awqos,
+    output                                              axi_awvalid,
+    input                                               axi_awready,
     //Write
-    output [BE_DATA_W-1:0]              axi_wdata,
-    output [BE_NBYTES-1:0]              axi_wstrb,
-    output                              axi_wlast,
-    output                              axi_wvalid, 
-    input                               axi_wready,
-    input [1:0]                         axi_bresp,
-    input                               axi_bvalid,
-    output                              axi_bready,
+    output [BE_DATA_W-1:0]                              axi_wdata,
+    output [BE_NBYTES-1:0]                              axi_wstrb,
+    output                                              axi_wlast,
+    output                                              axi_wvalid, 
+    input                                               axi_wready,
+    input [1:0]                                         axi_bresp,
+    input                                               axi_bvalid,
+    output                                              axi_bready,
     //Address Read
-    output [AXI_ID_W-1:0]               axi_arid,
-    output [BE_ADDR_W-1:0]              axi_araddr, 
-    output [7:0]                        axi_arlen,
-    output [2:0]                        axi_arsize,
-    output [1:0]                        axi_arburst,
-    output [0:0]                        axi_arlock,
-    output [3:0]                        axi_arcache,
-    output [2:0]                        axi_arprot,
-    output [3:0]                        axi_arqos,
-    output                              axi_arvalid, 
-    input                               axi_arready,
+    output [AXI_ID_W-1:0]                               axi_arid,
+    output [BE_ADDR_W-1:0]                              axi_araddr, 
+    output [7:0]                                        axi_arlen,
+    output [2:0]                                        axi_arsize,
+    output [1:0]                                        axi_arburst,
+    output [0:0]                                        axi_arlock,
+    output [3:0]                                        axi_arcache,
+    output [2:0]                                        axi_arprot,
+    output [3:0]                                        axi_arqos,
+    output                                              axi_arvalid, 
+    input                                               axi_arready,
     //Read
-    input [BE_DATA_W-1:0]               axi_rdata,
-    input [1:0]                         axi_rresp,
-    input                               axi_rlast, 
-    input                               axi_rvalid, 
-    output                              axi_rready
+    input [BE_DATA_W-1:0]                               axi_rdata,
+    input [1:0]                                         axi_rresp,
+    input                                               axi_rlast, 
+    input                                               axi_rvalid, 
+    output                                              axi_rready
     );
    
    //Internal signals
-   wire [FE_ADDR_W   : $clog2(FE_NBYTES)] addr_int;
-   wire                                   valid_int;
-   wire [FE_DATA_W-1 : 0]                 wdata_int;
-   wire [FE_NBYTES-1: 0]                  wstrb_int;
-   wire                                   ready_int;
+   wire [CTRL_CACHE + FE_ADDR_W -1 : $clog2(FE_NBYTES)] addr_int;
+   wire                                                 valid_int;
+   wire [FE_DATA_W-1: 0]                                wdata_int;
+   wire [FE_NBYTES-1: 0]                                wstrb_int;
+   wire                                                 ready_int;
    
    
    //Process connection and controller signals
-   wire                                   read_miss, hit, write_full, write_empty, write_en;
-   wire                                   line_load, line_load_en;
-   wire [BE_DATA_W-1:0]                   line_load_data;
-   wire [MEM_OFFSET_W-1:0]                word_counter;
-   wire [`CTRL_COUNTER_W-1:0]             ctrl_counter;
-   wire                                   invalidate;
+   wire                                                 read_miss, hit, write_full, write_empty, write_en;
+   wire                                                 line_load, line_load_en;
+   wire [BE_DATA_W-1:0]                                 line_load_data;
+   wire [MEM_OFFSET_W-1:0]                              word_counter;
+   wire [`CTRL_COUNTER_W-1:0]                           ctrl_counter;
+   wire                                                 invalidate;
 
    //Cache - Controller selection
-   wire                                   cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                   write_access;
-   wire                                   read_access;
-   wire                                   ctrl_select;        
+   wire                                                 cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
+   wire                                                 write_access;
+   wire                                                 read_access;
+   wire                                                 ctrl_select;        
    
    
    //Cache - Memory-Controller signals
-   wire [FE_DATA_W-1:0]                   rdata_cache, rdata_ctrl;
-   wire                                   ready_cache, ready_ctrl;
-   wire [2*FE_DATA_W-1:0]                 rdata_ctrlcache;
+   wire [FE_DATA_W-1:0]                                 rdata_cache, rdata_ctrl;
+   wire                                                 ready_cache, ready_ctrl;
+   wire [2*FE_DATA_W-1:0]                               rdata_ctrlcache;
 
    generate
       if(CTRL_CACHE) 
         begin
            //Cache - Controller selection
-           assign cache_select = ~addr_int[FE_ADDR_W] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
+           assign cache_select = ~addr_int[CTRL_CACHE + FE_ADDR_W -1] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
            assign write_access = (cache_select &   (|wstrb_int));
            assign read_access =  (cache_select &  ~(|wstrb_int));
-           assign ctrl_select  = addr_int[FE_ADDR_W] & valid_int;
+           assign ctrl_select  = addr_int[CTRL_CACHE + FE_ADDR_W -1] & valid_int;
 
            //Cache - Memory-Controller signals
            assign rdata_ctrlcache = {rdata_ctrl, rdata_cache};
@@ -424,7 +424,6 @@ module iob_cache_axi
         end // if (CTRL_CACHE)
       else 
         begin
-           assign invalidate = addr_int[FE_ADDR_W];
            assign cache_select = valid_int;
            assign write_access = (valid_int &   (|wstrb_int));
            assign read_access =  (valid_int &  ~(|wstrb_int));
@@ -447,13 +446,14 @@ module iob_cache_axi
            look_ahead_interface 
              #(
                .FE_ADDR_W(FE_ADDR_W),
-               .FE_DATA_W(FE_DATA_W)
+               .FE_DATA_W(FE_DATA_W),
+               .CTRL_CACHE(CTRL_CACHE)
                )
            la_if
              (
               .clk (clk),
               .reset(reset),
-              .addr(addr[FE_ADDR_W:$clog2(FE_NBYTES)]),
+              .addr(addr[CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)]),
               .valid(valid),
               .wdata(wdata),
               .wstrb(wstrb),
@@ -467,7 +467,7 @@ module iob_cache_axi
       else
         begin
            //Internal assignment - Direct wiring
-           assign addr_int  = addr[FE_ADDR_W:$clog2(FE_NBYTES)];
+           assign addr_int  = addr[CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)];
            assign valid_int = valid;
            assign wdata_int = wdata;
            assign wstrb_int = wstrb;
@@ -642,29 +642,29 @@ module look_ahead_interface
   #(
     parameter FE_ADDR_W = 32,
     parameter FE_DATA_W = 32,
-    parameter FE_NBYTES = FE_DATA_W/8
+    parameter FE_NBYTES = FE_DATA_W/8,
+    parameter CTRL_CACHE = 1
     )
    (
     //Input signals
-    input                                 clk,
-    input                                 reset,
-    input [FE_ADDR_W-1:$clog2(FE_NBYTES)] addr, 
-    input [FE_DATA_W-1:0]                 wdata,
-    input [FE_NBYTES-1:0]                 wstrb,
-    input                                 valid,
+    input                                                clk,
+    input                                                reset,
+    input [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)]  addr, 
+    input [FE_DATA_W-1:0]                                wdata,
+    input [FE_NBYTES-1:0]                                wstrb,
+    input                                                valid,
     //Internal stored signals
-    input                                 ready_int, //Ready to update registers
-    output [FE_ADDR_W:$clog2(FE_NBYTES)]  addr_int, //MSB is Ctrl's select
-    output [FE_DATA_W-1:0]                wdata_int,
-    output [FE_NBYTES-1:0]                wstrb_int,
-    output                                valid_int,
-    output                                instr_int  
+    input                                                ready_int, //Ready to update registers
+    output [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)] addr_int, //MSB is Ctrl's select
+    output [FE_DATA_W-1:0]                               wdata_int,
+    output [FE_NBYTES-1:0]                               wstrb_int,
+    output                                               valid_int
     );
    
-   reg [FE_ADDR_W     : $clog2(FE_NBYTES)] addr_la;
-   reg                                     valid_la;
-   reg [FE_DATA_W-1 : 0]                   wdata_la;
-   reg [FE_NBYTES-1: 0]                    wstrb_la;
+   reg [CTRL_CACHE + FE_ADDR_W -1 : $clog2(FE_NBYTES)]   addr_la;
+   reg                                                   valid_la;
+   reg [FE_DATA_W-1 : 0]                                 wdata_la;
+   reg [FE_NBYTES-1: 0]                                  wstrb_la;
 
    always @(posedge clk, posedge reset) //ready acts as a reset
      begin

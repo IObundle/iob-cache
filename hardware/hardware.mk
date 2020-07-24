@@ -1,7 +1,7 @@
 CACHE_HW_DIR:=$(CACHE_DIR)/hardware
-
+MEM_DIR:=$(CACHE_DIR)/submodules/iob-mem
 #submodules
-include $(INTERCON_DIR)/hardware/hardware.mk
+#include $(INTERCON_DIR)/hardware/hardware.mk
 
 #include
 CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
