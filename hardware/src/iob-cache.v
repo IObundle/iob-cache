@@ -36,7 +36,7 @@ module iob_cache
     /*---------------------------------------------------*/
   
     //Controller's options
-    parameter CTRL_CACHE = 1, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
+    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
     parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
@@ -46,7 +46,7 @@ module iob_cache
     input [FE_DATA_W-1:0]                               wdata,
     input [FE_NBYTES-1:0]                               wstrb,
     output reg [FE_DATA_W-1:0]                          rdata,
-     input                                               valid,
+    input                                               valid,
     output                                              ready,
     //Native interface
     output [BE_ADDR_W-1:0]                              mem_addr,
