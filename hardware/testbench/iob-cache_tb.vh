@@ -19,6 +19,10 @@
 //Write-through Buffer depth
 `define WTBUF_DEPTH_W 4
 
+
+//Cache Controller - select to remove it
+`define NO_CTRL
+
 //L2 Cache -- currently only works with `define AXI
 //`define L2 //Currently not working since addr only receives the word.
 

@@ -271,6 +271,9 @@ module iob_cache_tb;
   `else
                    .LA_INTERF(0),
   `endif
+  `ifdef NO_CTRL
+                   .CTRL_CACHE(0),
+  `endif
                    .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                    )
    cache (
@@ -343,6 +346,9 @@ module iob_cache_tb;
                .LA_INTERF(1),
   `else
                .LA_INTERF(0),
+  `endif
+  `ifdef NO_CTRL
+               .CTRL_CACHE(0),
   `endif
                .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )
