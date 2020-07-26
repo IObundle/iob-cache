@@ -1843,7 +1843,7 @@ module memory_section
    
    wire [N_WAYS*(2**WORD_OFF_W)*FE_DATA_W-1:0] line_rdata;
    wire [LINE_OFF_W-1:0]                       line_addr = addr[BYTES_W + WORD_OFF_W +: LINE_OFF_W];
-   wire [TAG_W-1:0]                            line_tag  = addr[            FE_ADDR_W-1 -: TAG_W     ];
+   wire [TAG_W-1:0]                            line_tag  = addr[         FE_ADDR_W-1 -: TAG_W     ];
    wire [WORD_OFF_W-1:0]                       line_word_select = addr[      BYTES_W +: WORD_OFF_W];
    reg [N_WAYS*(2**WORD_OFF_W)*FE_NBYTES-1:0]  line_wstrb;
    
@@ -1892,8 +1892,8 @@ module memory_section
                   if(line_load)
                     line_wstrb = {BE_NBYTES{line_load_en}} << (word_counter*BE_NBYTES + way_select_bin*(2**WORD_OFF_W)*FE_NBYTES);
                   else
-                    line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
-
+                    line_wstrb = (wstrb & {FE_NBYTES{write_en}} & {FE_NBYTES{|way_hit}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
+                
                 for (k = 0; k < N_WAYS; k=k+1)
                   begin : line_way
                      for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
@@ -1909,7 +1909,7 @@ module memory_section
                                   (
                                    .clk (clk),
                                    .en  (valid), 
-                                   .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}),
+                                   .we(line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr(line_addr),
                                    .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
@@ -1964,7 +1964,7 @@ module memory_section
                   if(line_load)
                     line_wstrb = {BE_NBYTES{line_load_en}} << (word_counter*BE_NBYTES);
                   else
-                    line_wstrb = wstrb << (line_word_select*FE_NBYTES);
+                    line_wstrb = (wstrb & {FE_NBYTES{write_en}})  << (line_word_select*FE_NBYTES);
 
 
                 for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
@@ -1980,7 +1980,7 @@ module memory_section
                              (
                               .clk (clk),
                               .en (valid),
-                              .we  ((line_load  | way_hit)? line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}), 
+                              .we  (line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]), 
                               .addr(line_addr),
                               .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                               .data_out(line_rdata[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
@@ -2062,7 +2062,7 @@ module memory_section
              if(line_load)
                line_wstrb = {BE_NBYTES{line_load_en}} << (way_select_bin*(2**WORD_OFF_W)*FE_NBYTES);
              else
-               line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
+               line_wstrb = (wstrb & {FE_NBYTES{write_en}} & {FE_NBYTES{|way_hit}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
 
            for (k = 0; k < N_WAYS; k=k+1)
              begin : line_way
@@ -2079,7 +2079,7 @@ module memory_section
                              (
                               .clk (clk),
                               .en  (valid), 
-                              .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}),
+                              .we  (line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                               .addr(line_addr),
                               .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                               .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
@@ -2134,8 +2134,7 @@ module memory_section
              if(line_load)
                line_wstrb = {BE_NBYTES{line_load_en}};
              else
-               line_wstrb = wstrb << (line_word_select*FE_NBYTES);
-
+               line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES);
 
            for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
              begin : line_word_number
@@ -2150,7 +2149,7 @@ module memory_section
                         (
                          .clk (clk),
                          .en (valid),
-                         .we  ((line_load  | way_hit)? line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}), 
+                         .we  (line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]), 
                          .addr(line_addr),
                          .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                          .data_out(line_rdata[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
