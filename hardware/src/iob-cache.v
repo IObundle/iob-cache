@@ -12,7 +12,7 @@ module iob_cache
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used; LRU_stack (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -30,7 +30,7 @@ module iob_cache
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0, //AXI ID value
     //Cache-Memory base Offset
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
     //Look-ahead Interface - Store Front-End input signals
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
@@ -69,8 +69,8 @@ module iob_cache
    wire                                                 read_miss, hit, write_full, write_empty, write_en;
    wire                                                 line_load, line_load_en;
    wire [BE_DATA_W-1:0]                                 line_load_data;
-   wire [MEM_OFFSET_W-1:0]                              word_counter;
-   wire [`CTRL_COUNTER_W-1:0]                           ctrl_counter;
+   wire [LINE2MEM_DATA_RATIO_W-1:0]                     word_counter;
+   wire [CTRL_CACHE*(`CTRL_COUNTER_W-1):0]              ctrl_counter;
    wire                                                 invalidate;
    
    //Cache - Controller selection
@@ -199,7 +199,7 @@ module iob_cache
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W]),
+      .addr(addr_int[FE_ADDR_W-1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W]),
       .read_miss(read_miss),
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -299,7 +299,7 @@ module iob_cache_axi
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about MEM_OFFSET_W (can cause word_counter [-1:0]
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used; LRU_stack (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -317,7 +317,7 @@ module iob_cache_axi
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0, //AXI ID value
     //Cache-Memory base Offset
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
     //Look-ahead Interface - Store Front-End input signals
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
@@ -389,8 +389,8 @@ module iob_cache_axi
    wire                                                 read_miss, hit, write_full, write_empty, write_en;
    wire                                                 line_load, line_load_en;
    wire [BE_DATA_W-1:0]                                 line_load_data;
-   wire [MEM_OFFSET_W-1:0]                              word_counter;
-   wire [`CTRL_COUNTER_W-1:0]                           ctrl_counter;
+   wire [LINE2MEM_DATA_RATIO_W-1:0]                     word_counter;
+   wire [CTRL_CACHE*(`CTRL_COUNTER_W-1):0]              ctrl_counter;
    wire                                                 invalidate;
 
    //Cache - Controller selection
@@ -515,7 +515,7 @@ module iob_cache_axi
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W]),
+      .addr(addr_int[FE_ADDR_W-1:LINE2MEM_DATA_RATIO_W + BE_BYTES_W]),
       .read_miss(read_miss), 
       .line_load(line_load),
       .line_load_en(line_load_en),
@@ -722,18 +722,18 @@ module main_process
     parameter CTRL_CNT = 1
     )
    (
-    input                            clk,
-    input                            reset,
-    input                            write_access,
-    input                            read_access,
-    output reg                       read_miss, 
-    input                            line_load,
-    input                            hit,
-    input                            write_full,
-    input                            write_empty,
-    output reg                       ready,
-    output reg                       write_en,
-    output reg [`CTRL_COUNTER_W-1:0] ctrl_counter
+    input                                     clk,
+    input                                     reset,
+    input                                     write_access,
+    input                                     read_access,
+    output reg                                read_miss, 
+    input                                     line_load,
+    input                                     hit,
+    input                                     write_full,
+    input                                     write_empty,
+    output reg                                ready,
+    output reg                                write_en,
+    output [CTRL_CACHE*(`CTRL_COUNTER_W-1):0] ctrl_counter
     );
    
    
@@ -744,7 +744,7 @@ module main_process
      read_process  = 2'd3;
    
    
-   reg [1:0]                         state;
+   reg [1:0]                                  state;
    
    always @(posedge clk, posedge reset)
      begin
@@ -833,37 +833,54 @@ module main_process
      end
 
    generate
-      if (CTRL_CACHE & CTRL_CNT)
+      if (CTRL_CACHE)
         begin
-           always @*
+           if(CTRL_CNT)
              begin
-                ctrl_counter = `CTRL_COUNTER_W'd0;
+                reg [`CTRL_COUNTER_W-1:0] ctrl_counter_reg;
                 
-	        case (state)
-                  idle:
-                    ctrl_counter = `CTRL_COUNTER_W'd0;
+                always @*
+                  begin
+                     ctrl_counter_reg = `CTRL_COUNTER_W'd0;
+                     
+	             case (state)
+                       idle:
+                         ctrl_counter_reg = `CTRL_COUNTER_W'd0;
 
-                  write_standby:
-                    if (~write_full)
-                      if(hit)
-                        ctrl_counter = `WRITE_HIT;
-                      else
-                        ctrl_counter = `WRITE_MISS;
-                    else
-                      ctrl_counter = `CTRL_COUNTER_W'd0;
-                  
+                       write_standby:
+                         if (~write_full)
+                           if(hit)
+                             ctrl_counter_reg = `WRITE_HIT;
+                           else
+                             ctrl_counter_reg = `WRITE_MISS;
+                         else
+                           ctrl_counter_reg = `CTRL_COUNTER_W'd0;
+                       
 
-                  read_standby:
-                    if (hit)
-                      ctrl_counter = `READ_HIT;
-                    else
-                      if(write_empty)
-                        ctrl_counter = `READ_MISS;
-                      else
-                        ctrl_counter = `CTRL_COUNTER_W'd0;         
-                endcase
-             end   
+                       read_standby:
+                         if (hit)
+                           ctrl_counter_reg = `READ_HIT;
+                         else
+                           if(write_empty)
+                             ctrl_counter_reg = `READ_MISS;
+                           else
+                             ctrl_counter_reg = `CTRL_COUNTER_W'd0;         
+                     endcase // case (state)
+                     
+                  end // always @ *
+
+                assign ctrl_counter = ctrl_counter_reg;
+             end
+           else
+             begin
+                assign ctrl_counter = {`CTRL_COUNTER_W{1'bx}}; //Don't care, isn't used
+             end // else: !if(CTRL_CNT)
         end
+      else
+        begin
+           assign  ctrl_counter = 1'bx; //Don't care, isn't used
+        end // else: !if(CTRL_CACHE)
+      
    endgenerate
    
    
@@ -891,40 +908,40 @@ module read_process_axi
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0,  //AXI ID value
     //Cache-Memory base Offset
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache's word and memory word size
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache's word and memory word size
     )
    (
-    input                                           clk,
-    input                                           reset,
-    input [FE_ADDR_W -1: MEM_OFFSET_W + BE_BYTES_W] addr,
-    input                                           read_miss, //read access that results in a cache miss
-    output reg                                      line_load, //load cache line with new data
-    output                                          line_load_en,//Memory enable during the cache line load
-    output reg [MEM_OFFSET_W-1:0]                   word_counter,//counter to enable each word in the line
-    output [BE_DATA_W-1:0]                          line_load_data,//data to load the cache line  
+    input                                                    clk,
+    input                                                    reset,
+    input [FE_ADDR_W -1: LINE2MEM_DATA_RATIO_W + BE_BYTES_W] addr,
+    input                                                    read_miss, //read access that results in a cache miss
+    output reg                                               line_load, //load cache line with new data
+    output                                                   line_load_en,//Memory enable during the cache line load
+    output reg [LINE2MEM_DATA_RATIO_W-1:0]                   word_counter,//counter to enable each word in the line
+    output [BE_DATA_W-1:0]                                   line_load_data,//data to load the cache line  
     // AXI interface  
     //Address Read
-    output [AXI_ID_W-1:0]                           axi_arid,
-    output [BE_ADDR_W-1:0]                          axi_araddr, 
-    output [7:0]                                    axi_arlen,
-    output [2:0]                                    axi_arsize,
-    output [1:0]                                    axi_arburst,
-    output [0:0]                                    axi_arlock,
-    output [3:0]                                    axi_arcache,
-    output [2:0]                                    axi_arprot,
-    output [3:0]                                    axi_arqos,
-    output reg                                      axi_arvalid, 
-    input                                           axi_arready,
+    output [AXI_ID_W-1:0]                                    axi_arid,
+    output [BE_ADDR_W-1:0]                                   axi_araddr, 
+    output [7:0]                                             axi_arlen,
+    output [2:0]                                             axi_arsize,
+    output [1:0]                                             axi_arburst,
+    output [0:0]                                             axi_arlock,
+    output [3:0]                                             axi_arcache,
+    output [2:0]                                             axi_arprot,
+    output [3:0]                                             axi_arqos,
+    output reg                                               axi_arvalid, 
+    input                                                    axi_arready,
     //Read
-    input [BE_DATA_W-1:0]                           axi_rdata,
-    input [1:0]                                     axi_rresp,
-    input                                           axi_rlast, 
-    input                                           axi_rvalid, 
-    output reg                                      axi_rready
+    input [BE_DATA_W-1:0]                                    axi_rdata,
+    input [1:0]                                              axi_rresp,
+    input                                                    axi_rlast, 
+    input                                                    axi_rvalid, 
+    output reg                                               axi_rready
     );
 
    generate
-      if(MEM_OFFSET_W > 0)
+      if(LINE2MEM_DATA_RATIO_W > 0)
         begin
            
            //Constant AXI signals
@@ -934,10 +951,10 @@ module read_process_axi
            assign axi_arprot  = 3'd0;
            assign axi_arqos   = 4'd0;
            //Burst parameters
-           assign axi_arlen   = 2**MEM_OFFSET_W -1; //will choose the burst lenght depending on the cache's and slave's data width
+           assign axi_arlen   = 2**LINE2MEM_DATA_RATIO_W -1; //will choose the burst lenght depending on the cache's and slave's data width
            assign axi_arsize  = BE_BYTES_W; //each word will be the width of the memory for maximum bandwidth
            assign axi_arburst = 2'b01; //incremental burst
-           assign axi_araddr  = {{BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W], {(MEM_OFFSET_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
+           assign axi_araddr  = {{BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1:LINE2MEM_DATA_RATIO_W + BE_BYTES_W], {(LINE2MEM_DATA_RATIO_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
 
            //Line Load signals
            assign line_load_en   = axi_rvalid;
@@ -1057,7 +1074,7 @@ module read_process_axi
                   
                 endcase
              end // always @ *
-        end // if (MEM_OFFSET_W > 0)
+        end // if (LINE2MEM_DATA_RATIO_W > 0)
 
       
       else
@@ -1073,7 +1090,7 @@ module read_process_axi
            assign axi_arlen   = 8'd0; //A single burst of Memory data width word
            assign axi_arsize  = BE_BYTES_W; //each word will be the width of the memory for maximum bandwidth
            assign axi_arburst = 2'b00; 
-           assign axi_araddr  = {{BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1:MEM_OFFSET_W + BE_BYTES_W], {(MEM_OFFSET_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
+           assign axi_araddr  = {{BE_ADDR_W{1'b0}}+addr[FE_ADDR_W-1:LINE2MEM_DATA_RATIO_W + BE_BYTES_W], {(LINE2MEM_DATA_RATIO_W+BE_BYTES_W){1'b0}}}; //base address for the burst, with width extension 
 
            //Line Load signals
            assign line_load_en   = axi_rvalid;
@@ -1190,28 +1207,28 @@ module read_process_native
     parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
     parameter BE_BYTES_W = $clog2(BE_NBYTES), //Offset of the Number of Bytes
     //Cache-Memory base Offset
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
     )
    (
-    input                                           clk,
-    input                                           reset,
-    input [FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W] addr,
-    input                                           read_miss, //read access that results in a cache miss
-    output reg                                      line_load, //load cache line with new data
-    output                                          line_load_en,//Memory enable during the cache line load
-    output reg [MEM_OFFSET_W-1:0]                   word_counter,//counter to enable each word in the line
-    output [BE_DATA_W-1:0]                          line_load_data,//data to load the cache line  
+    input                                                    clk,
+    input                                                    reset,
+    input [FE_ADDR_W -1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W] addr,
+    input                                                    read_miss, //read access that results in a cache miss
+    output reg                                               line_load, //load cache line with new data
+    output                                                   line_load_en,//Memory enable during the cache line load
+    output reg [LINE2MEM_DATA_RATIO_W-1:0]                   word_counter,//counter to enable each word in the line
+    output [BE_DATA_W-1:0]                                   line_load_data,//data to load the cache line  
     //Native memory interface
-    output [BE_ADDR_W -1:0]                         mem_addr,
-    output reg                                      mem_valid,
-    input                                           mem_ready,
-    input [BE_DATA_W-1:0]                           mem_rdata
+    output [BE_ADDR_W -1:0]                                  mem_addr,
+    output reg                                               mem_valid,
+    input                                                    mem_ready,
+    input [BE_DATA_W-1:0]                                    mem_rdata
     );
 
    generate
-      if (MEM_OFFSET_W > 0)
+      if (LINE2MEM_DATA_RATIO_W > 0)
         begin
-           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W -1: BE_BYTES_W + MEM_OFFSET_W], word_counter, {BE_BYTES_W{1'b0}} };
+           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W -1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W], word_counter, {BE_BYTES_W{1'b0}} };
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1250,7 +1267,7 @@ module read_process_native
                        handshake:
                          begin
                             if(mem_ready)
-                              if(word_counter == {MEM_OFFSET_W{1'b1}})
+                              if(word_counter == {LINE2MEM_DATA_RATIO_W{1'b1}})
                                 state <= end_handshake;
                               else
                                 begin
@@ -1314,7 +1331,7 @@ module read_process_native
         end // if (MEM_OFF_W > 0)
       else
         begin
-           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1: BE_BYTES_W + MEM_OFFSET_W], {BE_BYTES_W{1'b0}}};
+           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W], {BE_BYTES_W{1'b0}}};
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -1794,7 +1811,7 @@ module memory_section
     parameter BE_DATA_W = FE_DATA_W, //Data width of the memory
     parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
     //Do NOT change - slave parameters - dependency
-    parameter MEM_OFFSET_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU //LRU - Least Recently Used (stack/shift); LRU_add (1) - LRU with adders ; BIT_PLRU (2) - bit-based pseudoLRU; TREE_PLRU (3) - tree-based pseudoLRU
     )
@@ -1812,7 +1829,7 @@ module memory_section
      //
      input                                 line_load, //process of loading the cache-line
      input                                 line_load_en, //enable for during a cache line load
-     input [MEM_OFFSET_W-1:0]              word_counter, //selects the cache-line words elligible to be written
+     input [LINE2MEM_DATA_RATIO_W-1:0]     word_counter, //selects the cache-line words elligible to be written
      output                                hit, //cache-hit(1), cache-miss(0)
      input                                 write_en, //global enable
      input                                 invalidate   //invalidate entire cache
@@ -1826,14 +1843,14 @@ module memory_section
    
    wire [N_WAYS*(2**WORD_OFF_W)*FE_DATA_W-1:0] line_rdata;
    wire [LINE_OFF_W-1:0]                       line_addr = addr[BYTES_W + WORD_OFF_W +: LINE_OFF_W];
-   wire [TAG_W-1:0]                            line_tag  = addr[            FE_ADDR_W-1 -: TAG_W     ];
+   wire [TAG_W-1:0]                            line_tag  = addr[         FE_ADDR_W-1 -: TAG_W     ];
    wire [WORD_OFF_W-1:0]                       line_word_select = addr[      BYTES_W +: WORD_OFF_W];
    reg [N_WAYS*(2**WORD_OFF_W)*FE_NBYTES-1:0]  line_wstrb;
    
    
    genvar                                      i,j,k;
    generate
-      if (MEM_OFFSET_W > 0)
+      if (LINE2MEM_DATA_RATIO_W > 0)
         begin
            if(N_WAYS != 1)
              begin
@@ -1875,11 +1892,11 @@ module memory_section
                   if(line_load)
                     line_wstrb = {BE_NBYTES{line_load_en}} << (word_counter*BE_NBYTES + way_select_bin*(2**WORD_OFF_W)*FE_NBYTES);
                   else
-                    line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
-
+                    line_wstrb = (wstrb & {FE_NBYTES{write_en}} & {FE_NBYTES{|way_hit}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
+                
                 for (k = 0; k < N_WAYS; k=k+1)
                   begin : line_way
-                     for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                     for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
                        begin : line_word_number
                           for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                             begin : line_word_width
@@ -1892,13 +1909,13 @@ module memory_section
                                   (
                                    .clk (clk),
                                    .en  (valid), 
-                                   .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}),
+                                   .we(line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr(line_addr),
                                    .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                                    );
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
-                       end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                       end // for (j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
                      iob_reg_file
                        #(
                          .ADDR_WIDTH(LINE_OFF_W), 
@@ -1947,10 +1964,10 @@ module memory_section
                   if(line_load)
                     line_wstrb = {BE_NBYTES{line_load_en}} << (word_counter*BE_NBYTES);
                   else
-                    line_wstrb = wstrb << (line_word_select*FE_NBYTES);
+                    line_wstrb = (wstrb & {FE_NBYTES{write_en}})  << (line_word_select*FE_NBYTES);
 
 
-                for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
                   begin : line_word_number
                      for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                        begin : line_word_width
@@ -1963,13 +1980,13 @@ module memory_section
                              (
                               .clk (clk),
                               .en (valid),
-                              .we  ((line_load  | way_hit)? line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}), 
+                              .we  (line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]), 
                               .addr(line_addr),
                               .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                               .data_out(line_rdata[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                               );
                        end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
-                  end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)  
+                  end // for (j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)  
                 iob_reg_file
                   #(
                     .ADDR_WIDTH(LINE_OFF_W), 
@@ -2045,11 +2062,11 @@ module memory_section
              if(line_load)
                line_wstrb = {BE_NBYTES{line_load_en}} << (way_select_bin*(2**WORD_OFF_W)*FE_NBYTES);
              else
-               line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
+               line_wstrb = (wstrb & {FE_NBYTES{write_en}} & {FE_NBYTES{|way_hit}}) << (line_word_select*FE_NBYTES + way_hit_bin*(2**WORD_OFF_W)*FE_NBYTES);
 
            for (k = 0; k < N_WAYS; k=k+1)
              begin : line_way
-                for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
                   begin : line_word_number
                      for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                        begin : line_word_width
@@ -2062,13 +2079,13 @@ module memory_section
                              (
                               .clk (clk),
                               .en  (valid), 
-                              .we  ((line_load | way_hit[k])? line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}),
+                              .we  (line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                               .addr(line_addr),
                               .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                               .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                               );
                        end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
-                  end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+                  end // for (j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
                 iob_reg_file
                   #(
                     .ADDR_WIDTH(LINE_OFF_W), 
@@ -2117,10 +2134,9 @@ module memory_section
              if(line_load)
                line_wstrb = {BE_NBYTES{line_load_en}};
              else
-               line_wstrb = wstrb << (line_word_select*FE_NBYTES);
+               line_wstrb = (wstrb & {FE_NBYTES{write_en}}) << (line_word_select*FE_NBYTES);
 
-
-           for(j = 0; j < 2**MEM_OFFSET_W; j=j+1)
+           for(j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)
              begin : line_word_number
                 for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                   begin : line_word_width
@@ -2133,13 +2149,13 @@ module memory_section
                         (
                          .clk (clk),
                          .en (valid),
-                         .we  ((line_load  | way_hit)? line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}), 
+                         .we  (line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]), 
                          .addr(line_addr),
                          .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
                          .data_out(line_rdata[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                          );
                   end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
-             end // for (j = 0; j < 2**MEM_OFFSET_W; j=j+1)  
+             end // for (j = 0; j < 2**LINE2MEM_DATA_RATIO_W; j=j+1)  
            iob_reg_file
              #(
                .ADDR_WIDTH(LINE_OFF_W), 
@@ -2615,7 +2631,7 @@ module iob_gen_sp_ram #(
                 .we  (we[i]),
                 .addr(addr),
                 .data_out(data_out[8*i +: 8]),
-                .data_in (data_in[8*i +: 8])
+                .data_in (data_in [8*i +: 8])
                 );
         end
    endgenerate
