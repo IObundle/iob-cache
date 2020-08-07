@@ -15,22 +15,19 @@ module iob_cache
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `LRU, //LRU - Least Recently Used; LRU_stack (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `LRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
-    parameter BYTES_W  = $clog2(FE_NBYTES), //Offset of the Number of Bytes per Word
+    parameter BYTES_W  = $clog2(FE_NBYTES), //Byte Offset
     /*---------------------------------------------------*/
     //Higher hierarchy memory (slave) interface parameters 
     parameter BE_ADDR_W = FE_ADDR_W, //Address width of the higher hierarchy memory
     parameter BE_DATA_W = FE_DATA_W, //Data width of the memory 
     parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
     parameter BE_BYTES_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
-    //AXI specific parameters
-    parameter AXI_ID_W              = 1, //AXI ID (identification) width
-    parameter [AXI_ID_W-1:0] AXI_ID = 0, //AXI ID value
     //Cache-Memory base Offset
-    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
     //Look-ahead Interface - Store Front-End input signals
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
@@ -42,7 +39,11 @@ module iob_cache
    (
     input                                               clk,
     input                                               reset,
+`ifdef WORD_ADDR   
     input [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)] addr, //MSB is used for Controller selection
+`else
+    input [CTRL_CACHE + FE_ADDR_W -1:0]                 addr, //MSB is used for Controller selection
+`endif
     input [FE_DATA_W-1:0]                               wdata,
     input [FE_NBYTES-1:0]                               wstrb,
     output reg [FE_DATA_W-1:0]                          rdata,
@@ -300,7 +301,7 @@ module iob_cache_axi
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
-    parameter WTBUF_DEPTH_W = 2,   //Depth Width of Write-Through Buffer
+    parameter WTBUF_DEPTH_W = 4,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `LRU, //LRU - Least Recently Used; LRU_stack (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     //Do NOT change - memory cache's parameters - dependency
@@ -317,7 +318,7 @@ module iob_cache_axi
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0, //AXI ID value
     //Cache-Memory base Offset
-    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache word's and memory word size (Can't be 0)
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //Logarithm Ratio between the size of the cache-line and the BE's data width 
     //Look-ahead Interface - Store Front-End input signals
     parameter LA_INTERF = 0,
     /*---------------------------------------------------*/
@@ -908,7 +909,7 @@ module read_process_axi
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0,  //AXI ID value
     //Cache-Memory base Offset
-    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache's word and memory word size
+    parameter LINE2MEM_DATA_RATIO_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //Logarithm Ratio between the size of the cache-line and the BE's data width 
     )
    (
     input                                                    clk,
@@ -1331,7 +1332,7 @@ module read_process_native
         end // if (MEM_OFF_W > 0)
       else
         begin
-           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W], {BE_BYTES_W{1'b0}}};
+           assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1: BE_BYTES_W], {BE_BYTES_W{1'b0}}};
            
            //Cache Line Load signals
            assign line_load_en = mem_ready & mem_valid & line_load;
@@ -2299,62 +2300,6 @@ module replacement_process
               );
            
         end // if (REP_POLICU == `LRU)
-      else if(REP_POLICY == `LRU_stack)
-        begin
-
-           wire [N_WAYS-1:0] mru_check;
-           wire [NWAY_W-1:0] way_hit_bin;
-           
-           wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
-           wire [N_WAYS*NWAY_W -1:0] mru_init;
-           wire [N_WAYS*NWAY_W -1:0] mru_shift [N_WAYS-1:1] ;
-           wire [N_WAYS*NWAY_W -1:0] mru_cnt   [N_WAYS-1:0] ;
-           wire [NWAY_W-1:0]         lru;
-           
-           
-           for (i=0; i < N_WAYS; i = i+1)
-             begin: mru_init_position_check
-                assign mru_init [i*NWAY_W +: NWAY_W] = (|mru_output)? mru_output [i*NWAY_W +: NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
-                assign mru_check[i] = (1<<(mru_init[i*NWAY_W +: NWAY_W]) == way_hit)? 1'b1: 1'b0; //checks the current position of the MRU way, one-hot nomenclature
-             end
-
-           assign mru_cnt[0] = {(N_WAYS*NWAY_W){mru_check[0]}} & {mru_init[0 +: NWAY_W], mru_init[N_WAYS*NWAY_W-1 : NWAY_W]};         
-           
-           for (i=1; i < N_WAYS-1; i=i+1)
-             begin: MRU_block_shift_counter
-                assign mru_shift [i] = {(N_WAYS*NWAY_W){mru_check[i]}} &  {mru_init[i*NWAY_W +: NWAY_W], mru_init [N_WAYS*NWAY_W-1 : (i+1)*NWAY_W], mru_init[i*NWAY_W -1 : 0]};
-                assign mru_cnt [i] = mru_shift[i] | mru_cnt[i-1];
-             end
-           
-           assign mru_shift [N_WAYS-1] = {(N_WAYS*NWAY_W){mru_check[N_WAYS-1]}} & {mru_init[N_WAYS*NWAY_W-1 -: NWAY_W], mru_init [(N_WAYS-1)*NWAY_W-1 : 0]}; 
-           assign mru_cnt [N_WAYS-1] = mru_shift [N_WAYS-1] | mru_cnt[N_WAYS-2];  
-
-           //The least recently used way are the LSBs of the mru_cnt in the last layer
-           assign mru_input = mru_cnt[N_WAYS-1];
-           assign lru = mru_output[0 +: NWAY_W];
-           assign way_select_bin =  lru;//binary
-           assign way_select = 1 << lru;//one-hot
-           
-           
-           //Most Recently Used (MRU) memory	   
-           iob_reg_file
-             #(
-               .ADDR_WIDTH (LINE_OFF_W),		
-               .COL_WIDTH (N_WAYS*NWAY_W),
-               .NUM_COL (1)
-               ) 
-           mru_memory //simply uses the same format as valid memory
-             (
-              .clk  (clk          ),
-              .rst  (reset        ),
-              .wdata(mru_input    ),
-              .rdata(mru_output   ),			             
-              .addr (line_addr    ),
-              .en   (write_en     )
-              );
-           
-           
-        end // if (REP_POLICY == `LRU_stack)
       else if (REP_POLICY == `BIT_PLRU)
         begin
 
