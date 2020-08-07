@@ -39,11 +39,11 @@ module iob_cache
    (
     input                                               clk,
     input                                               reset,
- `ifdef WORD_ADDR   
+`ifdef WORD_ADDR   
     input [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)] addr, //MSB is used for Controller selection
- `else
+`else
     input [CTRL_CACHE + FE_ADDR_W -1:0]                 addr, //MSB is used for Controller selection
- `endif
+`endif
     input [FE_DATA_W-1:0]                               wdata,
     input [FE_NBYTES-1:0]                               wstrb,
     output reg [FE_DATA_W-1:0]                          rdata,
