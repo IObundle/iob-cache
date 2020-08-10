@@ -3,8 +3,8 @@
 `define LINE_OFF_W 2
 `define WORD_OFF_W 4
 `define ADDR_W 12
-`define DATA_W 16
-`define N_BYTES 2
+`define DATA_W 32
+`define N_BYTES 4
 // Replacement Policy (N_WAYS > 1 only) - check below the values
 `define REP_POLICY 0
 
@@ -40,7 +40,7 @@
 `define CTRL_COUNTER_W 3
 `define CTRL_ADDR_W 5
 
-//uses one-hot enconding - counter for number of hit and misses
+//counter for number of hit and misses
 `define READ_HIT   (`CTRL_COUNTER_W'd1)
 `define READ_MISS  (`CTRL_COUNTER_W'd2)
 `define WRITE_HIT  (`CTRL_COUNTER_W'd3)
