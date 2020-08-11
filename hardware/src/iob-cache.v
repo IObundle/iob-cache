@@ -161,6 +161,7 @@ module iob_cache
 
    main_process
      #(
+       .LINE_OFF_W(LINE_OFF_W),
        .CTRL_CACHE(CTRL_CACHE),
        .CTRL_CNT(CTRL_CNT)
        )
@@ -177,6 +178,9 @@ module iob_cache
       .write_empty(write_empty),
       .ready(ready_cache),
       .write_en(write_en),
+`ifdef CACHE_PIPELINE
+      .index (addr_int[BYTES_W + WORD_OFF_W +: LINE_OFF_W]),
+`endif
       .ctrl_counter(ctrl_counter)
       );
 
@@ -485,6 +489,7 @@ module iob_cache_axi
 
    main_process
      #(
+       .LINE_OFF_W(LINE_OFF_W),
        .CTRL_CACHE(CTRL_CACHE),
        .CTRL_CNT(CTRL_CNT)
        )
@@ -501,6 +506,9 @@ module iob_cache_axi
       .write_empty(write_empty),
       .ready(ready_cache),
       .write_en(write_en),
+`ifdef CACHE_PIPELINE
+      .index (addr_int[BYTES_W + WORD_OFF_W +: LINE_OFF_W]),
+`endif
       .ctrl_counter(ctrl_counter)
       );
 
@@ -723,6 +731,7 @@ endmodule // look_ahead_interface
 
 module main_process
   #(
+    parameter LINE_OFF_W = 4,
     parameter CTRL_CACHE = 1,
     parameter CTRL_CNT = 1
     )
@@ -738,6 +747,9 @@ module main_process
     input                                     write_empty,
     output reg                                ready,
     output reg                                write_en,
+`ifdef CACHE_PIPELINE
+    input [LINE_OFF_W-1:0]                    index,
+`endif
     output [CTRL_CACHE*(`CTRL_COUNTER_W-1):0] ctrl_counter
     );
    
@@ -747,6 +759,20 @@ module main_process
      write_standby = 2'd1,
      read_standby  = 2'd2,
      read_process  = 2'd3;
+
+
+`ifdef CACHE_PIPELINE
+   reg [LINE_OFF_W-1:0]                       index_prev;
+   reg                                        write_prev;
+   
+   wire                                       index_seq_read = (index_prev == index) & (~write_prev); //Sequential access to the same index that was NOT a write (write-read-latency on the same address, register output on BRAMs)
+      
+   always @ (posedge clk) 
+     begin
+        index_prev <= index;
+        write_prev <= write_access;
+     end
+`endif
    
    
    reg [1:0]                                  state;
@@ -760,7 +786,13 @@ module main_process
             idle:
               begin
                  if (read_access)
-                   state <= read_standby;
+`ifdef CACHE_PIPELINE
+                   if(hit & index_seq_read)
+                     state <= idle;
+                   else
+`endif
+                     state <= read_standby;
+                 
                  else
                    if(write_access)
                      state <= write_standby;
@@ -810,8 +842,14 @@ module main_process
 	case (state)
           idle:
             begin
+`ifdef CACHE_PIPELINE
+               ready = hit & index_seq_read & read_access;
+               write_en = hit & index_seq_read & read_access;   
+`else
                ready = 1'b0;
                write_en = 1'b0;
+`endif
+               
             end
 
           write_standby:
@@ -1913,7 +1951,7 @@ module memory_section
                                cache_memory 
                                   (
                                    .clk (clk),
-                                   .en  (valid), 
+                                   .en  (~reset), 
                                    .we(line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr(line_addr),
                                    .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
@@ -1945,7 +1983,7 @@ module memory_section
                      tag_memory 
                        (
                         .clk (clk                                ),
-                        .en  (valid                              ), 
+                        .en  (~reset                             ), 
                         .we  ((way_select[k])? line_load_en : 1'b0),
                         .addr(line_addr                          ),
                         .data_in (line_tag                       ),
@@ -1984,7 +2022,7 @@ module memory_section
                           cache_memory 
                              (
                               .clk (clk),
-                              .en (valid),
+                              .en  (~reset ),
                               .we  (line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]), 
                               .addr(line_addr),
                               .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
@@ -2016,7 +2054,7 @@ module memory_section
                 tag_memory 
                   (
                    .clk (clk      ),
-                   .en  (valid    ), 
+                   .en  (~reset   ), 
                    .we  (line_load),
                    .addr(line_addr),
                    .data_in (line_tag ),
@@ -2083,7 +2121,7 @@ module memory_section
                           cache_memory 
                              (
                               .clk (clk),
-                              .en  (valid), 
+                              .en  (~reset), 
                               .we  (line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                               .addr(line_addr),
                               .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
@@ -2115,7 +2153,7 @@ module memory_section
                 tag_memory 
                   (
                    .clk     (clk                                ),
-                   .en      (valid                              ), 
+                   .en      (~reset                             ), 
                    .we      ((way_select[k])? line_load : 1'b0),
                    .addr    (line_addr                          ),
                    .data_in (line_tag                           ),
@@ -2153,7 +2191,7 @@ module memory_section
                      cache_memory 
                         (
                          .clk (clk),
-                         .en (valid),
+                         .en  (~reset),
                          .we  (line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]), 
                          .addr(line_addr),
                          .data_in ((line_load)? line_load_data[i*FE_DATA_W +: FE_DATA_W] : wdata),
@@ -2185,7 +2223,7 @@ module memory_section
            tag_memory 
              (
               .clk     (clk      ),
-              .en      (valid    ), 
+              .en      (~reset   ), 
               .we      (line_load),
               .addr    (line_addr),
               .data_in (line_tag ),

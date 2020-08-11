@@ -102,7 +102,7 @@ module iob_cache_tb;
         wdata <= 0;
         wstrb <= 0;
         #2;
-        $display("Test 4 - Reading Byte Addressing using Data Width Words\n");
+        $display("Test 4 - Reading Byte Addressing using Data Width Words - only for 32-bit (BE_DATA_W = 32)\n");
         test <= 4;
         #2;
         for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
@@ -120,6 +120,35 @@ module iob_cache_tb;
              valid <= 0;
              #2;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+
+
+
+        $display("Test 5 - Forcing a cache-line load, followed by a write and a read to the same position");
+        test <= 5;
+        #8;
+        addr <=0;
+        wstrb <= 0;
+        wdata <= 0;
+        valid <= 1;
+        #2;
+        
+        while(ready == 1'b0) #2;
+        valid <= 0;
+        #8;
+        valid <= 1;
+        
+        wdata <= {`DATA_W{1'b1}};
+        wstrb <= {`DATA_W/8{1'b1}};
+        while(ready == 1'b0)#2;
+        wdata <= 0;
+        wstrb <= 0;
+        while (ready == 1'b0) #2;
+        if(rdata != {`DATA_W{1'b1}})
+          $display("Data was accessed too early, still read: %h, instead of all HIGH",  rdata);
+        #8;
+        
+        valid <= 0;
+        #2;
         
         $display("Cache testing completed\n");
         $finish;
@@ -447,10 +476,10 @@ module iob_cache_tb;
 `else
 
    iob_reg_file #(
-		   .COL_WIDTH(8),
-		   .NUM_COL(`MEM_DATA_W/8),
-                   .ADDR_WIDTH(`MEM_ADDR_W-2)
-                   )
+		  .COL_WIDTH(8),
+		  .NUM_COL(`MEM_DATA_W/8),
+                  .ADDR_WIDTH(`MEM_ADDR_W-2)
+                  )
    iob_gen_memory
      (
       .clk(clk),
