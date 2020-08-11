@@ -3,8 +3,8 @@
 `define LINE_OFF_W 2
 `define WORD_OFF_W 4
 `define ADDR_W 12
-`define DATA_W 16
-`define N_BYTES 2
+`define DATA_W 32
+`define N_BYTES 4
 // Replacement Policy (N_WAYS > 1 only) - check below the values
 `define REP_POLICY 0
 

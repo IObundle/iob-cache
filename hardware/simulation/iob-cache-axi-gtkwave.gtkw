@@ -1,20 +1,20 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Thu Aug  6 20:14:07 2020
+[*] Mon Aug 10 23:14:34 2020
 [*]
 [dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Thu Aug  6 19:40:33 2020"
-[dumpfile_size] 18399133
+[dumpfile_mtime] "Mon Aug 10 23:14:33 2020"
+[dumpfile_size] 12041230
 [savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-axi-gtkwave.gtkw"
-[timestart] 16603580
+[timestart] 50571640
 [size] 1855 951
 [pos] -856 -1
-*-13.000000 16624000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-13.000000 50584000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
 [treeopen] iob_cache_tb.cache.read_fsm.
 [sst_width] 234
-[signals_width] 273
+[signals_width] 783
 [sst_expanded] 1
 [sst_vpaned_height] 574
 @28
@@ -26,25 +26,45 @@ iob_cache_tb.test[31:0]
 @200
 -
 -Front-end
-@28
+@22
+iob_cache_tb.cache.addr[11:2]
+iob_cache_tb.cache.wdata[31:0]
+iob_cache_tb.cache.wstrb[3:0]
+@29
 iob_cache_tb.valid
+@28
 iob_cache_tb.ready
+@22
+iob_cache_tb.cache.rdata[31:0]
 @200
 -
+@28
+iob_cache_tb.cache.main_fsm.state[1:0]
+@22
+iob_cache_tb.cache.memory_cache.line_rdata[511:0]
+@28
+iob_cache_tb.cache.memory_cache.way_hit
+iob_cache_tb.cache.memory_cache.v
+@200
 -Back-end NATIVE
+@22
+iob_cache_tb.cache.memory_cache.line_load_data[255:0]
+@200
 -
 -Back-end AXI
 -READ
+@22
+iob_cache_tb.cache.read_fsm.axi_araddr[11:0]
 @28
-iob_cache_tb.axi_arready
 iob_cache_tb.axi_arvalid
+iob_cache_tb.axi_arready
+@22
+iob_cache_tb.cache.read_fsm.axi_rdata[255:0]
+@28
 iob_cache_tb.axi_rready
 iob_cache_tb.axi_rvalid
 @200
 -Read_process
-@29
-iob_cache_tb.cache.read_fsm.genblk1.state[1:0]
-@200
 -
 @28
 iob_cache_tb.cache.clk
@@ -53,6 +73,7 @@ iob_cache_tb.cache.write_access
 -WRITE
 @22
 iob_cache_tb.axi_awaddr[11:0]
+iob_cache_tb.cache.write_fsm.axi_wdata[255:0]
 @28
 iob_cache_tb.axi_awvalid
 iob_cache_tb.axi_awready

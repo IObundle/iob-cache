@@ -763,11 +763,15 @@ module main_process
 
 `ifdef CACHE_PIPELINE
    reg [LINE_OFF_W-1:0]                       index_prev;
-
-   wire                                       seq_access = (index_prev == index);
-
-   always @ (posedge clk)
-     index_prev <= index;
+   reg                                        write_prev;
+   
+   wire                                       index_seq_read = (index_prev == index) & (~write_prev); //Sequential access to the same index that was NOT a write (write-read-latency on the same address, register output on BRAMs)
+      
+   always @ (posedge clk) 
+     begin
+        index_prev <= index;
+        write_prev <= write_access;
+     end
 `endif
    
    
@@ -783,7 +787,7 @@ module main_process
               begin
                  if (read_access)
 `ifdef CACHE_PIPELINE
-                   if(hit & seq_access)
+                   if(hit & index_seq_read)
                      state <= idle;
                    else
 `endif
@@ -839,8 +843,8 @@ module main_process
           idle:
             begin
 `ifdef CACHE_PIPELINE
-               ready = hit & seq_access;
-               write_en = hit & seq_access;   
+               ready = hit & index_seq_read & read_access;
+               write_en = hit & index_seq_read & read_access;   
 `else
                ready = 1'b0;
                write_en = 1'b0;
