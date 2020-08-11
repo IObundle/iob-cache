@@ -180,6 +180,7 @@ module iob_cache
       .write_en(write_en),
 `ifdef CACHE_PIPELINE
       .index (addr_int[BYTES_W + WORD_OFF_W +: LINE_OFF_W]),
+      .read (~(|wstrb_int)),
 `endif
       .ctrl_counter(ctrl_counter)
       );
@@ -508,6 +509,7 @@ module iob_cache_axi
       .write_en(write_en),
 `ifdef CACHE_PIPELINE
       .index (addr_int[BYTES_W + WORD_OFF_W +: LINE_OFF_W]),
+      .read (~(|wstrb_int)),
 `endif
       .ctrl_counter(ctrl_counter)
       );
@@ -749,6 +751,7 @@ module main_process
     output reg                                write_en,
 `ifdef CACHE_PIPELINE
     input [LINE_OFF_W-1:0]                    index,
+    input                                     read,
 `endif
     output [CTRL_CACHE*(`CTRL_COUNTER_W-1):0] ctrl_counter
     );
@@ -843,8 +846,8 @@ module main_process
           idle:
             begin
 `ifdef CACHE_PIPELINE
-               ready = hit & index_seq_read & read_access;
-               write_en = hit & index_seq_read & read_access;   
+               ready = hit & index_seq_read & read;
+               write_en = hit & index_seq_read & read;   
 `else
                ready = 1'b0;
                write_en = 1'b0;
