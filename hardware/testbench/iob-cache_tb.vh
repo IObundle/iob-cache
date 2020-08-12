@@ -1,5 +1,5 @@
 //Cache parameters (including front-end's)
-`define N_WAYS 1
+`define N_WAYS 8
 `define LINE_OFF_W 2
 `define WORD_OFF_W 4
 `define ADDR_W 12
@@ -21,7 +21,7 @@
 
 
 //Cache Controller - select to remove it
-`define NO_CTRL
+//`define NO_CTRL
 
 //L2 Cache -- currently only works with `define AXI
 //`define L2 //Currently not working since addr only receives the word.
