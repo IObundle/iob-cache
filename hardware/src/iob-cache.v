@@ -100,9 +100,9 @@ module iob_cache
            
            always@*
              rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
-           
-           assign ready_int = (cache_select)? ready_cache : ready_ctrl;
-           
+
+           assign ready_int = ready_cache | ready_ctrl;
+
         end // if (CTRL_CACHE)
       else 
         begin
@@ -428,9 +428,9 @@ module iob_cache_axi
            assign rdata_ctrlcache = {rdata_ctrl, rdata_cache};
            
            always@*
-             rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
+             rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select;
            
-           assign ready_int = (cache_select)? ready_cache : ready_ctrl;
+           assign ready_int = ready_cache | ready_ctrl;
            
         end // if (CTRL_CACHE)
       else 
@@ -769,7 +769,7 @@ module main_process
    reg                                        write_prev;
    
    wire                                       index_seq_read = (index_prev == index) & (~write_prev); //Sequential access to the same index that was NOT a write (write-read-latency on the same address, register output on BRAMs)
-      
+   
    always @ (posedge clk) 
      begin
         index_prev <= index;
@@ -1277,7 +1277,8 @@ module read_process_native
            assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W -1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W], word_counter, {BE_BYTES_W{1'b0}} };
            
            //Cache Line Load signals
-           assign line_load_en = mem_ready & mem_valid & line_load;
+           //assign line_load_en = mem_ready & mem_valid & line_load;
+           assign line_load_en = mem_ready & mem_valid; //doesn require line_load since when mem_valid is HIGH, so is line_load.
            assign line_load_data = mem_rdata;
 
            localparam
