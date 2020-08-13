@@ -1596,7 +1596,7 @@ module write_process_axi
                    state <= write_process;
                  
                  else
-                   state <= init_process;
+                   state <= addr_process;
               end
 
             write_process:
