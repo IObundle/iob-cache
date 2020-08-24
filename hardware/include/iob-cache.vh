@@ -1,5 +1,12 @@
+
+//Address-port
+`define WORD_ADDR // Word-addressable, (BE) addr becomes word-addressable (doesn't receive the byte-offset).
+
+`define CACHE_PIPELINE //Allows faster accesses for processors with pipelined-architecture: adds a comparator that compares the current cache-line's index to the previous, to see if it's accessing the same line
+
+
 //Replacement Policy
-`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line
+`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
 `define BIT_PLRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
 `define TREE_PLRU 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
 

@@ -1,24 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Wed May 20 18:18:25 2020
+[*] Mon Aug 10 23:14:34 2020
 [*]
-[dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Wed May 20 18:18:10 2020"
-[dumpfile_size] 61353048
-[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/iob-cache-axi-gtkwave.gtkw"
-[timestart] 0
-[size] 895 942
-[pos] -1 -1
-*-15.000000 28000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
+[dumpfile_mtime] "Mon Aug 10 23:14:33 2020"
+[dumpfile_size] 12041230
+[savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-axi-gtkwave.gtkw"
+[timestart] 50571640
+[size] 1855 951
+[pos] -856 -1
+*-13.000000 50584000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
-[treeopen] iob_cache_tb.cache.genblk6.
-[treeopen] iob_cache_tb.cache.genblk6.write_fsm.
-[treeopen] iob_cache_tb.cache.genblk6.write_fsm.write_throught_buffer.
+[treeopen] iob_cache_tb.cache.read_fsm.
 [sst_width] 234
-[signals_width] 273
+[signals_width] 783
 [sst_expanded] 1
-[sst_vpaned_height] 568
+[sst_vpaned_height] 574
 @28
 iob_cache_tb.clk
 @200
@@ -30,69 +28,58 @@ iob_cache_tb.test[31:0]
 -Front-end
 @22
 iob_cache_tb.cache.addr[11:2]
-iob_cache_tb.wdata[31:0]
-iob_cache_tb.wstrb[3:0]
-iob_cache_tb.rdata[31:0]
-@28
+iob_cache_tb.cache.wdata[31:0]
+iob_cache_tb.cache.wstrb[3:0]
+@29
 iob_cache_tb.valid
+@28
 iob_cache_tb.ready
+@22
+iob_cache_tb.cache.rdata[31:0]
 @200
 -
--Back-end NATIVE
 @28
-iob_cache_tb.mem_valid
-iob_cache_tb.mem_ready
+iob_cache_tb.cache.main_fsm.state[1:0]
+@22
+iob_cache_tb.cache.memory_cache.line_rdata[511:0]
+@28
+iob_cache_tb.cache.memory_cache.way_hit
+iob_cache_tb.cache.memory_cache.v
+@200
+-Back-end NATIVE
+@22
+iob_cache_tb.cache.memory_cache.line_load_data[255:0]
 @200
 -
 -Back-end AXI
 -READ
+@22
+iob_cache_tb.cache.read_fsm.axi_araddr[11:0]
 @28
-iob_cache_tb.axi_arready
 iob_cache_tb.axi_arvalid
+iob_cache_tb.axi_arready
+@22
+iob_cache_tb.cache.read_fsm.axi_rdata[255:0]
+@28
 iob_cache_tb.axi_rready
 iob_cache_tb.axi_rvalid
 @200
 -Read_process
-@28
-iob_cache_tb.cache.genblk6.read_fsm.state[1:0]
-iob_cache_tb.cache.genblk6.read_fsm.read_miss
-@22
-iob_cache_tb.cache.genblk6.read_fsm.word_counter[3:0]
-iob_cache_tb.cache.genblk6.read_fsm.line_load_data[31:0]
-@28
-iob_cache_tb.cache.genblk6.read_fsm.line_load_en
-iob_cache_tb.cache.genblk6.read_fsm.line_load
-@200
 -
 @28
 iob_cache_tb.cache.clk
 iob_cache_tb.cache.write_access
-@29
-iob_cache_tb.cache.genblk6.write_fsm.write_throught_buffer.write_en
 @200
 -WRITE
 @22
 iob_cache_tb.axi_awaddr[11:0]
+iob_cache_tb.cache.write_fsm.axi_wdata[255:0]
 @28
 iob_cache_tb.axi_awvalid
 iob_cache_tb.axi_awready
-@22
-iob_cache_tb.axi_wdata[31:0]
-iob_cache_tb.axi_wstrb[3:0]
-@28
 iob_cache_tb.axi_wvalid
 iob_cache_tb.axi_wready
 @200
 -Write_process
-@22
-iob_cache_tb.cache.genblk6.write_fsm.state[3:0]
-@28
-iob_cache_tb.cache.genblk6.write_fsm.write_empty
-iob_cache_tb.cache.genblk6.write_fsm.write_full
-@22
-iob_cache_tb.cache.genblk6.write_fsm.buffer_din[45:0]
-iob_cache_tb.cache.genblk6.write_fsm.buffer_dout[45:0]
-@28
-iob_cache_tb.cache.genblk6.write_fsm.write_en
 [pattern_trace] 1
 [pattern_trace] 0

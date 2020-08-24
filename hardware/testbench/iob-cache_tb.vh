@@ -1,7 +1,7 @@
 //Cache parameters (including front-end's)
-`define N_WAYS 32
+`define N_WAYS 8
 `define LINE_OFF_W 2
-`define WORD_OFF_W 3
+`define WORD_OFF_W 4
 `define ADDR_W 12
 `define DATA_W 32
 `define N_BYTES 4
@@ -19,6 +19,10 @@
 //Write-through Buffer depth
 `define WTBUF_DEPTH_W 4
 
+
+//Cache Controller - select to remove it
+//`define NO_CTRL
+
 //L2 Cache -- currently only works with `define AXI
 //`define L2 //Currently not working since addr only receives the word.
 
@@ -28,7 +32,7 @@
 `define VCD
 
 //Replacement Policy
-`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line
+`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
 `define BIT_PLRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
 `define TREE_PLRU 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
 
@@ -36,7 +40,7 @@
 `define CTRL_COUNTER_W 3
 `define CTRL_ADDR_W 5
 
-//uses one-hot enconding - counter for number of hit and misses
+//counter for number of hit and misses
 `define READ_HIT   (`CTRL_COUNTER_W'd1)
 `define READ_MISS  (`CTRL_COUNTER_W'd2)
 `define WRITE_HIT  (`CTRL_COUNTER_W'd3)

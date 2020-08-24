@@ -1,11 +1,8 @@
 #module paths
 CACHE_DIR:=../../..
-INTERCON_DIR:=$(CACHE_DIR)/submodules/iob-interconnect
-MEM_DIR:=$(CACHE_DIR)/submodules/iob-mem
-AXI_MEM_DIR:=$(CACHE_DIR)/submodules/axi-mem
 
 incdir:=-I
-define:=-D
+defmacro:=-D
 
 include ../simulation.mk
 
