@@ -122,7 +122,7 @@ module iob_cache_tb;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
 
 
-
+/*
         $display("Test 5 - Forcing a cache-line load, followed by a write and a read to the same position");
         test <= 5;
         #8;
@@ -149,7 +149,7 @@ module iob_cache_tb;
         
         valid <= 0;
         #2;
-        
+*/        
         $display("Cache testing completed\n");
         $finish;
      end
