@@ -1614,9 +1614,9 @@ module write_process_axi
                      if(buffer_empty)
                        state <= idle;
                      else
-                       state <= init_process;
+                       state <= init_process; //updates buffer.
                    else
-                     state <= init_process; //wasn't well written
+                     state <= addr_process; //goes back to transfer the same data.
                  else
                    state <= verif_process;
               end
@@ -1787,7 +1787,10 @@ module write_process_native
             write_process:
               begin
                  if(mem_ready)
-                   state <= idle;
+                   if(buffer_empty)
+                     state <= idle;
+                   else
+                     state <= init_process;
                  else
                    state <= write_process;
               end
@@ -1805,7 +1808,7 @@ module write_process_native
           idle:
             write_empty = buffer_empty;
           init_process:
-            buffer_read_en = 1'b1; //update buffer in it's read port
+            buffer_read_en = 1'b1; //update buffer's output
           write_process:
             mem_valid = 1'b1;
           default:;
@@ -2276,9 +2279,9 @@ endmodule  // onehot_to_bin
 module replacement_process 
   #(
     parameter N_WAYS     = 16,
-    parameter LINE_OFF_W = 6,
+    parameter LINE_OFF_W = 0,
     parameter NWAY_W = $clog2(N_WAYS),
-    parameter REP_POLICY = `LRU //LRU - Least Recently Used; LRU_sh (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `TREE_PLRU //LRU - Least Recently Used; LRU_sh (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     )
    (
     input                  clk,
