@@ -6,10 +6,10 @@
 `define DATA_W 32
 `define N_BYTES 4
 // Replacement Policy (N_WAYS > 1 only) - check below the values
-`define REP_POLICY 3
+`define REP_POLICY 0
 
 //Back-end Memory interface AXI or Native
-//`define AXI
+`define AXI
 
 //Cache back-end parameters
 `define MEM_ADDR_W 12
