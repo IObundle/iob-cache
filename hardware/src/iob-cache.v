@@ -1614,9 +1614,9 @@ module write_process_axi
                      if(buffer_empty)
                        state <= idle;
                      else
-                       state <= init_process;
+                       state <= init_process; //updates buffer.
                    else
-                     state <= init_process; //wasn't well written
+                     state <= addr_process; //goes back to transfer the same data.
                  else
                    state <= verif_process;
               end
@@ -1787,7 +1787,10 @@ module write_process_native
             write_process:
               begin
                  if(mem_ready)
-                   state <= idle;
+                   if(buffer_empty)
+                     state <= idle;
+                   else
+                     state <= init_process;
                  else
                    state <= write_process;
               end
@@ -1805,7 +1808,7 @@ module write_process_native
           idle:
             write_empty = buffer_empty;
           init_process:
-            buffer_read_en = 1'b1; //update buffer in it's read port
+            buffer_read_en = 1'b1; //update buffer's output
           write_process:
             mem_valid = 1'b1;
           default:;
@@ -2276,9 +2279,9 @@ endmodule  // onehot_to_bin
 module replacement_process 
   #(
     parameter N_WAYS     = 16,
-    parameter LINE_OFF_W = 6,
+    parameter LINE_OFF_W = 0,
     parameter NWAY_W = $clog2(N_WAYS),
-    parameter REP_POLICY = `LRU //LRU - Least Recently Used; LRU_stack (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `TREE_PLRU //LRU - Least Recently Used; LRU_sh (LRU that uses shifts as a stack) ; BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
     )
    (
     input                  clk,
@@ -2346,6 +2349,71 @@ module replacement_process
               );
            
         end // if (REP_POLICU == `LRU)
+      else if(REP_POLICY == `LRU_sh)
+        begin
+
+           wire [NWAY_W-1:0] way_hit_bin;
+           wire [N_WAYS-1:0] shift_en;                 
+           wire [N_WAYS*NWAY_W -1:0] mru_output, mru_input;
+           wire [N_WAYS*NWAY_W -1:0] mru_init;
+           wire [N_WAYS*NWAY_W -1:0] mru_shift[N_WAYS-1:0];           
+           wire [NWAY_W-1:0]         lru;
+           
+           
+           for (i=0; i < N_WAYS; i = i+1)
+             begin: mru_init_position_check
+                assign mru_init [i*NWAY_W +: NWAY_W] = (|mru_output)? mru_output [i*NWAY_W +: NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values, where the lower way line_addres are the least recent (lesser priority)
+             end
+           
+           //Selects the least recent used way (encoder for one-hot to binary format)
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           hit_binary
+             (      
+                    .onehot(way_hit[N_WAYS-1:1]),
+                    .bin(way_hit_bin)
+                    );
+
+
+           for (i=0; i < N_WAYS; i = i+1)
+             begin: shift_enabler
+                assign shift_en [i] = (mru_init[i*NWAY_W +: NWAY_W] == way_hit_bin); //checks the position of the hit
+             end
+
+           
+           assign mru_shift[0] = mru_init;
+           assign mru_shift[1] = (shift_en[0])? {{NWAY_W{1'b0}}, mru_shift[0][N_WAYS*NWAY_W-1:NWAY_W]} : mru_shift[0];
+           for (i = 2; i < N_WAYS; i = i+1)
+             begin: priority_shifts
+                assign mru_shift[i] = (shift_en[i-1])? { {NWAY_W{1'b0}}, mru_shift[i-1][N_WAYS*NWAY_W -1:(i)*NWAY_W], mru_shift[i-1][(i-1)*NWAY_W -1:0]} : mru_shift[i-1];
+             end
+
+           assign mru_input = {mru_shift[N_WAYS-1][N_WAYS*NWAY_W -1-: NWAY_W] | way_hit_bin,  mru_shift[N_WAYS-1][(N_WAYS-1)*NWAY_W-1 :0]}; //makes an OR of the MRU with the Way_hit_bin
+           
+           assign lru = mru_output[0 +: NWAY_W];
+           assign way_select_bin =  lru;//binary
+           assign way_select = 1 << lru;//one-hot
+           
+           //Most Recently Used (MRU) memory	   
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),		
+               .COL_WIDTH (N_WAYS*NWAY_W),
+               .NUM_COL (1)
+               ) 
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(mru_input    ),
+              .rdata(mru_output   ),			             
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+           
+           
+        end // if (REP_POLICY == `LRU_sh)
       else if (REP_POLICY == `BIT_PLRU)
         begin
 

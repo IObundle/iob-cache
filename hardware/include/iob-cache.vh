@@ -9,6 +9,8 @@
 `define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
 `define BIT_PLRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
 `define TREE_PLRU 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
+`define LRU_sh    3 // Least Recently Used (with shifts) -- unfortunately uses more resources than LRU
+
 
 //CONTROLLER
 `define CTRL_COUNTER_W 3
