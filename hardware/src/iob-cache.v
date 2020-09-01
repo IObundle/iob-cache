@@ -32,7 +32,7 @@ module iob_cache
   
     //Controller's options
     parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
     input                                        clk,
@@ -55,300 +55,135 @@ module iob_cache
     output [BE_NBYTES-1:0]                       mem_wstrb,
     input [BE_DATA_W-1:0]                        mem_rdata
     );
+
+
+
+
    
    //Internal signals
-   wire [CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)] addr_int;  //MSB is the Ctrl's select
-   wire                                               valid_int;
-   wire [FE_DATA_W-1 : 0]                             wdata_int;
-   wire [FE_NBYTES-1: 0]                              wstrb_int;
-   wire                                               ready_int;
+   wire [FE_ADDR_W -1:FE_BYTES_W]                addr_int; 
+   wire [FE_DATA_W-1 : 0]                        wdata_int;
+   wire [FE_NBYTES-1: 0]                         wstrb_int;
+   //stored signals
+   wire [FE_ADDR_W -1:FE_BYTES_W]                addr_r; 
+   wire [FE_DATA_W-1 : 0]                        wdata_r;
+   wire [FE_NBYTES-1: 0]                         wstrb_r; 
    
+   //cache-memory
+   wire                                          hit, buffer_full, buffer_empty, global_wen;
+   //back-end
+   wire                                          read_replace, read_valid, read_miss;
+   wire [BE_DATA_W-1:0]                          read_data;
+   wire [LINE2MEM_DATA_RATIO_W-1:0]              read_counter;
+   wire [FE_ADDR_W -1:FE_BYTES_W]                write_addr; 
+   wire [FE_DATA_W-1 : 0]                        write_wdata;
+   wire [FE_NBYTES-1: 0]                         write_wstrb; 
    
-   //Process connection and controller signals
-   wire                                               read_miss, hit, write_full, write_empty, write_en;
-   wire                                               line_load, line_load_en;
-   wire [BE_DATA_W-1:0]                               line_load_data;
-   wire [LINE2MEM_DATA_RATIO_W-1:0]                   word_counter;
-   wire [`CTRL_COUNTER_W-):0]                         ctrl_counter;
-   wire                                               invalidate;
-   
-   //Cache - Controller selection
-   wire                                               cache_select; //selects memory cache (1) or controller (0), using addr's MSB //  
-   wire                                               write_access;
-   wire                                               read_access;
-   wire                                               ctrl_select;        
-   
-   
-   //Cache - Memory-Controller signals
-   wire [FE_DATA_W-1:0]                               rdata_cache, rdata_ctrl;
-   wire                                               ready_cache, ready_ctrl;
-   wire [2*FE_DATA_W-1:0]                             rdata_ctrlcache;
+   //cache-control
+   wire [`CTRL_ADDR_W-1:0]                       ctrl_task;
+   wire                                          ctrl_valid, ctrl_ready;
+   wire [FE_DATA_W-1:0]                          ctrl_data;
+   wire [1:0]                                    ctrl_status;
+   wire [`CTRL_COUNTER_W-1:0]                    ctrl_counter;
+   wire                                          invalidate;
 
 
-
+   
    front_end
      #(
-     .FE_ADDR_W(FE_ADDR_W),
-     .FE_DATA_W(FE_DATA_W),
-     .CTRL_CACHE(CTRL_CACHE),
-     .CTRL_CNT  (CTRL_CNT)
+       .FE_ADDR_W(FE_ADDR_W),
+       .FE_DATA_W(FE_DATA_W),
+       .CTRL_CACHE(CTRL_CACHE),
+       .CTRL_CNT  (CTRL_CNT)
        )
    front_end
      (
-     .clk (clk),
-     .reset(reset),
-     //front-end port
-     .addr(addr),
-     .wdata(wdata),
-     .wstrb(wstrb),
-     .valid(valid),
-     .ready(ready),
-     .rdata(rdata),
-     //internal input signals
-     .addr_int (addr_int),
-     .wdata_int(wdata_int),
-     .wstrb_int(wstrb_int),
-     .rdata_int(rdata_int),//cache_memory
-     //stored input signals
-     .addr_str (addr_str),
-     .wdata_str(wdata_str),
-     .wstrb_str(wstrb_str),
-     //back-end & memory signals
-     .hit(hit),
-     .buffer_full (buffer_full),
-     .buffer_empty(buffer_empty),
-     .write_idle  (write_idle),
-     .read_miss   (read_miss),
-     .read_replace(read_replace),
-     //control's signals
-     .ctrl_task   (ctrl_task),
-     .ctrl_valid  (ctrl_valid),
-     .ctrl_data   (ctrl_data),
-     .ctrl_ready  (ctrl_ready),
-     .ctrl_status (ctrl_status),
-     .ctrl_counter(ctrl_counter)
-       );
+      .clk (clk),
+      .reset(reset),
+      //front-end port
+      .addr(addr),
+      .wdata(wdata),
+      .wstrb(wstrb),
+      .valid(valid),
+      .ready(ready),
+      .rdata(rdata),
+      //internal input signals
+      .addr_int (addr_int),
+      .wdata_int(wdata_int),
+      .wstrb_int(wstrb_int),
+      .rdata_int(rdata_int),//cache-memory
+      //stored input signals
+      .addr_r (addr_r),
+      .wdata_r(wdata_r),
+      .wstrb_r(wstrb_r),
+      //back-end & memory signals
+      .hit         (hit),
+      .buffer_full (buffer_full),
+      .buffer_empty(buffer_empty),
+      .write_idle  (write_idle),
+      .read_miss   (read_miss),
+      .read_replace(read_replace),
+      //control's signals
+      .ctrl_task   (ctrl_task),
+      .ctrl_valid  (ctrl_valid),
+      .ctrl_data   (ctrl_data),
+      .ctrl_ready  (ctrl_ready),
+      .ctrl_status (ctrl_status),
+      .ctrl_counter(ctrl_counter)
+      );
 
 
    
    cache_memory
      #(
-     .FE_ADDR_W(FE_ADDR_W),
-     .FE_DATA_W(FE_DATA_W),
-     .N_WAYS       (N_WAYS),
-     .LINE_OFF_W   (LINE_OFF_W),
-     .WORD_OFF_W   (WORD_OFF_W),
-     .REP_POLICY   (REP_POLICY),    
-     .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
-     .BE_DATA_W(BE_DATA_W)
+       .FE_ADDR_W(FE_ADDR_W),
+       .FE_DATA_W(FE_DATA_W),
+       .N_WAYS       (N_WAYS),
+       .LINE_OFF_W   (LINE_OFF_W),
+       .WORD_OFF_W   (WORD_OFF_W),
+       .REP_POLICY   (REP_POLICY),    
+       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+       .BE_DATA_W(BE_DATA_W)
        )
    cache_memory
      (
-     .clk  (clk),
-     .reset(reset),
-     //front-end
-     .addr     (addr_int),
-        .wdata    (wdata_int),
-        .wstrb    (wstrb_int),
-        .rdata    (rdata_int),
-        .valid    (valid_int),
-        .global_en(write_en),
-        .hit      (hit),
-        //back-end
-        //read
-        .read_addr   (read_addr),
-        .read_data   (read_data),
-        .read_valid  (read_valid),
-        .read_replace(read_replace),
-        .read_counter(read_counter),
-        //write
-        .write_addr (write_addr),
-        .write_wdata(write_wdata),
-        .write_wstrb(write_wstrb),
-        //control
-        .invalidate(invalidate)
-       );
+      .clk  (clk),
+      .reset(reset),
+      //front-end
+      //internal
+      .global_wen(global_wen),
+      .addr (addr_int),
+      .wdata(wdata_int),
+      .wstrb(wstrb_int),
+      .rdata(rdata_int),
+      .valid(valid_int),
+      //stored  
+      .addr_r (addr_r),
+      .wdata_r(wdata_r),
+      .wstrb_r(wstrb_r),
+      //cache-memory signals
+      .hit         (hit),     
+      .buffer_full (buffer_full),
+      .buffer_empty(buffer_empty),
+      //back-end
+      //read
+      .read_addr   (read_addr),
+      .read_data   (read_data),
+      .read_valid  (read_valid),
+      .read_replace(read_replace),
+      .read_counter(read_counter),
+      //write
+      .write_addr (write_addr),
+      .write_wdata(write_wdata),
+      .write_wstrb(write_wstrb),
+      //control
+      .invalidate(invalidate)
+      );
 
 
 
-
-
+   
    back_end_native
-     #(
-     .FE_ADDR_W(FE_ADDR_W),
-     .FE_DATA_W(FE_DATA_W),  
-     .WORD_OFF_W(WORD_OFF_W),
-     .BE_ADDR_W (BE_ADDR_W),
-     .BE_DATA_W (BE_DATA_W)
-       )
-   back_end
-     (
-     .clk(clk),
-     .reset(reset),
-     //back-end port
-     .mem_addr (mem_addr),
-     .mem_wdata(mem_wdata),
-     .mem_wstrb(mem_wstrb),
-     .mem_valid(mem_valid),
-     .mem_rdata(mem_rdata),
-     .mem_ready(mem_ready),
-     //read-fsm
-     .read_miss   (read_miss),
-     .read_addr   (read_addr),
-     .read_data   (read_data),
-     .read_valid  (read_valid),
-     .read_replace(read_replace),
-     .read_counter(read_counter),
-     //write-fsm
-     .write_idle  (write_idle),
-     .write_addr  (write_addr),
-     .write_wdata (write_wdata),
-     .write_wstrb (write_wstrb),
-     .write_update(write_update)
-       );
-   
-   
-   
-
-
-   generate
-      if (CTRL_CACHE)
-         
-        cache_control
-          #(
-          .FE_DATA_W  (FE_DATA_W),
-          .CTRL_CNT   (CTRL_CNT)
-            )
-      cache_control
-        (
-        .clk(clk),
-          .reset(reset),
-          .ctrl_task   (ctrl_task),
-          .ctrl_valid  (ctrl_valid),
-          .ctrl_data   (ctrl_data),
-          .ctrl_ready  (ctrl_ready),
-          .ctrl_status (ctrl_status),
-          .ctrl_counter(ctrl_counter),
-          .invalidate  (invalidate)
-          );
-      
-   endgenerate
-
-   
-
-   
-   /*
-    wire [BE_ADDR_W-1:0] mem_addr_read,  mem_addr_write;
-    wire                 mem_valid_read, mem_valid_write;
-    
-    assign mem_addr =  (line_load)? mem_addr_read : mem_addr_write;
-    assign mem_valid = (line_load)? mem_valid_read: mem_valid_write;                   
-    */
-
-
-   /*  
-    generate
-    if(CTRL_CACHE) 
-    begin
-    //Cache - Controller selection
-    assign cache_select = ~addr_int[CTRL_CACHE + FE_ADDR_W -1] & valid_int; //selects memory cache (1) or controller (0), using addr's MSB //  
-    assign write_access = (cache_select &   (|wstrb_int));
-    assign read_access =  (cache_select &  ~(|wstrb_int));
-    assign ctrl_select  = addr_int[CTRL_CACHE + FE_ADDR_W -1] & valid_int;
-
-    //Cache - Memory-Controller signals
-    assign rdata_ctrlcache = {rdata_ctrl, rdata_cache};
-    
-    always@*
-    rdata = rdata_ctrlcache << FE_DATA_W*ctrl_select; 
-
-    assign ready_int = ready_cache | ready_ctrl;
-
-        end // if (CTRL_CACHE)
-    else 
-    begin
-    assign cache_select = valid_int;
-    assign write_access = (valid_int &   (|wstrb_int));
-    assign read_access =  (valid_int &  ~(|wstrb_int));
-
-    always@*
-    rdata = rdata_cache;
-    
-    assign ready_int = ready_cache;
-    assign invalidate = 1'b0;
-    
-        end // else: !if(CTRL_CACHE)
-   endgenerate
-
-    assign ready = ready_int;
-    */
-   /*  
-    generate
-    if (LA_INTERF) //Look-Ahead Interface - signal storage
-    begin
-
-    look_ahead_interface 
-    #(
-    .FE_ADDR_W(FE_ADDR_W),
-    .FE_DATA_W(FE_DATA_W),
-    .CTRL_CACHE(CTRL_CACHE)
-    )
-    la_if
-    (
-    .clk (clk),
-    .reset(reset),
-    .addr(addr[CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)]),
-    .valid(valid),
-    .wdata(wdata),
-    .wstrb(wstrb),
-    .ready_int(ready_int),
-    .addr_int(addr_int),
-    .valid_int(valid_int),
-    .wdata_int(wdata_int),
-    .wstrb_int(wstrb_int)
-    );
-        end
-    else
-    begin
-    //Internal assignment - Direct wiring
-    assign addr_int  = addr[CTRL_CACHE + FE_ADDR_W -1:$clog2(FE_NBYTES)];
-    assign valid_int = valid;
-    assign wdata_int = wdata;
-    assign wstrb_int = wstrb;
-        end // else: !if(LA_INTERF)
-   endgenerate
-
-    
-    main_process
-    #(
-    .LINE_OFF_W(LINE_OFF_W),
-    .CTRL_CACHE(CTRL_CACHE),
-    .CTRL_CNT(CTRL_CNT)
-    )
-    main_fsm
-    (
-    .clk(clk),
-    .reset(reset),
-    .write_access(write_access),
-    .read_access(read_access),
-    .read_miss(read_miss),
-    .line_load(line_load),
-    .hit(hit),
-    .write_full(write_full),
-    .write_empty(write_empty),
-    .ready(ready_cache),
-    .write_en(write_en),
-    `ifdef CACHE_PIPELINE
-    .index (addr_int[FE_BYTES_W + WORD_OFF_W +: LINE_OFF_W]),
-    .read (~(|wstrb_int)),
-    `endif
-    .ctrl_counter(ctrl_counter)
-    );
-
-    */
-
-   /*
-   read_process_native
      #(
        .FE_ADDR_W(FE_ADDR_W),
        .FE_DATA_W(FE_DATA_W),  
@@ -356,179 +191,64 @@ module iob_cache
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W)
        )
-   read_fsm
+   back_end
      (
       .clk(clk),
       .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1: BE_BYTES_W + LINE2MEM_DATA_RATIO_W]),
-      .read_miss(read_miss),
-      .line_load(line_load),
-      .line_load_en(line_load_en),
-      .word_counter(word_counter),
-      .line_load_data(line_load_data),
-      .mem_addr(mem_addr_read),
-      .mem_valid(mem_valid_read),
-      .mem_ready(mem_ready),
-      .mem_rdata(mem_rdata)  
-      );
-
-   write_process_native
-     #(
-       .FE_ADDR_W(FE_ADDR_W),
-       .FE_DATA_W(FE_DATA_W),
-       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
-       .BE_ADDR_W (BE_ADDR_W),
-       .BE_DATA_W (BE_DATA_W)
-       )
-   write_fsm
-     (
-      .clk(clk),
-      .reset(reset),
-      .addr(addr_int[FE_ADDR_W-1:$clog2(FE_NBYTES)]),
-      .wstrb(wstrb_int),
-      .wdata(wdata_int),
-      .write_empty(write_empty),
-      .write_full(write_full),
-      .write_en(write_en),
-      .mem_addr(mem_addr_write),
-      .mem_valid(mem_valid_write),
-      .mem_ready(mem_ready),
+      //read-fsm
+      .read_miss   (read_miss),
+      .read_addr   (read_addr),
+      .read_data   (read_data),
+      .read_valid  (read_valid),
+      .read_replace(read_replace),
+      .read_counter(read_counter),
+      //write-fsm
+      .write_idle  (write_idle),
+      .write_addr  (write_addr),
+      .write_wdata (write_wdata),
+      .write_wstrb (write_wstrb),
+      .write_update(write_update),
+      //back-end port
+      .mem_addr (mem_addr),
       .mem_wdata(mem_wdata),
-      .mem_wstrb(mem_wstrb)
+      .mem_wstrb(mem_wstrb),
+      .mem_valid(mem_valid),
+      .mem_rdata(mem_rdata),
+      .mem_ready(mem_ready)
       );
- */  
-/*
-   cache_memory
-     #(
-       .FE_ADDR_W(FE_ADDR_W),
-       .FE_DATA_W(FE_DATA_W),
-       .N_WAYS(N_WAYS),
-       .LINE_OFF_W(LINE_OFF_W),
-       .WORD_OFF_W(WORD_OFF_W),
-       .BE_DATA_W(BE_DATA_W),
-       .REP_POLICY(REP_POLICY)
-       )
-   cache_memory
-     (
-      .clk  (clk),
-      .reset(reset),
-      .addr (addr_int[FE_ADDR_W-1:$clog2(FE_NBYTES)]),
-      .wdata(wdata_int),
-      .wstrb(wstrb_int),
-      .rdata(rdata_cache),
-      .valid(cache_select),
-      .line_load_data(line_load_data),
-      .line_load(line_load),
-      .line_load_en(line_load_en),
-      .word_counter(word_counter),
-      .hit(hit),
-      .write_en(write_en),
-      .invalidate(invalidate)
-      );
-*/
-
    
-
-endmodule // iob_cache
-
-
-module front_end
-  #(
-    parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
-    parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-
-    //Do NOT change - memory cache's parameters - dependency
-    parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
-    parameter FE_NBYTES  = FE_DATA_W/8,       //Number of Bytes per Word
-    parameter FE_BYTES_W = $clog2(FE_NBYTES), //Offset of the Number of Bytes per Word
-
-    //Control's options
-    parameter CTRL_CACHE = 1,
-    parameter CTRL_CNT = 1
-    )
-   (
-    //front-end port
-                         input                                        clk,
-      input                                        reset,
-`ifdef WORD_ADDR   
-                         input [CTRL_CACHE + FE_ADDR_W -1:FE_BYTES_W] addr, //MSB is used for Controller selection
-`else
-                         input [CTRL_CACHE + FE_ADDR_W -1:0]          addr, //MSB is used for Controller selection
-`endif
-                         input [FE_DATA_W-1:0]                        wdata,
-     input [FE_NBYTES-1:0]                        wstrb,
-     input                                        valid,
-      output                                    ready,
-      output  [FE_DATA_W-1:0]                   rdata,
-     //internal input signals
-     output [FE_ADDR_W-1:FE_BYTES_W]              addr_int,
-     output [FE_DATA_W-1:0]                       wdata_int,
-     output [FE_NBYTES-1:0]                       wstrb_int,
-     input [FE_DATA_W-1:0]                        rdata_int,
-     //stored input signals
-     output reg [FE_ADDR_W-1:FE_BYTES_W]          addr_str,
-     output reg [FE_DATA_W-1:0]                   wdata_str,
-     output reg [FE_NBYTES-1:0]                   wstrb_str,
-     output reg [FE_DATA_W-1:0]                   rdata_str,
-     //back-end & memory signals
-     input                                        hit,
-     input                                        buffer_full,
-     input                                        buffer_empty,
-     input                                        write_idle,
-     output reg                                   read_miss,
-     input                                        read_replace,
-  //control
-     output [`CTRL_ADDR_W-1:0]                    ctrl_task,
-     output                                       ctrl_valid,
-     input [FE_DATA_W-1:0]                        ctrl_data,
-     input                                        ctrl_ready,
-     input [1:0]                                  ctrl_status,
-     output reg [`CTRL_CNT_W-1:0]                 ctrl_counter
-    );
-
-   wire                                           cache_select, ctrl_select;
-   wire                                           write_access, read_access;
-   assign addr_int = addr [FE_ADDR_W-1:FE_BYTES_W];
-   assign wdata_int = wdata;
-   assign wstrb_int = wstrb;
    
-
    
- generate
-      if(CTRL_CACHE) 
-        begin
-           //Cache - Controller selection
-           assign cache_select = ~addr[CTRL_CACHE + FE_ADDR_W -1] & valid; 
-           assign write_access = (cache_select &   (|wstrb));
-           assign read_access  = (cache_select &  ~(|wstrb));
-           
-           assign ctrl_select  = addr[CTRL_CACHE + FE_ADDR_W -1] & valid;
-           
-           assign ready = ctrl_ready | ready_int;
-           assign rdata = (ctrl_ready)? ctrl_data : rdata_int;
-                      
-        end // if (CTRL_CACHE)
-      else 
-        begin
-           assign write_access = (valid &   (|wstrb));
-           assign read_access =  (valid &  ~(|wstrb));
-           
-           assign rdata = rdata_int;
-           assign ready = ready_int;    
-           
-        end // else: !if(CTRL_CACHE)
+   generate
+      if (CTRL_CACHE)
+         
+        cache_control
+          #(
+            .FE_DATA_W  (FE_DATA_W),
+            .CTRL_CNT   (CTRL_CNT)
+            )
+      cache_control
+        (
+         .clk(clk),
+         .reset(reset),
+         .ctrl_task   (ctrl_task),
+         .ctrl_valid  (ctrl_valid),
+         .ctrl_data   (ctrl_data),
+         .ctrl_ready  (ctrl_ready),
+         .ctrl_status (ctrl_status),
+         .ctrl_counter(ctrl_counter),
+         .invalidate  (invalidate)
+         );
+      
    endgenerate
 
+endmodule // iob_cache   
 
 
-   
-endmodule
-
-     
-  module iob_cache_axi 
-    #(
-      //memory cache's parameters
-      parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
+module iob_cache_axi 
+  #(
+    //memory cache's parameters
+    parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 8,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 4,     //Line-Offset Width - 2**NLINE_W total cache lines
@@ -1106,54 +826,46 @@ module main_process
      end
 
    generate
-      if (CTRL_CACHE)
+      if (CTRL_CACHE & CTRL_CNT)
         begin
-           if(CTRL_CNT)
+           reg [`CTRL_COUNTER_W-1:0] ctrl_counter_reg;
+           
+           always @*
              begin
-                reg [`CTRL_COUNTER_W-1:0] ctrl_counter_reg;
+                ctrl_counter_reg = `CTRL_COUNTER_W'd0;
                 
-                always @*
-                  begin
-                     ctrl_counter_reg = `CTRL_COUNTER_W'd0;
-                     
-	             case (state)
-                       idle:
-                         ctrl_counter_reg = `CTRL_COUNTER_W'd0;
+	        case (state)
+                  idle:
+                    ctrl_counter_reg = `CTRL_COUNTER_W'd0;
 
-                       write_standby:
-                         if (~write_full)
-                           if(hit)
-                             ctrl_counter_reg = `WRITE_HIT;
-                           else
-                             ctrl_counter_reg = `WRITE_MISS;
-                         else
-                           ctrl_counter_reg = `CTRL_COUNTER_W'd0;
-                       
+                  write_standby:
+                    if (~write_full)
+                      if(hit)
+                        ctrl_counter_reg = `WRITE_HIT;
+                      else
+                        ctrl_counter_reg = `WRITE_MISS;
+                    else
+                      ctrl_counter_reg = `CTRL_COUNTER_W'd0;
+                  
 
-                       read_standby:
-                         if (hit)
-                           ctrl_counter_reg = `READ_HIT;
-                         else
-                           if(write_empty)
-                             ctrl_counter_reg = `READ_MISS;
-                           else
-                             ctrl_counter_reg = `CTRL_COUNTER_W'd0;         
-                     endcase // case (state)
-                     
-                  end // always @ *
+                  read_standby:
+                    if (hit)
+                      ctrl_counter_reg = `READ_HIT;
+                    else
+                      if(write_empty)
+                        ctrl_counter_reg = `READ_MISS;
+                      else
+                        ctrl_counter_reg = `CTRL_COUNTER_W'd0;         
+                endcase // case (state)
+                
+             end // always @ *
 
-                assign ctrl_counter = ctrl_counter_reg;
-             end
-           else
-             begin
-                assign ctrl_counter = {`CTRL_COUNTER_W{1'bx}}; //Don't care, isn't used
-             end // else: !if(CTRL_CNT)
+           assign ctrl_counter = ctrl_counter_reg;
         end
       else
         begin
-           assign  ctrl_counter = 1'bx; //Don't care, isn't used
-        end // else: !if(CTRL_CACHE)
-      
+           assign ctrl_counter = {`CTRL_COUNTER_W{1'bx}}; //Don't care, isn't used
+        end // else: !if(CTRL_CACHE & CTRL_CNT)   
    endgenerate
    
    
