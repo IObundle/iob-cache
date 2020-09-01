@@ -136,7 +136,7 @@ module front_end
 
    always @(posedge clk, posedge reset)
      begin
-        if(reset | ready) // ready is a synchronous reset for internal valid signal - avoids repeated requests
+        if(reset | (ready & ~valid)) // ready is a synchronous reset for internal valid signal (only if the input doesn have a new request in the same clock-cycle) - avoids repeated requests
           valid_r <= 0;
         else    
           if(valid) //updates
