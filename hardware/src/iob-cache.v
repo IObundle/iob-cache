@@ -230,17 +230,17 @@ module iob_cache
          .clk   (clk),
          .reset (reset),
          //control's signals
-         .ctrl_valid (ctrl_valid),
-         .ctrl_addr  (ctrl_addr),
+         .valid (ctrl_valid),
+         .addr  (ctrl_addr),
          //write data
          .wtbuf_status (wtbuf_status),
-         .write_hit    (write_hit),
-         .write_miss   (write_miss),
-         .read_hit     (read_hit),
-         .read_miss    (read_miss),
+         .write_hit  (write_hit),
+         .write_miss (write_miss),
+         .read_hit   (read_hit),
+         .read_miss  (read_miss),
          ////////////
-         .ctrl_rdata (ctrl_rdata),
-         .ctrl_ready (ctrl_ready),
+         .rdata (ctrl_rdata),
+         .ready (ctrl_ready),
          .invalidate (invalidate)
          );
       
@@ -545,17 +545,17 @@ module iob_cache_axi
          .clk   (clk),
          .reset (reset),
          //control's signals
-         .ctrl_valid (ctrl_valid),
-         .ctrl_addr  (ctrl_addr),
+         .valid (ctrl_valid),
+         .addr  (ctrl_addr),
          //write data
          .wtbuf_status (wtbuf_status),
-         .write_hit    (write_hit),
-         .write_miss   (write_miss),
-         .read_hit     (read_hit),
-         .read_miss    (read_miss),
+         .write_hit  (write_hit),
+         .write_miss (write_miss),
+         .read_hit   (read_hit),
+         .read_miss  (read_miss),
          ////////////
-         .ctrl_rdata (ctrl_rdata),
-         .ctrl_ready (ctrl_ready),
+         .rdata (ctrl_rdata),
+         .ready (ctrl_ready),
          .invalidate (invalidate)
          );
       
