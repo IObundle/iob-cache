@@ -59,33 +59,35 @@ module iob_cache
 
    
    //internal signals (front-end inputs)
-   wire [FE_ADDR_W -1:FE_BYTES_W]                addr_int; 
-   wire [FE_DATA_W-1 : 0]                        wdata_int;
-   wire [FE_NBYTES-1: 0]                         wstrb_int;
-   wire                                          valid_int;
+   wire                                          data_valid, data_ready;
+   wire [FE_ADDR_W -1:FE_BYTES_W]                data_addr; 
+   wire [FE_DATA_W-1 : 0]                        data_wdata;
+   wire [FE_NBYTES-1: 0]                         data_wstrb;
    
    //stored signals
-   wire [FE_ADDR_W -1:FE_BYTES_W]                addr_reg; 
-   wire [FE_DATA_W-1 : 0]                        wdata_reg;
-   wire [FE_NBYTES-1: 0]                         wstrb_reg;
-   wire                                          valid_reg;
+   wire [FE_ADDR_W -1:FE_BYTES_W]                data_addr_reg; 
+   wire [FE_DATA_W-1 : 0]                        data_wdata_reg;
+   wire [FE_NBYTES-1: 0]                         data_wstrb_reg;
+   wire                                          data_valid_reg;
+
+   //back-end write-channel
+   wire                                          write_valid, write_ready;
+   wire [FE_ADDR_W-1: FE_BYTE_W]                 write_addr;
+   wire [FE_DATA_W-1:0]                          write_wdata;
+   wire [FE_NBYTES-1:0]                          write_wstrb;
    
-   //cache-memory
-   wire                                          hit;
-   // write-through buffer
-   wire                                          buffer_full, buffer_empty; //cache_memory
-   wire                                          buffer_idle, buffer_readen;//back-end
-   
-   //cache-line replacement
-   wire                                          rep_init, rep_valid, rep_line;
-   wire [BE_DATA_W-1:0]                          rep_rdata;
-   wire [LINE2MEM_DATA_RATIO_W-1:0]              rep_counter;
-   wire [FE_ADDR_W -1:BE_BYTES_W+LINE2MEM_W]     rep_addr; 
-   
+   //back-end read-channel
+   wire                                          replace_valid, replace_ready;
+   wire [FE_ADDR_W -1:BE_BYTES_W+LINE2MEM_W]     replace_addr; 
+   wire                                          read_valid;
+   wire [LINE2MEM_DATA_RATIO_W-1:0]              read_addr;
+   wire [BE_DATA_W-1:0]                          read_rdata;
+  
    //cache-control
    wire                                          ctrl_valid, ctrl_ready;   
    wire [`CTRL_ADDR_W-1:0]                       ctrl_addr;
-   wire [`CTRL_COUNTER_W+1:0]                    ctrl_wdata;//{buffer_state[1:0], ctrl_counters}   
+   wire                                          wtbuf_full, wtbuf_empty;
+   wire                                          write_hit, write_miss, read_hit, read_miss;
    wire [FE_DATA_W-1:0]                          ctrl_data;
    wire                                          invalidate;
    
@@ -107,21 +109,19 @@ module iob_cache
       .wstrb (wstrb),
       .rdata (rdata),
       .ready (ready),
-      //internal input signals
-      .valid_int (valid_int),
-      .addr_int  (addr_int),
-      .wdata_int (wdata_int),
-      .wstrb_int (wstrb_int),
+      //cache-memory input signals
+      .data_valid (data_valid),
+      .data_addr  (data_addr),
+      .data_wdata (data_wdata),
+      .data_wstrb (data_wstrb),
       //cache-memory output
-      .rdata_int (rdata_int),
+      .data_rdata (data_rdata),
+      .data_ready (data_ready),
       //stored input signals
-      .valid_reg (valid_reg),
-      .addr_reg  (addr_reg),
-      .wdata_reg (wdata_reg),
-      .wstrb_reg (wstrb_reg),
-      //memory signals
-      .hit         (hit),
-      .buffer_full (buffer_full),
+      .data_valid_reg (data_valid_reg),
+      .data_addr_reg  (data_addr_reg),
+      .data_wdata_reg (data_wdata_reg),
+      .data_wstrb_reg (data_wstrb_reg),
       //cache-control
       .ctrl_valid (ctrl_valid),
       .ctrl_addr  (ctrl_addr),
@@ -147,33 +147,32 @@ module iob_cache
       .clk   (clk),
       .reset (reset),
       //front-end
-      //internal
-      .valid (valid_int),
-      .addr  (addr_int),
-      .wdata (wdata_int),
-      .wstrb (wstrb_int),
-      .rdata (rdata_int),
-      //stored
-      .valid_reg (valid_reg),   
-      .addr_reg  (addr_reg),
-      .wdata_reg (wdata_reg),
-      .wstrb_reg (wstrb_reg),
-      //cache-memory signals
-      .hit       (hit), 
+      //internal data signals
+      .valid (data_valid),
+      .addr  (data_addr),
+      .wdata (data_wdata),
+      .wstrb (data_wstrb),
+      .rdata (data_rdata),
+      .ready (data_ready),
+      //stored data signals
+      .valid_reg (data_valid_reg),   
+      .addr_reg  (data_addr_reg),
+      .wdata_reg (data_wdata_reg),
+      .wstrb_reg (data_wstrb_reg),
       //back-end
       //write-through-buffer (write-channel)
-      .buffer_full   (buffer_full),
-      .buffer_empty  (buffer_empty),
-      .buffer_output (buffer_output),
-      .buffer_readen (buffer_readen),
-      .buffer_idle   (buffer_idle),
+      .write_valid (write_valid),
+      .write_addr  (write_addr),
+      .write_wdata (write_wdata),
+      .write_wstrb (write_wstrb),
+      .write_ready (write_ready),
       //cache-line replacement (read-channel)
-      .rep_init    (rep_init),
-      .rep_addr    (rep_addr),
-      .rep_rdata   (rep_rdata),
-      .rep_valid   (rep_valid),
-      .rep_line    (rep_line),
-      .rep_counter (rep_counter),
+      .replace_valid (replace_valid),
+      .replace_addr  (replace_addr),
+      .replace_ready (replace_ready),
+      .read_valid (read_valid),
+      .read_addr  (read_addr),
+      .read_wdata (read_wdata),
       //control's signals
       .ctrl_wdata (ctrl_wdata),
       .invalidate (invalidate)
@@ -195,21 +194,21 @@ module iob_cache
       .clk(clk),
       .reset(reset),
       //write-through-buffer (write-channel)
-      .buffer_full   (buffer_full),
-      .buffer_empty  (buffer_empty),
-      .buffer_output (buffer_output),
-      .buffer_readen (buffer_readen),
-      .buffer_idle   (buffer_idle),
+      .write_valid (write_valid),
+      .write_addr  (write_addr),
+      .write_wdata (write_wdata),
+      .write_wstrb (write_wstrb),
+      .write_ready (write_ready),
       //cache-line replacement (read-channel)
-      .rep_init    (rep_init),
-      .rep_addr    (rep_addr),
-      .rep_data    (rep_data),
-      .rep_valid   (rep_valid),
-      .rep_line    (rep_line),
-      .rep_counter (rep_counter),
+      .replace_valid (replace_valid),
+      .replace_addr  (replace_addr),
+      .replace_ready (replace_ready),
+      .read_valid (read_valid),
+      .read_addr  (read_addr),
+      .read_wdata (read_wdata),
       //back-end native interface
       .mem_valid (mem_valid),
-      .mem_addr (mem_addr),
+      .mem_addr  (mem_addr),
       .mem_wdata (mem_wdata),
       .mem_wstrb (mem_wstrb),
       .mem_rdata (mem_rdata),
@@ -233,7 +232,13 @@ module iob_cache
          //control's signals
          .ctrl_valid (ctrl_valid),
          .ctrl_addr  (ctrl_addr),
-         .ctrl_wdata (ctrl_wdata),
+         //write data
+         .wtbuf_status (wtbuf_status),
+         .write_hit    (write_hit),
+         .write_miss   (write_miss),
+         .read_hit     (read_hit),
+         .read_miss    (read_miss),
+         ////////////
          .ctrl_rdata (ctrl_rdata),
          .ctrl_ready (ctrl_ready),
          .invalidate (invalidate)
@@ -335,46 +340,40 @@ module iob_cache_axi
     output                                       axi_bready
     );
 
-
-
-
-
-
    
    //internal signals (front-end inputs)
-   wire [FE_ADDR_W -1:FE_BYTES_W]                addr_int; 
-   wire [FE_DATA_W-1 : 0]                        wdata_int;
-   wire [FE_NBYTES-1: 0]                         wstrb_int;
-   wire                                          valid_int;
+   wire                                          data_valid, data_ready;
+   wire [FE_ADDR_W -1:FE_BYTES_W]                data_addr; 
+   wire [FE_DATA_W-1 : 0]                        data_wdata;
+   wire [FE_NBYTES-1: 0]                         data_wstrb;
    
    //stored signals
-   wire [FE_ADDR_W -1:FE_BYTES_W]                addr_reg; 
-   wire [FE_DATA_W-1 : 0]                        wdata_reg;
-   wire [FE_NBYTES-1: 0]                         wstrb_reg;
-   wire                                          valid_reg;
+   wire [FE_ADDR_W -1:FE_BYTES_W]                data_addr_reg; 
+   wire [FE_DATA_W-1 : 0]                        data_wdata_reg;
+   wire [FE_NBYTES-1: 0]                         data_wstrb_reg;
+   wire                                          data_valid_reg;
+
+   //back-end write-channel
+   wire                                          write_valid, write_ready;
+   wire [FE_ADDR_W-1: FE_BYTE_W]                 write_addr;
+   wire [FE_DATA_W-1:0]                          write_wdata;
+   wire [FE_NBYTES-1:0]                          write_wstrb;
    
-   //cache-memory
-   wire                                          hit;
-   // write-through buffer
-   wire                                          buffer_full, buffer_empty; //cache_memory
-   wire                                          buffer_idle, buffer_readen;//back-end
-   
-   //cache-line replacement
-   wire                                          rep_init, rep_valid, rep_line;
-   wire [BE_DATA_W-1:0]                          rep_rdata;
-   wire [LINE2MEM_DATA_RATIO_W-1:0]              rep_counter;
-   wire [FE_ADDR_W -1:BE_BYTES_W+LINE2MEM_W]     rep_addr; 
-   
+   //back-end read-channel
+   wire                                          replace_valid, replace_ready;
+   wire [FE_ADDR_W -1:BE_BYTES_W+LINE2MEM_W]     replace_addr; 
+   wire                                          read_valid;
+   wire [LINE2MEM_DATA_RATIO_W-1:0]              read_addr;
+   wire [BE_DATA_W-1:0]                          read_rdata;
+  
    //cache-control
    wire                                          ctrl_valid, ctrl_ready;   
    wire [`CTRL_ADDR_W-1:0]                       ctrl_addr;
-   wire [`CTRL_COUNTER_W+1:0]                    ctrl_wdata;//{buffer_state[1:0], ctrl_counters}   
+   wire                                          wtbuf_full, wtbuf_empty;
+   wire                                          write_hit, write_miss, read_hit, read_miss;
    wire [FE_DATA_W-1:0]                          ctrl_data;
    wire                                          invalidate;
-   
-   
-   
-   
+
    front_end
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -391,28 +390,26 @@ module iob_cache_axi
       .wstrb (wstrb),
       .rdata (rdata),
       .ready (ready),
-      //internal input signals
-      .valid_int (valid_int),
-      .addr_int  (addr_int),
-      .wdata_int (wdata_int),
-      .wstrb_int (wstrb_int),
+      //cache-memory input signals
+      .data_valid (data_valid),
+      .data_addr  (data_addr),
+      .data_wdata (data_wdata),
+      .data_wstrb (data_wstrb),
       //cache-memory output
-      .rdata_int (rdata_int),
+      .data_rdata (data_rdata),
+      .data_ready (data_ready),
       //stored input signals
-      .valid_reg (valid_reg),
-      .addr_reg  (addr_reg),
-      .wdata_reg (wdata_reg),
-      .wstrb_reg (wstrb_reg),
-      //memory signals
-      .hit         (hit),
-      .buffer_full (buffer_full),
+      .data_valid_reg (data_valid_reg),
+      .data_addr_reg  (data_addr_reg),
+      .data_wdata_reg (data_wdata_reg),
+      .data_wstrb_reg (data_wstrb_reg),
       //cache-control
       .ctrl_valid (ctrl_valid),
       .ctrl_addr  (ctrl_addr),
       .ctrl_rdata (ctrl_rdata),
       .ctrl_ready (ctrl_ready)
       );
-   
+
 
    
    cache_memory
@@ -431,38 +428,36 @@ module iob_cache_axi
       .clk   (clk),
       .reset (reset),
       //front-end
-      //internal
-      .valid (valid_int),
-      .addr  (addr_int),
-      .wdata (wdata_int),
-      .wstrb (wstrb_int),
-      .rdata (rdata_int),
-      //stored
-      .valid_reg (valid_reg),   
-      .addr_reg  (addr_reg),
-      .wdata_reg (wdata_reg),
-      .wstrb_reg (wstrb_reg),
-      //cache-memory signals
-      .hit       (hit), 
+      //internal data signals
+      .valid (data_valid),
+      .addr  (data_addr),
+      .wdata (data_wdata),
+      .wstrb (data_wstrb),
+      .rdata (data_rdata),
+      .ready (data_ready),
+      //stored data signals
+      .valid_reg (data_valid_reg),   
+      .addr_reg  (data_addr_reg),
+      .wdata_reg (data_wdata_reg),
+      .wstrb_reg (data_wstrb_reg),
       //back-end
       //write-through-buffer (write-channel)
-      .buffer_full   (buffer_full),
-      .buffer_empty  (buffer_empty),
-      .buffer_output (buffer_output),
-      .buffer_readen (buffer_readen),
-      .buffer_idle   (buffer_idle),
+      .write_valid (write_valid),
+      .write_addr  (write_addr),
+      .write_wdata (write_wdata),
+      .write_wstrb (write_wstrb),
+      .write_ready (write_ready),
       //cache-line replacement (read-channel)
-      .rep_init    (rep_init),
-      .rep_addr    (rep_addr),
-      .rep_rdata   (rep_rdata),
-      .rep_valid   (rep_valid),
-      .rep_line    (rep_line),
-      .rep_counter (rep_counter),
+      .replace_valid (replace_valid),
+      .replace_addr  (replace_addr),
+      .replace_ready (replace_ready),
+      .read_valid (read_valid),
+      .read_addr  (read_addr),
+      .read_wdata (read_wdata),
       //control's signals
       .ctrl_wdata (ctrl_wdata),
       .invalidate (invalidate)
       );
-
 
 
    
@@ -479,18 +474,18 @@ module iob_cache_axi
       .clk(clk),
       .reset(reset),
       //write-through-buffer (write-channel)
-      .buffer_full   (buffer_full),
-      .buffer_empty  (buffer_empty),
-      .buffer_output (buffer_output),
-      .buffer_readen (buffer_readen),
-      .buffer_idle   (buffer_idle),
+      .write_valid (write_valid),
+      .write_addr  (write_addr),
+      .write_wdata (write_wdata),
+      .write_wstrb (write_wstrb),
+      .write_ready (write_ready),
       //cache-line replacement (read-channel)
-      .rep_init    (rep_init),
-      .rep_addr    (rep_addr),
-      .rep_data    (rep_data),
-      .rep_valid   (rep_valid),
-      .rep_line    (rep_line),
-      .rep_counter (rep_counter),
+      .replace_valid (replace_valid),
+      .replace_addr  (replace_addr),
+      .replace_ready (replace_ready),
+      .read_valid (read_valid),
+      .read_addr  (read_addr),
+      .read_wdata (read_wdata),
       //back-end read-channel
       //read address
       .axi_arvalid(axi_arvalid), 
@@ -552,7 +547,13 @@ module iob_cache_axi
          //control's signals
          .ctrl_valid (ctrl_valid),
          .ctrl_addr  (ctrl_addr),
-         .ctrl_wdata (ctrl_wdata),
+         //write data
+         .wtbuf_status (wtbuf_status),
+         .write_hit    (write_hit),
+         .write_miss   (write_miss),
+         .read_hit     (read_hit),
+         .read_miss    (read_miss),
+         ////////////
          .ctrl_rdata (ctrl_rdata),
          .ctrl_ready (ctrl_ready),
          .invalidate (invalidate)
