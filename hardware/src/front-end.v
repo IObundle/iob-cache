@@ -77,6 +77,7 @@ module front_end
            assign rdata = data_rdata;
   
            assign valid_int = valid;
+           
            assign ctrl_valid = 1'bx;
            
            assign ctrl_addr = `CTRL_ADDR_W'dx;
