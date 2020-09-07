@@ -8,115 +8,95 @@ module front_end
 
     //Do NOT change - memory cache's parameters - dependency
     parameter FE_NBYTES  = FE_DATA_W/8,       //Number of Bytes per Word
-    parameter FE_BYTES_W = $clog2(FE_NBYTES), //Offset of the Number of Bytes per Word
-
+    parameter FE_BYTE_W = $clog2(FE_NBYTES), //Offset of the Number of Bytes per Word
     //Control's options
     parameter CTRL_CACHE = 0,
     parameter CTRL_CNT = 0
     )
    (
     //front-end port
-    input                                        clk,
-    input                                        reset,
+    input                                       clk,
+    input                                       reset,
 `ifdef WORD_ADDR   
-    input [CTRL_CACHE + FE_ADDR_W -1:FE_BYTES_W] addr, //MSB is used for Controller selection
+    input [CTRL_CACHE + FE_ADDR_W -1:FE_BYTE_W] addr, //MSB is used for Controller selection
 `else
-    input [CTRL_CACHE + FE_ADDR_W -1:0]          addr, //MSB is used for Controller selection
+    input [CTRL_CACHE + FE_ADDR_W -1:0]         addr, //MSB is used for Controller selection
 `endif
-    input [FE_DATA_W-1:0]                        wdata,
-    input [FE_NBYTES-1:0]                        wstrb,
-    input                                        valid,
-    output                                       ready,
-    output [FE_DATA_W-1:0]                       rdata,
+    input [FE_DATA_W-1:0]                       wdata,
+    input [FE_NBYTES-1:0]                       wstrb,
+    input                                       valid,
+    output                                      ready,
+    output [FE_DATA_W-1:0]                      rdata,
 
     //internal input signals
-    output                                       valid_int,
-    output [FE_ADDR_W-1:FE_BYTES_W]              addr_int,
-    output [FE_DATA_W-1:0]                       wdata_int,
-    output [FE_NBYTES-1:0]                       wstrb_int,
-    input [FE_DATA_W-1:0]                        rdata_int,
+    output reg                                  data_valid,
+    output reg [FE_ADDR_W-1:FE_BYTE_W]          data_addr,
+    output reg [FE_DATA_W-1:0]                  data_wdata,
+    output reg [FE_NBYTES-1:0]                  data_wstrb,
+    input [FE_DATA_W-1:0]                       data_rdata,
+    input                                       data_ready,
     //stored input signals
-    output reg                                   valid_reg,
-    output reg [FE_ADDR_W-1:FE_BYTES_W]          addr_reg,
-    output reg [FE_DATA_W-1:0]                   wdata_reg,
-    output reg [FE_NBYTES-1:0]                   wstrb_reg,
-    output reg [FE_DATA_W-1:0]                   rdata_reg,
-    //back-end & memory signals
-    input                                        hit,
-    input                                        buffer_full,
+    output                                   data_valid_reg,
+    output  [FE_ADDR_W-1:FE_BYTE_W]          data_addr_reg,
+    output  [FE_DATA_W-1:0]                  data_wdata_reg,
+    output  [FE_NBYTES-1:0]                  data_wstrb_reg,
+    output  [FE_DATA_W-1:0]                  data_rdata_reg,
     //cache-control
-    output                                       ctrl_valid,
-    output [`CTRL_ADDR_W-1:0]                    ctrl_addr, 
-    input [FE_DATA_W-1:0]                        ctrl_rdata,
-    input                                        ctrl_ready,
+    output                                      ctrl_valid,
+    output [`CTRL_ADDR_W-1:0]                   ctrl_addr, 
+    input [FE_DATA_W-1:0]                       ctrl_rdata,
+    input                                       ctrl_ready
     );
 
-   wire                                          cache_select, ctrl_select;
-   wire                                          write_access, read_access;  
-   wire                                          ready_int;
+   wire                                          valid_int;
+   
+   reg                                           valid_reg;
+   reg [FE_ADDR_W-1:FE_BYTE_W]                   addr_reg;
+   reg [FE_DATA_W-1:0]                           wdata_reg;
+   reg [FE_NBYTES-1:0]                           wstrb_reg;
 
-   assign addr_int  = addr [FE_ADDR_W-1:FE_BYTES_W];
-   assign wdata_int = wdata;
-   assign wstrb_int = wstrb;
+   assign data_valid_reg = valid_reg;
+   assign data_addr_reg = addr_reg;
+   assign data_wdata_reg = wdata_reg;
+   assign data_wstrb_reg = wstrb_reg;
+    
    
    //////////////////////////////////////////////////////////////////////////////////
-     // Front-End cache-memory READY 
-   /////////////////////////////////////////////////////////////////////////////////
-
-   assign  ready_int =  hit & read_access & ~read_replace) | (~buffer_full & write_access); 
-
-   //////////////////////////////////////////////////////////////////////////////////
-   // Cache-selection - cache-memory or cache-control 
+     //    Cache-selection - cache-memory or cache-control 
    /////////////////////////////////////////////////////////////////////////////////
    generate
       if(CTRL_CACHE) 
         begin
 
            //Front-end output signals
-           assign ready = (ctrl_select)? ctrl_ready : ready_int;
-           assign rdata = (ctrl_select)? ctrl_data  : rdata_int;     
+           assign ready = ctrl_ready | data_ready;
+           
+           assign rdata = (ctrl_ready)? ctrl_rdata  : data_rdata;     
+           
            assign valid_int = ~addr[CTRL_CACHE + FE_ADDR_W -1] & valid;
+           assign ctrl_valid = addr[CTRL_CACHE + FE_ADDR_W -1] & valid;       
            
-           //Cache - Controller selection
-           always(posedge clk, posedge reset)
-             if(reset)
-               ctrl_select <=0;
-             else if(valid)
-               ctrl_select <= addr[CTRL_CACHE + FE_ADDR_W -1];
-             else
-               ctrl_select <= ctrl_select;
-
-           
-           assign ctrl_select = ctrl_select & valid_reg;
-           assign ctrl_valid  = addr[CTRL_CACHE + FE_ADDR_W -1] & valid; //no delays
-           assign ctrl_addr   = addr[FE_BYTES_W +: `CTRL_ADDR_W];
-           assign ctrl_status = {buffer_full,(buffer_empty & write_idle)};
-           
-           //Cache-memory 
-           assign cache_select = ~ctrl_select & valid_reg; 
-           assign write_access = (cache_select &   (|wstrb_reg));
-           assign read_access  = (cache_select &  ~(|wstrb_reg));    
+           assign ctrl_addr   = addr[FE_BYTE_W +: `CTRL_ADDR_W];
            
         end // if (CTRL_CACHE)
       else 
         begin
            //Front-end output signals
-           assign rdata = rdata_int;
-           assign ready = ready_int; 
+           assign ready = data_ready; 
+           
+           assign rdata = data_rdata;
+  
            assign valid_int = valid;
            
-           //Cache-memory
-           assign write_access = (valid_reg &   (|wstrb_reg));
-           assign read_access =  (valid_reg &  ~(|wstrb_reg));
-           
-           //Cache-control
            assign ctrl_valid = 1'bx;
+           
            assign ctrl_addr = `CTRL_ADDR_W'dx;
+        
         end // else: !if(CTRL_CACHE)
    endgenerate
 
    //////////////////////////////////////////////////////////////////////////////////
-   // Input stored signals
+   // Input Data stored signals
    /////////////////////////////////////////////////////////////////////////////////
 
    always @(posedge clk, posedge reset)
@@ -130,7 +110,7 @@ module front_end
         else
           if(valid) //updates
             begin
-               addr_reg  <= addr[FE_ADDR_W-1:FE_BYTES_W];
+               addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
                wdata_reg <= wdata;
                wstrb_reg <= wstrb;
             end
@@ -139,19 +119,42 @@ module front_end
                addr_reg  <= addr_reg;
                wdata_reg <= wdata_reg;
                wstrb_reg <= wstrb_reg;
-            end // else: !if(valid)
+            end// else: !if(valid)
      end // always @ (posedge clk, posedge reset)  
 
    
    always @(posedge clk, posedge reset)
      begin
-        if(reset | (ready & ~valid)) // ready is a synchronous reset for internal valid signal (only if the input doesn have a new request in the same clock-cycle) - avoids repeated requests
+        if(reset | (data_ready & ~(valid_int))) // ready is a synchronous reset for internal valid signal (only if the input doesn have a new request in the same clock-cycle) - avoids repeated requests
           valid_reg <= 0;
         else    
           if(valid) //updates
-            valid_reg <= valid;
+            valid_reg <= valid_int;
           else
             valid_reg <= valid_reg;
      end // always @ (posedge clk, posedge reset)  
+
+
+   //////////////////////////////////////////////////////////////////////////////////
+   // Data Input Multiplexer
+   /////////////////////////////////////////////////////////////////////////////////
+
+   always @(*)
+     begin
+        if(valid & ~(data_valid_reg & (|data_wstrb_reg))) //the input is valid, but the current task is a write, maintains the write input data, and prevents RAW hazards by delaying the read in 1 clock-clycle
+          begin
+             data_addr =  addr[FE_ADDR_W-1:FE_BYTE_W];
+             data_wdata = wdata;
+             data_wstrb = wstrb;
+             data_valid = valid_int;
+          end
+        else
+          begin
+             data_addr =  data_addr_reg;
+             data_wdata = data_wdata_reg;
+             data_wstrb = data_wstrb_reg;
+             data_valid = data_valid_reg;
+          end // else: !if(valid & ~(data_valid_reg & (|data_wstrb_reg)))
+     end
    
 endmodule
