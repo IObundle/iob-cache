@@ -69,7 +69,7 @@ module cache_memory
    wire                                         hit;
       
    //cache-memory internal signals
-   wire [N_WAYS-1:0]                            way_hit, v, way_select;
+   wire [N_WAYS-1:0]                            way_hit, way_select;
    
    wire [TAG_W-1:0]                             tag    = addr_reg[FE_ADDR_W-1       -:TAG_W]; //so the tag doesnt update during ready on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
    wire [LINE_OFF_W-1:0]                        index  = addr    [FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
@@ -78,10 +78,17 @@ module cache_memory
    
    wire [N_WAYS*(2**WORD_OFF_W)*FE_DATA_W-1:0]  line_rdata;
    wire [N_WAYS*TAG_W-1:0]                      line_tag;
-   //reg [N_WAYS*(2**WORD_OFF_W)*FE_NBYTES-1:0]    line_wstrb;
+   wire [N_WAYS-1:0]                            line_v;
+   reg [N_WAYS-1:0]                             v;
+
+   always @ (posedge clk)
+     v <= line_v;
+  
+   
    reg [(2**WORD_OFF_W)*FE_NBYTES-1:0]          line_wstrb;
    
    wire                                         write_access = |wstrb & valid; //front-end doesn't update in the same clock-cycle ready is asserted, during an write-access
+   wire                                         write_access_reg = |wstrb_reg & valid_reg;
    wire                                         read_access = ~|wstrb & valid; //front-end updates in the same clock-cycle ready is asserted
    wire                                         read_access_reg = ~|wstrb_reg & valid_reg;//signal mantains the access 1 addition clock-cycle after ready is asserted 
 
@@ -119,10 +126,10 @@ module cache_memory
       );
 
    //back-end read channel
-   assign replace_valid = (~hit & read_access_reg) & (buffer_empty & write_ready);
+   assign replace_valid = (~hit & read_access_reg & ~replace_ready) & (buffer_empty & write_ready);
    assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
 
-   assign ready = (hit & (read_access_reg) & replace_ready) | (~buffer_full & (write_access));
+   assign ready = (hit & (read_access_reg) & ~replace_ready) | (~buffer_full & (write_access_reg));
    // read section needs to be the registered, so it doesn't change the moment ready asserts and updates the input. Write doesn't update on the same cycle as ready asserts, and in the next clock cycle, will have the next input.
 
    
@@ -133,7 +140,8 @@ module cache_memory
            if(N_WAYS != 1)
              begin
                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
-                
+
+                assign hit = |way_hit;
                 
                 replacement_process #(
 	                              .N_WAYS    (N_WAYS    ),
@@ -200,7 +208,7 @@ module cache_memory
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
                        end // for (j = 0; j < 2**LINE2MEM_W; j=j+1)
 
-                     
+                    
                      iob_reg_file
                        #(
                          .ADDR_WIDTH(LINE_OFF_W), 
@@ -214,10 +222,24 @@ module cache_memory
 	                .wdata(replace_valid                ),				       
 	                .addr (index                    ),
 	                .en   (way_select[k] & replace_valid),
-	                .rdata(v[k]                         )   
+	                .rdata(line_v[k]                         )   
 	                );
 
-                     
+                  /*     iob_sp_ram
+                       #(
+                         .DATA_W(1),
+                         .ADDR_W(LINE_OFF_W)
+                         )
+                     valid_memory 
+                       (
+                        .clk (clk                           ),
+                        .en  (valid                         ), 
+                        .we  (way_select[k] & replace_valid ),
+                        .addr (index                        ),
+                        .data_in (1'b1                       ),
+                        .data_out(v[k])
+                        );
+        */             
                      iob_sp_ram
                        #(
                          .DATA_W(TAG_W),
@@ -227,11 +249,14 @@ module cache_memory
                        (
                         .clk (clk                           ),
                         .en  (valid                         ), 
-                        .we  (way_select[k] & replace_valid ),
+                        .we  (way_select[k] & replace_valid),
                         .addr (index                        ),
                         .data_in (tag                       ),
                         .data_out(line_tag[TAG_W*k +: TAG_W])
                         );
+
+
+
                      
                      //Cache hit signal that indicates which way has had the hit
                      assign way_hit[k] = (tag == line_tag[TAG_W*k +: TAG_W]) & v[k]; 
