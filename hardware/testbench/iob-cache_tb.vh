@@ -1,7 +1,7 @@
 //Cache parameters (including front-end's)
-`define N_WAYS 8
-`define LINE_OFF_W 2
-`define WORD_OFF_W 4
+`define N_WAYS 2
+`define LINE_OFF_W 1
+`define WORD_OFF_W 2
 `define ADDR_W 12
 `define DATA_W 32
 `define N_BYTES 4
@@ -13,8 +13,8 @@
 
 //Cache back-end parameters
 `define MEM_ADDR_W 12
-`define MEM_DATA_W 256
-`define MEM_N_BYTES 32
+`define MEM_DATA_W 64
+`define MEM_N_BYTES 8
 
 //Write-through Buffer depth
 `define WTBUF_DEPTH_W 4
@@ -27,7 +27,7 @@
 //`define L2 //Currently not working since addr only receives the word.
 
 // Look-ahead -- Uncomment to use
-//`define LA
+`define LA
 
 `define VCD
 

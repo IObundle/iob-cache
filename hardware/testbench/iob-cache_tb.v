@@ -186,7 +186,9 @@ module iob_cache_tb;
    wire [`MEM_ADDR_W-1:0]          mem_addr;
    wire [`MEM_DATA_W-1:0]          mem_wdata, mem_rdata;
    wire [`MEM_N_BYTES-1:0]         mem_wstrb;
-   wire                            mem_valid, mem_ready;
+   wire                            mem_valid;
+   reg                             mem_ready;
+   
 `endif  
    
 
@@ -371,11 +373,7 @@ module iob_cache_tb;
                .BE_ADDR_W(`MEM_ADDR_W),
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
-  `ifdef LA
-               .LA_INTERF(1),
-  `else
-               .LA_INTERF(0),
-  `endif
+
   `ifdef NO_CTRL
                .CTRL_CACHE(0),
   `endif
@@ -475,23 +473,24 @@ module iob_cache_tb;
 
 `else
 
-   iob_reg_file #(
-		  .COL_WIDTH(8),
-		  .NUM_COL(`MEM_DATA_W/8),
-                  .ADDR_WIDTH(`MEM_ADDR_W-2)
-                  )
-   iob_gen_memory
+   iob_sp_ram #(
+		.DATA_W (`MEM_DATA_W),
+                .ADDR_W(`MEM_ADDR_W-2)
+                )
+   native_ram
      (
       .clk(clk),
-      .rst(reset),
-      .wdata(mem_wdata),
+      .en  (mem_valid),
+      .we  (mem_wstrb),
       .addr(mem_addr[`MEM_ADDR_W-1:$clog2(`MEM_DATA_W/8)]),
-      .en((mem_valid)? mem_wstrb : 0), 
-      .rdata(mem_rdata)
+      .data_out(mem_rdata),
+      .data_in (mem_wdata)
       );
 
-   assign mem_ready = mem_valid; //0 read-latency
-
+   always @(posedge clk)
+     mem_ready <= mem_valid;
+   
+   
 `endif
 
 endmodule // iob_cache_tb
