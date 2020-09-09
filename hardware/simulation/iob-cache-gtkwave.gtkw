@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Mon Sep  7 23:05:52 2020
+[*] Wed Sep  9 19:47:37 2020
 [*]
 [dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Mon Sep  7 22:56:31 2020"
-[dumpfile_size] 7598818
+[dumpfile_mtime] "Wed Sep  9 19:46:09 2020"
+[dumpfile_size] 56575
 [savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-gtkwave.gtkw"
-[timestart] 6143000
+[timestart] 9570
 [size] 1855 951
-[pos] -1 -1
-*-14.000000 6172000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -733 -1
+*-13.000000 36000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
 [treeopen] iob_cache_tb.cache.back_end.
@@ -89,7 +89,6 @@ iob_cache_tb.cache.back_end.read_fsm.replace_addr[11:4]
 iob_cache_tb.cache.back_end.read_fsm.read_valid
 iob_cache_tb.cache.cache_memory.read_access_reg
 iob_cache_tb.cache.back_end.read_fsm.read_addr
-@29
 iob_cache_tb.cache.cache_memory.hit
 @200
 -
@@ -99,6 +98,9 @@ iob_cache_tb.cache.cache_memory.hit
 iob_cache_tb.mem_valid
 @22
 iob_cache_tb.mem_addr[11:0]
+@23
+iob_cache_tb.native_ram.addr[9:0]
+@22
 iob_cache_tb.mem_wdata[63:0]
 iob_cache_tb.mem_wstrb[7:0]
 iob_cache_tb.mem_rdata[63:0]
@@ -106,11 +108,5 @@ iob_cache_tb.mem_rdata[63:0]
 iob_cache_tb.mem_ready
 @200
 -
--Back-end AXI
--READ
--Read_process
--
--WRITE
--Write_process
 [pattern_trace] 1
 [pattern_trace] 0
