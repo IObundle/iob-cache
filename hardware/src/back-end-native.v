@@ -211,30 +211,26 @@ module read_channel_native
                   idle:
                     begin
                        mem_valid = 1'b0;
-                       replace_ready = 1'b0;
+                       replace_ready = 1'b1;
                        word_counter = 0;
                     end
 
                   handshake:
                     begin
                        mem_valid = 1'b1;
-                       replace_ready = 1'b1;
+                       replace_ready = 1'b0;
                        word_counter = word_counter + read_valid;
                     end
                   
                   end_handshake:
                     begin
                        word_counter = word_counter;
-                       replace_ready = 1'b1; //delay for read-latency
+                       replace_ready = 1'b0; //delay for read-latency
                        mem_valid = 1'b0;
                     end
                   
-                  default:
-                    begin
-                       replace_ready = 1'b0;
-                       mem_valid = 1'b0;
-                       word_counter = 0;
-                    end
+                  default:;
+                  
                   
                 endcase
              end
@@ -301,18 +297,18 @@ module read_channel_native
                   idle:
                     begin
                        mem_valid = 1'b0;
-                       replace_ready = 1'b0;
+                       replace_ready = 1'b1;
                     end
 
                   handshake:
                     begin
                        mem_valid = 1'b1;
-                       replace_ready = 1'b1;
+                       replace_ready = 1'b0;
                     end
                   
                   end_handshake:
                     begin
-                       replace_ready = 1'b1; //delay for read-latency
+                       replace_ready = 1'b0; //delay for read-latency
                        mem_valid = 1'b0;
                     end
                   
@@ -358,7 +354,7 @@ module write_channel_native
    
     );
    
-   assign mem_addr = {BE_ADDR_W{1'b0}} + {addr, {BE_BYTE_W{1'b0}}}; 
+   assign mem_addr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}}; 
    
    localparam
      idle          = 3'd0,
