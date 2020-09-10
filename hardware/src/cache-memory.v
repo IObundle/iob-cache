@@ -73,7 +73,7 @@ module cache_memory
    
    wire [TAG_W-1:0]                             tag    = addr_reg[FE_ADDR_W-1       -:TAG_W]; //so the tag doesnt update during ready on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
    wire [LINE_OFF_W-1:0]                        index  = addr    [FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
-   wire [WORD_OFF_W-1:0]                        offset = addr_reg[FE_BYTE_W          +: WORD_OFF_W]; //so the offset doesnt update during ready on a read-access (can take the 1 clock-cycle delay)
+   wire [WORD_OFF_W-1:0]                        offset = addr_reg[FE_BYTE_W         +:WORD_OFF_W]; //so the offset doesnt update during ready on a read-access (can take the 1 clock-cycle delay)
    
    
    wire [N_WAYS*(2**WORD_OFF_W)*FE_DATA_W-1:0]  line_rdata;
@@ -200,9 +200,7 @@ module cache_memory
                                   (
                                    .clk (clk),
                                    .en  (valid), 
-                                   //.we(line_wstrb[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                                   //.we((way_hit[k])? line_wstrb[j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] : {FE_NBYTES{1'b0}}),
-                                   .we ( {FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES] ),
+                                   .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr(index),
                                    .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
@@ -224,7 +222,7 @@ module cache_memory
 	                .wdata(replace_valid                ),				       
 	                .addr (index                    ),
 	                .en   (way_select[k] & replace_valid),
-	                .rdata(line_v[k]                         )   
+	                .rdata(line_v[k]                    )   
 	                );
 
                   /*     iob_sp_ram

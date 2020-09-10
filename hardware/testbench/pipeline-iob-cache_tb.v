@@ -20,6 +20,7 @@ module iob_cache_tb;
    wire                                select = 0;//cache is always selected
    wire                                i_select =0, d_select =0;
    reg [31:0]                          test = 0;
+   reg                                 pipe_en = 0;
    
 
    integer                             i,j;
@@ -54,118 +55,29 @@ module iob_cache_tb;
 
         $display("Test 2 - Reading entire memory (Data width words)\n");
         test <= 2;
-        for (i = 0; i < 10; i = i + 1)
-          begin
-             addr <= i;
-             wdata <= i+1;
-             wstrb <= 0;
-             valid <= 1;
-             #2;
-             valid <= ready;
-             addr <= i+1;
-             wdata <= i+2;         
-             while (ready == 1'b0)
-                  #2;
-             valid = ready;
-             
-        end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-
-        
- /*     
-        $display("Test 2 - Reading entire memory (Data width words)\n");
-        test <= 2;
-        #2
-          for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-            begin 
-               addr <= i;
-               valid <= 1;
-               #2;
-`ifdef LA
-               addr <= 0;
-               valid <= 0;
-`endif   
-               while (ready == 1'b0) #2;
-               if(rdata != (i+1))
-                 $display("Error in: %h\n", i);
-               valid <= 0;
-               #2;
-            end
-        
-        $display("Test 3 - Byte addressing (Writting memory using Bytes)\n");
-        test <= 3;
-        #2;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-          begin
-             for( j = 0; j < `DATA_W/8; j = j + 1)
-               begin
-                  addr <= i;
-                  #2;
-                  wdata <= {`DATA_W/8{i[3:0]}};
-                  wstrb <= (1'b1) << j;
-                  valid <= 1;
-                  #2;
-`ifdef LA
-                  addr <= 0;
-                  wdata <= 0;
-                  wstrb <= 0;
-                  valid <= 0;
-`endif
-                  while (ready == 1'b0) #2;
-                  valid <= 0;
-                  #2;
-               end // for ( j = 0; j < `DATA_W/8; j = j + 1)
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-        wdata <= 0;
+        pipe_en <= 1;
+        addr <= 0;
+        wdata <= 11111;
         wstrb <= 0;
+        valid <= 1;
         #2;
-        $display("Test 4 - Reading Byte Addressing using Data Width Words - only for 32-bit (BE_DATA_W = 32)\n");
-        test <= 4;
+        valid <= 0;
+        
         #2;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-          begin 
-             addr <= i;
-             valid <= 1;
-             #2
-`ifdef LA
-               addr <= 0;
-             valid <= 0;
-`endif   
+        for (j = 1; j < 10; j = j + 1)
+          begin
+             addr <= j;
+             #2;
+    
              while (ready == 1'b0) #2;
-             if(rdata != {`DATA_W/8{i[3:0]}})
-               $display("Error in: %h; wrote instead: %h\n", addr, rdata);
-             valid <= 0;
-             #2;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+        pipe_en <= 0;
+        
+ 
 
 
-/*
-        $display("Test 5 - Forcing a cache-line load, followed by a write and a read to the same position");
-        test <= 5;
-        #8;
-        addr <=0;
-        wstrb <= 0;
-        wdata <= 0;
-        valid <= 1;
-        #2;
-        
-        while(ready == 1'b0) #2;
-        valid <= 0;
-        #8;
-        valid <= 1;
-        
-        wdata <= {`DATA_W{1'b1}};
-        wstrb <= {`DATA_W/8{1'b1}};
-        while(ready == 1'b0)#2;
-        wdata <= 0;
-        wstrb <= 0;
-        while (ready == 1'b0) #2;
-        if(rdata != {`DATA_W{1'b1}})
-          $display("Data was accessed too early, still read: %h, instead of all HIGH",  rdata);
-        #8;
-        
-        valid <= 0;
-        #2;
-*/        
+
+  
         $display("Cache testing completed\n");
         $finish;
      end
@@ -208,6 +120,20 @@ module iob_cache_tb;
 `endif  
    
 
+
+   reg                             valid_pipe;
+   
+   always @*
+     begin
+        if (reset)
+          valid_pipe = 1'b0;
+        else
+          valid_pipe = ready;
+     end
+                       
+   
+
+   
    
 `ifdef L2
    
@@ -402,7 +328,7 @@ module iob_cache_tb;
 	  .addr  ({select, addr}),
 	  .wstrb (wstrb),
 	  .rdata (rdata),
-	  .valid (valid),
+	  .valid (valid | (valid_pipe & pipe_en)),
 	  .ready (ready),
           //
           // NATIVE MEMORY INTERFACE

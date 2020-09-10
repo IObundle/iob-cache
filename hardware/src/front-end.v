@@ -59,7 +59,10 @@ module front_end
    assign data_addr_reg = addr_reg;
    assign data_wdata_reg = wdata_reg;
    assign data_wstrb_reg = wstrb_reg;
-    
+
+
+   wire                                          reset_valid_reg = ~valid_int & data_ready;
+   
    
    //////////////////////////////////////////////////////////////////////////////////
      //    Cache-selection - cache-memory or cache-control 
@@ -108,7 +111,7 @@ module front_end
              wstrb_reg <= 0;
           end
         else
-          if(valid) //updates
+          if(valid_int) //updates
             begin
                addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
                wdata_reg <= wdata;
@@ -125,13 +128,16 @@ module front_end
    
    always @(posedge clk, posedge reset)
      begin
-        if(reset | (data_ready & ~(valid_int))) // ready is a synchronous reset for internal valid signal (only if the input doesn have a new request in the same clock-cycle) - avoids repeated requests
+        if(reset)
           valid_reg <= 0;
-        else    
-          if(valid) //updates
-            valid_reg <= valid_int;
+        else
+          if (reset_valid_reg)// ready is a synchronous reset for internal valid signal (only if the input doesn have a new request in the same clock-cycle) - avoids repeated requests
+            valid_reg <= 0;
           else
-            valid_reg <= valid_reg;
+            if(valid_int) //updates
+              valid_reg <= valid_int;
+            else
+              valid_reg <= valid_reg;
      end // always @ (posedge clk, posedge reset)  
 
 
