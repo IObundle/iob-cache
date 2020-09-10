@@ -72,12 +72,25 @@ module iob_cache_tb;
              while (ready == 1'b0) #2;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         pipe_en <= 0;
+        #20;
+                
+        $display("Test 3 - Testing RAW control\n");
+        test <= 3;
+        addr <= 0;
+        valid <=1;
+        pipe_en <= 1;
+        #2;
+        valid <=0;
+        wstrb <= {`DATA_W/8{1'b1}};
+        wdata <= 57005;
+        while (ready == 1'b0) #2;
+        wstrb <= 0;
+        while (ready == 1'b0) #2;
+        #2;
+        pipe_en <= 0;
+
+        #20;
         
- 
-
-
-
-  
         $display("Cache testing completed\n");
         $finish;
      end
