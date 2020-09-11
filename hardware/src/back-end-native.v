@@ -118,20 +118,20 @@ module read_channel_native
     //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
     )
-   (
-    input                                                   clk,
-    input                                                   reset,
-    input                                                   replace_valid,
-    input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
-    output reg                                              replace_ready,
-    output                                                  read_valid,
-    output reg [LINE2MEM_W-1:0]                             read_addr,
-    output [BE_DATA_W-1:0]                                  read_rdata,
-    //Native memory interface
-    output [BE_ADDR_W -1:0]                                 mem_addr,
-    output reg                                              mem_valid,
-    input                                                   mem_ready,
-    input [BE_DATA_W-1:0]                                   mem_rdata
+    (
+     input                                        clk,
+     input                                        reset,
+     input                                        replace_valid,
+     input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
+     output reg                                   replace_ready,
+     output  reg                                     read_valid,
+     output reg [LINE2MEM_W-1:0]                  read_addr,
+     output [BE_DATA_W-1:0]                       read_rdata,
+     //Native memory interface
+     output [BE_ADDR_W -1:0]                      mem_addr,
+     output reg                                   mem_valid,
+     input                                        mem_ready,
+     input [BE_DATA_W-1:0]                        mem_rdata
     );
 
    generate
@@ -143,7 +143,7 @@ module read_channel_native
            assign mem_addr  = {BE_ADDR_W{1'b0}} + {replace_addr[FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W], word_counter, {BE_BYTE_W{1'b0}}};
            
 
-           assign read_valid = mem_valid; //doesn require line_load since when mem_valid is HIGH, so is line_load.
+          // assign read_valid = mem_ready;
            assign read_rdata = mem_rdata;
 
            localparam
@@ -213,20 +213,23 @@ module read_channel_native
                        mem_valid = 1'b0;
                        replace_ready = 1'b1;
                        word_counter = 0;
+                       read_valid = 1'b0;
                     end
 
                   handshake:
                     begin
                        mem_valid = 1'b1;
                        replace_ready = 1'b0;
-                       word_counter = word_counter + read_valid;
+                       word_counter = word_counter + mem_ready;
+                       read_valid = mem_ready;
                     end
                   
                   end_handshake:
                     begin
-                       word_counter = word_counter;
+                       word_counter = 0;
                        replace_ready = 1'b0; //delay for read-latency
                        mem_valid = 1'b0;
+                       read_valid = 1'b0;
                     end
                   
                   default:;
@@ -237,9 +240,9 @@ module read_channel_native
         end // if (LINE2MEM_W > 0)
       else
         begin
-           assign mem_addr  = {BE_ADDR_W{1'b0}} + {replace_addr[FE_ADDR_W-1: BE_BYTE_W], {BE_BYTE_W{1'b0}}};
+           assign mem_addr  = {BE_ADDR_W{1'b0}} + {replace_addr, {BE_BYTE_W{1'b0}}};
            
-           assign read_valid = mem_valid; //doesn require line_load since when mem_valid is HIGH, so is line_load.
+          // assign read_valid = mem_valid; //doesn require line_load since when mem_valid is HIGH, so is line_load.
            assign read_rdata = mem_rdata;
 
            localparam
@@ -298,18 +301,24 @@ module read_channel_native
                     begin
                        mem_valid = 1'b0;
                        replace_ready = 1'b1;
+                       read_valid = 1'b0;
+                       
                     end
 
                   handshake:
                     begin
                        mem_valid = 1'b1;
                        replace_ready = 1'b0;
+                       read_valid = mem_ready;
+                       
                     end
                   
                   end_handshake:
                     begin
                        replace_ready = 1'b0; //delay for read-latency
                        mem_valid = 1'b0;
+                       read_valid = 1'b0;
+                       
                     end
                   
                   default:;
@@ -387,7 +396,7 @@ module write_channel_native
            
            wire [BE_BYTE_W-FE_BYTE_W -1 :0] word_align = addr[FE_BYTE_W +: (BE_BYTE_W - FE_BYTE_W)];
            
-           assign mem_wdata = addr << word_align * FE_DATA_W ;
+           assign mem_wdata = wdata << word_align * FE_DATA_W ;
            
            always @*
              begin
