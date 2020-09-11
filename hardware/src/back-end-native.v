@@ -204,34 +204,25 @@ module read_channel_native
            
            always @*
              begin 
-                //word_counter =0;
+                mem_valid     = 1'b0;
+                replace_ready = 1'b0;
+                word_counter  = 0;
+                read_valid    = 1'b0;
                 
                 case(state)
                   
                   idle:
                     begin
-                       mem_valid = 1'b0;
                        replace_ready = 1'b1;
-                       word_counter = 0;
-                       read_valid = 1'b0;
                     end
 
                   handshake:
                     begin
-                       mem_valid = 1'b1;
-                       replace_ready = 1'b0;
+                       mem_valid = ~mem_ready | ~(&read_addr);
                        word_counter = word_counter + mem_ready;
                        read_valid = mem_ready;
                     end
-                  
-                  end_handshake:
-                    begin
-                       word_counter = 0;
-                       replace_ready = 1'b0; //delay for read-latency
-                       mem_valid = 1'b0;
-                       read_valid = 1'b0;
-                    end
-                  
+                                   
                   default:;
                   
                   
@@ -292,32 +283,21 @@ module read_channel_native
            
            always @*
              begin 
-                
+                mem_valid     = 1'b0;
+                replace_ready = 1'b0;
+                read_valid    = 1'b0;
                 
                 case(state)
                   
                   idle:
                     begin
-                       mem_valid = 1'b0;
                        replace_ready = 1'b1;
-                       read_valid = 1'b0;
-                       
                     end
 
                   handshake:
                     begin
-                       mem_valid = 1'b1;
-                       replace_ready = 1'b0;
+                       mem_valid = ~mem_ready;
                        read_valid = mem_ready;
-                       
-                    end
-                  
-                  end_handshake:
-                    begin
-                       replace_ready = 1'b0; //delay for read-latency
-                       mem_valid = 1'b0;
-                       read_valid = 1'b0;
-                       
                     end
                   
                   default:;
@@ -449,7 +429,7 @@ module write_channel_native
           idle:
             ready = 1'b1;
           write_process:
-            mem_valid = 1'b1;
+            mem_valid = ~mem_ready;
           default:;
         endcase // case (state)
      end
