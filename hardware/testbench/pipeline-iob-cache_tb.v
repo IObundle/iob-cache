@@ -37,8 +37,8 @@ module iob_cache_tb;
         reset = 0;
         #10;
 
-        $display("\nInitializing Cache testing - printing errors only\n");
-        $display("Test 1 - Writing entire memory (Data width words)\n");
+        $display("\nInitializing Cache testing - check simulation results\n");
+        $display("Test 1 - Writing test\n");
         test <= 1;
         for (i = 0; i < 10; i = i + 1)
           begin
@@ -53,7 +53,7 @@ module iob_cache_tb;
              while (ready == 1'b0) #2;
         end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
 
-        $display("Test 2 - Reading entire memory (Data width words)\n");
+        $display("Test 2 - Reading Test\n");
         test <= 2;
         pipe_en <= 1;
         addr <= 0;
@@ -88,9 +88,20 @@ module iob_cache_tb;
         while (ready == 1'b0) #2;
         #2;
         pipe_en <= 0;
-
         #20;
         
+        $display("Test 4 - Test Line Replacement with read the last written position\n");
+        test <= 4;
+        addr <= (2**`WORD_OFF_W)*5-1;
+        valid <= 1;
+        wstrb <= {`DATA_W/8{1'b1}};
+        wdata <= 3735928559;
+        #2;
+        wstrb <= 0;
+        #2;
+        valid <=0;
+        while (ready == 1'b0) #2;
+        #20;   
         $display("Cache testing completed\n");
         $finish;
      end

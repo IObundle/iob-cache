@@ -106,7 +106,7 @@ module cache_memory
    assign wtbuf_empty = buffer_empty & write_ready & ~write_valid;
    
 
-   iob_async_fifo #(
+   /*iob_async_fifo #(
 		    .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
 		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
 		    ) 
@@ -124,7 +124,24 @@ module cache_memory
       .write_en(write_access & ready),
       .wclk    (clk)
       );
-
+*/
+iob_sync_fifo #(
+		    .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
+		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
+		    ) 
+   write_throught_buffer 
+     (
+      .rst     (reset),
+      .clk (clk),
+      .fifo_ocupancy (),       
+      .data_out(buffer_dout), 
+      .empty   (buffer_empty),
+      .read_en (write_ready),  
+      .data_in ({addr_reg,wdata_reg,wstrb_reg}), 
+      .full    (buffer_full),
+      .write_en(write_access & ready)
+      );
+   
    //back-end read channel
    assign replace_valid = (~hit & read_access_reg & replace_ready) & (buffer_empty & write_ready);
    assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
