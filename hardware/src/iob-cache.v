@@ -26,7 +26,7 @@ module iob_cache
     parameter BE_DATA_W = FE_DATA_W, //Data width of the memory 
     parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
     parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
-                                                                                        //Cache-Memory base Offset
+    //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
     /*---------------------------------------------------*/
   
@@ -35,61 +35,61 @@ module iob_cache
     parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
-    input                                        clk,
-    input                                        reset,
+    input                                       clk,
+    input                                       reset,
     //Master i/f
-    input                                        valid,
+    input                                       valid,
 `ifdef WORD_ADDR   
     input [CTRL_CACHE + FE_ADDR_W -1:FE_BYTE_W] addr, //MSB is used for Controller selection
 `else
-    input [CTRL_CACHE + FE_ADDR_W -1:0]          addr, //MSB is used for Controller selection
+    input [CTRL_CACHE + FE_ADDR_W -1:0]         addr, //MSB is used for Controller selection
 `endif
-    input [FE_DATA_W-1:0]                        wdata,
-    input [FE_NBYTES-1:0]                        wstrb,
-    output [FE_DATA_W-1:0]                       rdata,
-    output                                       ready,
+    input [FE_DATA_W-1:0]                       wdata,
+    input [FE_NBYTES-1:0]                       wstrb,
+    output [FE_DATA_W-1:0]                      rdata,
+    output                                      ready,
     //Slave i/f - Native
-    output                                       mem_valid,
-    output [BE_ADDR_W-1:0]                       mem_addr,
-    output [BE_DATA_W-1:0]                       mem_wdata,
-    output [BE_NBYTES-1:0]                       mem_wstrb,
-    input [BE_DATA_W-1:0]                        mem_rdata,
-    input                                        mem_ready
+    output                                      mem_valid,
+    output [BE_ADDR_W-1:0]                      mem_addr,
+    output [BE_DATA_W-1:0]                      mem_wdata,
+    output [BE_NBYTES-1:0]                      mem_wstrb,
+    input [BE_DATA_W-1:0]                       mem_rdata,
+    input                                       mem_ready
     );
 
    
    //internal signals (front-end inputs)
-   wire                                          data_valid, data_ready;
-   wire [FE_ADDR_W -1:FE_BYTE_W]                 data_addr; 
-   wire [FE_DATA_W-1 : 0]                        data_wdata, data_rdata;
-   wire [FE_NBYTES-1: 0]                         data_wstrb;
+   wire                                         data_valid, data_ready;
+   wire [FE_ADDR_W -1:FE_BYTE_W]                data_addr; 
+   wire [FE_DATA_W-1 : 0]                       data_wdata, data_rdata;
+   wire [FE_NBYTES-1: 0]                        data_wstrb;
    
    //stored signals
-   wire [FE_ADDR_W -1:FE_BYTE_W]                 data_addr_reg; 
-   wire [FE_DATA_W-1 : 0]                        data_wdata_reg;
-   wire [FE_NBYTES-1: 0]                         data_wstrb_reg;
-   wire                                          data_valid_reg;
+   wire [FE_ADDR_W -1:FE_BYTE_W]                data_addr_reg; 
+   wire [FE_DATA_W-1 : 0]                       data_wdata_reg;
+   wire [FE_NBYTES-1: 0]                        data_wstrb_reg;
+   wire                                         data_valid_reg;
 
    //back-end write-channel
-   wire                                          write_valid, write_ready;
-   wire [FE_ADDR_W-1: FE_BYTE_W]                 write_addr;
-   wire [FE_DATA_W-1:0]                          write_wdata;
-   wire [FE_NBYTES-1:0]                          write_wstrb;
+   wire                                         write_valid, write_ready;
+   wire [FE_ADDR_W-1: FE_BYTE_W]                write_addr;
+   wire [FE_DATA_W-1:0]                         write_wdata;
+   wire [FE_NBYTES-1:0]                         write_wstrb;
    
    //back-end read-channel
-   wire                                          replace_valid, replace_ready;
+   wire                                         replace_valid, replace_ready;
    wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]     replace_addr; 
-   wire                                          read_valid;
-   wire [LINE2MEM_W-1:0]              read_addr;
-   wire [BE_DATA_W-1:0]                          read_rdata;
-  
+   wire                                         read_valid;
+   wire [LINE2MEM_W-1:0]                        read_addr;
+   wire [BE_DATA_W-1:0]                         read_rdata;
+   
    //cache-control
-   wire                                          ctrl_valid, ctrl_ready;   
-   wire [`CTRL_ADDR_W-1:0]                       ctrl_addr;
-   wire                                          wtbuf_full, wtbuf_empty;
-   wire                                          write_hit, write_miss, read_hit, read_miss;
-   wire [FE_DATA_W-1:0]                          ctrl_rdata;
-   wire                                          invalidate;
+   wire                                         ctrl_valid, ctrl_ready;   
+   wire [`CTRL_ADDR_W-1:0]                      ctrl_addr;
+   wire                                         wtbuf_full, wtbuf_empty;
+   wire                                         write_hit, write_miss, read_hit, read_miss;
+   wire [CTRL_CACHE*(FE_DATA_W-1):0]            ctrl_rdata;
+   wire                                         invalidate;
 
    front_end
      #(
@@ -222,7 +222,7 @@ module iob_cache
    
    generate
       if (CTRL_CACHE)
-        
+         
         cache_control
           #(
             .FE_DATA_W  (FE_DATA_W),
@@ -249,7 +249,7 @@ module iob_cache
          );
       else
         begin
-           assign ctrl_rdata = {FE_DATA_W{1'bx}};
+           assign ctrl_rdata = 1'bx;
            assign ctrl_ready = 1'bx;
            assign invalidate = 1'b0;
         end // else: !if(CTRL_CACHE)
@@ -257,9 +257,3 @@ module iob_cache
    endgenerate
 
 endmodule // iob_cache   
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
