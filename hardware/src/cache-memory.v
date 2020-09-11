@@ -29,7 +29,7 @@ module cache_memory
      input                                      reset,
      //front-end
      input                                      valid,
-     input [FE_ADDR_W-1:FE_BYTE_W]              addr,
+     input [FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W] addr,
      input [FE_DATA_W-1:0]                      wdata,
      input [FE_NBYTES-1:0]                      wstrb,
      output [FE_DATA_W-1:0]                     rdata,
@@ -39,7 +39,6 @@ module cache_memory
      input [FE_ADDR_W-1:FE_BYTE_W]              addr_reg,
      input [FE_DATA_W-1:0]                      wdata_reg,
      input [FE_NBYTES-1:0]                      wstrb_reg,
-     output [FE_DATA_W-1:0]                     rdata_reg,
      //back-end write-channel
      output                                     write_valid,
      output [FE_ADDR_W-1:FE_BYTE_W]             write_addr,
@@ -157,6 +156,11 @@ iob_sync_fifo #(
    assign ready = (hit & (read_access_reg) & (replace_ready) & RAW_prev) | (~buffer_full & (write_access_reg));
    // read section needs to be the registered, so it doesn't change the moment ready asserts and updates the input. Write doesn't update on the same cycle as ready asserts, and in the next clock cycle, will have the next input.
 
+   //cache-control hit-miss counters enables
+   assign write_hit =  ready & ( hit & write_access_reg);
+   assign write_miss = ready & (~hit & write_access_reg);
+   assign read_hit = ready &  ( hit & read_access_reg);
+   assign read_miss = ready & (~hit & read_access_reg);
    
    genvar                                                   i,j,k;
    generate

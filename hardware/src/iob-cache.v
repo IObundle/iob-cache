@@ -147,7 +147,7 @@ module iob_cache
       //front-end
       //internal data signals
       .valid (data_valid),
-      .addr  (data_addr),
+      .addr  (data_addr[FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W]),
       .wdata (data_wdata),
       .wstrb (data_wstrb),
       .rdata (data_rdata),
@@ -222,7 +222,7 @@ module iob_cache
    
    generate
       if (CTRL_CACHE)
-         
+        
         cache_control
           #(
             .FE_DATA_W  (FE_DATA_W),
@@ -247,6 +247,12 @@ module iob_cache
          .ready (ctrl_ready),
          .invalidate (invalidate)
          );
+      else
+        begin
+           assign ctrl_rdata = {FE_DATA_W{1'bx}};
+           assign ctrl_ready = 1'bx;
+           assign invalidate = 1'b0;
+        end // else: !if(CTRL_CACHE)
       
    endgenerate
 

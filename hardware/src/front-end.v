@@ -40,7 +40,6 @@ module front_end
     output  [FE_ADDR_W-1:FE_BYTE_W]          data_addr_reg,
     output  [FE_DATA_W-1:0]                  data_wdata_reg,
     output  [FE_NBYTES-1:0]                  data_wstrb_reg,
-    output  [FE_DATA_W-1:0]                  data_rdata_reg,
     //cache-control
     output                                      ctrl_valid,
     output [`CTRL_ADDR_W-1:0]                   ctrl_addr, 
