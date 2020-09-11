@@ -66,7 +66,7 @@ module cache_memory
    localparam TAG_W = FE_ADDR_W - (FE_BYTE_W + WORD_OFF_W + LINE_OFF_W);
 
    wire                                         hit;
-      
+   
    //cache-memory internal signals
    wire [N_WAYS-1:0]                            way_hit, way_select;
    
@@ -77,12 +77,14 @@ module cache_memory
    
    wire [N_WAYS*(2**WORD_OFF_W)*FE_DATA_W-1:0]  line_rdata;
    wire [N_WAYS*TAG_W-1:0]                      line_tag;
-   wire [N_WAYS-1:0]                            line_v;
+   reg [N_WAYS*(2**LINE_OFF_W)-1:0]             v_reg;
    reg [N_WAYS-1:0]                             v;
 
-   always @ (posedge clk)
-     v <= line_v;
-  
+   //always @ (posedge clk)
+   //  v <= line_v;
+
+   
+   
    
    reg [(2**WORD_OFF_W)*FE_NBYTES-1:0]          line_wstrb;
    
@@ -105,29 +107,10 @@ module cache_memory
    assign wtbuf_empty = buffer_empty & write_ready & ~write_valid;
    
 
-   /*iob_async_fifo #(
-		    .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
-		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
-		    ) 
-   write_throught_buffer 
-     (
-      .rst     (reset),       
-      .data_out(buffer_dout), 
-      .empty   (buffer_empty),
-      .level_r (),
-      .read_en (write_ready),
-      .rclk    (clk),    
-      .data_in ({addr_reg,wdata_reg,wstrb_reg}), 
-      .full    (buffer_full),
-      .level_w (),
-      .write_en(write_access & ready),
-      .wclk    (clk)
-      );
-*/
-iob_sync_fifo #(
-		    .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
-		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
-		    ) 
+   iob_sync_fifo #(
+		   .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
+		   .ADDRESS_WIDTH (WTBUF_DEPTH_W)
+		   ) 
    write_throught_buffer 
      (
       .rst     (reset),
@@ -146,7 +129,7 @@ iob_sync_fifo #(
    assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
 
 
-//RAW hazard prevention
+   //RAW hazard prevention
    reg                                                      RAW_prev;
 
    always @(posedge clk)
@@ -157,10 +140,10 @@ iob_sync_fifo #(
    // read section needs to be the registered, so it doesn't change the moment ready asserts and updates the input. Write doesn't update on the same cycle as ready asserts, and in the next clock cycle, will have the next input.
 
    //cache-control hit-miss counters enables
-   assign write_hit =  ready & ( hit & write_access_reg);
+   assign write_hit  = ready & ( hit & write_access_reg);
    assign write_miss = ready & (~hit & write_access_reg);
-   assign read_hit = ready &  ( hit & read_access_reg);
-   assign read_miss = ready & (~hit & read_access_reg);
+   assign read_hit   = ready & ( hit &  read_access_reg);
+   assign read_miss  = ready & (~hit &  read_access_reg);
    
    genvar                                                   i,j,k;
    generate
@@ -212,6 +195,20 @@ iob_sync_fifo #(
 
 
                 
+
+                always @ (posedge clk, posedge reset)
+                  begin
+                     if (reset | invalidate)
+                       v_reg <= 0;
+                     else
+                       if(replace_valid)
+                         v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
+                       else
+                         v_reg <= v_reg;
+                  end
+                
+                
+                
                 for (k = 0; k < N_WAYS; k=k+1)
                   begin : line_way
                      for(j = 0; j < 2**LINE2MEM_W; j=j+1)
@@ -235,38 +232,11 @@ iob_sync_fifo #(
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
                        end // for (j = 0; j < 2**LINE2MEM_W; j=j+1)
 
-                    
-                     iob_reg_file
-                       #(
-                         .ADDR_WIDTH(LINE_OFF_W), 
-                         .COL_WIDTH (1),
-                         .NUM_COL   (1)
-	                 ) 
-	             valid_memory 
-	               (
-	                .clk  (clk                          ),
-	                .rst  (reset|invalidate             ),
-	                .wdata(replace_valid                ),				       
-	                .addr (index                    ),
-	                .en   (way_select[k] & replace_valid),
-	                .rdata(line_v[k]                    )   
-	                );
-
-                  /*     iob_sp_ram
-                       #(
-                         .DATA_W(1),
-                         .ADDR_W(LINE_OFF_W)
-                         )
-                     valid_memory 
-                       (
-                        .clk (clk                           ),
-                        .en  (valid                         ), 
-                        .we  (way_select[k] & replace_valid ),
-                        .addr (index                        ),
-                        .data_in (1'b1                       ),
-                        .data_out(v[k])
-                        );
-        */             
+                     
+                     always @(posedge clk)
+                       v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
+                     
+                     
                      iob_sp_ram
                        #(
                          .DATA_W(TAG_W),
@@ -281,7 +251,6 @@ iob_sync_fifo #(
                         .data_in (tag                       ),
                         .data_out(line_tag[TAG_W*k +: TAG_W])
                         );
-
 
 
                      
