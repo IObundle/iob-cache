@@ -264,7 +264,7 @@ module read_channel_native
                        idle:
                          begin
                             
-                            if(read_miss) //main_process flag
+                            if(replace_valid)
                               state <= handshake;                                        
                             else
                               state <= idle;                      
@@ -281,7 +281,6 @@ module read_channel_native
                        end_handshake: //read-latency delay (last line word)
                          begin
                             state <= idle;
-                            word_counter <= 0;
                          end
                        
                        default:;

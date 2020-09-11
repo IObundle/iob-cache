@@ -23,5 +23,8 @@ read_xdc ./synth.xdc
 
 synth_design -include_dirs $HW_INCLUDE -part $PART -top $TOP
 
+#multiple tables showing the resources,but not for each module
 report_utilization
 
+#table with all the modules, simplified
+report_utilization -hierarchical
