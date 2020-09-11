@@ -130,9 +130,14 @@ module cache_memory
    assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
 
 
+//RAW hazard prevention
+   reg                                                      RAW_prev;
+
+   always @(posedge clk)
+     RAW_prev <= ~(write_access_reg & hit);
+   
    //front-end READY signal
-   assign ready = (hit & (read_access_reg) & (replace_ready)) | (~buffer_full & (write_access_reg));
-   //assign ready = (hit & (read_access_reg & (~write_access)) & (replace_ready & (~replace_valid))) | (~buffer_full & (write_access_reg));
+   assign ready = (hit & (read_access_reg) & (replace_ready) & RAW_prev) | (~buffer_full & (write_access_reg));
    // read section needs to be the registered, so it doesn't change the moment ready asserts and updates the input. Write doesn't update on the same cycle as ready asserts, and in the next clock cycle, will have the next input.
 
    
