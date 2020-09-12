@@ -36,24 +36,23 @@ module front_end
     input [FE_DATA_W-1:0]                       data_rdata,
     input                                       data_ready,
     //stored input signals
-    output                                   data_valid_reg,
-    output  [FE_ADDR_W-1:FE_BYTE_W]          data_addr_reg,
-    output  [FE_DATA_W-1:0]                  data_wdata_reg,
-    output  [FE_NBYTES-1:0]                  data_wstrb_reg,
-    output  [FE_DATA_W-1:0]                  data_rdata_reg,
+    output                                      data_valid_reg,
+    output [FE_ADDR_W-1:FE_BYTE_W]              data_addr_reg,
+    output [FE_DATA_W-1:0]                      data_wdata_reg,
+    output [FE_NBYTES-1:0]                      data_wstrb_reg,
     //cache-control
     output                                      ctrl_valid,
     output [`CTRL_ADDR_W-1:0]                   ctrl_addr, 
-    input [FE_DATA_W-1:0]                       ctrl_rdata,
+    input [CTRL_CACHE*(FE_DATA_W-1):0]          ctrl_rdata,
     input                                       ctrl_ready
     );
 
-   wire                                          valid_int;
+   wire                                         valid_int;
    
-   reg                                           valid_reg;
-   reg [FE_ADDR_W-1:FE_BYTE_W]                   addr_reg;
-   reg [FE_DATA_W-1:0]                           wdata_reg;
-   reg [FE_NBYTES-1:0]                           wstrb_reg;
+   reg                                          valid_reg;
+   reg [FE_ADDR_W-1:FE_BYTE_W]                  addr_reg;
+   reg [FE_DATA_W-1:0]                          wdata_reg;
+   reg [FE_NBYTES-1:0]                          wstrb_reg;
 
    assign data_valid_reg = valid_reg;
    assign data_addr_reg = addr_reg;
@@ -61,7 +60,7 @@ module front_end
    assign data_wstrb_reg = wstrb_reg;
 
 
-   wire                                          reset_valid_reg = ~valid_int & data_ready;
+   wire                                         reset_valid_reg = ~valid_int & data_ready;
    
    
    //////////////////////////////////////////////////////////////////////////////////
@@ -88,13 +87,13 @@ module front_end
            assign ready = data_ready; 
            
            assign rdata = data_rdata;
-  
+           
            assign valid_int = valid;
            
            assign ctrl_valid = 1'bx;
            
            assign ctrl_addr = `CTRL_ADDR_W'dx;
-        
+           
         end // else: !if(CTRL_CACHE)
    endgenerate
 

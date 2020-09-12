@@ -2,24 +2,24 @@
 `include "iob-cache.vh"
 
 module back_end_native
-    #(
-      //memory cache's parameters
-      parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
-      parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-      parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
-      parameter BE_ADDR_W = FE_ADDR_W, //Address width of the higher hierarchy memory
-      parameter BE_DATA_W = FE_DATA_W, //Data width of the memory
+  #(
+    //memory cache's parameters
+    parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
+    parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
+    parameter BE_ADDR_W = FE_ADDR_W, //Address width of the higher hierarchy memory
+    parameter BE_DATA_W = FE_DATA_W, //Data width of the memory
 
-      parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
-      parameter FE_BYTE_W  = $clog2(FE_NBYTES), //Byte Offset
-      /*---------------------------------------------------*/
-      //Higher hierarchy memory (slave) interface parameters 
+    parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
+    parameter FE_BYTE_W  = $clog2(FE_NBYTES), //Byte Offset
+    /*---------------------------------------------------*/
+    //Higher hierarchy memory (slave) interface parameters 
 
-      parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
-      parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
-      //Cache-Memory base Offset
+    parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
+    parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
+    //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W)
-   
+  
     ) 
    (
     input                                        clk,
@@ -44,7 +44,7 @@ module back_end_native
     output [BE_NBYTES-1:0]                       mem_wstrb,
     input [BE_DATA_W-1:0]                        mem_rdata,
     input                                        mem_ready
-  );
+    );
 
    wire [BE_ADDR_W-1:0]                          mem_addr_read,  mem_addr_write;
    wire                                          mem_valid_read, mem_valid_write;
@@ -118,20 +118,20 @@ module read_channel_native
     //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
     )
-    (
-     input                                        clk,
-     input                                        reset,
-     input                                        replace_valid,
-     input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
-     output reg                                   replace_ready,
-     output  reg                                     read_valid,
-     output reg [LINE2MEM_W-1:0]                  read_addr,
-     output [BE_DATA_W-1:0]                       read_rdata,
-     //Native memory interface
-     output [BE_ADDR_W -1:0]                      mem_addr,
-     output reg                                   mem_valid,
-     input                                        mem_ready,
-     input [BE_DATA_W-1:0]                        mem_rdata
+   (
+    input                                        clk,
+    input                                        reset,
+    input                                        replace_valid,
+    input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
+    output reg                                   replace_ready,
+    output reg                                   read_valid,
+    output reg [LINE2MEM_W-1:0]                  read_addr,
+    output [BE_DATA_W-1:0]                       read_rdata,
+    //Native memory interface
+    output [BE_ADDR_W -1:0]                      mem_addr,
+    output reg                                   mem_valid,
+    input                                        mem_ready,
+    input [BE_DATA_W-1:0]                        mem_rdata
     );
 
    generate
@@ -143,7 +143,7 @@ module read_channel_native
            assign mem_addr  = {BE_ADDR_W{1'b0}} + {replace_addr[FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W], word_counter, {BE_BYTE_W{1'b0}}};
            
 
-          // assign read_valid = mem_ready;
+           // assign read_valid = mem_ready;
            assign read_rdata = mem_rdata;
 
            localparam
@@ -154,7 +154,7 @@ module read_channel_native
            always @ (posedge clk)
              read_addr <= word_counter;
            
-           reg [1:0]                                  state;
+           reg [1:0]            state;
 
            always @(posedge clk, posedge reset)
              begin
@@ -204,32 +204,23 @@ module read_channel_native
            
            always @*
              begin 
-                //word_counter =0;
+                mem_valid     = 1'b0;
+                replace_ready = 1'b0;
+                word_counter  = 0;
+                read_valid    = 1'b0;
                 
                 case(state)
                   
                   idle:
                     begin
-                       mem_valid = 1'b0;
                        replace_ready = 1'b1;
-                       word_counter = 0;
-                       read_valid = 1'b0;
                     end
 
                   handshake:
                     begin
-                       mem_valid = 1'b1;
-                       replace_ready = 1'b0;
+                       mem_valid = ~mem_ready | ~(&read_addr);
                        word_counter = word_counter + mem_ready;
                        read_valid = mem_ready;
-                    end
-                  
-                  end_handshake:
-                    begin
-                       word_counter = 0;
-                       replace_ready = 1'b0; //delay for read-latency
-                       mem_valid = 1'b0;
-                       read_valid = 1'b0;
                     end
                   
                   default:;
@@ -242,7 +233,7 @@ module read_channel_native
         begin
            assign mem_addr  = {BE_ADDR_W{1'b0}} + {replace_addr, {BE_BYTE_W{1'b0}}};
            
-          // assign read_valid = mem_valid; //doesn require line_load since when mem_valid is HIGH, so is line_load.
+           // assign read_valid = mem_valid; //doesn require line_load since when mem_valid is HIGH, so is line_load.
            assign read_rdata = mem_rdata;
 
            localparam
@@ -292,32 +283,21 @@ module read_channel_native
            
            always @*
              begin 
-                
+                mem_valid     = 1'b0;
+                replace_ready = 1'b0;
+                read_valid    = 1'b0;
                 
                 case(state)
                   
                   idle:
                     begin
-                       mem_valid = 1'b0;
                        replace_ready = 1'b1;
-                       read_valid = 1'b0;
-                       
                     end
 
                   handshake:
                     begin
-                       mem_valid = 1'b1;
-                       replace_ready = 1'b0;
+                       mem_valid = ~mem_ready;
                        read_valid = mem_ready;
-                       
-                    end
-                  
-                  end_handshake:
-                    begin
-                       replace_ready = 1'b0; //delay for read-latency
-                       mem_valid = 1'b0;
-                       read_valid = 1'b0;
-                       
                     end
                   
                   default:;
@@ -369,7 +349,7 @@ module write_channel_native
      init_process  = 3'd1,
      write_process = 3'd2;
    
-   reg [1:0]                                              state;
+   reg [1:0]                      state;
 
    generate
       if(BE_DATA_W == FE_DATA_W)
@@ -449,7 +429,7 @@ module write_channel_native
           idle:
             ready = 1'b1;
           write_process:
-            mem_valid = 1'b1;
+            mem_valid = ~mem_ready;
           default:;
         endcase // case (state)
      end
