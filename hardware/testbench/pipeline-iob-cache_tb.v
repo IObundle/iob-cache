@@ -40,19 +40,26 @@ module iob_cache_tb;
         $display("\nInitializing Cache testing - check simulation results\n");
         $display("Test 1 - Writing test\n");
         test <= 1;
-        for (i = 0; i < 10; i = i + 1)
+        pipe_en <= 1;
+        addr <= 0;
+        wdata <= 0;
+        wstrb <= {`DATA_W/8{1'b1}};
+        valid <= 1;
+        #2;
+        valid <= 0;
+        
+        for (i = 1; i < 10; i = i + 1)
           begin
              addr <= i;
-             wdata <= i+1;
-             wstrb <= {`DATA_W/8{1'b1}};
-             valid <= 1;
+             wdata <=  i;
              #2;
-             valid <= 0;
-             addr <= i+1;
-             wdata <= i+2;         
+    
              while (ready == 1'b0) #2;
-        end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+        pipe_en <= 0;
+        #20;
 
+        
         $display("Test 2 - Reading Test\n");
         test <= 2;
         pipe_en <= 1;
@@ -73,9 +80,33 @@ module iob_cache_tb;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         pipe_en <= 0;
         #20;
-                
-        $display("Test 3 - Testing RAW control\n");
+           
+        $display("Test 3 - Writing (write-hit) test\n");
         test <= 3;
+        pipe_en <= 1;
+        addr <= 0;
+        wdata <= 10;
+        wstrb <= {`DATA_W/8{1'b1}};
+        valid <= 1;
+        #2;
+        valid <= 0;
+        
+        #2;
+        for (i = 1; i < 10; i = i + 1)
+          begin
+             addr <= i;
+             wdata <=  i + 10;
+             #2;
+    
+             while (ready == 1'b0) #2;
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+        pipe_en <= 0;
+        #20;
+
+
+     
+        $display("Test 4 - Testing RAW control\n");
+        test <= 4;
         addr <= 0;
         valid <=1;
         pipe_en <= 1;
@@ -90,8 +121,8 @@ module iob_cache_tb;
         pipe_en <= 0;
         #20;
         
-        $display("Test 4 - Test Line Replacement with read the last written position\n");
-        test <= 4;
+        $display("Test 5 - Test Line Replacement with read the last written position\n");
+        test <= 5;
         addr <= (2**`WORD_OFF_W)*5-1;
         valid <= 1;
         wstrb <= {`DATA_W/8{1'b1}};

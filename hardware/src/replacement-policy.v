@@ -16,7 +16,6 @@ module replacement_process
    (
     input                  clk,
     input                  reset,
-    input                  valid,
     input                  write_en,
     input [N_WAYS-1:0]     way_hit,
     input [LINE_OFF_W-1:0] line_addr,
@@ -61,7 +60,7 @@ module replacement_process
                   .bin(way_select_bin)
                   );
 
-         /*  
+           
            //Most Recently Used (MRU) memory	   
            iob_reg_file
              #(
@@ -78,24 +77,7 @@ module replacement_process
               .addr (line_addr    ),
               .en   (write_en     )
               );
-          */
-           iob_sp_ram
-             #(
-               .DATA_W(N_WAYS*NWAY_W),
-               .ADDR_W(LINE_OFF_W)
-               )
-           ru_mem 
-             (
-              .clk     (clk       ),
-              .en      (valid     ), 
-              .we      (write_en  ),
-              .addr    (line_add  ),
-              .data_in (mru_input ),
-              .data_out(mru_output)
-              );
-
-
- 
+           
         end // if (REP_POLICU == `LRU)
       else if (REP_POLICY == `BIT_PLRU)
         begin
@@ -125,7 +107,7 @@ module replacement_process
                     );
 
            
-         /*  //Most Recently Used (MRU) memory	   
+           //Most Recently Used (MRU) memory	   
            iob_reg_file
              #(
                .ADDR_WIDTH (LINE_OFF_W),
@@ -141,24 +123,7 @@ module replacement_process
               .addr (line_addr    ),
               .en   (write_en     )
               );
-          */
-           iob_sp_ram
-             #(
-               .DATA_W(N_WAYS),
-               .ADDR_W(LINE_OFF_W)
-               )
-           ru_mem 
-             (
-              .clk     (clk       ),
-              .en      (valid     ), 
-              .we      (write_en  ),
-              .addr    (line_add  ),
-              .data_in (mru_input ),
-              .data_out(mru_output)
-              );
 
-
-           
            
         end // if (REP_POLICY == BIT_PLRU)
       else // (REP_POLICY == TREE_PLRU)
@@ -209,7 +174,7 @@ module replacement_process
               .bin(way_select_bin)
               );
 
-          /* 
+           
            //Most Recently Used (MRU) memory	   
            iob_reg_file
              #(
@@ -226,24 +191,6 @@ module replacement_process
               .addr (line_addr    ),
               .en   (write_en     )
               );
-           */
-
-           iob_sp_ram
-             #(
-               .DATA_W(N_WAYS-1),
-               .ADDR_W(LINE_OFF_W)
-               )
-           ru_mem 
-             (
-              .clk     (clk       ),
-              .en      (valid     ), 
-              .we      (write_en  ),
-              .addr    (line_add  ),
-              .data_in (t_plru    ),
-              .data_out(t_plru_output)
-              );
-
-
            
         end // else: !if(REP_POLICY == BIT_PLRU)
    endgenerate

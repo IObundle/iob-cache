@@ -164,7 +164,6 @@ module cache_memory
                   (
                    .clk       (clk             ),
                    .reset     (reset|invalidate),
-                   .valid     (valid),
                    .write_en  (ready        ),
                    .way_hit   (way_hit         ),
                    .line_addr (addr_reg[FE_ADDR_W-TAG_W-1 -:LINE_OFF_W] ),
