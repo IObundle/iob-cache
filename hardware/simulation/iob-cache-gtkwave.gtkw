@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Mon Sep 14 15:52:35 2020
+[*] Mon Sep 14 16:44:16 2020
 [*]
 [dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Mon Sep 14 15:30:06 2020"
-[dumpfile_size] 54790
+[dumpfile_mtime] "Mon Sep 14 16:44:07 2020"
+[dumpfile_size] 83583
 [savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-gtkwave.gtkw"
-[timestart] 117460
-[size] 941 923
-[pos] -1 -324
-*-13.931433 140000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 241930
+[size] 1855 951
+[pos] -856 -1
+*-13.931433 318000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
 [treeopen] iob_cache_tb.cache.back_end.
@@ -30,7 +30,7 @@
 [sst_width] 234
 [signals_width] 292
 [sst_expanded] 1
-[sst_vpaned_height] 554
+[sst_vpaned_height] 574
 @28
 iob_cache_tb.clk
 @200
@@ -51,31 +51,6 @@ iob_cache_tb.rdata[31:0]
 iob_cache_tb.ready
 @200
 -
--cpu
-@29
-iob_cache_tb.cpu_valid
-@22
-iob_cache_tb.cpu_addr[11:2]
-iob_cache_tb.cpu_wdata[31:0]
-iob_cache_tb.cpu_wstrb[3:0]
-@24
-[color] 1
-iob_cache_tb.state
-@28
-[color] 2
-iob_cache_tb.valid
-@22
-[color] 2
-iob_cache_tb.addr[11:2]
-[color] 2
-iob_cache_tb.wdata[31:0]
-[color] 2
-iob_cache_tb.wstrb[3:0]
-@28
-[color] 3
-iob_cache_tb.ready
-@200
--
 -cache-memory
 @28
 iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.clk
@@ -88,8 +63,23 @@ iob_cache_tb.cache.cache_memory.way_hit[1:0]
 iob_cache_tb.cache.cache_memory.offset[1:0]
 @22
 iob_cache_tb.cache.cache_memory.line_rdata[255:0]
+@28
+iob_cache_tb.cache.cache_memory.valid
+iob_cache_tb.cache.cache_memory.valid_reg
+@22
+[color] 2
+iob_cache_tb.cache.cache_memory.addr[11:3]
+[color] 2
+iob_cache_tb.cache.cache_memory.addr_reg[11:2]
+[color] 3
+iob_cache_tb.cache.cache_memory.wdata[31:0]
+[color] 3
+iob_cache_tb.cache.cache_memory.wdata_reg[31:0]
+[color] 7
+iob_cache_tb.cache.cache_memory.wstrb[3:0]
+[color] 7
+iob_cache_tb.cache.cache_memory.wstrb_reg[3:0]
 @200
--
 -
 @28
 iob_cache_tb.clk

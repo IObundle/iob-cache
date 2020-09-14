@@ -122,11 +122,8 @@ module iob_cache_tb;
         wstrb <= 0;
         while (ready == 1'b0) #2;
         valid <= 0;
-        #20;
-        
-
-
-        
+        #40;
+           
         
         $display("Cache testing completed\n");
         $finish;

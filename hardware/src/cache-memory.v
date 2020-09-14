@@ -122,7 +122,7 @@ module cache_memory
       .read_en (write_ready),  
       .data_in ({addr_reg,wdata_reg,wstrb_reg}), 
       .full    (buffer_full),
-      .write_en(write_access & ready)
+      .write_en(write_access_reg & ready)
       );
    
    //back-end read channel
