@@ -29,10 +29,10 @@ module front_end
     output [FE_DATA_W-1:0]                      rdata,
 
     //internal input signals
-    output reg                                  data_valid,
-    output reg [FE_ADDR_W-1:FE_BYTE_W]          data_addr,
-    output reg [FE_DATA_W-1:0]                  data_wdata,
-    output reg [FE_NBYTES-1:0]                  data_wstrb,
+    output                                      data_valid,
+    output [FE_ADDR_W-1:FE_BYTE_W]              data_addr,
+    output [FE_DATA_W-1:0]                      data_wdata,
+    output [FE_NBYTES-1:0]                      data_wstrb,
     input [FE_DATA_W-1:0]                       data_rdata,
     input                                       data_ready,
     //stored input signals
@@ -46,7 +46,7 @@ module front_end
     input [CTRL_CACHE*(FE_DATA_W-1):0]          ctrl_rdata,
     input                                       ctrl_ready
     );
-
+   
    wire                                         valid_int;
    
    reg                                          valid_reg;
@@ -72,26 +72,23 @@ module front_end
 
            //Front-end output signals
            assign ready = ctrl_ready | data_ready;
-           
            assign rdata = (ctrl_ready)? ctrl_rdata  : data_rdata;     
            
-           assign valid_int = ~addr[CTRL_CACHE + FE_ADDR_W -1] & valid;
-           assign ctrl_valid = addr[CTRL_CACHE + FE_ADDR_W -1] & valid;       
+           assign valid_int  = ~addr[CTRL_CACHE + FE_ADDR_W -1] & valid;
            
-           assign ctrl_addr   = addr[FE_BYTE_W +: `CTRL_ADDR_W];
+           assign ctrl_valid =  addr[CTRL_CACHE + FE_ADDR_W -1] & valid;       
+           assign ctrl_addr  =  addr[FE_BYTE_W +: `CTRL_ADDR_W];
            
         end // if (CTRL_CACHE)
       else 
         begin
            //Front-end output signals
            assign ready = data_ready; 
-           
            assign rdata = data_rdata;
            
            assign valid_int = valid;
            
            assign ctrl_valid = 1'bx;
-           
            assign ctrl_addr = `CTRL_ADDR_W'dx;
            
         end // else: !if(CTRL_CACHE)
@@ -110,18 +107,11 @@ module front_end
              wstrb_reg <= 0;
           end
         else
-          if(valid_int) //updates
             begin
                addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
                wdata_reg <= wdata;
                wstrb_reg <= wstrb;
             end
-          else 
-            begin
-               addr_reg  <= addr_reg;
-               wdata_reg <= wdata_reg;
-               wstrb_reg <= wstrb_reg;
-            end// else: !if(valid)
      end // always @ (posedge clk, posedge reset)  
 
    
@@ -130,36 +120,23 @@ module front_end
         if(reset)
           valid_reg <= 0;
         else
-          if (reset_valid_reg)// ready is a synchronous reset for internal valid signal (only if the input doesn have a new request in the same clock-cycle) - avoids repeated requests
-            valid_reg <= 0;
-          else
-            if(valid_int) //updates
-              valid_reg <= valid_int;
-            else
-              valid_reg <= valid_reg;
+          valid_reg <= valid_int;
      end // always @ (posedge clk, posedge reset)  
 
 
    //////////////////////////////////////////////////////////////////////////////////
-   // Data Input Multiplexer
+   // Data-output ports
    /////////////////////////////////////////////////////////////////////////////////
-
-   always @(*)
-     begin
-        if(valid & ~(data_valid_reg & (|data_wstrb_reg))) //the input is valid, but the current task is a write, maintains the write input data, and prevents RAW hazards by delaying the read in 1 clock-clycle
-          begin
-             data_addr =  addr[FE_ADDR_W-1:FE_BYTE_W];
-             data_wdata = wdata;
-             data_wstrb = wstrb;
-             data_valid = valid_int;
-          end
-        else
-          begin
-             data_addr =  data_addr_reg;
-             data_wdata = data_wdata_reg;
-             data_wstrb = data_wstrb_reg;
-             data_valid = data_valid_reg;
-          end // else: !if(valid & ~(data_valid_reg & (|data_wstrb_reg)))
-     end
+   
+   
+   assign data_addr  = addr[FE_ADDR_W-1:FE_BYTE_W];
+   assign data_wdata = wdata;
+   assign data_wstrb = wstrb;
+   assign data_valid = valid_int|valid_reg;
+   
+   assign data_addr_reg  = addr_reg[FE_ADDR_W-1:FE_BYTE_W];
+   assign data_wdata_reg = wdata_reg;
+   assign data_wstrb_reg = wstrb_reg;
+   assign data_valid_reg = valid_reg;
    
 endmodule
