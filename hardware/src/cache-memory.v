@@ -70,9 +70,10 @@ module cache_memory
    //cache-memory internal signals
    wire [N_WAYS-1:0]                            way_hit, way_select;
    
-   wire [TAG_W-1:0]                             tag    = addr_reg[FE_ADDR_W-1       -:TAG_W]; //so the tag doesnt update during ready on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [LINE_OFF_W-1:0]                        index  = addr    [FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
-   wire [WORD_OFF_W-1:0]                        offset = addr_reg[FE_BYTE_W         +:WORD_OFF_W]; //so the offset doesnt update during ready on a read-access (can take the 1 clock-cycle delay)
+   wire [TAG_W-1:0]                             tag       = addr_reg[FE_ADDR_W-1       -:TAG_W]; //so the tag doesnt update during ready on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
+   wire [LINE_OFF_W-1:0]                        index     = addr    [FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
+   wire [LINE_OFF_W-1:0]                        index_reg = addr_reg[FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
+   wire [WORD_OFF_W-1:0]                        offset    = addr_reg[FE_BYTE_W         +:WORD_OFF_W]; //so the offset doesnt update during ready on a read-access (can take the 1 clock-cycle delay)
    
    
    wire [N_WAYS*(2**WORD_OFF_W)*FE_DATA_W-1:0]  line_rdata;

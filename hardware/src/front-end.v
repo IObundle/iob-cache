@@ -146,8 +146,9 @@ module front_end
 
    always @(*)
      begin
-        if(valid & ~(data_valid_reg & (|data_wstrb_reg))) //the input is valid, but the current task is a write, maintains the write input data, and prevents RAW hazards by delaying the read in 1 clock-clycle
-          begin
+        //if(valid & ~(data_valid_reg & (|data_wstrb_reg))) //the input is valid, but the current task is a write, maintains the write input data, and prevents RAW hazards by delaying the read in 1 clock-clycle
+        if(valid) 
+        begin
              data_addr =  addr[FE_ADDR_W-1:FE_BYTE_W];
              data_wdata = wdata;
              data_wstrb = wstrb;
