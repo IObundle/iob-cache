@@ -149,14 +149,14 @@ module front_end
         //if(valid & ~(data_valid_reg & (|data_wstrb_reg))) //the input is valid, but the current task is a write, maintains the write input data, and prevents RAW hazards by delaying the read in 1 clock-clycle
         if(valid) 
         begin
-             data_addr =  addr[FE_ADDR_W-1:FE_BYTE_W];
+             data_addr  = addr[FE_ADDR_W-1:FE_BYTE_W];
              data_wdata = wdata;
              data_wstrb = wstrb;
              data_valid = valid_int;
           end
         else
           begin
-             data_addr =  data_addr_reg;
+             data_addr  = data_addr_reg;
              data_wdata = data_wdata_reg;
              data_wstrb = data_wstrb_reg;
              data_valid = data_valid_reg;

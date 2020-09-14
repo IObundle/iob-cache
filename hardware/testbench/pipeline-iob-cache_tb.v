@@ -72,6 +72,7 @@ module iob_cache_tb;
                while (ready == 1'b0) #2;  
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         valid <=0;
+        addr <= 0;
         #20;
 
 
@@ -82,8 +83,8 @@ module iob_cache_tb;
         wdata <= 10;
         wstrb <= {`DATA_W/8{1'b1}};
         valid <= 1;
-       // #2;
-       // valid <= 0;
+        // #2;
+        // valid <= 0;
         
         #2;
         for (i = 1; i < 11; i = i + 1)
@@ -95,6 +96,7 @@ module iob_cache_tb;
              while (ready == 1'b0) #2;
           end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
         valid <= 0;
+        addr <=0;
         #80;
         
         $display("Test 4 - Testing RAW control (r-w-r)\n");
@@ -103,14 +105,14 @@ module iob_cache_tb;
         valid <=1;
         wstrb <=0;
         #2
-        wstrb <= {`DATA_W/8{1'b1}};
+          wstrb <= {`DATA_W/8{1'b1}};
         wdata <= 57005;
         while (ready == 1'b0) #2;
         wstrb <= 0;
         #2
-        while (ready == 1'b0) #2;
+          while (ready == 1'b0) #2;
         valid <= 0;
-        #20;
+        #80;
         
         $display("Test 5 - Test Line Replacement with read the last written position\n");
         test <= 5;
@@ -122,8 +124,8 @@ module iob_cache_tb;
         wstrb <= 0;
         while (ready == 1'b0) #2;
         valid <= 0;
-        #40;
-           
+        #80;
+        
         
         $display("Cache testing completed\n");
         $finish;
@@ -256,7 +258,7 @@ module iob_cache_tb;
    /////////////////////////////////////////////
 
 
-      
+   
    
 
 `ifdef AXI  
@@ -375,7 +377,7 @@ module iob_cache_tb;
 `endif // !`ifdef AXI
    
    
-     
+   
 `ifdef AXI  
    axi_ram 
      #(

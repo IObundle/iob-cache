@@ -165,9 +165,9 @@ module cache_memory
                   (
                    .clk       (clk             ),
                    .reset     (reset|invalidate),
-                   .write_en  (ready        ),
+                   .write_en  (ready           ),
                    .way_hit   (way_hit         ),
-                   .line_addr (addr_reg[FE_ADDR_W-TAG_W-1 -:LINE_OFF_W] ),
+                   .line_addr (index_reg       ),
                    .way_select(way_select      ),
                    .way_select_bin(way_select_bin)
                    );
@@ -226,8 +226,8 @@ module cache_memory
                                    .clk (clk),
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                                   .addr(index),
-                                   .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata),
+                                   .addr((write_access_reg)? index_reg : index),
+                                   .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                                    );
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
