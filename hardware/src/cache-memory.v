@@ -137,9 +137,10 @@ module cache_memory
      RAW_prev <= ~(write_access_reg & hit);
    
    //front-end READY signal
-   assign ready = (hit & (read_access_reg) & (replace_ready) & RAW_prev) | (~buffer_full & (write_access_reg));
-   // read section needs to be the registered, so it doesn't change the moment ready asserts and updates the input. Write doesn't update on the same cycle as ready asserts, and in the next clock cycle, will have the next input.
+   assign ready = (hit & read_access_reg & RAW_prev) | (~buffer_full & write_access_reg);
 
+   assign hit = |way_hit & replace_ready;//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
+   
    //cache-control hit-miss counters enables
    assign write_hit  = ready & ( hit & write_access_reg);
    assign write_miss = ready & (~hit & write_access_reg);
@@ -154,7 +155,7 @@ module cache_memory
              begin
                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
 
-                assign hit = |way_hit;
+                
                 
                 replacement_process #(
 	                              .N_WAYS    (N_WAYS    ),
@@ -196,7 +197,6 @@ module cache_memory
 
 
                 
-
                 always @ (posedge clk, posedge reset)
                   begin
                      if (reset | invalidate)
@@ -227,7 +227,8 @@ module cache_memory
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr((write_access_reg)? index_reg : index),
-                                   .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
+                                  // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
+                                   .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                                    );
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
