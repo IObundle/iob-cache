@@ -110,8 +110,8 @@ module iob_cache
       //cache-memory input signals
       .data_valid (data_valid),
       .data_addr  (data_addr),
-      .data_wdata (data_wdata),
-      .data_wstrb (data_wstrb),
+      //.data_wdata (data_wdata),
+     // .data_wstrb (data_wstrb),
       //cache-memory output
       .data_rdata (data_rdata),
       .data_ready (data_ready),
@@ -148,8 +148,8 @@ module iob_cache
       //internal data signals
       .valid (data_valid),
       .addr  (data_addr[FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W]),
-      .wdata (data_wdata),
-      .wstrb (data_wstrb),
+      //.wdata (data_wdata),
+     // .wstrb (data_wstrb),
       .rdata (data_rdata),
       .ready (data_ready),
       //stored data signals

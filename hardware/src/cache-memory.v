@@ -30,8 +30,8 @@ module cache_memory
      //front-end
      input                                      valid,
      input [FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W] addr,
-     input [FE_DATA_W-1:0]                      wdata,
-     input [FE_NBYTES-1:0]                      wstrb,
+    // input [FE_DATA_W-1:0]                      wdata,
+     //input [FE_NBYTES-1:0]                      wstrb,
      output [FE_DATA_W-1:0]                     rdata,
      output                                     ready,
      //stored input value
@@ -89,9 +89,9 @@ module cache_memory
    
    reg [(2**WORD_OFF_W)*FE_NBYTES-1:0]          line_wstrb;
    
-   wire                                         write_access = |wstrb & valid; //front-end doesn't update in the same clock-cycle ready is asserted, during an write-access
+  // wire                                         write_access = |wstrb & valid; //front-end doesn't update in the same clock-cycle ready is asserted, during an write-access
    wire                                         write_access_reg = |wstrb_reg & valid_reg;
-   wire                                         read_access = ~|wstrb & valid; //front-end updates in the same clock-cycle ready is asserted
+ //  wire                                         read_access = ~|wstrb & valid; //front-end updates in the same clock-cycle ready is asserted
    wire                                         read_access_reg = ~|wstrb_reg & valid_reg;//signal mantains the access 1 addition clock-cycle after ready is asserted 
 
    
