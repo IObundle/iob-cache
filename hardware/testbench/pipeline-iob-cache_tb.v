@@ -271,11 +271,6 @@ module iob_cache_tb;
                    .BE_ADDR_W(`MEM_ADDR_W),
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
- `ifdef LA
-                   .LA_INTERF(1),
- `else
-                   .LA_INTERF(0),
- `endif
  `ifdef NO_CTRL
                    .CTRL_CACHE(0),
  `endif
@@ -284,11 +279,11 @@ module iob_cache_tb;
    cache (
 	  .clk (clk),
 	  .reset (reset),
-	  .wdata (wdata),
-	  .addr  ({select, addr}),
-	  .wstrb (wstrb),
+	  .wdata (cpu_wdata),
+	  .addr  (cpu_addr),
+	  .wstrb (cpu_wstrb),
 	  .rdata (rdata),
-	  .valid (valid),
+	  .valid (cpu_valid),
 	  .ready (ready),
           //
 	  // AXI INTERFACE

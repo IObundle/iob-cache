@@ -6,9 +6,9 @@ module cache_memory
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 1,        //Number of Cache Ways
-    parameter LINE_OFF_W  = 6,      //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
+    parameter N_WAYS   = 4,        //Number of Cache Ways
+    parameter LINE_OFF_W  = 9,      //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 4,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,      //Number of Bytes per Word
