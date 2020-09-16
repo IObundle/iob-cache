@@ -178,7 +178,7 @@ module iob_cache_axi
       //front-end
       //internal data signals
       .valid (data_valid),
-      .addr  (data_addr[FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W]),
+      .addr  (data_addr[FE_ADDR_W-1:BE_BYTE_W + LINE2MEM_W]),
       //.wdata (data_wdata),
       // .wstrb (data_wstrb),
       .rdata (data_rdata),
