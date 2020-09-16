@@ -70,7 +70,7 @@ module cache_memory
    //cache-memory internal signals
    wire [N_WAYS-1:0]                            way_hit, way_select;
    
-   wire [TAG_W-1:0]                             tag       = addr_reg[FE_ADDR_W-1       -:TAG_W]; //so the tag doesnt update during ready on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
+   wire [TAG_W-1:0]                             tag       = addr_reg[FE_ADDR_W-1       -:TAG_W     ]; //so the tag doesnt update during ready on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
    wire [LINE_OFF_W-1:0]                        index     = addr    [FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
    wire [LINE_OFF_W-1:0]                        index_reg = addr_reg[FE_ADDR_W-TAG_W-1 -:LINE_OFF_W];//cant wait, doesnt update during a write-access
    wire [WORD_OFF_W-1:0]                        offset    = addr_reg[FE_BYTE_W         +:WORD_OFF_W]; //so the offset doesnt update during ready on a read-access (can take the 1 clock-cycle delay)
@@ -89,9 +89,7 @@ module cache_memory
    
    reg [(2**WORD_OFF_W)*FE_NBYTES-1:0]          line_wstrb;
    
-  // wire                                         write_access = |wstrb & valid; //front-end doesn't update in the same clock-cycle ready is asserted, during an write-access
    wire                                         write_access_reg = |wstrb_reg & valid_reg;
- //  wire                                         read_access = ~|wstrb & valid; //front-end updates in the same clock-cycle ready is asserted
    wire                                         read_access_reg = ~|wstrb_reg & valid_reg;//signal mantains the access 1 addition clock-cycle after ready is asserted 
 
    
@@ -130,16 +128,30 @@ module cache_memory
    assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
 
 
-   //RAW hazard prevention
-   reg                                                      RAW_prev;
-
+   //RAW hazard
+   reg                                                      write_hit_prev;
+   wire                                                     raw;
+   reg [WORD_OFF_W-1:0]                                     offset_prev;
+   reg [LINE_OFF_W-1:0]                                     index_prev;
+   reg [N_WAYS-1:0]                                         way_hit_prev;
+                                      
    always @(posedge clk)
-     RAW_prev <= ~(write_access_reg & hit);
+     begin
+        write_hit_prev <= write_access_reg & (|way_hit);
+        //previous write position
+        offset_prev <= offset;
+        index_prev <= index_reg;
+        way_hit_prev <= way_hit;
+     end
+
+   assign raw = write_hit_prev & (way_hit == way_hit) & (index_prev == index_reg) & (offset_prev == offset);
+   
+   assign hit = |way_hit & replace_ready & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
    
    //front-end READY signal
-   assign ready = (hit & read_access_reg & RAW_prev) | (~buffer_full & write_access_reg);
+   assign ready = (hit & read_access_reg) | (~buffer_full & write_access_reg);
 
-   assign hit = |way_hit & replace_ready;//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
+   
    
    //cache-control hit-miss counters enables
    assign write_hit  = ready & ( hit & write_access_reg);
@@ -149,20 +161,23 @@ module cache_memory
    
    genvar                                                   i,j,k;
    generate
-      if (LINE2MEM_W > 0)
+      if(N_WAYS > 1)
         begin
-           if(N_WAYS != 1)
-             begin
-                wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
 
-                
-                
+
+           
+            if (LINE2MEM_W > 0)
+              begin
+                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
+                 
+                 
+                 
                 replacement_process #(
 	                              .N_WAYS    (N_WAYS    ),
 	                              .LINE_OFF_W(LINE_OFF_W),
                                       .REP_POLICY(REP_POLICY)
 	                              )
-                replacement_policy_algorithm
+                 replacement_policy_algorithm
                   (
                    .clk       (clk             ),
                    .reset     (reset|invalidate),
@@ -196,7 +211,7 @@ module cache_memory
                     line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
 
 
-                
+                //valid - register file
                 always @ (posedge clk, posedge reset)
                   begin
                      if (reset | invalidate)
@@ -226,7 +241,7 @@ module cache_memory
                                    .clk (clk),
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                                   .addr((write_access_reg)? index_reg : index),
+                                   .addr((write_access_reg & way_hit[k])? index_reg : index),
                                   // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
                                    .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
