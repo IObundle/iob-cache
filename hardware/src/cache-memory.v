@@ -29,9 +29,7 @@ module cache_memory
      input                                      reset,
      //front-end
      input                                      valid,
-     input [FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W] addr,
-    // input [FE_DATA_W-1:0]                      wdata,
-     //input [FE_NBYTES-1:0]                      wstrb,
+     input [FE_ADDR_W-1:BE_BYTE_W + LINE2MEM_W] addr,
      output [FE_DATA_W-1:0]                     rdata,
      output                                     ready,
      //stored input value
@@ -134,7 +132,7 @@ module cache_memory
    reg [WORD_OFF_W-1:0]                                     offset_prev;
    reg [LINE_OFF_W-1:0]                                     index_prev;
    reg [N_WAYS-1:0]                                         way_hit_prev;
-                                      
+   
    always @(posedge clk)
      begin
         write_hit_prev <= write_access_reg & (|way_hit);
@@ -147,11 +145,13 @@ module cache_memory
    assign raw = write_hit_prev & (way_hit == way_hit) & (index_prev == index_reg) & (offset_prev == offset);
    
    assign hit = |way_hit & replace_ready & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
-   
-   //front-end READY signal
-   assign ready = (hit & read_access_reg) | (~buffer_full & write_access_reg);
 
    
+   /////////////////////////////////
+   //front-end READY signal
+   /////////////////////////////////
+   assign ready = (hit & read_access_reg) | (~buffer_full & write_access_reg);
+
    
    //cache-control hit-miss counters enables
    assign write_hit  = ready & ( hit & write_access_reg);
@@ -162,22 +162,20 @@ module cache_memory
    genvar                                                   i,j,k;
    generate
       if(N_WAYS > 1)
-        begin
+        begin           
+           if (LINE2MEM_W > 0)
+             begin
 
-
-           
-            if (LINE2MEM_W > 0)
-              begin
-                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
-                 
-                 
-                 
+                
+                wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
+                
+                
                 replacement_process #(
 	                              .N_WAYS    (N_WAYS    ),
 	                              .LINE_OFF_W(LINE_OFF_W),
                                       .REP_POLICY(REP_POLICY)
 	                              )
-                 replacement_policy_algorithm
+                replacement_policy_algorithm
                   (
                    .clk       (clk             ),
                    .reset     (reset|invalidate),
@@ -242,7 +240,7 @@ module cache_memory
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr((write_access_reg & way_hit[k])? index_reg : index),
-                                  // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
+                                   // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
                                    .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                                    );
@@ -275,9 +273,264 @@ module cache_memory
                      assign way_hit[k] = (tag == line_tag[TAG_W*k +: TAG_W]) & v[k]; 
                      
                   end // block: line_way
+             end // if (LINE2MEM_W > 0)
+           else
+             begin
                 
-             end // if (N_WAYS != 1)
-        end // if (LINE2MEM_W > 0)
+                wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
+                
+                
+                replacement_process #(
+	                              .N_WAYS    (N_WAYS    ),
+	                              .LINE_OFF_W(LINE_OFF_W),
+                                      .REP_POLICY(REP_POLICY)
+	                              )
+                replacement_policy_algorithm
+                  (
+                   .clk       (clk             ),
+                   .reset     (reset|invalidate),
+                   .write_en  (ready           ),
+                   .way_hit   (way_hit         ),
+                   .line_addr (index_reg       ),
+                   .way_select(way_select      ),
+                   .way_select_bin(way_select_bin)
+                   );
+                
+                onehot_to_bin #(
+                                .BIN_W (NWAY_W)
+                                ) 
+                way_hit_encoder
+                  (
+                   .onehot(way_hit[N_WAYS-1:1]),
+                   .bin   (way_hit_bin)
+                   );
+
+                
+                //Read Data Multiplexer
+
+                assign rdata [FE_DATA_W-1:0] = line_rdata >> FE_DATA_W*(offset + (2**WORD_OFF_W)*way_hit_bin);
+                
+                
+                //Cache Line Write Strobe Shifter
+                always @*
+                  if(~replace_ready)
+                    line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement
+                  else
+                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+
+
+                //valid - register file
+                always @ (posedge clk, posedge reset)
+                  begin
+                     if (reset | invalidate)
+                       v_reg <= 0;
+                     else
+                       if(replace_valid)
+                         v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
+                       else
+                         v_reg <= v_reg;
+                  end
+                
+                
+                
+                for (k = 0; k < N_WAYS; k=k+1)
+                  begin : line_way
+                     for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
+                       begin : line_word_width
+                          iob_gen_sp_ram
+                             #(
+                               .DATA_W(FE_DATA_W),
+                               .ADDR_W(LINE_OFF_W)
+                               )
+                          cache_memory 
+                             (
+                              .clk (clk),
+                              .en  (valid), 
+                              .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[i*FE_NBYTES +: FE_NBYTES]),
+                              .addr((write_access_reg & way_hit[k])? index_reg : index),
+                              .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
+                              .data_out(line_rdata[(k*(2**WORD_OFF_W)+i)*FE_DATA_W +: FE_DATA_W])
+                              );
+                       end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+
+                     
+                     always @(posedge clk)
+                       v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
+                     
+                     
+                     iob_sp_ram
+                       #(
+                         .DATA_W(TAG_W),
+                         .ADDR_W(LINE_OFF_W)
+                         )
+                     tag_memory 
+                       (
+                        .clk (clk                           ),
+                        .en  (valid                         ), 
+                        .we  (way_select[k] & replace_valid),
+                        .addr (index                        ),
+                        .data_in (tag                       ),
+                        .data_out(line_tag[TAG_W*k +: TAG_W])
+                        );
+
+
+                     
+                     //Cache hit signal that indicates which way has had the hit
+                     assign way_hit[k] = (tag == line_tag[TAG_W*k +: TAG_W]) & v[k]; 
+                     
+                  end // block: line_way
+             end // else: !if(LINE2MEM_W > 0)
+        end // if (N_WAYS > 1)
+      else
+        begin
+           if(LINE2MEM_W > 0)
+             begin
+
+                
+                //Read Data Multiplexer
+                assign rdata [FE_DATA_W-1:0] = line_rdata >> FE_DATA_W*offset;
+                
+                
+                //Cache Line Write Strobe Shifter
+                always @*
+                  if(~replace_ready)
+                    line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
+                  else
+                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+
+
+                //valid - register file
+                always @ (posedge clk, posedge reset)
+                  begin
+                     if (reset | invalidate)
+                       v_reg <= 0;
+                     else
+                       if(replace_valid)
+                         v_reg <= v_reg | (1 << index);
+                       else
+                         v_reg <= v_reg;
+                  end
+                
+                
+                for(j = 0; j < 2**LINE2MEM_W; j=j+1)
+                  begin : line_word_number
+                     for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
+                       begin : line_word_width
+                          iob_gen_sp_ram
+                             #(
+                               .DATA_W(FE_DATA_W),
+                               .ADDR_W(LINE_OFF_W)
+                               )
+                          cache_memory 
+                             (
+                              .clk (clk),
+                              .en  (valid), 
+                              .we ({FE_NBYTES{way_hit}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
+                              .addr((write_access_reg & way_hit)? index_reg : index),
+                              .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
+                              .data_out(line_rdata[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
+                              );
+                       end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+                  end // for (j = 0; j < 2**LINE2MEM_W; j=j+1)
+
+                
+                always @(posedge clk)
+                  v <= v_reg [index];
+                
+                
+                iob_sp_ram
+                  #(
+                    .DATA_W(TAG_W),
+                    .ADDR_W(LINE_OFF_W)
+                    )
+                tag_memory 
+                  (
+                   .clk (clk),
+                   .en  (valid), 
+                   .we  (replace_valid),
+                   .addr (index),
+                   .data_in (tag),
+                   .data_out(line_tag)
+                   );
+
+
+                
+                //Cache hit signal that indicates which way has had the hit
+                assign way_hit = (tag == line_tag) & v;
+                
+             end // if (LINE2MEM_W > 0)        
+           else
+             begin
+                
+                //Read Data Multiplexer
+                assign rdata [FE_DATA_W-1:0] = line_rdata >> FE_DATA_W*offset;
+                
+                
+                //Cache Line Write Strobe Shifter
+                always @*
+                  if(~replace_ready)
+                    line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement
+                  else
+                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+
+
+                //valid - register file
+                always @ (posedge clk, posedge reset)
+                  begin
+                     if (reset | invalidate)
+                       v_reg <= 0;
+                     else
+                       if(replace_valid)
+                         v_reg <= v_reg | (1 << index);
+                       else
+                         v_reg <= v_reg;
+                  end
+                
+                
+                for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
+                  begin : line_word_width
+                     iob_gen_sp_ram
+                        #(
+                          .DATA_W(FE_DATA_W),
+                          .ADDR_W(LINE_OFF_W)
+                          )
+                     cache_memory 
+                        (
+                         .clk (clk),
+                         .en  (valid), 
+                         .we ({FE_NBYTES{way_hit}} & line_wstrb[i*FE_NBYTES +: FE_NBYTES]),
+                         .addr((write_access_reg & way_hit)? index_reg : index),
+                         .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
+                         .data_out(line_rdata[i*FE_DATA_W +: FE_DATA_W])
+                         );
+                  end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
+
+                
+                always @(posedge clk)
+                  v <= v_reg [index];
+                
+                
+                iob_sp_ram
+                  #(
+                    .DATA_W(TAG_W),
+                    .ADDR_W(LINE_OFF_W)
+                    )
+                tag_memory 
+                  (
+                   .clk (clk),
+                   .en  (valid), 
+                   .we  (replace_valid),
+                   .addr (index),
+                   .data_in (tag),
+                   .data_out(line_tag)
+                   );
+
+
+                //Cache hit signal that indicates which way has had the hit
+                assign way_hit = (tag == line_tag) & v;
+                
+             end
+        end // else: !if(N_WAYS > 1)         
    endgenerate
 
 endmodule

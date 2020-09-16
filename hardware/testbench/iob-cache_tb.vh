@@ -1,5 +1,5 @@
 //Cache parameters (including front-end's)
-`define N_WAYS 2
+`define N_WAYS 1
 `define LINE_OFF_W 1
 `define WORD_OFF_W 2
 `define ADDR_W 12
@@ -9,7 +9,7 @@
 `define REP_POLICY 0
 
 //Back-end Memory interface AXI or Native
-`define AXI
+//`define AXI
 
 //Cache back-end parameters
 `define MEM_ADDR_W 12
