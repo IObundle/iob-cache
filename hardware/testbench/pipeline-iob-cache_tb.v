@@ -125,6 +125,25 @@ module iob_cache_tb;
         while (ready == 1'b0) #2;
         valid <= 0;
         #80;
+
+
+
+        $display("Test 6 - Testing RAW on different positions (r-w-r)\n");
+        test <= 6;
+        addr <= 0;
+        valid <=1;
+        wstrb <=0;
+        #2
+          wstrb <= {`DATA_W/8{1'b1}};
+        wdata <= 23434332205;
+        while (ready == 1'b0) #2;
+        addr <= 1; //change of addr
+        wstrb <= 0;
+        #2
+          while (ready == 1'b0) #2;
+        valid <= 0;
+        #80;
+
         
         
         $display("Cache testing completed\n");
