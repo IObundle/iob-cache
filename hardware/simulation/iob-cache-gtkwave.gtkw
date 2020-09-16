@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Mon Sep 14 17:42:34 2020
+[*] Tue Sep 15 23:36:46 2020
 [*]
 [dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Mon Sep 14 17:31:45 2020"
-[dumpfile_size] 85818
+[dumpfile_mtime] "Tue Sep 15 23:32:44 2020"
+[dumpfile_size] 121150
 [savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-gtkwave.gtkw"
-[timestart] 77300
+[timestart] 278170
 [size] 1855 951
-[pos] -1 -1
-*-15.931433 318000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -856 -1
+*-12.931433 300000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
 [treeopen] iob_cache_tb.cache.back_end.
@@ -30,7 +30,7 @@
 [sst_width] 234
 [signals_width] 662
 [sst_expanded] 1
-[sst_vpaned_height] 574
+[sst_vpaned_height] 575
 @28
 iob_cache_tb.clk
 @200
@@ -59,13 +59,10 @@ iob_cache_tb.cache.cache_memory.valid_reg
 @22
 [color] 2
 iob_cache_tb.cache.cache_memory.addr[11:3]
-[color] 3
-iob_cache_tb.cache.cache_memory.wdata[31:0]
 [color] 2
 iob_cache_tb.cache.cache_memory.addr_reg[11:2]
-[color] 7
-iob_cache_tb.cache.cache_memory.wstrb[3:0]
 @28
+[color] 7
 iob_cache_tb.cache.cache_memory.index
 iob_cache_tb.cache.cache_memory.write_access_reg
 iob_cache_tb.cache.cache_memory.index_reg
@@ -86,12 +83,18 @@ iob_cache_tb.cache.cache_memory.v[1:0]
 iob_cache_tb.cache.cache_memory.offset[1:0]
 @22
 iob_cache_tb.cache.cache_memory.line_rdata[255:0]
+@28
+iob_cache_tb.cache.cache_memory.replace_ready
+iob_cache_tb.cache.cache_memory.hit
+iob_cache_tb.cache.cache_memory.write_access_reg
+iob_cache_tb.cache.cache_memory.read_access_reg
+@29
+iob_cache_tb.cache.cache_memory.RAW_prev
 @200
 -
 -Wa 0 - data memories
 @28
 iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.en
-@29
 iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.addr
 @22
 [color] 2
@@ -142,7 +145,6 @@ iob_cache_tb.cache.back_end.write_fsm.mem_wdata[63:0]
 iob_cache_tb.cache.back_end.write_fsm.mem_wstrb[7:0]
 @28
 iob_cache_tb.cache.back_end.write_fsm.mem_ready
-iob_cache_tb.cache.back_end.write_fsm.state[1:0]
 iob_cache_tb.cache.cache_memory.buffer_full
 @22
 iob_cache_tb.cache.cache_memory.buffer_dout[45:0]

@@ -31,8 +31,8 @@ module front_end
     //internal input signals
     output                                      data_valid,
     output [FE_ADDR_W-1:FE_BYTE_W]              data_addr,
-    output [FE_DATA_W-1:0]                      data_wdata,
-    output [FE_NBYTES-1:0]                      data_wstrb,
+    //output [FE_DATA_W-1:0]                      data_wdata,
+    //output [FE_NBYTES-1:0]                      data_wstrb,
     input [FE_DATA_W-1:0]                       data_rdata,
     input                                       data_ready,
     //stored input signals
@@ -59,9 +59,6 @@ module front_end
    assign data_wdata_reg = wdata_reg;
    assign data_wstrb_reg = wstrb_reg;
 
-
-   wire                                         reset_valid_reg = ~valid_int & data_ready;
-   
    
    //////////////////////////////////////////////////////////////////////////////////
      //    Cache-selection - cache-memory or cache-control 
@@ -102,12 +99,15 @@ module front_end
      begin
         if(reset)
           begin
+             valid_reg <= 0;
              addr_reg  <= 0;
              wdata_reg <= 0;
              wstrb_reg <= 0;
+             
           end
         else
             begin
+               valid_reg <= valid_int;
                addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
                wdata_reg <= wdata;
                wstrb_reg <= wstrb;
@@ -115,24 +115,15 @@ module front_end
      end // always @ (posedge clk, posedge reset)  
 
    
-   always @(posedge clk, posedge reset)
-     begin
-        if(reset)
-          valid_reg <= 0;
-        else
-          valid_reg <= valid_int;
-     end // always @ (posedge clk, posedge reset)  
-
-
    //////////////////////////////////////////////////////////////////////////////////
    // Data-output ports
    /////////////////////////////////////////////////////////////////////////////////
    
    
    assign data_addr  = addr[FE_ADDR_W-1:FE_BYTE_W];
-   assign data_wdata = wdata;
-   assign data_wstrb = wstrb;
-   assign data_valid = valid_int|valid_reg;
+   //assign data_wdata = wdata;
+   //assign data_wstrb = wstrb;
+   assign data_valid = valid_int | valid_reg;
    
    assign data_addr_reg  = addr_reg[FE_ADDR_W-1:FE_BYTE_W];
    assign data_wdata_reg = wdata_reg;

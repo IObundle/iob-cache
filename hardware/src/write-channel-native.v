@@ -33,11 +33,10 @@ module write_channel_native
    assign mem_addr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}}; 
    
    localparam
-     idle          = 3'd0,
-     init_process  = 3'd1,
-     write_process = 3'd2;
+     idle          = 1'd0,
+     write_process = 1'd1;
    
-   reg [1:0]                      state;
+   reg [0:0]                      state;
 
    generate
       if(BE_DATA_W == FE_DATA_W)

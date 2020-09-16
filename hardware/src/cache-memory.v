@@ -6,9 +6,9 @@ module cache_memory
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 1,        //Number of Cache Ways
-    parameter LINE_OFF_W  = 6,      //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
+    parameter N_WAYS   = 4,        //Number of Cache Ways
+    parameter LINE_OFF_W  = 9,      //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 4,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,      //Number of Bytes per Word
@@ -30,8 +30,8 @@ module cache_memory
      //front-end
      input                                      valid,
      input [FE_ADDR_W-1:FE_BYTE_W + LINE2MEM_W] addr,
-     input [FE_DATA_W-1:0]                      wdata,
-     input [FE_NBYTES-1:0]                      wstrb,
+    // input [FE_DATA_W-1:0]                      wdata,
+     //input [FE_NBYTES-1:0]                      wstrb,
      output [FE_DATA_W-1:0]                     rdata,
      output                                     ready,
      //stored input value
@@ -89,9 +89,9 @@ module cache_memory
    
    reg [(2**WORD_OFF_W)*FE_NBYTES-1:0]          line_wstrb;
    
-   wire                                         write_access = |wstrb & valid; //front-end doesn't update in the same clock-cycle ready is asserted, during an write-access
+  // wire                                         write_access = |wstrb & valid; //front-end doesn't update in the same clock-cycle ready is asserted, during an write-access
    wire                                         write_access_reg = |wstrb_reg & valid_reg;
-   wire                                         read_access = ~|wstrb & valid; //front-end updates in the same clock-cycle ready is asserted
+ //  wire                                         read_access = ~|wstrb & valid; //front-end updates in the same clock-cycle ready is asserted
    wire                                         read_access_reg = ~|wstrb_reg & valid_reg;//signal mantains the access 1 addition clock-cycle after ready is asserted 
 
    
@@ -137,9 +137,10 @@ module cache_memory
      RAW_prev <= ~(write_access_reg & hit);
    
    //front-end READY signal
-   assign ready = (hit & (read_access_reg) & (replace_ready) & RAW_prev) | (~buffer_full & (write_access_reg));
-   // read section needs to be the registered, so it doesn't change the moment ready asserts and updates the input. Write doesn't update on the same cycle as ready asserts, and in the next clock cycle, will have the next input.
+   assign ready = (hit & read_access_reg & RAW_prev) | (~buffer_full & write_access_reg);
 
+   assign hit = |way_hit & replace_ready;//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
+   
    //cache-control hit-miss counters enables
    assign write_hit  = ready & ( hit & write_access_reg);
    assign write_miss = ready & (~hit & write_access_reg);
@@ -154,7 +155,7 @@ module cache_memory
              begin
                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
 
-                assign hit = |way_hit;
+                
                 
                 replacement_process #(
 	                              .N_WAYS    (N_WAYS    ),
@@ -196,7 +197,6 @@ module cache_memory
 
 
                 
-
                 always @ (posedge clk, posedge reset)
                   begin
                      if (reset | invalidate)
@@ -227,7 +227,8 @@ module cache_memory
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                                    .addr((write_access_reg)? index_reg : index),
-                                   .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
+                                  // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
+                                   .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                                    );
                             end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
