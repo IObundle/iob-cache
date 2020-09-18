@@ -116,7 +116,7 @@ module read_channel_native
                   handshake:
                     begin
                        mem_valid = ~mem_ready | ~(&read_addr);
-                       word_counter = word_counter + mem_ready;
+                       word_counter = read_addr + mem_ready;
                        read_valid = mem_ready;
                     end
                   
