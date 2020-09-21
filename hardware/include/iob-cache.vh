@@ -1,8 +1,6 @@
 
 //Address-port
-`define WORD_ADDR // Word-addressable, (BE) addr becomes word-addressable (doesn't receive the byte-offset).
-
-`define CACHE_PIPELINE //Allows faster accesses for processors with pipelined-architecture: adds a comparator that compares the current cache-line's index to the previous, to see if it's accessing the same line
+//`define WORD_ADDR // Word-addressable, (BE) addr becomes word-addressable (doesn't receive the byte-offset).
 
 
 //Replacement Policy

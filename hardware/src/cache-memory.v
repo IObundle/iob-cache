@@ -206,7 +206,7 @@ module cache_memory
                   if(~replace_ready)
                     line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
                   else
-                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+                    line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
 
 
                 //valid - register file
@@ -316,7 +316,7 @@ module cache_memory
                   if(~replace_ready)
                     line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement
                   else
-                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+                    line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
 
 
                 //valid - register file
@@ -396,7 +396,7 @@ module cache_memory
                   if(~replace_ready)
                     line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
                   else
-                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+                    line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
 
 
                 //valid - register file
@@ -471,7 +471,7 @@ module cache_memory
                   if(~replace_ready)
                     line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement
                   else
-                    line_wstrb = (wstrb_reg) << (offset*FE_NBYTES);
+                    line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
 
 
                 //valid - register file
