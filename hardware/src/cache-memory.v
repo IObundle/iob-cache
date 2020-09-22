@@ -142,7 +142,10 @@ module cache_memory
         way_hit_prev <= way_hit;
      end
 
-   assign raw = write_hit_prev & (way_hit == way_hit) & (index_prev == index_reg) & (offset_prev == offset);
+   //assign raw = write_hit_prev & (way_hit == way_hit) & (index_prev == index_reg) & (offset_prev == offset);//issue - currently a RAW in different indexes in the way-hit causes the read to read from the write addr.
+   assign raw = write_hit_prev;
+
+
    
    assign hit = |way_hit & replace_ready & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
 
