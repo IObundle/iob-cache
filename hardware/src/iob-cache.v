@@ -32,7 +32,7 @@ module iob_cache
   
     //Controller's options
     parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
     input                                       clk,
@@ -138,7 +138,9 @@ module iob_cache
        .LINE_OFF_W (LINE_OFF_W),
        .WORD_OFF_W (WORD_OFF_W),
        .REP_POLICY (REP_POLICY),    
-       .WTBUF_DEPTH_W (WTBUF_DEPTH_W)
+       .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
+       .CTRL_CACHE(CTRL_CACHE),
+       .CTRL_CNT  (CTRL_CNT)
        )
    cache_memory
      (

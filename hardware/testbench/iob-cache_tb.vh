@@ -21,7 +21,7 @@
 
 
 //Cache Controller - select to remove it
-//`define NO_CTRL
+`define CTRL
 
 
 `define VCD

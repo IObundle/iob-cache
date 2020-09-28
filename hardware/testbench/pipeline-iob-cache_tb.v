@@ -291,8 +291,8 @@ module iob_cache_tb;
                    .BE_ADDR_W(`MEM_ADDR_W),
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
- `ifdef NO_CTRL
-                   .CTRL_CACHE(0),
+ `ifdef CTRL
+                   .CTRL_CACHE(1),
  `endif
                    .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                    )
@@ -363,8 +363,8 @@ module iob_cache_tb;
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
 
- `ifdef NO_CTRL
-               .CTRL_CACHE(0),
+ `ifdef CTRL
+               .CTRL_CACHE(1),
  `endif
                .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )

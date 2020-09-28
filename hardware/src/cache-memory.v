@@ -22,7 +22,10 @@ module cache_memory
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
     parameter WTBUF_DEPTH_W = 4,
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `LRU //LRU - Least Recently Used (stack/shift); LRU_add (1) - LRU with adders ; BIT_PLRU (2) - bit-based pseudoLRU; TREE_PLRU (3) - tree-based pseudoLRU
+    parameter REP_POLICY = `LRU, //LRU - Least Recently Used (stack/shift); LRU_add (1) - LRU with adders ; BIT_PLRU (2) - bit-based pseudoLRU; TREE_PLRU (3) - tree-based pseudoLRU 
+    // //Controller's options
+    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
+    parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     )
    ( 
      input                                      clk,
@@ -157,11 +160,29 @@ module cache_memory
 
    
    //cache-control hit-miss counters enables
-   assign write_hit  = ready & ( hit & write_access_reg);
-   assign write_miss = ready & (~hit & write_access_reg);
-   assign read_hit   = ready & ( hit &  read_access_reg);
-   assign read_miss  = ready & (~hit &  read_access_reg);
+generate 
+   if(CTRL_CACHE & CTRL_CNT)
+     begin
+        //cache-control hit-miss counters enables
+        assign write_hit  = ready & ( hit & write_access_reg);
+        assign write_miss = ready & (~hit & write_access_reg);
+        assign read_hit   = ready & ( hit &  read_access_reg);
+        assign read_miss  = replace_valid;//will also subtract read_hit
+     end
+   else
+     begin
+        assign write_hit  = 1'bx;
+        assign write_miss = 1'bx;
+        assign read_hit   = 1'bx;
+        assign read_miss  = 1'bx;
+     end // else: !if(CACHE_CTRL & CTRL_CNT)
+endgenerate
+
+
    
+   ////////////////////////////////////////
+   //Memories implementation configurations
+   ////////////////////////////////////////    
    genvar                                                   i,j,k;
    generate
       if(N_WAYS > 1)
