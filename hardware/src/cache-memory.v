@@ -143,8 +143,8 @@ module cache_memory
      end
 
    //assign raw = write_hit_prev & (way_hit == way_hit) & (index_prev == index_reg) & (offset_prev == offset);//issue - currently a RAW in different indexes in the way-hit causes the read to read from the write addr.
-   assign raw = write_hit_prev;
-
+  // assign raw = write_hit_prev;
+   assign raw = write_hit_prev & (way_hit == way_hit) & (offset_prev == offset);
 
    
    assign hit = |way_hit & replace_ready & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
@@ -242,7 +242,8 @@ module cache_memory
                                    .clk (clk),
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                                   .addr((write_access_reg & way_hit[k])? index_reg : index),
+                                  // .addr((write_access_reg & way_hit[k])? index_reg : index),
+                                   .addr((write_access_reg & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg : index),
                                    // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
                                    .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                                    .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
@@ -350,7 +351,7 @@ module cache_memory
                               .clk (clk),
                               .en  (valid), 
                               .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[i*FE_NBYTES +: FE_NBYTES]),
-                              .addr((write_access_reg & way_hit[k])? index_reg : index),
+                              .addr((write_access_reg & way_hit[k] & (i == offset))? index_reg : index),
                               .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                               .data_out(line_rdata[(k*(2**WORD_OFF_W)+i)*FE_DATA_W +: FE_DATA_W])
                               );
@@ -429,7 +430,7 @@ module cache_memory
                               .clk (clk),
                               .en  (valid), 
                               .we ({FE_NBYTES{way_hit}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                              .addr((write_access_reg & way_hit)? index_reg : index),
+                              .addr((write_access_reg & way_hit & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg : index),
                               .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                               .data_out(line_rdata[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
                               );
@@ -502,7 +503,7 @@ module cache_memory
                          .clk (clk),
                          .en  (valid), 
                          .we ({FE_NBYTES{way_hit}} & line_wstrb[i*FE_NBYTES +: FE_NBYTES]),
-                         .addr((write_access_reg & way_hit)? index_reg : index),
+                         .addr((write_access_reg & way_hit & (i == offset))? index_reg : index),
                          .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
                          .data_out(line_rdata[i*FE_DATA_W +: FE_DATA_W])
                          );

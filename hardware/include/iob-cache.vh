@@ -1,6 +1,6 @@
 
 //Address-port
-//`define WORD_ADDR // Word-addressable, (BE) addr becomes word-addressable (doesn't receive the byte-offset).
+`define WORD_ADDR // Word-addressable, (BE) addr becomes word-addressable (doesn't receive the byte-offset).
 
 
 //Replacement Policy

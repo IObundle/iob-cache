@@ -1,31 +1,20 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Wed Sep 16 14:23:34 2020
+[*] Mon Sep 28 17:21:31 2020
 [*]
-[dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Wed Sep 16 14:23:25 2020"
-[dumpfile_size] 90070
-[savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-gtkwave.gtkw"
-[timestart] 441410
+[dumpfile] "/home/jroque/sandbox/iob-soc-ssrv-test/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
+[dumpfile_mtime] "Mon Sep 28 16:34:14 2020"
+[dumpfile_size] 114504
+[savefile] "/home/jroque/sandbox/iob-soc-ssrv-test/submodules/iob-cache/hardware/simulation/iob-cache-gtkwave.gtkw"
+[timestart] 268400
 [size] 1855 951
 [pos] -733 -1
-*-13.931433 472500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-15.931433 488000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
 [treeopen] iob_cache_tb.cache.back_end.
 [treeopen] iob_cache_tb.cache.back_end.read_fsm.
 [treeopen] iob_cache_tb.cache.back_end.write_fsm.
-[treeopen] iob_cache_tb.cache.cache_memory.
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].
-[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[1].
 [treeopen] iob_cache_tb.cache.cache_memory.write_throught_buffer.
 [sst_width] 234
 [signals_width] 662
@@ -42,8 +31,9 @@ iob_cache_tb.test[31:0]
 -Front-end
 @28
 iob_cache_tb.cache.front_end.valid
-@22
+@23
 iob_cache_tb.cache.addr[11:2]
+@22
 iob_cache_tb.wdata[31:0]
 iob_cache_tb.wstrb[3:0]
 iob_cache_tb.rdata[31:0]
@@ -53,12 +43,9 @@ iob_cache_tb.ready
 -
 -cache-memory
 @28
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.clk
 iob_cache_tb.cache.cache_memory.valid
 iob_cache_tb.cache.cache_memory.valid_reg
 @22
-[color] 2
-iob_cache_tb.cache.cache_memory.addr[11:3]
 [color] 2
 iob_cache_tb.cache.cache_memory.addr_reg[11:2]
 @28
@@ -73,67 +60,31 @@ iob_cache_tb.cache.cache_memory.wdata_reg[31:0]
 iob_cache_tb.cache.cache_memory.wstrb_reg[3:0]
 [color] 2
 iob_cache_tb.cache.cache_memory.line_wstrb[15:0]
-@28
 [color] 2
-iob_cache_tb.cache.cache_memory.way_hit[1:0]
-@22
 iob_cache_tb.cache.cache_memory.tag[6:0]
 @28
-iob_cache_tb.cache.cache_memory.v[1:0]
 iob_cache_tb.cache.cache_memory.offset[1:0]
-@22
-iob_cache_tb.cache.cache_memory.line_rdata[255:0]
-@28
 iob_cache_tb.cache.cache_memory.replace_ready
 iob_cache_tb.cache.cache_memory.hit
 iob_cache_tb.cache.cache_memory.read_access_reg
+>-90
 iob_cache_tb.cache.cache_memory.write_access_reg
+>0
 [color] 1
 iob_cache_tb.cache.cache_memory.raw
-@29
+>-220
 [color] 5
 iob_cache_tb.cache.cache_memory.index_prev
-@28
+>0
 [color] 5
 iob_cache_tb.cache.cache_memory.index_reg
 [color] 3
 iob_cache_tb.cache.cache_memory.offset[1:0]
 [color] 3
 iob_cache_tb.cache.cache_memory.offset_prev[1:0]
-[color] 3
-iob_cache_tb.cache.cache_memory.offset_same
-[color] 2
-iob_cache_tb.cache.cache_memory.way_hit[1:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.way_hit_prev[1:0]
 @200
 -
 -Wa 0 - data memories
-@28
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.en
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.addr
-@22
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.data_in[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.we[3:0]
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.data_out[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.data_in[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.we[3:0]
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.data_out[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].cache_memory.data_in[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].cache_memory.we[3:0]
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].cache_memory.data_out[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].cache_memory.data_in[31:0]
-[color] 2
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].cache_memory.we[3:0]
-iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].cache_memory.data_out[31:0]
-@200
 -
 -Back-end NATIVE
 -
@@ -178,8 +129,6 @@ iob_cache_tb.cache.cache_memory.hit
 -
 @28
 iob_cache_tb.cache.back_end.read_fsm.genblk1.state[1:0]
-@22
-iob_cache_tb.cache.cache_memory.line_rdata[255:0]
 @200
 -
 -
