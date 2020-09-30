@@ -1651,9 +1651,9 @@ module write_process_axi
 
    
    iob_sync_fifo #(
-		    .DATA_WIDTH (FE_NBYTES+FE_ADDR_W-BYTES_W+FE_DATA_W),
-		    .ADDRESS_WIDTH   (WTBUF_DEPTH_W)
-		    ) 
+		   .DATA_WIDTH (FE_NBYTES+FE_ADDR_W-BYTES_W+FE_DATA_W),
+		   .ADDRESS_WIDTH   (WTBUF_DEPTH_W)
+		   ) 
    write_throught_buffer 
      (
       .rst     (reset               ),
@@ -1814,9 +1814,9 @@ module write_process_native
    
    
    iob_sync_fifo #(
-		    .DATA_WIDTH (FE_NBYTES+FE_ADDR_W-BYTES_W+FE_DATA_W),
-		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
-		    ) 
+		   .DATA_WIDTH (FE_NBYTES+FE_ADDR_W-BYTES_W+FE_DATA_W),
+		   .ADDRESS_WIDTH (WTBUF_DEPTH_W)
+		   ) 
    write_throught_buffer 
      (
       .rst     (reset               ),

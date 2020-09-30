@@ -4,9 +4,9 @@
 
 static int cache_base;
 
-void cache_init(int cache_addr)
+void cache_init(int ext_mem, int cache_addr)
 {
-  cache_base = 1 << (cache_addr);
+  cache_base = ext_mem + (1 << (cache_addr));
 }
 
 int cache_invalidate()   {return (CACHEFUNC(cache_base,INVALIDATE));}

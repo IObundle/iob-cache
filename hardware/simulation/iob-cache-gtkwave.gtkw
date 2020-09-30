@@ -1,23 +1,36 @@
 [*]
 [*] GTKWave Analyzer v3.3.61 (w)1999-2014 BSI
-[*] Wed May 20 18:00:14 2020
+[*] Wed Sep 16 14:23:34 2020
 [*]
-[dumpfile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/icarus/iob_cache.vcd"
-[dumpfile_mtime] "Wed May 20 17:55:17 2020"
-[dumpfile_size] 61526738
-[savefile] "/home/jroque/sandbox/iob-cache-roquefork/simulation/iob-cache-gtkwave.gtkw"
-[timestart] 0
-[size] 941 600
-[pos] -1 -1
-*-27.000000 8178000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/icarus/iob_cache.vcd"
+[dumpfile_mtime] "Wed Sep 16 14:23:25 2020"
+[dumpfile_size] 90070
+[savefile] "/home/jroque/sandbox/iob-soc/submodules/iob-cache/hardware/simulation/iob-cache-gtkwave.gtkw"
+[timestart] 441410
+[size] 1855 951
+[pos] -733 -1
+*-13.931433 472500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] iob_cache_tb.
 [treeopen] iob_cache_tb.cache.
-[treeopen] iob_cache_tb.cache.genblk6.
-[treeopen] iob_cache_tb.cache.genblk6.write_fsm.
+[treeopen] iob_cache_tb.cache.back_end.
+[treeopen] iob_cache_tb.cache.back_end.read_fsm.
+[treeopen] iob_cache_tb.cache.back_end.write_fsm.
+[treeopen] iob_cache_tb.cache.cache_memory.
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].
+[treeopen] iob_cache_tb.cache.cache_memory.genblk2.line_way[1].
+[treeopen] iob_cache_tb.cache.cache_memory.write_throught_buffer.
 [sst_width] 234
-[signals_width] 273
+[signals_width] 662
 [sst_expanded] 1
-[sst_vpaned_height] 315
+[sst_vpaned_height] 574
 @28
 iob_cache_tb.clk
 @200
@@ -27,65 +40,149 @@ iob_cache_tb.test[31:0]
 @200
 -
 -Front-end
+@28
+iob_cache_tb.cache.front_end.valid
 @22
 iob_cache_tb.cache.addr[11:2]
 iob_cache_tb.wdata[31:0]
 iob_cache_tb.wstrb[3:0]
 iob_cache_tb.rdata[31:0]
 @28
-iob_cache_tb.valid
 iob_cache_tb.ready
 @200
 -
+-cache-memory
+@28
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.clk
+iob_cache_tb.cache.cache_memory.valid
+iob_cache_tb.cache.cache_memory.valid_reg
+@22
+[color] 2
+iob_cache_tb.cache.cache_memory.addr[11:3]
+[color] 2
+iob_cache_tb.cache.cache_memory.addr_reg[11:2]
+@28
+[color] 7
+iob_cache_tb.cache.cache_memory.index
+iob_cache_tb.cache.cache_memory.write_access_reg
+iob_cache_tb.cache.cache_memory.index_reg
+@22
+[color] 3
+iob_cache_tb.cache.cache_memory.wdata_reg[31:0]
+[color] 7
+iob_cache_tb.cache.cache_memory.wstrb_reg[3:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.line_wstrb[15:0]
+@28
+[color] 2
+iob_cache_tb.cache.cache_memory.way_hit[1:0]
+@22
+iob_cache_tb.cache.cache_memory.tag[6:0]
+@28
+iob_cache_tb.cache.cache_memory.v[1:0]
+iob_cache_tb.cache.cache_memory.offset[1:0]
+@22
+iob_cache_tb.cache.cache_memory.line_rdata[255:0]
+@28
+iob_cache_tb.cache.cache_memory.replace_ready
+iob_cache_tb.cache.cache_memory.hit
+iob_cache_tb.cache.cache_memory.read_access_reg
+iob_cache_tb.cache.cache_memory.write_access_reg
+[color] 1
+iob_cache_tb.cache.cache_memory.raw
+@29
+[color] 5
+iob_cache_tb.cache.cache_memory.index_prev
+@28
+[color] 5
+iob_cache_tb.cache.cache_memory.index_reg
+[color] 3
+iob_cache_tb.cache.cache_memory.offset[1:0]
+[color] 3
+iob_cache_tb.cache.cache_memory.offset_prev[1:0]
+[color] 3
+iob_cache_tb.cache.cache_memory.offset_same
+[color] 2
+iob_cache_tb.cache.cache_memory.way_hit[1:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.way_hit_prev[1:0]
+@200
+-
+-Wa 0 - data memories
+@28
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.en
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.addr
+@22
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.data_in[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.we[3:0]
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[0].cache_memory.data_out[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.data_in[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.we[3:0]
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[0].line_word_width[1].cache_memory.data_out[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].cache_memory.data_in[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].cache_memory.we[3:0]
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[0].cache_memory.data_out[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].cache_memory.data_in[31:0]
+[color] 2
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].cache_memory.we[3:0]
+iob_cache_tb.cache.cache_memory.genblk2.line_way[0].line_word_number[1].line_word_width[1].cache_memory.data_out[31:0]
+@200
+-
 -Back-end NATIVE
+-
 @28
-iob_cache_tb.mem_valid
-iob_cache_tb.mem_ready
+iob_cache_tb.clk
+@200
+-write-channel
+@28
+iob_cache_tb.cache.cache_memory.buffer_full
+@22
+iob_cache_tb.cache.cache_memory.buffer_dout[45:0]
+@28
+iob_cache_tb.cache.cache_memory.write_throught_buffer.write_en
+iob_cache_tb.cache.cache_memory.write_throught_buffer.read_en
+iob_cache_tb.cache.cache_memory.buffer_empty
+iob_cache_tb.cache.back_end.write_valid
+iob_cache_tb.cache.back_end.write_ready
 @200
 -
--Back-end AXI
--READ
+-
+-read-channel
 @28
-iob_cache_tb.axi_arready
-iob_cache_tb.axi_arvalid
-iob_cache_tb.axi_rready
-iob_cache_tb.axi_rvalid
-@201
--Read_process
-@28
-iob_cache_tb.cache.genblk6.read_fsm.state[1:0]
-iob_cache_tb.cache.genblk6.read_fsm.read_miss
+iob_cache_tb.cache.back_end.read_fsm.clk
+iob_cache_tb.cache.back_end.read_fsm.replace_valid
 @22
-iob_cache_tb.cache.genblk6.read_fsm.word_counter[3:0]
-iob_cache_tb.cache.genblk6.read_fsm.line_load_data[31:0]
+iob_cache_tb.cache.back_end.read_fsm.replace_addr[11:4]
 @28
-iob_cache_tb.cache.genblk6.read_fsm.line_load_en
-iob_cache_tb.cache.genblk6.read_fsm.line_load
+iob_cache_tb.cache.back_end.read_fsm.replace_ready
+[color] 1
+iob_cache_tb.cache.back_end.read_fsm.read_valid
+iob_cache_tb.cache.cache_memory.read_access_reg
+@22
+iob_cache_tb.cache.back_end.read_fsm.read_rdata[63:0]
+@28
+[color] 2
+iob_cache_tb.cache.back_end.read_fsm.read_addr
+[color] 2
+iob_cache_tb.cache.back_end.read_fsm.genblk1.state[1:0]
+[color] 1
+iob_cache_tb.cache.cache_memory.hit
 @200
 -
--WRITE
-@22
-iob_cache_tb.axi_awaddr[11:0]
 @28
-iob_cache_tb.axi_awvalid
-iob_cache_tb.axi_awready
+iob_cache_tb.cache.back_end.read_fsm.genblk1.state[1:0]
 @22
-iob_cache_tb.axi_wdata[31:0]
-iob_cache_tb.axi_wstrb[3:0]
-@28
-iob_cache_tb.axi_wvalid
-iob_cache_tb.axi_wready
+iob_cache_tb.cache.cache_memory.line_rdata[255:0]
 @200
--Write_process
-@22
-iob_cache_tb.cache.genblk6.write_fsm.state[3:0]
-@28
-iob_cache_tb.cache.genblk6.write_fsm.write_empty
-iob_cache_tb.cache.genblk6.write_fsm.write_full
-@22
-iob_cache_tb.cache.genblk6.write_fsm.buffer_din[45:0]
-iob_cache_tb.cache.genblk6.write_fsm.buffer_dout[45:0]
-@28
-iob_cache_tb.cache.genblk6.write_fsm.write_en
+-
+-
+-
 [pattern_trace] 1
 [pattern_trace] 0
