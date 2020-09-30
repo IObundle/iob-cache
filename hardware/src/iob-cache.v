@@ -1650,7 +1650,7 @@ module write_process_axi
      end       
 
    
-   iob_async_fifo #(
+   iob_sync_fifo #(
 		    .DATA_WIDTH (FE_NBYTES+FE_ADDR_W-BYTES_W+FE_DATA_W),
 		    .ADDRESS_WIDTH   (WTBUF_DEPTH_W)
 		    ) 
@@ -1659,14 +1659,11 @@ module write_process_axi
       .rst     (reset               ),
       .data_out(buffer_dout         ), 
       .empty   (buffer_empty        ),
-      .level_r (),
       .read_en (buffer_read_en      ),
-      .rclk    (clk                 ),    
+      .clk    (clk                 ),    
       .data_in (buffer_din          ), 
       .full    (buffer_full         ),
-      .level_w (),
-      .write_en((|wstrb) && write_en),
-      .wclk    (clk                 )
+      .write_en((|wstrb) && write_en)
       );
 
 endmodule
@@ -1816,7 +1813,7 @@ module write_process_native
      end
    
    
-   iob_async_fifo #(
+   iob_sync_fifo #(
 		    .DATA_WIDTH (FE_NBYTES+FE_ADDR_W-BYTES_W+FE_DATA_W),
 		    .ADDRESS_WIDTH (WTBUF_DEPTH_W)
 		    ) 
@@ -1825,14 +1822,11 @@ module write_process_native
       .rst     (reset               ),
       .data_out(buffer_dout         ), 
       .empty   (buffer_empty        ),
-      .level_r (),
       .read_en (buffer_read_en      ),
-      .rclk    (clk                 ),    
+      .clk     (clk                 ),    
       .data_in (buffer_din          ), 
       .full    (buffer_full         ),
-      .level_w (),
-      .write_en((|wstrb) && write_en),
-      .wclk    (clk                 )
+      .write_en((|wstrb) && write_en)
       );
 
 endmodule

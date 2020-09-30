@@ -14,5 +14,6 @@ VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 CACHE_SRC_DIR:=$(CACHE_DIR)/hardware/src
 VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v) \
 $(CACHE_MEM_DIR)/reg_file/iob_reg_file.v \
-$(CACHE_MEM_DIR)/fifo/afifo/afifo.v \
-$(CACHE_MEM_DIR)/sp_ram/iob_sp_mem.v
+$(CACHE_MEM_DIR)/fifo/sfifo/sfifo.v \
+$(CACHE_MEM_DIR)/sp_ram/iob_sp_mem.v \
+$(CACHE_MEM_DIR)/2p_mem/iob_2p_mem.v
