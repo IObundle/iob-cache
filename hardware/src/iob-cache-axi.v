@@ -1,18 +1,14 @@
 `timescale 1ns / 1ps
 `include "iob-cache.vh"
 
-///////////////
-// IOb-cache //
-///////////////
-
-module iob_cache 
+module iob_cache_axi 
   #(
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 1,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 7,    //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
+    parameter N_WAYS   = 2,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W  = 7,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 5,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `BIT_PLRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
@@ -29,7 +25,9 @@ module iob_cache
     //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
     /*---------------------------------------------------*/
-  
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0,  //AXI ID value
     //Controller's options
     parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
     parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
@@ -48,13 +46,46 @@ module iob_cache
     input [FE_NBYTES-1:0]                       wstrb,
     output [FE_DATA_W-1:0]                      rdata,
     output                                      ready,
-    //Slave i/f - Native
-    output                                      mem_valid,
-    output [BE_ADDR_W-1:0]                      mem_addr,
-    output [BE_DATA_W-1:0]                      mem_wdata,
-    output [BE_NBYTES-1:0]                      mem_wstrb,
-    input [BE_DATA_W-1:0]                       mem_rdata,
-    input                                       mem_ready
+    //Slave i/f -AXI
+    //Address Read
+    output                                      axi_arvalid, 
+    output [BE_ADDR_W-1:0]                      axi_araddr, 
+    output [7:0]                                axi_arlen,
+    output [2:0]                                axi_arsize,
+    output [1:0]                                axi_arburst,
+    output [0:0]                                axi_arlock,
+    output [3:0]                                axi_arcache,
+    output [2:0]                                axi_arprot,
+    output [3:0]                                axi_arqos,
+    output [AXI_ID_W-1:0]                       axi_arid,
+    input                                       axi_arready,
+    //Read
+    input                                       axi_rvalid, 
+    input [BE_DATA_W-1:0]                       axi_rdata,
+    input [1:0]                                 axi_rresp,
+    input                                       axi_rlast, 
+    output                                      axi_rready,
+    // Address Write
+    output                                      axi_awvalid,
+    output [BE_ADDR_W-1:0]                      axi_awaddr,
+    output [7:0]                                axi_awlen,
+    output [2:0]                                axi_awsize,
+    output [1:0]                                axi_awburst,
+    output [0:0]                                axi_awlock,
+    output [3:0]                                axi_awcache,
+    output [2:0]                                axi_awprot,
+    output [3:0]                                axi_awqos,
+    output [AXI_ID_W-1:0]                       axi_awid, 
+    input                                       axi_awready,
+    //Write
+    output                                      axi_wvalid, 
+    output [BE_DATA_W-1:0]                      axi_wdata,
+    output [BE_NBYTES-1:0]                      axi_wstrb,
+    output                                      axi_wlast,
+    input                                       axi_wready,
+    input                                       axi_bvalid,
+    input [1:0]                                 axi_bresp,
+    output                                      axi_bready
     );
 
    
@@ -90,7 +121,7 @@ module iob_cache
    wire                                         write_hit, write_miss, read_hit, read_miss;
    wire [CTRL_CACHE*(FE_DATA_W-1):0]            ctrl_rdata;
    wire                                         invalidate;
-
+   
    front_end
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -111,7 +142,7 @@ module iob_cache
       .data_valid (data_valid),
       .data_addr  (data_addr),
       //.data_wdata (data_wdata),
-     // .data_wstrb (data_wstrb),
+      // .data_wstrb (data_wstrb),
       //cache-memory output
       .data_rdata (data_rdata),
       .data_ready (data_ready),
@@ -151,7 +182,7 @@ module iob_cache
       .valid (data_valid),
       .addr  (data_addr[FE_ADDR_W-1:BE_BYTE_W + LINE2MEM_W]),
       //.wdata (data_wdata),
-     // .wstrb (data_wstrb),
+      // .wstrb (data_wstrb),
       .rdata (data_rdata),
       .ready (data_ready),
       //stored data signals
@@ -184,15 +215,16 @@ module iob_cache
       );
 
 
-
    
-   back_end_native
+   back_end_axi
      #(
        .FE_ADDR_W (FE_ADDR_W),
        .FE_DATA_W (FE_DATA_W),  
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
-       .WORD_OFF_W (WORD_OFF_W)
+       .WORD_OFF_W (WORD_OFF_W),
+       .AXI_ID_W(AXI_ID_W),
+       .AXI_ID(AXI_ID)
        )
    back_end
      (
@@ -211,15 +243,49 @@ module iob_cache
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),
-      //back-end native interface
-      .mem_valid (mem_valid),
-      .mem_addr  (mem_addr),
-      .mem_wdata (mem_wdata),
-      .mem_wstrb (mem_wstrb),
-      .mem_rdata (mem_rdata),
-      .mem_ready (mem_ready)  
+      //back-end read-channel
+      //read address
+      .axi_arvalid(axi_arvalid), 
+      .axi_araddr(axi_araddr), 
+      .axi_arlen(axi_arlen),
+      .axi_arsize(axi_arsize),
+      .axi_arburst(axi_arburst),
+      .axi_arlock(axi_arlock),
+      .axi_arcache(axi_arcache),
+      .axi_arprot(axi_arprot),
+      .axi_arqos(axi_arqos),
+      .axi_arid(axi_arid),
+      .axi_arready(axi_arready),
+      //read data
+      .axi_rvalid(axi_rvalid), 
+      .axi_rdata(axi_rdata),
+      .axi_rresp(axi_rresp),
+      .axi_rlast(axi_rlast), 
+      .axi_rready(axi_rready),
+      //back-end write-channel
+      //write address
+      .axi_awvalid(axi_awvalid), 
+      .axi_awaddr(axi_awaddr), 
+      .axi_awlen(axi_awlen),
+      .axi_awsize(axi_awsize),
+      .axi_awburst(axi_awburst),
+      .axi_awlock(axi_awlock),
+      .axi_awcache(axi_awcache),
+      .axi_awprot(axi_awprot),
+      .axi_awqos(axi_awqos),
+      .axi_awid(axi_awid),
+      .axi_awready(axi_awready),
+      //write data
+      .axi_wvalid(axi_wvalid),
+      .axi_wdata(axi_wdata),
+      .axi_wstrb(axi_wstrb),
+      .axi_wready(axi_wready),
+      .axi_wlast(axi_wlast),
+      //write response
+      .axi_bvalid(axi_bvalid), 
+      .axi_bresp(axi_bresp),
+      .axi_bready(axi_bready) 
       );
-   
    
    
    generate
@@ -258,4 +324,4 @@ module iob_cache
       
    endgenerate
 
-endmodule // iob_cache   
+endmodule // iob_cache_axi
