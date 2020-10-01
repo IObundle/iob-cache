@@ -106,12 +106,12 @@ module front_end
              
           end
         else
-            begin
-               valid_reg <= valid_int;
-               addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
-               wdata_reg <= wdata;
-               wstrb_reg <= wstrb;
-            end
+          begin
+             valid_reg <= valid_int;
+             addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
+             wdata_reg <= wdata;
+             wstrb_reg <= wstrb;
+          end
      end // always @ (posedge clk, posedge reset)  
 
    

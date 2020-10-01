@@ -156,9 +156,3 @@ module write_channel_axi
 
    
 endmodule
-
-
-
-
-
-

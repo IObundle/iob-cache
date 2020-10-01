@@ -133,10 +133,11 @@ module iob_cache_tb;
         addr <= 0;
         valid <=1;
         wstrb <=0;
-        #2
+        #20
           wstrb <= {`DATA_W/8{1'b1}};
         wdata <= 23434332205;
-        while (ready == 1'b0) #2;
+        //while (ready == 1'b0) #2;
+        #2;
         addr <= 1; //change of addr
         wstrb <= 0;
         #2
@@ -144,7 +145,7 @@ module iob_cache_tb;
         valid <= 0;
         #80;
 
-        
+        #80;
         
         $display("Cache testing completed\n");
         $finish;
@@ -290,8 +291,8 @@ module iob_cache_tb;
                    .BE_ADDR_W(`MEM_ADDR_W),
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
- `ifdef NO_CTRL
-                   .CTRL_CACHE(0),
+ `ifdef CTRL
+                   .CTRL_CACHE(1),
  `endif
                    .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                    )
@@ -362,8 +363,8 @@ module iob_cache_tb;
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
 
- `ifdef NO_CTRL
-               .CTRL_CACHE(0),
+ `ifdef CTRL
+               .CTRL_CACHE(1),
  `endif
                .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )

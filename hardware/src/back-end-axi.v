@@ -167,6 +167,3 @@ module back_end_axi
       );
    
 endmodule // back_end_native
-
-
-

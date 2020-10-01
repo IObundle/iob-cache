@@ -276,7 +276,3 @@ module read_channel_axi
    endgenerate 
    
 endmodule // read_process_native
-
-
-
-
