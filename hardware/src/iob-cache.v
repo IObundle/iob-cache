@@ -94,7 +94,8 @@ module iob_cache
    front_end
      #(
        .FE_ADDR_W (FE_ADDR_W),
-       .FE_DATA_W (FE_DATA_W)
+       .FE_DATA_W (FE_DATA_W),
+       .CTRL_CACHE(CTRL_CACHE)
        )
    front_end
      (
