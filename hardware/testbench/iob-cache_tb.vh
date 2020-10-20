@@ -9,7 +9,7 @@
 `define REP_POLICY 0
 
 //Back-end Memory interface AXI or Native
-//`define AXI
+`define AXI
 
 //Cache back-end parameters
 `define MEM_ADDR_W 12

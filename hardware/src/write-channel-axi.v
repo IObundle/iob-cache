@@ -57,18 +57,18 @@ module write_channel_axi
    assign axi_awprot  = 3'd0;
    assign axi_awqos   = 4'd0;
    assign axi_wlast   = axi_wvalid;
-   
+
    //AXI Buffer Output signals
    assign axi_awaddr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}};
 
 
-   
+
    generate
       if(BE_DATA_W == FE_DATA_W)
         begin
            assign axi_wstrb = wstrb;
            assign axi_wdata = wdata;
-           
+
         end
       else
         begin
@@ -77,14 +77,14 @@ module write_channel_axi
            assign axi_wdata = wdata << (word_align * FE_DATA_W);
         end
    endgenerate
-   
-   
+
+
    localparam
-     idle           = 2'd0,
-     addr_process   = 2'd1,
-     write_process  = 2'd2,
-     verif_process  = 2'd3;  
-   
+     idle    = 2'd0,
+     address = 2'd1,
+     write   = 2'd2,
+     verif   = 2'd3;  
+
    reg [1:0]                                  state;
 
    
@@ -98,35 +98,38 @@ module write_channel_axi
             idle:
               begin
                  if(valid)
-                   state <= addr_process;
+                   state <= address;
               end
             
-            addr_process:
+            address:
               begin
                  if(axi_awready)
-                   state <= write_process;
+                   state <= write;
                  
                  else
-                   state <= addr_process;
+                   state <= address;
               end
 
-            write_process:
+            write:
               begin
                  if (axi_wready)
-                   state <= verif_process;
+                   state <= verif;
                  else
-                   state <= write_process;
+                   state <= write;
               end
 
-            verif_process: //needs to be after the last word has been written, so this can't be optim
+            verif: //needs to be after the last word has been written, so this can't be optim
               begin
-                 if(axi_bvalid)
-                   if(axi_bresp == 2'b00)//00 or 01 - OKAY - needs to be after the last word has been written, so this can't be optimized by removing this state
-                     state <= idle;
-                   else
-                     state <= addr_process; //goes back to transfer the same data.
+                 if(axi_bvalid & (axi_bresp == 2'b00) & ~valid)
+                   state <= idle; //no more words to write
                  else
-                   state <= verif_process;
+                   if(axi_bvalid & (axi_bresp == 2'b00) & valid)
+                     state <= address; //buffer still isn't empty
+                   else
+                     if (axi_bvalid & ~(axi_bresp == 2'b00))//error
+                       state <= address; //goes back to transfer the same data.
+                     else
+                       state <= verif;
               end
 
             default: ;         
@@ -144,15 +147,18 @@ module write_channel_axi
         case(state)
           idle:
             ready = 1'b1;
-          addr_process:
+          address:
             axi_awvalid = 1'b1;
-          write_process:
+          write:
             axi_wvalid  = 1'b1;
-          verif_process:
-            axi_bready  = 1'b1;
+          verif:
+            begin
+               axi_bready = 1'b1;
+               ready      = axi_bvalid & ~(|axi_bresp);
+            end
           default:;
         endcase
      end       
-
+   
    
 endmodule
