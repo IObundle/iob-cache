@@ -2,6 +2,9 @@
 //Address-port
 `define WORD_ADDR // Word-addressable, (BE) addr becomes word-addressable (doesn't receive the byte-offset).
 
+//Control-ports
+`define CTRL_IO //ports that allow from outside signals to influence the invalidate and write-through buffer empty cache-control's functions.
+
 
 //Replacement Policy
 `define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters

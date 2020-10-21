@@ -305,6 +305,11 @@ module iob_cache_tb;
 	  .rdata (rdata),
 	  .valid (cpu_valid),
 	  .ready (ready),
+          //CTRL_IO
+          .force_inv_in(1'b0),
+          .force_inv_out(),
+          .wtb_empty_in(1'b1),
+          .wtb_empty_out(),
           //
 	  // AXI INTERFACE
           //
@@ -377,6 +382,11 @@ module iob_cache_tb;
 	  .rdata (rdata),
 	  .valid (cpu_valid),
 	  .ready (ready),
+          //CTRL_IO
+          .force_inv_in(1'b0),
+          .force_inv_out(),
+          .wtb_empty_in(1'b1),
+          .wtb_empty_out(),
           //
           // NATIVE MEMORY INTERFACE
           //

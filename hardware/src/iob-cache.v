@@ -48,6 +48,13 @@ module iob_cache
     input [FE_NBYTES-1:0]                       wstrb,
     output [FE_DATA_W-1:0]                      rdata,
     output                                      ready,
+`ifdef CTRL_IO
+    //control-status io
+    input                                       force_inv_in, //force 1'b0 if unused
+    output                                      force_inv_out, 
+    input                                       wtb_empty_in, //force 1'b1 if unused
+    output                                      wtb_empty_out, 
+`endif  
     //Slave i/f - Native
     output                                      mem_valid,
     output [BE_ADDR_W-1:0]                      mem_addr,
@@ -90,7 +97,12 @@ module iob_cache
    wire                                         write_hit, write_miss, read_hit, read_miss;
    wire [CTRL_CACHE*(FE_DATA_W-1):0]            ctrl_rdata;
    wire                                         invalidate;
-
+   
+`ifdef CTRL_IO
+   assign force_inv_out = invalidate;
+   assign wtb_empty_out = wtbuf_empty;
+`endif
+   
    front_end
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -111,8 +123,6 @@ module iob_cache
       //cache-memory input signals
       .data_valid (data_valid),
       .data_addr  (data_addr),
-      //.data_wdata (data_wdata),
-     // .data_wstrb (data_wstrb),
       //cache-memory output
       .data_rdata (data_rdata),
       .data_ready (data_ready),
@@ -152,7 +162,7 @@ module iob_cache
       .valid (data_valid),
       .addr  (data_addr[FE_ADDR_W-1:BE_BYTE_W + LINE2MEM_W]),
       //.wdata (data_wdata),
-     // .wstrb (data_wstrb),
+      // .wstrb (data_wstrb),
       .rdata (data_rdata),
       .ready (data_ready),
       //stored data signals
@@ -174,16 +184,20 @@ module iob_cache
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),
-      //control's signals
+      //control's signals 
       .wtbuf_empty (wtbuf_empty),
-      .wtbuf_full (wtbuf_full),
-      .write_hit (write_hit),
-      .write_miss (write_miss),
-      .read_hit (read_hit),
-      .read_miss (read_miss),
-      .invalidate (invalidate)
+      .wtbuf_full  (wtbuf_full),
+      .write_hit   (write_hit),
+      .write_miss  (write_miss),
+      .read_hit    (read_hit),
+      .read_miss   (read_miss),
+`ifdef CTRL_IO
+      .invalidate  (invalidate | force_inv_in)
+`else
+      .invalidate  (invalidate)
+`endif
       );
-
+   
 
 
    
@@ -240,7 +254,11 @@ module iob_cache
          .addr  (ctrl_addr),
          //write data
          .wtbuf_full (wtbuf_full),
-         .wtbuf_empty (wtbuf_empty),
+`ifdef CTRL_IO
+         .wtbuf_empty (wtbuf_empty & wtb_empty_in),
+`else
+         .wtbuf_empty (wtbuf_empty), 
+`endif
          .write_hit  (write_hit),
          .write_miss (write_miss),
          .read_hit   (read_hit),
