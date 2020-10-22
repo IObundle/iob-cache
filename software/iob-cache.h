@@ -16,8 +16,6 @@ static int cache_base;
 #define WRITE_MISS      8
 #define COUNTER_RESET   9
 #define INVALIDATE      10
-#define INSTR_HIT       11 //for CTRL_CNT_ID only
-#define INSTR_MISS      12 //for CTRL_CNT_ID only
 
 // Cache Controllers's functions
 void cache_init(int ext_mem, int cache_addr); // initialized the cache_base static integer
@@ -30,6 +28,4 @@ int cache_read_hit();
 int cache_read_miss(); 
 int cache_write_hit();  
 int cache_write_miss();  
-int cache_counter_reset();  
-int cache_instr_hit();       
-int cache_instr_miss();
+int cache_counter_reset();
