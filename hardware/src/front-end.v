@@ -121,8 +121,6 @@ module front_end
    
    
    assign data_addr  = addr[FE_ADDR_W-1:FE_BYTE_W];
-   //assign data_wdata = wdata;
-   //assign data_wstrb = wstrb;
    assign data_valid = valid_int | valid_reg;
    
    assign data_addr_reg  = addr_reg[FE_ADDR_W-1:FE_BYTE_W];

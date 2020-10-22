@@ -29,6 +29,3 @@ int cache_write_miss()   {return (CACHEFUNC(cache_base,WRITE_MISS));}
 
 int cache_counter_reset(){return (CACHEFUNC(cache_base,COUNTER_RESET));}
 
-int cache_instr_hit()    {return (CACHEFUNC(cache_base,INSTR_HIT));}
-
-int cache_instr_miss()   {return (CACHEFUNC(cache_base,INSTR_MISS));}

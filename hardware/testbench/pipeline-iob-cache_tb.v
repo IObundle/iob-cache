@@ -16,8 +16,7 @@ module iob_cache_tb;
    reg                                 valid=0;
    wire [`DATA_W-1:0]                  rdata;
    wire                                ready;
-   reg                                 instr =0;
-   wire                                select = 0;//cache is always selected
+   reg                                 ctrl =0;
    wire                                i_select =0, d_select =0;
    reg [31:0]                          test = 0;
    reg                                 pipe_en = 0;
@@ -104,10 +103,10 @@ module iob_cache_tb;
         addr <= 0;
         valid <=1;
         wstrb <=0;
-        #2
-          wstrb <= {`DATA_W/8{1'b1}};
+        #2;
+        wstrb <= {`DATA_W/8{1'b1}};
         wdata <= 57005;
-        while (ready == 1'b0) #2;
+        #2;
         wstrb <= 0;
         #2
           while (ready == 1'b0) #2;
@@ -145,8 +144,21 @@ module iob_cache_tb;
         valid <= 0;
         #80;
 
+       
+        $display("Test 7 - Testing cache-invalidate (r-inv-r)\n");
+        test <= 7;
+        addr <= 0;
+        valid <=1;
+        wstrb <=0;
+        while (ready == 1'b0) #2;
+        ctrl <=1;  //ctrl function
+        addr <= 10;//invalidate
+        valid <=1;
+        #2;
+        while (ready == 1'b0) #2;
+        ctrl <=0;
+        addr <=0;
         #80;
-        
         $display("Cache testing completed\n");
         $finish;
      end // initial begin
@@ -291,20 +303,23 @@ module iob_cache_tb;
                    .BE_ADDR_W(`MEM_ADDR_W),
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
- `ifdef CTRL
                    .CTRL_CACHE(1),
- `endif
                    .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                    )
    cache (
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (cpu_wdata),
-	  .addr  (cpu_addr),
+	  .addr  ({ctrl,cpu_addr}),
 	  .wstrb (cpu_wstrb),
 	  .rdata (rdata),
 	  .valid (cpu_valid),
 	  .ready (ready),
+          //CTRL_IO
+          .force_inv_in(1'b0),
+          .force_inv_out(),
+          .wtb_empty_in(1'b1),
+          .wtb_empty_out(),
           //
 	  // AXI INTERFACE
           //
@@ -362,21 +377,23 @@ module iob_cache_tb;
                .BE_ADDR_W(`MEM_ADDR_W),
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
-
- `ifdef CTRL
                .CTRL_CACHE(1),
- `endif
                .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
                )
    cache (
 	  .clk (clk),
 	  .reset (reset),
 	  .wdata (cpu_wdata),
-	  .addr  (cpu_addr),
+	  .addr  ({ctrl,cpu_addr}),
 	  .wstrb (cpu_wstrb),
 	  .rdata (rdata),
 	  .valid (cpu_valid),
 	  .ready (ready),
+          //CTRL_IO
+          .force_inv_in(1'b0),
+          .force_inv_out(),
+          .wtb_empty_in(1'b1),
+          .wtb_empty_out(),
           //
           // NATIVE MEMORY INTERFACE
           //

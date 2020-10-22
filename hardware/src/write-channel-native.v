@@ -33,8 +33,8 @@ module write_channel_native
    assign mem_addr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}}; 
    
    localparam
-     idle          = 1'd0,
-     write_process = 1'd1;
+     idle  = 1'd0,
+     write = 1'd1;
    
    reg [0:0]                      state;
 
@@ -48,7 +48,7 @@ module write_channel_native
              begin
                 mem_wstrb = 0;
                 case(state)
-                  write_process:
+                  write:
                     begin
                        mem_wstrb = wstrb;
                     end
@@ -68,7 +68,7 @@ module write_channel_native
              begin
                 mem_wstrb = 0;
                 case(state)
-                  write_process:
+                  write:
                     begin
                        mem_wstrb = wstrb << word_align * FE_NBYTES;
                     end
@@ -91,17 +91,20 @@ module write_channel_native
             idle:
               begin
                  if(valid)
-                   state <= write_process;
+                   state <= write;
                  else
                    state <= idle;
               end
 
-            write_process:
+            write:
               begin
-                 if(mem_ready)
+                 if(mem_ready & ~valid)
                    state <= idle;
                  else
-                   state <= write_process;
+                   if(mem_ready & valid) //still has data to write
+                     state <= write;
+                   else
+                     state <= write;
               end
 
             default:;
@@ -115,8 +118,12 @@ module write_channel_native
         case(state)
           idle:
             ready = 1'b1;
-          write_process:
-            mem_valid = ~mem_ready;
+          write:
+            begin
+               mem_valid = ~mem_ready;
+               ready = mem_ready;
+            end
+          
           default:;
         endcase // case (state)
      end

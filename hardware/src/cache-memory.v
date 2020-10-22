@@ -274,7 +274,10 @@ endgenerate
 
                      
                      always @(posedge clk)
-                       v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
+                       if(invalidate)
+                         v[k] <= 0;
+                       else
+                         v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
                      
                      
                      iob_sp_ram
@@ -378,10 +381,11 @@ endgenerate
                               );
                        end // for (i = 0; i < 2**WORD_OFF_W; i=i+1)
 
-                     
                      always @(posedge clk)
-                       v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
-                     
+                       if(invalidate)
+                         v[k] <= 0;
+                       else
+                         v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
                      
                      iob_sp_ram
                        #(
@@ -460,7 +464,10 @@ endgenerate
 
                 
                 always @(posedge clk)
-                  v <= v_reg [index];
+                  if(invalidate)
+                    v <= 0;
+                  else
+                    v <= v_reg [index];
                 
                 
                 iob_sp_ram
@@ -532,7 +539,10 @@ endgenerate
 
                 
                 always @(posedge clk)
-                  v <= v_reg [index];
+                  if(invalidate)
+                    v <= 0;
+                  else
+                    v <= v_reg [index];
                 
                 
                 iob_sp_ram
