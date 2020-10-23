@@ -1,6 +1,8 @@
+include $(CACHE_DIR)/core.mk
+
 CACHE_SW_DIR:=$(CACHE_DIR)/software
 
-#include
+#INCLUDE
 INCLUDE+=-I$(CACHE_DIR)/software
 
 #headers
