@@ -1,7 +1,35 @@
-include $(CACHE_DIR)/cache.mk
+include $(CACHE_DIR)/core.mk
 
 #submodules
+ifneq (INTERCON,$(filter INTERCON, $(SUBMODULES)))
+SUBMODULES+=INTERCON
+INTERCON_DIR:=$(CACHE_DIR)/submodules/INTERCON
 include $(INTERCON_DIR)/hardware/hardware.mk
+endif
+
+ifneq (REGFILE,$(filter REGFILE, $(SUBMODULES)))
+SUBMODULES+=REGFILE
+REGFILE_DIR:=$(CACHE_DIR)/submodules/MEM/reg_file
+VSRC+=$(REGFILE_DIR)/iob_reg_file.v
+endif
+
+ifneq (SFIFO,$(filter SFIFO, $(SUBMODULES)))
+SUBMODULES+=SFIFO
+SFIFO_DIR:=$(CACHE_DIR)/submodules/MEM/fifo/sfifo
+VSRC+=$(SFIFO_DIR)/sfifo.v
+endif
+
+ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
+SUBMODULES+=SPRAM
+SPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/sp_ram
+VSRC+=$(SPRAM_DIR)/sp_ram.v
+endif
+
+ifneq (DPRAM,$(filter DPRAM, $(SUBMODULES)))
+SUBMODULES+=DPRAM
+DPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/dp_ram
+VSRC+=$(DPRAM_DIR)/dp_ram.v
+endif
 
 #include
 CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
@@ -11,9 +39,4 @@ INCLUDE+=$(incdir) $(CACHE_INC_DIR)
 VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
 #sources
-CACHE_SRC_DIR:=$(CACHE_DIR)/hardware/src
-VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v) \
-$(CACHE_MEM_DIR)/reg_file/iob_reg_file.v \
-$(CACHE_MEM_DIR)/fifo/sfifo/sfifo.v \
-$(CACHE_MEM_DIR)/sp_ram/iob_sp_mem.v \
-$(CACHE_MEM_DIR)/2p_mem/iob_2p_mem.v
+VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v)
