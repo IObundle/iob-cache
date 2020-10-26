@@ -133,20 +133,14 @@ module cache_memory
    reg                                                      write_hit_prev;
    wire                                                     raw;
    reg [WORD_OFF_W-1:0]                                     offset_prev;
-   reg [LINE_OFF_W-1:0]                                     index_prev;
-   reg [N_WAYS-1:0]                                         way_hit_prev;
    
    always @(posedge clk)
      begin
         write_hit_prev <= write_access_reg & (|way_hit);
         //previous write position
         offset_prev <= offset;
-        index_prev <= index_reg;
-        way_hit_prev <= way_hit;
      end
 
-   //assign raw = write_hit_prev & (way_hit == way_hit) & (index_prev == index_reg) & (offset_prev == offset);//issue - currently a RAW in different indexes in the way-hit causes the read to read from the write addr.
-  // assign raw = write_hit_prev;
    assign raw = write_hit_prev & (way_hit == way_hit) & (offset_prev == offset);
 
    
