@@ -100,7 +100,13 @@ module iob_cache
    
 `ifdef CTRL_IO
    assign force_inv_out = invalidate;
-   assign wtb_empty_out = wtbuf_empty;
+
+   generate
+      if (CTRL_CACHE)
+        assign wtb_empty_out = wtbuf_empty;
+      else
+        assign wtb_empty_out = wtbuf_empty & wtb_empty_in;//to remove unconnected port warning. If unused wtb_empty_in = 1'b1
+   endgenerate 
 `endif
    
    front_end
