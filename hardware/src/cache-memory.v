@@ -381,7 +381,7 @@ endgenerate
                        else
                          v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
                      
-                     iob_sp_ram
+                     sp_ram
                        #(
                          .DATA_W(TAG_W),
                          .ADDR_W(LINE_OFF_W)
@@ -464,7 +464,7 @@ endgenerate
                     v <= v_reg [index];
                 
                 
-                iob_sp_ram
+                sp_ram
                   #(
                     .DATA_W(TAG_W),
                     .ADDR_W(LINE_OFF_W)
@@ -539,7 +539,7 @@ endgenerate
                     v <= v_reg [index];
                 
                 
-                iob_sp_ram
+                sp_ram
                   #(
                     .DATA_W(TAG_W),
                     .ADDR_W(LINE_OFF_W)
