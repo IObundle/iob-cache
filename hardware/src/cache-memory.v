@@ -220,24 +220,24 @@ endgenerate
                 
                 
                 //Cache Line Write Strobe Shifter
-                always @*
+                always @* begin
                   if(~replace_ready)
                     line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
                   else
                     line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
-
-
+               end
+                  
                 //valid - register file
-                always @ (posedge clk, posedge reset)
-                  begin
-                     if (reset | invalidate)
-                       v_reg <= 0;
-                     else
-                       if(replace_valid)
-                         v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
-                       else
-                         v_reg <= v_reg;
-                  end
+                wire reset_or_invalidate = reset | invalidate;
+                  
+                always @ (posedge clk, posedge reset) begin
+                   if (reset_or_invalidate)
+                     v_reg <= 0;
+                   else if(replace_valid)
+                     v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
+                   else
+                     v_reg <= v_reg;
+                end
                 
                 
                 
