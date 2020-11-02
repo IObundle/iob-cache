@@ -227,11 +227,10 @@ endgenerate
                     line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
                end
                   
-                //valid - register file
-                wire reset_or_invalidate = reset | invalidate;
-                  
                 always @ (posedge clk, posedge reset) begin
-                   if (reset_or_invalidate)
+                   if (reset)
+                     v_reg <= 0;
+                   else if (invalidate)
                      v_reg <= 0;
                    else if(replace_valid)
                      v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
@@ -344,13 +343,14 @@ endgenerate
                 //valid - register file
                 always @ (posedge clk, posedge reset)
                   begin
-                     if (reset | invalidate)
+                     if (reset)
                        v_reg <= 0;
+                     else if (invalidate)
+                       v_reg <= 0;
+                     else if(replace_valid)
+                       v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
                      else
-                       if(replace_valid)
-                         v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFF_W) + index));
-                       else
-                         v_reg <= v_reg;
+                       v_reg <= v_reg;
                   end
                 
                 
@@ -425,13 +425,14 @@ endgenerate
                 //valid - register file
                 always @ (posedge clk, posedge reset)
                   begin
-                     if (reset | invalidate)
+                     if (reset)
                        v_reg <= 0;
+                     else if (invalidate)
+                       v_reg <= 0;
+                     else if(replace_valid)
+                       v_reg <= v_reg | (1 << index);
                      else
-                       if(replace_valid)
-                         v_reg <= v_reg | (1 << index);
-                       else
-                         v_reg <= v_reg;
+                       v_reg <= v_reg;
                   end
                 
                 
@@ -503,13 +504,14 @@ endgenerate
                 //valid - register file
                 always @ (posedge clk, posedge reset)
                   begin
-                     if (reset | invalidate)
+                     if (reset)
                        v_reg <= 0;
+                     else if (invalidate)
+                       v_reg <= 0;
+                     else if(replace_valid)
+                       v_reg <= v_reg | (1 << index);
                      else
-                       if(replace_valid)
-                         v_reg <= v_reg | (1 << index);
-                       else
-                         v_reg <= v_reg;
+                       v_reg <= v_reg;
                   end
                 
                 
