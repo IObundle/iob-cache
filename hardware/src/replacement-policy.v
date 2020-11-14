@@ -83,7 +83,7 @@ module replacement_process
         begin
 
            wire [N_WAYS -1:0]      mru_output;
-           wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? {N_WAYS{1'b0}} : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
+           wire [N_WAYS -1:0]      mru_input = (&(mru_output | way_hit))? way_hit : mru_output | way_hit; //When the cache access results in a hit (or access (wish would be 1 in way_hit even during a read-miss), it will add to the MRU, if after the the OR with Way_hit, the entire input is 1s, it resets
            wire [N_WAYS -1:0]      bitplru; //least recent used 
            
            assign bitplru[0] = ~mru_output[0];

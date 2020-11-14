@@ -133,15 +133,17 @@ module cache_memory
    reg                                                      write_hit_prev;
    wire                                                     raw;
    reg [WORD_OFF_W-1:0]                                     offset_prev;
+   reg [N_WAYS-1:0]                                         way_hit_prev;
    
    always @(posedge clk)
      begin
         write_hit_prev <= write_access_reg & (|way_hit);
         //previous write position
         offset_prev <= offset;
+        way_hit_prev <= way_hit;
      end
 
-   assign raw = write_hit_prev & (way_hit == way_hit) & (offset_prev == offset);
+   assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset);
 
    
    assign hit = |way_hit & replace_ready & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
