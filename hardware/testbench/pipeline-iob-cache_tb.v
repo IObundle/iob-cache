@@ -104,6 +104,7 @@ module iob_cache_tb;
         valid <=1;
         wstrb <=0;
         #2;
+        while (ready == 1'b0) #2;
         wstrb <= {`DATA_W/8{1'b1}};
         wdata <= 57005;
         #2;
