@@ -7,8 +7,8 @@ module cache_memory
     parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 4,        //Number of Cache Ways
-    parameter LINE_OFF_W  = 9,      //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 4,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
+    parameter LINE_OFF_W  = 7,      //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,      //Number of Bytes per Word
@@ -20,12 +20,12 @@ module cache_memory
     parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of the Number of Bytes per Word
     //Do NOT change - slave parameters - dependency
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
-    parameter WTBUF_DEPTH_W = 4,
+    parameter WTBUF_DEPTH_W = 5,
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `LRU, //LRU - Least Recently Used (stack/shift); LRU_add (1) - LRU with adders ; BIT_PLRU (2) - bit-based pseudoLRU; TREE_PLRU (3) - tree-based pseudoLRU 
+    parameter REP_POLICY = `PLRU_tree, //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     // //Controller's options
     parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     )
    ( 
      input                                      clk,
@@ -190,7 +190,7 @@ endgenerate
                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
                 
                 
-                replacement_process #(
+                replacement_policy #(
 	                              .N_WAYS    (N_WAYS    ),
 	                              .LINE_OFF_W(LINE_OFF_W),
                                       .REP_POLICY(REP_POLICY)
@@ -303,7 +303,7 @@ endgenerate
                 wire [NWAY_W-1:0] way_hit_bin, way_select_bin;//reason for the 2 generates for single vs multiple ways
                 
                 
-                replacement_process #(
+                replacement_policy #(
 	                              .N_WAYS    (N_WAYS    ),
 	                              .LINE_OFF_W(LINE_OFF_W),
                                       .REP_POLICY(REP_POLICY)
