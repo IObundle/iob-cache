@@ -19,6 +19,12 @@ SFIFO_DIR:=$(CACHE_DIR)/submodules/MEM/fifo/sfifo
 VSRC+=$(SFIFO_DIR)/sfifo.v
 endif
 
+ifneq (BIN_COUNTER,$(filter BIN_COUNTER, $(SUBMODULES)))
+SUBMODULES+=BIN_COUNTER
+BIN_COUNTER_DIR:=$(CACHE_DIR)/submodules/MEM/fifo
+VSRC+=$(BIN_COUNTER_DIR)/bin_counter.v
+endif
+
 ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
 SUBMODULES+=SPRAM
 SPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/sp_ram
