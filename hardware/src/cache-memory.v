@@ -6,8 +6,8 @@ module cache_memory
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache 
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 4,        //Number of Cache Ways
-    parameter LINE_OFF_W  = 7,      //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter N_WAYS   = 2,        //Number of Cache Ways
+    parameter LINE_OFF_W  = 10,      //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS), //Cache Ways Width
@@ -20,7 +20,7 @@ module cache_memory
     parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of the Number of Bytes per Word
     //Do NOT change - slave parameters - dependency
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
-    parameter WTBUF_DEPTH_W = 5,
+    parameter WTBUF_DEPTH_W = 3,
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `PLRU_tree, //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     // //Controller's options
@@ -49,7 +49,7 @@ module cache_memory
      //back-end read-channel
      output                                     replace_valid,
      output [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W] replace_addr,
-     input                                      replace_ready,
+     input                                      replace,
      input                                      read_valid,
      input [LINE2MEM_W-1:0]                     read_addr,
      input [BE_DATA_W-1:0]                      read_rdata,
@@ -125,7 +125,7 @@ module cache_memory
       );
    
    //back-end read channel
-   assign replace_valid = (~hit & read_access_reg & replace_ready) & (buffer_empty & write_ready);
+   assign replace_valid = (~hit & read_access_reg & ~replace) & (buffer_empty & write_ready);
    assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
 
 
@@ -146,7 +146,7 @@ module cache_memory
    assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset);
 
    
-   assign hit = |way_hit & replace_ready & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
+   assign hit = |way_hit & ~replace & (~raw);//way_hit is also used during line replacement (to update that respective way). Hit is when there is a hit in a way and there isn't occuring a line-replacement (read-miss). 
 
    
    /////////////////////////////////
@@ -156,23 +156,23 @@ module cache_memory
 
    
    //cache-control hit-miss counters enables
-generate 
-   if(CTRL_CACHE & CTRL_CNT)
-     begin
-        //cache-control hit-miss counters enables
-        assign write_hit  = ready & ( hit & write_access_reg);
-        assign write_miss = ready & (~hit & write_access_reg);
-        assign read_hit   = ready & ( hit &  read_access_reg);
-        assign read_miss  = replace_valid;//will also subtract read_hit
-     end
-   else
-     begin
-        assign write_hit  = 1'bx;
-        assign write_miss = 1'bx;
-        assign read_hit   = 1'bx;
-        assign read_miss  = 1'bx;
-     end // else: !if(CACHE_CTRL & CTRL_CNT)
-endgenerate
+   generate 
+      if(CTRL_CACHE & CTRL_CNT)
+        begin
+           //cache-control hit-miss counters enables
+           assign write_hit  = ready & ( hit & write_access_reg);
+           assign write_miss = ready & (~hit & write_access_reg);
+           assign read_hit   = ready & ( hit &  read_access_reg);
+           assign read_miss  = replace_valid;//will also subtract read_hit
+        end
+      else
+        begin
+           assign write_hit  = 1'bx;
+           assign write_miss = 1'bx;
+           assign read_hit   = 1'bx;
+           assign read_miss  = 1'bx;
+        end // else: !if(CACHE_CTRL & CTRL_CNT)
+   endgenerate
 
 
    
@@ -191,10 +191,10 @@ endgenerate
                 
                 
                 replacement_policy #(
-	                              .N_WAYS    (N_WAYS    ),
-	                              .LINE_OFF_W(LINE_OFF_W),
-                                      .REP_POLICY(REP_POLICY)
-	                              )
+	                             .N_WAYS    (N_WAYS    ),
+	                             .LINE_OFF_W(LINE_OFF_W),
+                                     .REP_POLICY(REP_POLICY)
+	                             )
                 replacement_policy_algorithm
                   (
                    .clk       (clk             ),
@@ -223,12 +223,12 @@ endgenerate
                 
                 //Cache Line Write Strobe Shifter
                 always @* begin
-                  if(~replace_ready)
-                    line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
-                  else
-                    line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
-               end
-                  
+                   if(replace)
+                     line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
+                   else
+                     line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
+                end
+                
                 always @ (posedge clk, posedge reset) begin
                    if (reset)
                      v_reg <= 0;
@@ -248,7 +248,8 @@ endgenerate
                        begin : line_word_number
                           for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                             begin : line_word_width
-                               iob_gen_sp_ram
+                              iob_gen_sp_ram
+                               //iob_sp_ram_be 
                                   #(
                                     .DATA_W(FE_DATA_W),
                                     .ADDR_W(LINE_OFF_W)
@@ -258,7 +259,7 @@ endgenerate
                                    .clk (clk),
                                    .en  (valid), 
                                    .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                                  // .addr((write_access_reg & way_hit[k])? index_reg : index),
+                                   // .addr((write_access_reg & way_hit[k])? index_reg : index),
                                    .addr((write_access_reg & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg : index),
                                    // .data_in ((~replace_ready)? read_rdata[i*FE_DATA_W +: FE_DATA_W] : wdata_reg),
                                    .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
@@ -304,10 +305,10 @@ endgenerate
                 
                 
                 replacement_policy #(
-	                              .N_WAYS    (N_WAYS    ),
-	                              .LINE_OFF_W(LINE_OFF_W),
-                                      .REP_POLICY(REP_POLICY)
-	                              )
+	                             .N_WAYS    (N_WAYS    ),
+	                             .LINE_OFF_W(LINE_OFF_W),
+                                     .REP_POLICY(REP_POLICY)
+	                             )
                 replacement_policy_algorithm
                   (
                    .clk       (clk             ),
@@ -336,7 +337,7 @@ endgenerate
                 
                 //Cache Line Write Strobe Shifter
                 always @*
-                  if(~replace_ready)
+                  if(replace)
                     line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement
                   else
                     line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
@@ -361,7 +362,8 @@ endgenerate
                   begin : line_way
                      for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                        begin : line_word_width
-                          iob_gen_sp_ram
+                              iob_gen_sp_ram
+                              //iob_sp_ram_be 
                              #(
                                .DATA_W(FE_DATA_W),
                                .ADDR_W(LINE_OFF_W)
@@ -418,7 +420,7 @@ endgenerate
                 
                 //Cache Line Write Strobe Shifter
                 always @*
-                  if(~replace_ready)
+                  if(replace)
                     line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
                   else
                     line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
@@ -442,7 +444,8 @@ endgenerate
                   begin : line_word_number
                      for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                        begin : line_word_width
-                          iob_gen_sp_ram
+                               iob_gen_sp_ram
+                               //iob_sp_ram_be 
                              #(
                                .DATA_W(FE_DATA_W),
                                .ADDR_W(LINE_OFF_W)
@@ -497,7 +500,7 @@ endgenerate
                 
                 //Cache Line Write Strobe Shifter
                 always @*
-                  if(~replace_ready)
+                  if(replace)
                     line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement
                   else
                     line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
@@ -519,7 +522,8 @@ endgenerate
                 
                 for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
                   begin : line_word_width
-                     iob_gen_sp_ram
+                              iob_gen_sp_ram
+                              //iob_sp_ram_be 
                         #(
                           .DATA_W(FE_DATA_W),
                           .ADDR_W(LINE_OFF_W)
@@ -563,7 +567,7 @@ endgenerate
                 assign way_hit = (tag == line_tag) & v;
                 
              end
-        end // else: !if(N_WAYS > 1)         
+        end // else: !if(N_WAYS > 1)        
    endgenerate
 
 endmodule

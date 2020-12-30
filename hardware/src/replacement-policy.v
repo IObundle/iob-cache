@@ -8,8 +8,8 @@
 
 module replacement_policy 
   #(
-    parameter N_WAYS     = 4,
-    parameter LINE_OFF_W = 7,
+    parameter N_WAYS     = 8,
+    parameter LINE_OFF_W = 0,
     parameter NWAY_W = $clog2(N_WAYS),
     parameter REP_POLICY = `LRU //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     )
@@ -38,19 +38,33 @@ module replacement_policy
       if (REP_POLICY == `LRU)
         begin
            
+  
            wire [N_WAYS*NWAY_W -1:0] mru_out, mru_in;
            wire [N_WAYS*NWAY_W -1:0] mru; //Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
            wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
-           wire [NWAY_W -1:0]        mru_index [N_WAYS :0]; //Index value of the MRU way
+           //wire [NWAY_W -1:0]        mru_index [N_WAYS :0]; //Index value of the MRU way
+           wire [NWAY_W-1:0]         mru_index, way_hit_bin;
+   
+           onehot_to_bin #(
+                           .BIN_W (NWAY_W)	       
+                           ) 
+           way_hit_binary
+             (    
+                  .onehot(way_hit[N_WAYS-1:1]),
+                  .bin(way_hit_bin)
+                  );
            
-           assign mru_index [0] [NWAY_W -1:0] = {NWAY_W{1'b0}}; //
+           assign mru_index [NWAY_W-1:0] = mru_out >> (NWAY_W*way_hit_bin);
+           
+           //assign mru_index [0] [NWAY_W -1:0] = {NWAY_W{1'b0}}; 
            
            for (i = 0; i < N_WAYS; i=i+1)
 	     begin : encoder_decoder
-                //LRU - Endocer
+                //LRU - Encoder
 	        assign mru [i*NWAY_W +: NWAY_W] = (|mru_out)? mru_out [i*NWAY_W +: NWAY_W] : i; //verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values
-                assign mru_index [i+1][NWAY_W -1:0]  = mru_index[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru[(i+1)*NWAY_W -1: i*NWAY_W]); //stores the  index-value of the MRU way
-                assign mru_cnt [i*NWAY_W +: NWAY_W] = (way_hit[i])? {NWAY_W{1'b1}} : (mru[i*NWAY_W +: NWAY_W] > mru_index [N_WAYS]) ? mru[i*NWAY_W +: NWAY_W] - 1 : mru[i*NWAY_W +: NWAY_W];// the MRU way gets updated to the the highest value; the remaining, if their value was bigger than the MRU index previous value (mru_index), they get decremented
+                //assign mru_index [i+1][NWAY_W -1:0]  = mru_index[i][NWAY_W-1:0] | ({NWAY_W{way_hit[i]}} & mru[(i+1)*NWAY_W -1: i*NWAY_W]); //stores the  index-value of the MRU way
+                //assign mru_cnt [i*NWAY_W +: NWAY_W] = (way_hit[i])? {NWAY_W{1'b1}} : (mru[i*NWAY_W +: NWAY_W] > mru_index [N_WAYS]) ? mru[i*NWAY_W +: NWAY_W] - 1 : mru[i*NWAY_W +: NWAY_W];// the MRU way gets updated to the the highest value; the remaining, if their value was bigger than the MRU index previous value (mru_index), they get decremented
+                assign mru_cnt [i*NWAY_W +: NWAY_W] = (way_hit[i])? {NWAY_W{1'b1}} : (mru[i*NWAY_W +: NWAY_W] > mru_index) ? mru[i*NWAY_W +: NWAY_W] - 1 : mru[i*NWAY_W +: NWAY_W];// the MRU way gets updated to the the highest value; the remaining, if their value was bigger than the MRU index previous value (mru_index), they get decremented
 
                 //LRU - Decoder (checks every index in search for the lowest (0)
                 assign way_select [i] = ~(|mru[i*NWAY_W +: NWAY_W]); //selects the way that has the lowest priority (mru = 0)              

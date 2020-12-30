@@ -62,7 +62,7 @@ module write_channel_axi
    assign axi_awaddr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}};
 
 
-
+   genvar                         i;
    generate
       if(BE_DATA_W == FE_DATA_W)
         begin
@@ -74,7 +74,9 @@ module write_channel_axi
         begin
            wire [BE_BYTE_W - FE_BYTE_W -1 :0] word_align = addr[FE_BYTE_W +: (BE_BYTE_W - FE_BYTE_W)];
            assign axi_wstrb = wstrb << (word_align * FE_NBYTES);
-           assign axi_wdata = wdata << (word_align * FE_DATA_W);
+           
+           for (i = 0; i < BE_DATA_W/FE_DATA_W; i = i +1)
+             assign axi_wdata[(i+1)*FE_DATA_W-1:i*FE_DATA_W] = wdata;
         end
    endgenerate
 

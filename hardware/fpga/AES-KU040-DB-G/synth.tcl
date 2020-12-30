@@ -18,13 +18,27 @@ foreach file [split $VSRC \ ] {
 }
 
 set_property part $PART [current_project]
+#set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-mode out_of_context} -objects [get_runs synth_1]
 
 read_xdc ./synth.xdc
 
-synth_design -include_dirs $HW_INCLUDE -part $PART -top $TOP
+synth_design -mode out_of_context -include_dirs $HW_INCLUDE -part $PART -top $TOP
 
 #multiple tables showing the resources,but not for each module
-report_utilization
+#report_utilization
 
 #table with all the modules, simplified
+#report_utilization -hierarchical
+
+opt_design
+
+
+place_design
+
+phys_opt_design
+
+route_design
+
 report_utilization -hierarchical
+
+report_timing

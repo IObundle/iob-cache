@@ -35,7 +35,7 @@ module back_end_axi
     //cache-line replacement
     input                                        replace_valid,
     input [FE_ADDR_W -1: FE_BYTE_W + WORD_OFF_W] replace_addr,
-    output                                       replace_ready,
+    output                                       replace,
     output                                       read_valid,
     output [LINE2MEM_W -1:0]                     read_addr,
     output [BE_DATA_W -1:0]                      read_rdata,
@@ -99,7 +99,7 @@ module back_end_axi
       .reset(reset),
       .replace_valid (replace_valid),
       .replace_addr (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr (read_addr),
       .read_rdata (read_rdata),

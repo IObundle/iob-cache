@@ -115,7 +115,7 @@ module iob_cache_axi
    wire [FE_NBYTES-1:0]                         write_wstrb;
    
    //back-end read-channel
-   wire                                         replace_valid, replace_ready;
+   wire                                         replace_valid, replace;
    wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]     replace_addr; 
    wire                                         read_valid;
    wire [LINE2MEM_W-1:0]                        read_addr;
@@ -217,7 +217,7 @@ module iob_cache_axi
       //cache-line replacement (read-channel)
       .replace_valid (replace_valid),
       .replace_addr  (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),
@@ -260,7 +260,7 @@ module iob_cache_axi
       //cache-line replacement (read-channel)
       .replace_valid (replace_valid),
       .replace_addr  (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),

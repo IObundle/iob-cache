@@ -37,7 +37,8 @@ module write_channel_native
      write = 1'd1;
    
    reg [0:0]                      state;
-
+   genvar                         i;
+     
    generate
       if(BE_DATA_W == FE_DATA_W)
         begin
@@ -61,8 +62,9 @@ module write_channel_native
         begin
            
            wire [BE_BYTE_W-FE_BYTE_W -1 :0] word_align = addr[FE_BYTE_W +: (BE_BYTE_W - FE_BYTE_W)];
-           
-           assign mem_wdata = wdata << word_align * FE_DATA_W ;
+            
+           for (i = 0; i < BE_DATA_W/FE_DATA_W; i = i +1)
+             assign mem_wdata[(i+1)*FE_DATA_W-1:i*FE_DATA_W] = wdata;
            
            always @*
              begin
