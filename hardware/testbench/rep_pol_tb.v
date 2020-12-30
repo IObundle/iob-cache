@@ -35,10 +35,15 @@ module rep_pol_tb;
         repeat (5) @(posedge clk);
         reset <= 0;
         #10;
+        for (i = 0; i < (`N_WAYS); i = i + 1) //to avoid simulations "Unknowns" with the one-hot to binary encoders
+          begin
+             way_hit <= i;
+             #4;
+          end
         $display("\nInitializing Cache's Replacement Policy testing!\nThe results will be printed and the user must check if the replacement policy is working as predicted");
-        $display("Test 1 - Only cache misses - %d iterations\n", `N_CYCLES*`N_WAYS);
+        $display("Test 1 - Only cache misses - %d iterations\n",`N_WAYS);
         test <= 1;
-        for (i = 0; i < (`N_CYCLES*`N_WAYS); i = i + 1)
+        for (i = 0; i < (`N_WAYS); i = i + 1)
           begin
              #4;
              $display("%d: %b", i,way_select);
@@ -48,8 +53,11 @@ module rep_pol_tb;
              #2;
              write_en <= 0;
           end
-        
-        
+        #10;
+        reset <= 1'b1;
+        #2;
+        reset <= 1'b0;
+        #2;
         $display("\nTest 2 - Replacement Policy behaviour with random hits\n");
         test <= 2;
         for (i = 0; i < (`N_CYCLES*`N_WAYS); i = i + 1)
@@ -74,7 +82,7 @@ module rep_pol_tb;
         $finish;
      end      
 
-   replacement_process #(
+   replacement_policy #(
 	                 .N_WAYS    (`N_WAYS    ),
 	                 .LINE_OFF_W(0          ),
                          .REP_POLICY(`REP_POLICY)

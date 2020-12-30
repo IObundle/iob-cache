@@ -9,13 +9,13 @@ module iob_cache
   #(
     //memory cache's parameters
     parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
-    parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 1,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 7,    //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter FE_DATA_W  = 32,       //Data width - word size used for the cache
+    parameter N_WAYS   = 2,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W = 7,  //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 5,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `BIT_PLRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `PLRU_tree, //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
@@ -32,7 +32,7 @@ module iob_cache
   
     //Controller's options
     parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 1  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
     input                                       clk,
@@ -84,7 +84,7 @@ module iob_cache
    wire [FE_NBYTES-1:0]                         write_wstrb;
    
    //back-end read-channel
-   wire                                         replace_valid, replace_ready;
+   wire                                         replace_valid, replace;
    wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]     replace_addr; 
    wire                                         read_valid;
    wire [LINE2MEM_W-1:0]                        read_addr;
@@ -186,7 +186,7 @@ module iob_cache
       //cache-line replacement (read-channel)
       .replace_valid (replace_valid),
       .replace_addr  (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),
@@ -228,7 +228,7 @@ module iob_cache
       //cache-line replacement (read-channel)
       .replace_valid (replace_valid),
       .replace_addr  (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),

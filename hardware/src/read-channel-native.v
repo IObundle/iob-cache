@@ -20,7 +20,7 @@ module read_channel_native
     input                                        reset,
     input                                        replace_valid,
     input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
-    output reg                                   replace_ready,
+    output reg                                   replace,
     output reg                                   read_valid,
     output reg [LINE2MEM_W-1:0]                  read_addr,
     output [BE_DATA_W-1:0]                       read_rdata,
@@ -102,7 +102,7 @@ module read_channel_native
            always @*
              begin 
                 mem_valid     = 1'b0;
-                replace_ready = 1'b0;
+                replace = 1'b1;
                 word_counter  = 0;
                 read_valid    = 1'b0;
                 
@@ -110,7 +110,7 @@ module read_channel_native
                   
                   idle:
                     begin
-                       replace_ready = 1'b1;
+                       replace = 1'b0;
                     end
 
                   handshake:
@@ -181,14 +181,14 @@ module read_channel_native
            always @*
              begin 
                 mem_valid     = 1'b0;
-                replace_ready = 1'b0;
+                replace = 1'b1;
                 read_valid    = 1'b0;
                 
                 case(state)
                   
                   idle:
                     begin
-                       replace_ready = 1'b1;
+                       replace = 1'b0;
                     end
 
                   handshake:
