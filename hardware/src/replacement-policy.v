@@ -124,6 +124,70 @@ module replacement_policy
 
            
         end // if (REP_POLICY == PLRU_mru)
+      else if (REP_POLICY == `PLRU_tree)
+        begin
+        /*
+          i: tree level, start from 1, i <= NWAY_W
+          j: tree node id @ i level, start from 0, j < (1<<(i-1))
+          (((1<<(i-1))+j)*2)*(1<<(NWAY_W-i))   ==> start node id of left tree @ the lowest level node pointed to
+          (((1<<(i-1))+j)*2+1)*(1<<(NWAY_W-i)) ==> start node id of right tree @ the lowest level node pointed to
+
+          way_hit[(((1<<(i-1))+j)*2)*(1<<(NWAY_W-i))-N_WAYS +: (N_WAYS>>i)]   ==> way hit range of left tree
+          way_hit[(((1<<(i-1))+j)*2+1)*(1<<(NWAY_W-i))-N_WAYS +: (N_WAYS>>i)] ==> way hit range of right tree
+
+
+          == tree traverse ==
+
+                       <--0     1-->                 traverse direction
+                            [1]                      node id @ level1
+                  [2]                 [3]            node id @ level2 ==> which to traverse? from node_id[1]
+             [4]       [5]       [6]       [7]       node id @ level3 ==> which to traverse? from node_id[2]
+          [08] [09] [10] [11] [12] [13] [14] [15]    node id @ level4 ==> which to traverse? from node_id[3]
+          (00) (01) (02) (03) (04) (05) (06) (07)    way idx
+
+          node value is 0 -> left tree traverse
+          node value is 1 -> right tree traverse
+
+          node id mapping to way idx: node_id[NWAY_W]-N_WAYS
+        */
+
+           wire [N_WAYS-1:1] t_plru, t_plru_output;
+
+           wire [NWAY_W:0] node_id[NWAY_W:1];
+           assign node_id[1] = t_plru_output[1] ? 3 : 2; // next node id @ level2 to traverse
+           for (i = 2; i <= NWAY_W; i = i + 1) begin : traverse_tree_level
+              // next node id @ level3, level4, ..., to traverse
+              assign node_id[i] = t_plru_output[node_id[i-1]] ? ((node_id[i-1]<<1)+1) : (node_id[i-1]<<1);
+           end
+
+           for (i = 1; i <= NWAY_W; i = i + 1) begin : tree_level
+              for (j = 0; j < (1<<(i-1)); j = j + 1) begin : tree_level_node
+                 assign t_plru[(1<<(i-1))+j] = ~(|way_hit) ? t_plru_output[(1<<(i-1))+j] :
+                    (|way_hit[((((1<<(i-1))+j)*2)*(1<<(NWAY_W-i)))-N_WAYS +: (N_WAYS>>i)]) ||
+                    (t_plru_output[(1<<(i-1))+j] && (~(|way_hit[((((1<<(i-1))+j)*2+1)*(1<<(NWAY_W-i)))-N_WAYS +: (N_WAYS>>i)])));
+              end
+           end
+
+           assign way_select_bin = node_id[NWAY_W]-N_WAYS;
+           assign way_select = (1 << way_select_bin);
+
+           //Most Recently Used (MRU) memory
+           iob_reg_file
+             #(
+               .ADDR_WIDTH (LINE_OFF_W),
+               .COL_WIDTH (N_WAYS-1),
+               .NUM_COL (1)
+               )
+           mru_memory //simply uses the same format as valid memory
+             (
+              .clk  (clk          ),
+              .rst  (reset        ),
+              .wdata(t_plru       ),
+              .rdata(t_plru_output),
+              .addr (line_addr    ),
+              .en   (write_en     )
+              );
+        end
       else // (REP_POLICY == PLRU_tree)
         begin
            
