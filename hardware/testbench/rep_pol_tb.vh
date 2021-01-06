@@ -2,7 +2,7 @@
 
 //Replacement policy parameters
 `define N_WAYS 4
-`define REP_POLICY 0 // check Replacement Policy
+`define REP_POLICY 1 // check Replacement Policy
 
 //Linear-Feedback-Shift-Register - Random generator
 `define LFSR_IN 5 // input for random-value generator - way-hit

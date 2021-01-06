@@ -9,7 +9,7 @@ module rep_pol_tb;
    reg reset = 1;
    
    reg [`N_WAYS-1:0] way_hit = 0;
-   reg [$clog2(`N_WAYS) -1:0] way_select_bin;
+   wire [$clog2(`N_WAYS) -1:0] way_select_bin;
    reg                        write_en = 0;
    reg [31:0]                 test = 0;
    wire [`N_WAYS -1:0]        way_select;
