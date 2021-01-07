@@ -150,10 +150,10 @@ module replacement_policy
 
             == tree traverse ==
 
-            <--0     1-->                 traverse direction
-            [1]                      node id @ level1
-            [2]                 [3]            node id @ level2 ==> which to traverse? from node_id[1]
-            [4]       [5]       [6]       [7]       node id @ level3 ==> which to traverse? from node_id[2]
+                         <--0     1-->                 traverse direction
+                              [1]                      node id @ level1
+                    [2]                 [3]            node id @ level2 ==> which to traverse? from node_id[1]
+               [4]       [5]       [6]       [7]       node id @ level3 ==> which to traverse? from node_id[2]
             [08] [09] [10] [11] [12] [13] [14] [15]    node id @ level4 ==> which to traverse? from node_id[3]
             (00) (01) (02) (03) (04) (05) (06) (07)    way idx
 
