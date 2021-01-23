@@ -181,14 +181,46 @@ module cache_memory
    ////////////////////////////////////////    
    genvar                                                   i,j,k;
    generate
+
+      //Data-Memory         
+      for (k = 0; k < N_WAYS; k=k+1)
+        for(j = 0; j < 2**LINE2MEM_W; j=j+1)
+          for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
+            iob_gen_sp_ram
+                  #(
+                    .DATA_W(FE_DATA_W),
+                    .ADDR_W(LINE_OFF_W)
+                    )
+      cache_memory 
+                  (
+                   .clk (clk),
+                   .en  (valid), 
+                   .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
+                   .addr((write_access_reg & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg : index),
+                   .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
+                   .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
+                   );
       
-      //Cache Line Write Strobe Shifter
-      always @* begin
-         if(replace)
-           line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement
-         else
-           line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
-      end
+
+      
+      //Cache Line Write Strobe
+      if(LINE2MEM_W > 0)
+        begin
+           always @* 
+             if(replace)
+               line_wstrb = {BE_NBYTES{read_valid}} << (read_addr*BE_NBYTES); //line-replacement: read_addr indexes the words in cache-line
+             else
+               line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
+          end
+      else
+        begin
+           always @*
+             if(replace)
+               line_wstrb = {BE_NBYTES{read_valid}}; //line-replacement: mem's word replaces entire line
+             else
+               line_wstrb = (wstrb_reg & {FE_NBYTES{write_access_reg}}) << (offset*FE_NBYTES);
+          end // else: !if(LINE2MEM_W > 0)
+
 
       // Valid-Tag memories & replacement-policy
       if(N_WAYS > 1)
@@ -267,7 +299,7 @@ module cache_memory
               .bin   (way_hit_bin)
               );          
         end
-      else // if(N_WAYS == 0)
+      else // (N_WAYS = 1)
         begin
            //valid-memory
            always @ (posedge clk, posedge reset)
@@ -312,51 +344,6 @@ module cache_memory
            //Read Data Multiplexer
            assign rdata [FE_DATA_W-1:0] = line_rdata >> FE_DATA_W*offset;             
         end // else: !if(N_WAYS > 1)
-      
-      
-
-      //Data-Memory       
-      
-      if (LINE2MEM_W > 0)
-        begin
-           for (k = 0; k < N_WAYS; k=k+1)
-             for(j = 0; j < 2**LINE2MEM_W; j=j+1)
-               for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
-                 iob_gen_sp_ram
-                       #(
-                         .DATA_W(FE_DATA_W),
-                         .ADDR_W(LINE_OFF_W)
-                         )
-           cache_memory 
-                       (
-                        .clk (clk),
-                        .en  (valid), 
-                        .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                        .addr((write_access_reg & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg : index),
-                        .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
-                        .data_out(line_rdata[(k*(2**WORD_OFF_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W +: FE_DATA_W])
-                        );
-        end                  
-      else
-        begin
-           for (k = 0; k < N_WAYS; k=k+1)
-             for(i = 0; i < BE_DATA_W/FE_DATA_W; i=i+1)
-               iob_gen_sp_ram
-                     //iob_sp_ram_be 
-                     #(
-                       .DATA_W(FE_DATA_W),
-                       .ADDR_W(LINE_OFF_W)
-                       )
-           cache_memory 
-                     (
-                      .clk (clk),
-                      .en  (valid), 
-                      .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[i*FE_NBYTES +: FE_NBYTES]),
-                      .addr((write_access_reg & way_hit[k] & (i == offset))? index_reg : index),
-                      .data_in ((write_access_reg)? wdata_reg : read_rdata[i*FE_DATA_W +: FE_DATA_W]),
-                      .data_out(line_rdata[(k*(2**WORD_OFF_W)+i)*FE_DATA_W +: FE_DATA_W])
-                      );
-        end     
    endgenerate
    
 endmodule // cache_memory
