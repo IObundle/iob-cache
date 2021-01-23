@@ -1,5 +1,5 @@
 //Cache parameters (including front-end's)
-`define N_WAYS 1
+`define N_WAYS 2
 `define LINE_OFF_W 3
 `define WORD_OFF_W 3
 `define ADDR_W 12
