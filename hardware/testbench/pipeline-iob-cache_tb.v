@@ -121,6 +121,8 @@ module iob_cache_tb;
         wstrb <= {`DATA_W/8{1'b1}};
         wdata <= 3735928559;
         #2;
+        while (ready == 1'b0) #2;
+        valid <= 0;
         wstrb <= 0;
         while (ready == 1'b0) #2;
         valid <= 0;
@@ -305,7 +307,8 @@ module iob_cache_tb;
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
                    .CTRL_CACHE(1),
-                   .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
+                   .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+                   .WRITE_POL(`WRITE_POL)
                    )
    cache (
 	  .clk (clk),
@@ -379,7 +382,8 @@ module iob_cache_tb;
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
                .CTRL_CACHE(1),
-               .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
+               .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+               .WRITE_POL (`WRITE_POL)
                )
    cache (
 	  .clk (clk),

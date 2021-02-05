@@ -8,8 +8,12 @@
 // Replacement Policy (N_WAYS > 1 only) - check below the values
 `define REP_POLICY 0
 
-//Back-end Memory interface AXI or Native
-`define AXI
+//Write Policy 
+`define WRITE_POL 1 //write policy: write-through (0), write-back (1)
+
+
+//Back-end Memory interface AXI or Native  
+`define AXI //comment for Native
 
 //Cache back-end parameters
 `define MEM_ADDR_W 12
@@ -20,10 +24,10 @@
 `define WTBUF_DEPTH_W 4
 
 
-//Cache Controller - select to remove it
+//Cache Controller - comment to remove it
 `define CTRL
 
-
+// print VCD for GTKWave (necessary)
 `define VCD
 
 //Replacement Policy
