@@ -29,7 +29,9 @@ module iob_cache
     //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
     /*---------------------------------------------------*/
-  
+    //Write Policy 
+    parameter WRITE_POL = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
+    /*---------------------------------------------------*/
     //Controller's options
     parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
     parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
@@ -79,22 +81,22 @@ module iob_cache
 
    //back-end write-channel
    wire                                         write_valid, write_ready;
-   wire [FE_ADDR_W-1: FE_BYTE_W]                write_addr;
-   wire [FE_DATA_W-1:0]                         write_wdata;
-   wire [FE_NBYTES-1:0]                         write_wstrb;
+   wire [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFF_W] write_addr;
+   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFF_W)-FE_DATA_W)-1 :0] write_wdata;
+   wire [FE_NBYTES-1:0]                                write_wstrb;
    
    //back-end read-channel
-   wire                                         replace_valid, replace;
-   wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]     replace_addr; 
-   wire                                         read_valid;
-   wire [LINE2MEM_W-1:0]                        read_addr;
-   wire [BE_DATA_W-1:0]                         read_rdata;
+   wire                                                replace_valid, replace;
+   wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]            replace_addr; 
+   wire                                                read_valid;
+   wire [LINE2MEM_W-1:0]                               read_addr;
+   wire [BE_DATA_W-1:0]                                read_rdata;
    
    //cache-control
-   wire                                         ctrl_valid, ctrl_ready;   
-   wire [`CTRL_ADDR_W-1:0]                      ctrl_addr;
-   wire                                         wtbuf_full, wtbuf_empty;
-   wire                                         write_hit, write_miss, read_hit, read_miss;
+   wire                                                ctrl_valid, ctrl_ready;   
+   wire [`CTRL_ADDR_W-1:0]                             ctrl_addr;
+   wire                                                wtbuf_full, wtbuf_empty;
+   wire                                                write_hit, write_miss, read_hit, read_miss;
    wire [CTRL_CACHE*(FE_DATA_W-1):0]            ctrl_rdata;
    wire                                         invalidate;
    
@@ -157,7 +159,8 @@ module iob_cache
        .REP_POLICY (REP_POLICY),    
        .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
        .CTRL_CACHE(CTRL_CACHE),
-       .CTRL_CNT  (CTRL_CNT)
+       .CTRL_CNT  (CTRL_CNT),
+       .WRITE_POL (WRITE_POL)
        )
    cache_memory
      (
@@ -213,7 +216,8 @@ module iob_cache
        .FE_DATA_W (FE_DATA_W),  
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
-       .WORD_OFF_W (WORD_OFF_W)
+       .WORD_OFF_W (WORD_OFF_W),
+       .WRITE_POL (WRITE_POL)
        )
    back_end
      (
