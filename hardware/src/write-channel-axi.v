@@ -101,23 +101,26 @@ module write_channel_axi
               else
                 case(state)
 
-                  idle:
+                  idle: begin
                     if(valid)
                       state <= address;
                     else
                       state <= idle;
+                  end
                   
-                  address:
+                  address: begin
                     if(axi_awready)
                       state <= write;
                     else
                       state <= address;
+                  end
                   
-                  write:
+                  write: begin
                     if (axi_wready)
                       state <= verif;
                     else
                       state <= write;
+                  end
                   
                   verif: begin //needs to be after the last word has been written, so this can't be optim
                      if(axi_bvalid & (axi_bresp == 2'b00) & ~valid)
@@ -185,6 +188,8 @@ module write_channel_axi
             reg [LINE2MEM_W-1:0] word_counter;
             assign axi_wdata = wdata >> (word_counter*BE_DATA_W);
             assign axi_wstrb = {BE_NBYTES{1'b1}};
+            assign axi_wlast = &word_counter;
+            
             
             localparam
               idle    = 2'd0,
@@ -248,7 +253,7 @@ module write_channel_axi
                  ready       = 1'b0;
                  axi_awvalid = 1'b0;
                  axi_wvalid  = 1'b0;
-                 axi_bready  = 1'b0; 
+                 axi_bready  = 1'b0;
                  
                  case(state)
                    idle:
@@ -291,6 +296,7 @@ module write_channel_axi
             //memory write-data
             assign axi_wdata = wdata;
             assign axi_wstrb = {BE_NBYTES{1'b1}}; //uses entire bandwidth
+            assign axi_wlast = axi_wvalid;
             
             localparam
               idle    = 2'd0,
@@ -314,7 +320,7 @@ module write_channel_axi
                          state <= idle;
                      
                      address:
-                       if(axi_arready)
+                       if(axi_awready)
                          state <= write;
                        else
                          state <= address;
@@ -354,7 +360,7 @@ module write_channel_axi
                      axi_awvalid = 1'b1;
                    
                    write:
-                     axi_wvalid  = 1'b1;
+                        axi_wvalid  = 1'b1;
                    
                    verif:
                      begin
