@@ -1,15 +1,15 @@
 `timescale 1ns / 1ps
 `include "iob-cache.vh"
 
-module write_channel_axi 
+module write_channel_axi
   #(
     parameter FE_ADDR_W = 32,
     parameter FE_DATA_W = 32,
     parameter FE_NBYTES = FE_DATA_W/8,
-    parameter FE_BYTE_W = $clog2(FE_NBYTES), 
-    parameter BE_ADDR_W = FE_ADDR_W, 
+    parameter FE_BYTE_W = $clog2(FE_NBYTES),
+    parameter BE_ADDR_W = FE_ADDR_W,
     parameter BE_DATA_W = FE_DATA_W,
-    parameter BE_NBYTES = BE_DATA_W/8, 
+    parameter BE_NBYTES = BE_DATA_W/8,
     parameter BE_BYTE_W = $clog2(BE_NBYTES),
     parameter AXI_ID_W  = 1,
     parameter [AXI_ID_W-1:0] AXI_ID = 0,
@@ -17,7 +17,7 @@ module write_channel_axi
     parameter WRITE_POL  = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
     parameter WORD_OFF_W = 3, //required for write-back
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W)  //burst offset based on the cache and memory word size
-    ) 
+    )
    (
     input                                                                    clk,
     input                                                                    reset,
@@ -37,10 +37,10 @@ module write_channel_axi
     output [3:0]                                                             axi_awcache,
     output [2:0]                                                             axi_awprot,
     output [3:0]                                                             axi_awqos,
-    output [AXI_ID_W-1:0]                                                    axi_awid, 
+    output [AXI_ID_W-1:0]                                                    axi_awid,
     input                                                                    axi_awready,
     //Write
-    output reg                                                               axi_wvalid, 
+    output reg                                                               axi_wvalid,
     output [BE_DATA_W-1:0]                                                   axi_wdata,
     output [BE_NBYTES-1:0]                                                   axi_wstrb,
     output                                                                   axi_wlast,
@@ -49,11 +49,11 @@ module write_channel_axi
     input [1:0]                                                              axi_bresp,
     output reg                                                               axi_bready
     );
-   
+
    genvar                                                                       i;
    generate
       if(WRITE_POL == `WRITE_THROUGH) begin
-         
+
          //Constant AXI signals
          assign axi_awid    = AXI_ID;
          assign axi_awlen   = 8'd0;
@@ -64,36 +64,37 @@ module write_channel_axi
          assign axi_awprot  = 3'd0;
          assign axi_awqos   = 4'd0;
          assign axi_wlast   = axi_wvalid;
-         
+
          //AXI Buffer Output signals
          assign axi_awaddr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}};
-         
-         
+
+
          if(BE_DATA_W == FE_DATA_W)
            begin
               assign axi_wstrb = wstrb;
               assign axi_wdata = wdata;
-              
+
            end
          else
            begin
               wire [BE_BYTE_W - FE_BYTE_W -1 :0] word_align = addr[FE_BYTE_W +: (BE_BYTE_W - FE_BYTE_W)];
               assign axi_wstrb = wstrb << (word_align * FE_NBYTES);
-              
-              for (i = 0; i < BE_DATA_W/FE_DATA_W; i = i +1)
+
+              for (i = 0; i < BE_DATA_W/FE_DATA_W; i = i +1) begin : wdata_block
                 assign axi_wdata[(i+1)*FE_DATA_W-1:i*FE_DATA_W] = wdata;
+              end
            end
-         
-         
+
+
          localparam
            idle    = 2'd0,
            address = 2'd1,
            write   = 2'd2,
-           verif   = 2'd3;  
+           verif   = 2'd3;
 
          reg [1:0]                               state;
 
-         
+
          always @(posedge clk, posedge reset)
            begin
               if(reset)
@@ -107,21 +108,21 @@ module write_channel_axi
                     else
                       state <= idle;
                   end
-                  
+
                   address: begin
                     if(axi_awready)
                       state <= write;
                     else
                       state <= address;
                   end
-                  
+
                   write: begin
                     if (axi_wready)
                       state <= verif;
                     else
                       state <= write;
                   end
-                  
+
                   verif: begin //needs to be after the last word has been written, so this can't be optim
                      if(axi_bvalid & (axi_bresp == 2'b00) & ~valid)
                        state <= idle; //no more words to write
@@ -135,18 +136,18 @@ module write_channel_axi
                            state <= verif;
                   end
 
-                  default: ;         
+                  default: ;
 
-                endcase 
+                endcase
            end // always @ (posedge clk, posedge reset)
-         
-         
+
+
          always @*
            begin
               ready       = 1'b0;
               axi_awvalid = 1'b0;
               axi_wvalid  = 1'b0;
-              axi_bready  = 1'b0;      
+              axi_bready  = 1'b0;
               case(state)
                 idle:
                   ready = 1'b1;
@@ -161,36 +162,36 @@ module write_channel_axi
                   end
                 default:;
               endcase
-           end       
-         
+           end
 
-      end 
+
+      end
       else begin // if (WRITE_POL == `WRITE_BACK)
 
          if(LINE2MEM_W > 0) begin
-            
+
             //Constant AXI signals
             assign axi_awid    = AXI_ID;
             assign axi_awlock  = 1'b0;
             assign axi_awcache = 4'b0011;
             assign axi_awprot  = 3'd0;
             assign axi_awqos   = 4'd0;
-            
+
             //Burst parameters
             assign axi_awlen   = 2**LINE2MEM_W -1; //will choose the burst lenght depending on the cache's and slave's data width
             assign axi_awsize  = BE_BYTE_W; //each word will be the width of the memory for maximum bandwidth
             assign axi_awburst = 2'b01; //incremental burst
-            
+
             //memory address
-            assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {(FE_BYTE_W+WORD_OFF_W){1'b0}}}; //base address for the burst, with width extension 
-            
+            assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {(FE_BYTE_W+WORD_OFF_W){1'b0}}}; //base address for the burst, with width extension
+
             // memory write-data
             reg [LINE2MEM_W-1:0] word_counter;
             assign axi_wdata = wdata >> (word_counter*BE_DATA_W);
             assign axi_wstrb = {BE_NBYTES{1'b1}};
             assign axi_wlast = &word_counter;
-            
-            
+
+
             localparam
               idle    = 2'd0,
               address = 2'd1,
@@ -198,7 +199,7 @@ module write_channel_axi
               verif   = 2'd3;
 
             reg [1:0]            state;
-            
+
             always @(posedge clk, posedge reset)
               begin
                  if(reset) begin
@@ -208,7 +209,7 @@ module write_channel_axi
                  else begin
                     word_counter <= 0;
                     case(state)
-                      
+
                       idle:
                         if(valid)
                           state <= address;
@@ -239,10 +240,10 @@ module write_channel_axi
                           state <= idle; // write transfer completed
                         else
                           if (axi_bvalid & ~(axi_bresp == 2'b00))
-                            state <= address; // error, requires re-transfer 
+                            state <= address; // error, requires re-transfer
                           else
                             state <= verif; //still waiting for response
-                      
+
                       default:;
                     endcase
                  end // else: !if(reset)
@@ -254,77 +255,77 @@ module write_channel_axi
                  axi_awvalid = 1'b0;
                  axi_wvalid  = 1'b0;
                  axi_bready  = 1'b0;
-                 
+
                  case(state)
                    idle:
                      ready = ~valid;
-                   
+
                    address:
                      axi_awvalid = 1'b1;
-                   
+
                    write:
                      axi_wvalid  = 1'b1;
-                   
+
                    verif:
                      begin
                         axi_bready = 1'b1;
                         ready      = axi_bvalid & ~(|axi_bresp);
                      end
-                   
+
                    default:;
                  endcase
               end // always @ *
-            
-         end // if (LINE2MEM_W > 0)      
+
+         end // if (LINE2MEM_W > 0)
          else  begin // if (LINE2MEM_W == 0)
-            
+
             //Constant AXI signals
             assign axi_awid    = AXI_ID;
             assign axi_awlock  = 1'b0;
             assign axi_awcache = 4'b0011;
             assign axi_awprot  = 3'd0;
             assign axi_awqos   = 4'd0;
-            
-            //Burst parameters - single 
+
+            //Burst parameters - single
             assign axi_awlen   = 8'd0; //A single burst of Memory data width word
             assign axi_awsize  = BE_BYTE_W; //each word will be the width of the memory for maximum bandwidth
-            assign axi_awburst = 2'b00; 
-            
+            assign axi_awburst = 2'b00;
+
             //memory address
-            assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {BE_BYTE_W{1'b0}}}; //base address for the burst, with width extension 
-            
+            assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {BE_BYTE_W{1'b0}}}; //base address for the burst, with width extension
+
             //memory write-data
             assign axi_wdata = wdata;
             assign axi_wstrb = {BE_NBYTES{1'b1}}; //uses entire bandwidth
             assign axi_wlast = axi_wvalid;
-            
+
             localparam
               idle    = 2'd0,
               address = 2'd1,
               write   = 2'd2,
               verif   = 2'd3;
-            
+
             reg [1:0]                           state;
-            
+
             always @(posedge clk, posedge reset)
               begin
                  if(reset)
                    state <= idle;
                  else
                    case (state)
-                     
+
                      idle:
                        if(valid)
                          state <= address;
                        else
                          state <= idle;
-                     
+
                      address:
                        if(axi_awready)
                          state <= write;
                        else
                          state <= address;
-                     
+
                      write:
                        if (axi_wready)
                          state <= verif;
@@ -336,44 +337,44 @@ module write_channel_axi
                          state <= idle; // write transfer completed
                        else
                          if (axi_bvalid & ~(axi_bresp == 2'b00))
-                           state <= address; // error, requires re-transfer 
+                           state <= address; // error, requires re-transfer
                          else
                            state <= verif; //still waiting for response
-                     
+
                      default:;
                    endcase
               end
-            
-            
+
+
             always @*
               begin
                  ready       = 1'b0;
                  axi_awvalid = 1'b0;
                  axi_wvalid  = 1'b0;
-                 axi_bready  = 1'b0; 
-                 
+                 axi_bready  = 1'b0;
+
                  case(state)
                    idle:
                      ready = ~valid;
-                   
+
                    address:
                      axi_awvalid = 1'b1;
-                   
+
                    write:
                         axi_wvalid  = 1'b1;
-                   
+
                    verif:
                      begin
                         axi_bready = 1'b1;
                         ready      = axi_bvalid & ~(|axi_bresp);
                      end
-                   
+
                    default:;
                  endcase
               end // always @ *
-            
-         end // else: !if(LINE2MEM_W > 0)          
+
+         end // else: !if(LINE2MEM_W > 0)
       end // else: !if(WRITE_POL == `WRITE_THROUGH)
    endgenerate
-   
+
 endmodule
