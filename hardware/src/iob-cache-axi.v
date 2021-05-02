@@ -11,7 +11,7 @@ module iob_cache_axi
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 5,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `BIT_PLRU, //LRU - Least Recently Used (0); BIT_PLRU (1) - bit-based pseudoLRU; TREE_PLRU (2) - tree-based pseudoLRU
+    parameter REP_POLICY = `PLRU_tree, //LRU - Least Recently Used; PLRU_mru (1) - MRU-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
     parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
@@ -24,6 +24,9 @@ module iob_cache_axi
     parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
     //Cache-Memory base Offset
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
+    /*---------------------------------------------------*/
+    //Write Policy 
+    parameter WRITE_POL = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
     /*---------------------------------------------------*/
     //AXI specific parameters
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
@@ -98,36 +101,36 @@ module iob_cache_axi
    
    //internal signals (front-end inputs)
    wire                                         data_valid, data_ready;
-   wire [FE_ADDR_W -1:FE_BYTE_W]                data_addr; 
-   wire [FE_DATA_W-1 : 0]                       data_wdata, data_rdata;
-   wire [FE_NBYTES-1: 0]                        data_wstrb;
+         wire [FE_ADDR_W -1:FE_BYTE_W]                data_addr; 
+   wire [FE_DATA_W-1 : 0]                             data_wdata, data_rdata;
+   wire [FE_NBYTES-1: 0]                              data_wstrb;
    
    //stored signals
-   wire [FE_ADDR_W -1:FE_BYTE_W]                data_addr_reg; 
-   wire [FE_DATA_W-1 : 0]                       data_wdata_reg;
-   wire [FE_NBYTES-1: 0]                        data_wstrb_reg;
-   wire                                         data_valid_reg;
+   wire [FE_ADDR_W -1:FE_BYTE_W]                      data_addr_reg; 
+   wire [FE_DATA_W-1 : 0]                             data_wdata_reg;
+   wire [FE_NBYTES-1: 0]                              data_wstrb_reg;
+   wire                                               data_valid_reg;
 
    //back-end write-channel
-   wire                                         write_valid, write_ready;
-   wire [FE_ADDR_W-1: FE_BYTE_W]                write_addr;
-   wire [FE_DATA_W-1:0]                         write_wdata;
-   wire [FE_NBYTES-1:0]                         write_wstrb;
+   wire                                               write_valid, write_ready;
+   wire [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFF_W] write_addr;
+   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFF_W)-FE_DATA_W)-1 :0] write_wdata;
+   wire [FE_NBYTES-1:0]                                                    write_wstrb;
    
    //back-end read-channel
-   wire                                         replace_valid, replace_ready;
-   wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]     replace_addr; 
-   wire                                         read_valid;
-   wire [LINE2MEM_W-1:0]                        read_addr;
-   wire [BE_DATA_W-1:0]                         read_rdata;
+   wire                                                                    replace_valid, replace;
+   wire [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]                                replace_addr; 
+   wire                                                                    read_valid;
+   wire [LINE2MEM_W-1:0]                                                   read_addr;
+   wire [BE_DATA_W-1:0]                                                    read_rdata;
    
    //cache-control
-   wire                                         ctrl_valid, ctrl_ready;   
-   wire [`CTRL_ADDR_W-1:0]                      ctrl_addr;
-   wire                                         wtbuf_full, wtbuf_empty;
-   wire                                         write_hit, write_miss, read_hit, read_miss;
-   wire [CTRL_CACHE*(FE_DATA_W-1):0]            ctrl_rdata;
-   wire                                         invalidate;
+   wire                                                                    ctrl_valid, ctrl_ready;   
+   wire [`CTRL_ADDR_W-1:0]                                                 ctrl_addr;
+   wire                                                                    wtbuf_full, wtbuf_empty;
+   wire                                                                    write_hit, write_miss, read_hit, read_miss;
+   wire [CTRL_CACHE*(FE_DATA_W-1):0]                                       ctrl_rdata;
+   wire                                                                    invalidate;
    
 `ifdef CTRL_IO
    assign force_inv_out = invalidate;
@@ -188,7 +191,8 @@ module iob_cache_axi
        .REP_POLICY (REP_POLICY),    
        .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
        .CTRL_CACHE(CTRL_CACHE),
-       .CTRL_CNT  (CTRL_CNT)
+       .CTRL_CNT  (CTRL_CNT),
+       .WRITE_POL (WRITE_POL)
        )
    cache_memory
      (
@@ -217,7 +221,7 @@ module iob_cache_axi
       //cache-line replacement (read-channel)
       .replace_valid (replace_valid),
       .replace_addr  (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),
@@ -243,7 +247,8 @@ module iob_cache_axi
        .FE_DATA_W (FE_DATA_W),  
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
-       .WORD_OFF_W (WORD_OFF_W),
+       .WORD_OFF_W(WORD_OFF_W),
+       .WRITE_POL (WRITE_POL),
        .AXI_ID_W(AXI_ID_W),
        .AXI_ID(AXI_ID)
        )
@@ -260,7 +265,7 @@ module iob_cache_axi
       //cache-line replacement (read-channel)
       .replace_valid (replace_valid),
       .replace_addr  (replace_addr),
-      .replace_ready (replace_ready),
+      .replace (replace),
       .read_valid (read_valid),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),

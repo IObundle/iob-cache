@@ -23,6 +23,5 @@
 set_property IOSTANDARD LVCMOS18 [get_ports clk]
 set_property PACKAGE_PIN H22 [get_ports clk]
 create_clock -period 10.000 [get_ports clk]  
-create_clock -period 4.000 [get_ports c0_sys_clk_clk_p]  
 
 

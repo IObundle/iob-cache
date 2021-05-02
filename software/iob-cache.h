@@ -1,8 +1,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-static int cache_base;
-
 #define CACHEFUNC(cache_base, func) (*((volatile int*) (cache_base + (func * sizeof(int)))))
 
 //Function's memory map

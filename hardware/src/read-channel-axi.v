@@ -23,7 +23,7 @@ module read_channel_axi
     input                                        reset,
     input                                        replace_valid,
     input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
-    output reg                                   replace_ready,
+    output reg                                   replace,
     output                                       read_valid,
     output reg [LINE2MEM_W-1:0]                  read_addr,
     output [BE_DATA_W-1:0]                       read_rdata,
@@ -151,11 +151,11 @@ module read_channel_axi
              begin
                 axi_arvalid   = 1'b0;
                 axi_rready    = 1'b0;
-                replace_ready = 1'b0;
+                replace = 1'b1;
                 case(state)
 
                   idle:
-                    replace_ready = 1'b1;
+                    replace = 1'b0;
                   
                   init_process:
                     axi_arvalid = 1'b1;
@@ -249,12 +249,12 @@ module read_channel_axi
              begin
                 axi_arvalid   = 1'b0;
                 axi_rready    = 1'b0;
-                replace_ready = 1'b0;
+                replace = 1'b1;
                 case(state)
 
                   idle:
                     begin
-                       replace_ready = 1'b1;
+                       replace = 1'b0;
                     end
                   
                   init_process:
