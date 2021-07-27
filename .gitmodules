@@ -7,3 +7,6 @@
 [submodule "submodules/AXIMEM"]
 	path = submodules/AXIMEM
 	url = git@github.com:IObundle/verilog-axi.git
+[submodule "TEX"]
+	path = submodules/TEX
+	url = git@github.com:IObundle/iob-tex.git
