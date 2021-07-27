@@ -1,5 +1,10 @@
 include $(CACHE_DIR)/hardware/hardware.mk
 
+#defines
+DEFINE+=$(defmacro)VCD
+
+DEFINE+=$(defmacro)DATA_W=$(DATA_W)
+
 #includes
 INCLUDE+=$(incdir)$(CACHE_HW_DIR)/testbench/
 
