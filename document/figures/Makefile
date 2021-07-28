@@ -18,7 +18,7 @@ $(TD_FIGS): %.pdf : ../wavedrom/%.drom
 	rm -f temp.svg
 
 clean:
-	@rm -f *.pdf *~ $(TD_FIGS)
+	@rm -f *.pdf *~ $(TD_FIGS) Logo.png bg.odg
 
 .PHONY: all clean
 

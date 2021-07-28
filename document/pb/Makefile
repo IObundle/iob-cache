@@ -6,3 +6,4 @@ include $(CACHE_DIR)/core.mk
 include $(CACHE_DIR)/submodules/TEX/document/document.mk
 
 clean: texclean
+	@rm -f *_results.tex
