@@ -15,7 +15,7 @@ else
 	ssh $(SIM_USER)@$(SIM_SERVER) "if [ ! -d $(REMOTE_ROOT_DIR) ]; then mkdir -p $(REMOTE_ROOT_DIR); fi"
 	make -C $(SIM_DIR) clean
 	rsync -avz --delete --exclude .git $(FPU_DIR) $(SIM_USER)@$(SIM_SERVER):$(USER)/$(REMOTE_ROOT_DIR)
-	ssh $(SIM_USER)@$(SIM_SERVER) 'cd $(REMOTE_ROOT_DIR); make -C $(SIM_DIR) run SIMULATOR=$(SIMULATOR) SIM_SERVER=localhost'
+	ssh $(SIM_USER)@$(SIM_SERVER) 'cd $(REMOTE_ROOT_DIR); make -C $(SIM_DIR) run SIMULATOR=$(SIMULATOR)'
 endif
 
 sim-waves: $(SIM_DIR)/waves.gtkw $(SIM_DIR)/iob_cache.vcd
@@ -47,9 +47,8 @@ else
 endif
 
 fpga-clean:
-ifeq ($(FPGA_SERVER),)
 	make -C $(FPGA_DIR) clean
-else
+ifneq ($(FPGA_SERVER),)
 	rsync -avz --delete --exclude .git $(CACHE_DIR) $(FPGA_USER)@$(FPGA_SERVER):$(REMOTE_ROOT_DIR)
 	ssh $(FPGA_USER)@$(FPGA_SERVER) 'make -C $(REMOTE_ROOT_DIR)/$(FPGA_DIR) clean'
 endif
