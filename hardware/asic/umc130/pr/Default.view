@@ -1,0 +1,30 @@
+# MMMC View Definition File
+# Do Not Remove Above Line
+
+#libraries
+create_library_set -name typical_lib \
+                   -timing [list {/opt/ic_tools/pdk/faraday/umc130/LL/fsc0l_d/2009Q2v3.0/GENERIC_CORE/FrontEnd/synopsys/fsc0l_d_generic_core_tt1p2v25c.lib} [glob ./*.lib]]
+
+create_constraint_mode -name typical_constraints \
+                       -sdc_files {../synth/system_synth.sdc}
+
+create_rc_corner -name typical_rc \
+                 -preRoute_res {1.0} \
+                 -preRoute_cap {1.0} \
+                 -preRoute_clkres {0.0} \
+                 -preRoute_clkcap {0.0} \
+                 -postRoute_res {1.0} \
+                 -postRoute_cap {1.0} \
+                 -postRoute_xcap {1.0} \
+                 -postRoute_clkres {0.0} \
+                 -postRoute_clkcap {0.0}
+
+create_delay_corner -name typical_corner \
+                    -library_set {typical_lib} \
+                    -rc_corner {typical_rc}
+
+create_analysis_view -name typical_view \
+                     -constraint_mode {typical_constraints} \
+                     -delay_corner {typical_corner}
+
+set_analysis_view -setup {typical_view} -hold {typical_view}

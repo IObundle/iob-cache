@@ -1,48 +1,76 @@
 include $(CACHE_DIR)/core.mk
 
-#submodules
+#
+# Cache submodules
+#
+
+# Interconnect
 ifneq (INTERCON,$(filter INTERCON, $(SUBMODULES)))
 SUBMODULES+=INTERCON
-INTERCON_DIR:=$(CACHE_DIR)/submodules/INTERCON
 include $(INTERCON_DIR)/hardware/hardware.mk
 endif
 
+# Register file
 ifneq (REGFILE,$(filter REGFILE, $(SUBMODULES)))
 SUBMODULES+=REGFILE
-REGFILE_DIR:=$(CACHE_DIR)/submodules/MEM/reg_file
 VSRC+=$(REGFILE_DIR)/iob_reg_file.v
 endif
 
+# Synchronous FIFO
 ifneq (SFIFO,$(filter SFIFO, $(SUBMODULES)))
 SUBMODULES+=SFIFO
-SFIFO_DIR:=$(CACHE_DIR)/submodules/MEM/fifo/sfifo
 VSRC+=$(SFIFO_DIR)/sfifo.v
 endif
 
+# Binary counter
 ifneq (BIN_COUNTER,$(filter BIN_COUNTER, $(SUBMODULES)))
 SUBMODULES+=BIN_COUNTER
-BIN_COUNTER_DIR:=$(CACHE_DIR)/submodules/MEM/fifo
 VSRC+=$(BIN_COUNTER_DIR)/bin_counter.v
 endif
 
+# Single-port RAM
 ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
 SUBMODULES+=SPRAM
-SPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/sp_ram
 VSRC+=$(SPRAM_DIR)/sp_ram.v
 endif
 
+# Dual-port RAM
 ifneq (DPRAM,$(filter DPRAM, $(SUBMODULES)))
 SUBMODULES+=DPRAM
-DPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/dp_ram
 VSRC+=$(DPRAM_DIR)/dp_ram.v
 endif
 
-#include
-CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
-INCLUDE+=$(incdir) $(CACHE_INC_DIR)
+# Lib
+ifneq (LIB,$(filter LIB, $(SUBMODULES)))
+SUBMODULES+=LIB
+INCLUDE+=$(incdir) $(LIB_DIR)/hardware/include
+VHDR+=$(wildcard $(LIB_DIR)/hardware/include/*.vh)
+endif
 
-#headers
-VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
-#sources
+#
+# Cache Hardware
+#
+
+# Includes
+INCLUDE+=$(incdir) $(CACHE_HW_DIR)/include
+
+# Headers
+VHDR+=$(wildcard $(CACHE_HW_DIR)/include/*.vh)
+
+# Sources
 VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v)
+
+#
+# CPU accessible registers
+#
+
+$(CACHE_HW_DIR)/include/CACHEsw_reg_gen.v $(CACHE_HW_DIR)/include/CACHEsw_reg.vh: $(CACHE_HW_DIR)/include/CACHEsw_reg.v
+	$(LIB_DIR)/software/mkregs.py $< HW
+	mv CACHEsw_reg_gen.v $(CACHE_HW_DIR)/include
+	mv CACHEsw_reg.vh $(CACHE_HW_DIR)/include
+
+cache_clean_hw:
+	@rm -rf $(CACHE_HW_DIR)/include/CACHEsw_reg_gen.v $(CACHE_HW_DIR)/include/CACHEsw_reg.vh tmp $(CACHE_HW_DIR)/fpga/vivado/XCKU $(CACHE_HW_DIR)/fpga/quartus/CYCLONEV-GT
+
+.PHONY: cache_clean_hw
