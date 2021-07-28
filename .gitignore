@@ -15,21 +15,21 @@ document/*
 !document/pb/
 !document/ug/
 
+document/figures/*
+!document/figures/bd.odg
+!document/figures/symb.odg
+!document/figures/Makefile
+
 document/pb/*
-!document/pb/bdd.tex
-!document/pb/ir.tex
-!document/pb/is.tex
-!document/pb/rg.tex
-!document/pb/pb.tex
 !document/pb/pb.pdf
 !document/pb/Makefile
 
 document/ug/*
-!document/ug/ug.tex
+!document/ug/is.tex
 !document/ug/ug.pdf
 !document/ug/Makefile
 
-hardware/fpga/quartus/CYCLONEV-GT-DK/
-hardware/fpga/vivado/KU040-DB-G/
+hardware/fpga/quartus/CYCLONEV-GT/
+hardware/fpga/vivado/XCKU/
 
 hardware/asic/umc130/synth/*_report.txt
