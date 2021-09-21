@@ -25,6 +25,7 @@ BIN_COUNTER_DIR:=$(CACHE_DIR)/submodules/MEM/fifo
 VSRC+=$(BIN_COUNTER_DIR)/bin_counter.v
 endif
 
+ifneq ($(ASIC),1)
 ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
 SUBMODULES+=SPRAM
 SPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/sp_ram
@@ -35,6 +36,7 @@ ifneq (DPRAM,$(filter DPRAM, $(SUBMODULES)))
 SUBMODULES+=DPRAM
 DPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/dp_ram
 VSRC+=$(DPRAM_DIR)/dp_ram.v
+endif
 endif
 
 #include
