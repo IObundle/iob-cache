@@ -29,13 +29,13 @@ ifneq ($(ASIC),1)
 ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
 SUBMODULES+=SPRAM
 SPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/sp_ram
-VSRC+=$(SPRAM_DIR)/sp_ram.v
+VSRC+=$(SPRAM_DIR)/iob_sp_ram.v
 endif
 
-ifneq (DPRAM,$(filter DPRAM, $(SUBMODULES)))
-SUBMODULES+=DPRAM
-DPRAM_DIR:=$(CACHE_DIR)/submodules/MEM/dp_ram
-VSRC+=$(DPRAM_DIR)/dp_ram.v
+ifneq (2PRAM,$(filter 2PRAM, $(SUBMODULES)))
+SUBMODULES+=2PRAM
+2PRAM_DIR:=$(CACHE_DIR)/submodules/MEM/2p_ram
+VSRC+=$(2PRAM_DIR)/iob_2p_ram.v
 endif
 endif
 

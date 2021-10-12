@@ -297,7 +297,7 @@ module cache_memory
                   v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
 
               //tag-memory
-              sp_ram
+              iob_sp_ram
                 #(
                   .DATA_W(TAG_W),
                   .ADDR_W(LINE_OFF_W)
@@ -402,7 +402,7 @@ module cache_memory
                v <= v_reg [index];
 
            //tag-memory
-           sp_ram
+           iob_sp_ram
              #(
                .DATA_W(TAG_W),
                .ADDR_W(LINE_OFF_W)
@@ -478,7 +478,7 @@ module iob_gen_sp_ram #(
    generate
       for (i = 0; i < (DATA_W/8); i = i + 1)
         begin : ram
-           sp_ram
+           iob_sp_ram
                #(
                  .DATA_W(8),
                  .ADDR_W(ADDR_W)
