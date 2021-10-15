@@ -1,14 +1,12 @@
 include $(CACHE_DIR)/hardware/hardware.mk
 
 #includes
-INCLUDE+=$(incdir)$(CACHE_HW_DIR)/testbench/
+INCLUDE+=$(incdir)$(CACHE_TB_DIR)
 
 #headers
-VHDR+=$(CACHE_HW_DIR)/testbench/iob-cache_tb.vh
+VHDR+=$(CACHE_TB_DIR)/iob-cache_tb.vh
 
 #sources
-VSRC+=$(CACHE_HW_DIR)/testbench/pipeline-iob-cache_tb.v \
-$(CACHE_DIR)/submodules/AXIMEM/rtl/axi_ram.v \
-$(CACHE_DIR)/submodules/MEM/sp_ram_be/iob_sp_ram_be.v \
-
-
+VSRC+=$(CACHE_TB_DIR)/pipeline-iob-cache_tb.v \
+$(AXIMEM_DIR)/rtl/axi_ram.v \
+$(MEM_DIR)/sp_ram_be/iob_sp_ram_be.v
