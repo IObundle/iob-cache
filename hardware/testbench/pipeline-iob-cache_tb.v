@@ -474,8 +474,8 @@ module iob_cache_tb;
 
    iob_sp_ram_be #(
 	           .NUM_COL(`MEM_N_BYTES),
-                   .COL_WIDTH(8),
-                   .ADDR_WIDTH(`MEM_ADDR_W-2)
+                   .COL_W(8),
+                   .ADDR_W(`MEM_ADDR_W-2)
                    )
    native_ram
      (

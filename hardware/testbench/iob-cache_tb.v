@@ -483,8 +483,8 @@ module iob_cache_tb;
       .en  (mem_valid),
       .we  (mem_wstrb),
       .addr(mem_addr[`MEM_ADDR_W-1:$clog2(`MEM_DATA_W/8)]),
-      .data_out(mem_rdata),
-      .data_in (mem_wdata)
+      .dout(mem_rdata),
+      .din (mem_wdata)
       );
 
    always @(posedge clk)
