@@ -307,9 +307,9 @@ module cache_memory
                  .clk (clk                           ),
                  .en  (valid                         ),
                  .we  (way_select[k] & replace_valid),
-                 .addr (index                        ),
-                 .data_in (tag                       ),
-                 .data_out(line_tag[TAG_W*k +: TAG_W])
+                 .addr(index                        ),
+                 .din (tag                       ),
+                 .dout(line_tag[TAG_W*k +: TAG_W])
                  );
 
 
@@ -412,9 +412,9 @@ module cache_memory
               .clk (clk),
               .en  (valid),
               .we  (replace_valid),
-              .addr (index),
-              .data_in (tag),
-              .data_out(line_tag)
+              .addr(index),
+              .din (tag),
+              .dout(line_tag)
               );
 
 
@@ -489,8 +489,8 @@ module iob_gen_sp_ram #(
                 .en  (en),
                 .we  (we[i]),
                 .addr(addr),
-                .data_out(data_out[8*i +: 8]),
-                .data_in (data_in [8*i +: 8])
+                .dout(data_out[8*i +: 8]),
+                .din (data_in [8*i +: 8])
                 );
         end
    endgenerate
