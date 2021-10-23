@@ -2,7 +2,7 @@ CACHE_DIR:=.
 include ./core.mk
 
 sim:
-	make -C $(CACHE_SIM_DIR)
+	make -C $(CACHE_SIM_DIR) all
 
 rp_sim:
 	make -C $(CACHE_SIM_DIR)/rep_pol/
