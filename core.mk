@@ -22,3 +22,9 @@ CACHE_SUBMODULES_DIR:=$(CACHE_DIR)/submodules
 CACHE_SUBMODULES:=MEM INTERCON AXIMEM
 $(foreach p, $(CACHE_SUBMODULES), $(eval $p_DIR ?=$(CACHE_SUBMODULES_DIR)/$p))
 
+
+#RULES
+corename:
+	@echo $(CORE_NAME)
+
+.PHONY: corename
