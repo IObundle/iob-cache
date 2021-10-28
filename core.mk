@@ -24,7 +24,7 @@ $(foreach p, $(CACHE_SUBMODULES), $(eval $p_DIR ?=$(CACHE_SUBMODULES_DIR)/$p))
 
 
 #RULES
-corename:
+$(CORE_NAME)_corename:
 	@echo $(CORE_NAME)
 
-.PHONY: corename
+.PHONY: $(CORE_NAME)_corename
