@@ -70,18 +70,18 @@ module replacement_policy
            //Most Recently Used (MRU) memory
            iob_reg_file
              #(
-               .ADDR_WIDTH (LINE_OFF_W),
-               .COL_WIDTH (N_WAYS*NWAY_W),
-               .NUM_COL (1)
+               .ADDR_W(LINE_OFF_W),
+               .DATA_W(N_WAYS*NWAY_W)
                )
            mru_memory //simply uses the same format as valid memory
              (
               .clk  (clk      ),
               .rst  (reset    ),
-              .wdata(mru_in   ),
-              .rdata(mru_out  ),
+
+              .we   (write_en ),
               .addr (line_addr),
-              .en   (write_en )
+              .wdata(mru_in   ),
+              .rdata(mru_out  )
               );
 
 
@@ -112,18 +112,18 @@ module replacement_policy
            //Most Recently Used (MRU) memory
            iob_reg_file
              #(
-               .ADDR_WIDTH (LINE_OFF_W),
-               .COL_WIDTH (N_WAYS),
-               .NUM_COL (1)
+               .ADDR_W(LINE_OFF_W),
+               .DATA_W(N_WAYS)
                )
            mru_memory //simply uses the same format as valid memory
              (
               .clk  (clk      ),
               .rst  (reset    ),
-              .wdata(mru_in   ),
-              .rdata(mru_out  ),
+
+              .we   (write_en ),
               .addr (line_addr),
-              .en   (write_en )
+              .wdata(mru_in   ),
+              .rdata(mru_out  )
               );
 
 
@@ -187,18 +187,18 @@ module replacement_policy
            //Most Recently Used (MRU) memory
            iob_reg_file
              #(
-               .ADDR_WIDTH (LINE_OFF_W),
-               .COL_WIDTH (N_WAYS-1),
-               .NUM_COL (1)
+               .ADDR_W(LINE_OFF_W),
+               .DATA_W(N_WAYS-1)
                )
            mru_memory //simply uses the same format as valid memory
              (
               .clk  (clk          ),
               .rst  (reset        ),
-              .wdata(tree_in      ),
-              .rdata(tree_out     ),
+
+              .we   (write_en     ),
               .addr (line_addr    ),
-              .en   (write_en     )
+              .wdata(tree_in      ),
+              .rdata(tree_out     )
               );
         end
 
