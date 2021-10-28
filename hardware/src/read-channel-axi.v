@@ -136,13 +136,13 @@ module read_channel_axi
                               end
                          end
 
-                       end_process://delay for the read_latency of the memories (if the rdata is the last word)
+                       //end_process://delay for the read_latency of the memories (if the rdata is the last word)
+                       default:
                          if (slave_error)
                            state <= init_process;
                          else
                            state <= idle;
                        
-                       default:;
                      endcase
                   end
              end
@@ -160,10 +160,9 @@ module read_channel_axi
                   init_process:
                     axi_arvalid = 1'b1;
 
-                  load_process:
+                  //load_process:
+                  default:
                     axi_rready  = 1'b1;
-                  
-                  default:;
                   
                 endcase
              end // always @ *

@@ -83,7 +83,8 @@ module write_channel_native
                   else
                     state <= idle;
                 end
-                write: begin
+                //write: begin
+                default: begin
                   if(mem_ready & ~valid)
                     state <= idle;
                   else
@@ -92,7 +93,6 @@ module write_channel_native
                     else
                       state <= write;
                 end
-                default:;
               endcase // case (state)
           end // always @ (posedge clk, posedge reset)
 
@@ -103,13 +103,12 @@ module write_channel_native
               case(state)
                 idle:
                   ready = 1'b1;
-                write:
+                //write:
+                default:
                   begin
                      mem_valid = ~mem_ready;
                      ready = mem_ready;
                   end
-
-                default:;
               endcase // case (state)
            end
       end // if (WRITE_POL == WRITE_THROUGH)
@@ -147,15 +146,14 @@ module write_channel_native
                             state <= idle;
                        end
 
-                     write:
+                     //write:
+                     default:
                        begin
                           if(mem_ready & (&word_counter_reg))
                             state <= idle;
                           else
                             state <= write;
                        end
-
-                     default:;
                    endcase // case (state)
               end // always @ (posedge clk, posedge reset)
 
@@ -174,15 +172,14 @@ module write_channel_native
                         else mem_wstrb =0;
                      end
 
-                   write:
+                   //write:
+                   default:
                      begin
                         ready = mem_ready & (&word_counter); //last word transfered
                         mem_valid = ~(mem_ready & (&word_counter));
                         mem_wstrb = {BE_NBYTES{1'b1}};
                         word_counter = word_counter_reg + mem_ready;
                      end
-
-                   default:;
                  endcase // case (state)
               end
 
@@ -215,15 +212,14 @@ module write_channel_native
                             state <= idle;
                        end
 
-                     write:
+                     //write:
+                     default:
                        begin
                           if(mem_ready)
                             state <= idle;
                           else
                             state <= write;
                        end
-
-                     default:;
                    endcase // case (state)
               end // always @ (posedge clk, posedge reset)
 
@@ -241,14 +237,13 @@ module write_channel_native
                         else mem_wstrb = 0;
                      end
 
-                   write:
+                   //write:
+                   default:
                      begin
                         ready = mem_ready;
                         mem_valid = ~mem_ready;
                         mem_wstrb = {BE_NBYTES{1'b1}};
                      end
-
-                   default:;
                  endcase // case (state)
               end // always @ *
 

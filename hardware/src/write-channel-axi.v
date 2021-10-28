@@ -123,7 +123,8 @@ module write_channel_axi
                       state <= write;
                   end
 
-                  verif: begin //needs to be after the last word has been written, so this can't be optim
+                  //verif: begin //needs to be after the last word has been written, so this can't be optim
+                  default: begin
                      if(axi_bvalid & (axi_bresp == 2'b00) & ~valid)
                        state <= idle; //no more words to write
                      else
@@ -135,9 +136,6 @@ module write_channel_axi
                          else
                            state <= verif;
                   end
-
-                  default: ;
-
                 endcase
            end // always @ (posedge clk, posedge reset)
 
@@ -155,12 +153,12 @@ module write_channel_axi
                   axi_awvalid = 1'b1;
                 write:
                   axi_wvalid  = 1'b1;
-                verif:
+                //verif:
+                default:
                   begin
                      axi_bready = 1'b1;
                      ready      = axi_bvalid & ~(|axi_bresp);
                   end
-                default:;
               endcase
            end
 
@@ -266,13 +264,12 @@ module write_channel_axi
                    write:
                      axi_wvalid  = 1'b1;
 
-                   verif:
+                   //verif:
+                   default:
                      begin
                         axi_bready = 1'b1;
                         ready      = axi_bvalid & ~(|axi_bresp);
                      end
-
-                   default:;
                  endcase
               end // always @ *
 
@@ -332,7 +329,8 @@ module write_channel_axi
                        else
                          state <= write;
 
-                     verif:
+                     //verif:
+                     default:
                        if(axi_bvalid & (axi_bresp == 2'b00))
                          state <= idle; // write transfer completed
                        else
@@ -340,8 +338,6 @@ module write_channel_axi
                            state <= address; // error, requires re-transfer
                          else
                            state <= verif; //still waiting for response
-
-                     default:;
                    endcase
               end
 
@@ -363,13 +359,12 @@ module write_channel_axi
                    write:
                         axi_wvalid  = 1'b1;
 
-                   verif:
+                   //verif:
+                   default:
                      begin
                         axi_bready = 1'b1;
                         ready      = axi_bvalid & ~(|axi_bresp);
                      end
-
-                   default:;
                  endcase
               end // always @ *
 
