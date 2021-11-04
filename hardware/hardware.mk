@@ -8,7 +8,7 @@ endif
 
 ifneq (REGFILE,$(filter REGFILE, $(SUBMODULES)))
 SUBMODULES+=REGFILE
-REGFILE_DIR:=$(MEM_DIR)/reg_file
+REGFILE_DIR:=$(MEM_DIR)/regfile/reg_file
 VSRC+=$(REGFILE_DIR)/iob_reg_file.v
 endif
 
@@ -27,13 +27,13 @@ endif
 ifneq ($(ASIC),1)
 ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
 SUBMODULES+=SPRAM
-SPRAM_DIR:=$(MEM_DIR)/sp_ram
+SPRAM_DIR:=$(MEM_DIR)/ram/sp_ram
 VSRC+=$(SPRAM_DIR)/iob_sp_ram.v
 endif
 
 ifneq (2PRAM,$(filter 2PRAM, $(SUBMODULES)))
 SUBMODULES+=2PRAM
-2PRAM_DIR:=$(MEM_DIR)/2p_ram
+2PRAM_DIR:=$(MEM_DIR)/ram/2p_ram
 VSRC+=$(2PRAM_DIR)/iob_2p_ram.v
 endif
 endif
