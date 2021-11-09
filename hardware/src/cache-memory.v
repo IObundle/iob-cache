@@ -110,13 +110,13 @@ module cache_memory
 		         )
          write_throught_buffer
            (
+            .clk     (clk),
             .rst     (reset),
-            .clk (clk),
-            .fifo_ocupancy (),
-            .data_out(buffer_dout),
+            .fifo_ocupancy(),
+            .r_data  (buffer_dout),
             .empty   (buffer_empty),
             .read_en (write_ready),
-            .data_in ({addr_reg,wdata_reg,wstrb_reg}),
+            .w_data  ({addr_reg,wdata_reg,wstrb_reg}),
             .full    (buffer_full),
             .write_en(write_access & ready)
             );

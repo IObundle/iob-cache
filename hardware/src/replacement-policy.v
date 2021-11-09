@@ -68,20 +68,20 @@ module replacement_policy
 
 
            //Most Recently Used (MRU) memory
-           iob_reg_file
+           iob_sp_reg_file
              #(
                .ADDR_W(LINE_OFF_W),
                .DATA_W(N_WAYS*NWAY_W)
                )
            mru_memory //simply uses the same format as valid memory
              (
-              .clk  (clk      ),
-              .rst  (reset    ),
+              .clk    (clk      ),
+              .rst    (reset    ),
 
-              .we   (write_en ),
-              .addr (line_addr),
-              .wdata(mru_in   ),
-              .rdata(mru_out  )
+              .we     (write_en ),
+              .addr   (line_addr),
+              .w_data (mru_in   ),
+              .r_data (mru_out  )
               );
 
 
@@ -110,20 +110,20 @@ module replacement_policy
           assign way_select[0] = ~mru_out[0];
 
            //Most Recently Used (MRU) memory
-           iob_reg_file
+           iob_sp_reg_file
              #(
                .ADDR_W(LINE_OFF_W),
                .DATA_W(N_WAYS)
                )
            mru_memory //simply uses the same format as valid memory
              (
-              .clk  (clk      ),
-              .rst  (reset    ),
+              .clk    (clk      ),
+              .rst    (reset    ),
 
-              .we   (write_en ),
-              .addr (line_addr),
-              .wdata(mru_in   ),
-              .rdata(mru_out  )
+              .we     (write_en ),
+              .addr   (line_addr),
+              .w_data (mru_in   ),
+              .r_data (mru_out  )
               );
 
 
@@ -185,20 +185,20 @@ module replacement_policy
            assign way_select = (1 << way_select_bin);
 
            //Most Recently Used (MRU) memory
-           iob_reg_file
+           iob_sp_reg_file
              #(
                .ADDR_W(LINE_OFF_W),
                .DATA_W(N_WAYS-1)
                )
            mru_memory //simply uses the same format as valid memory
              (
-              .clk  (clk          ),
-              .rst  (reset        ),
+              .clk    (clk          ),
+              .rst    (reset        ),
 
-              .we   (write_en     ),
-              .addr (line_addr    ),
-              .wdata(tree_in      ),
-              .rdata(tree_out     )
+              .we     (write_en     ),
+              .addr   (line_addr    ),
+              .w_data (tree_in      ),
+              .r_data (tree_out     )
               );
         end
 

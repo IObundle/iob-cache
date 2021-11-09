@@ -6,37 +6,14 @@ SUBMODULES+=INTERCON
 include $(INTERCON_DIR)/hardware/hardware.mk
 endif
 
-ifneq (REGFILE,$(filter REGFILE, $(SUBMODULES)))
-SUBMODULES+=REGFILE
-REGFILE_DIR:=$(MEM_DIR)/regfile/reg_file
-VSRC+=$(REGFILE_DIR)/iob_reg_file.v
-endif
+# Single-port register file
+include $(MEM_DIR)/regfile/sp_reg_file/hardware.mk
 
-ifneq (SFIFO,$(filter SFIFO, $(SUBMODULES)))
-SUBMODULES+=SFIFO
-SFIFO_DIR:=$(MEM_DIR)/fifo/sfifo
-VSRC+=$(SFIFO_DIR)/sfifo.v
-endif
+# Synchronous FIFO
+include $(MEM_DIR)/fifo/sfifo/hardware.mk
 
-ifneq (BIN_COUNTER,$(filter BIN_COUNTER, $(SUBMODULES)))
-SUBMODULES+=BIN_COUNTER
-BIN_COUNTER_DIR:=$(MEM_DIR)/fifo
-VSRC+=$(BIN_COUNTER_DIR)/bin_counter.v
-endif
-
-ifneq ($(ASIC),1)
-ifneq (SPRAM,$(filter SPRAM, $(SUBMODULES)))
-SUBMODULES+=SPRAM
-SPRAM_DIR:=$(MEM_DIR)/ram/sp_ram
-VSRC+=$(SPRAM_DIR)/iob_sp_ram.v
-endif
-
-ifneq (2PRAM,$(filter 2PRAM, $(SUBMODULES)))
-SUBMODULES+=2PRAM
-2PRAM_DIR:=$(MEM_DIR)/ram/2p_ram
-VSRC+=$(2PRAM_DIR)/iob_2p_ram.v
-endif
-endif
+# Single-port RAM
+include $(MEM_DIR)/ram/sp_ram/hardware.mk
 
 #include
 INCLUDE+=$(incdir) $(CACHE_INC_DIR)
