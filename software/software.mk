@@ -1,4 +1,4 @@
-include $(CACHE_DIR)/core.mk
+include $(CACHE_DIR)/config.mk
 
 #SUBMODULES
 ifneq (INTERCON,$(filter INTERCON, $(SUBMODULES)))

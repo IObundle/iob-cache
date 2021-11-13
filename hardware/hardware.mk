@@ -1,4 +1,6 @@
-include $(CACHE_DIR)/core.mk
+include $(CACHE_DIR)/config.mk
+
+USE_NETLIST ?=0
 
 #submodules
 ifneq (INTERCON,$(filter INTERCON, $(SUBMODULES)))

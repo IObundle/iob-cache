@@ -1,5 +1,5 @@
 CACHE_DIR:=.
-include ./core.mk
+include ./config.mk
 
 sim:
 	make -C $(CACHE_SIM_DIR) all
