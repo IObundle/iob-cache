@@ -2,6 +2,9 @@ include $(CACHE_DIR)/config.mk
 
 USE_NETLIST ?=0
 
+CACHE_INC_DIR = $(CACHE_HW_DIR)/include
+CACHE_SRC_DIR = $(CACHE_HW_DIR)/src
+
 #submodules
 ifneq (INTERCON,$(filter INTERCON, $(SUBMODULES)))
 SUBMODULES+=INTERCON

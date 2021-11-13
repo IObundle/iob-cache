@@ -1,24 +1,54 @@
 CACHE_DIR:=.
 include ./config.mk
 
+#
+# SIMULATE
+#
+
 sim:
-	make -C $(CACHE_SIM_DIR) all
+	make -C $(SIM_DIR) run
 
-rp_sim:
-	make -C $(CACHE_SIM_DIR)/rep_pol/
+sim-clean:
+	make -C $(SIM_DIR) clean
 
-gtkwave:
-	gtkwave $(CACHE_SIM_DIR)/iob_cache.vcd
+#
+# FPGA COMPILE
+#
 
-gtkwave_rp:
-	gtkwave $(CACHE_SIM_DIR)/rep_pol/rep_pol.vcd
+fpga-build:
+	make -C $(FPGA_DIR) build
 
-synth:
-	make -C $(CACHE_FPGA_DIR) synth
+fpga-build-all:
+	$(foreach s, $(FPGA_FAMILY_LIST), make fpga-build FPGA_FAMILY=$s;)
 
-clean: 
-	make -C $(CACHE_FPGA_DIR) clean
-	make -C $(CACHE_SIM_DIR) clean
-	make -C $(CACHE_SIM_DIR)/rep_pol/ clean
+fpga-clean:
+	make -C $(FPGA_DIR) clean
 
-.PHONY: sim clean
+fpga-clean-all:
+	$(foreach s, $(FPGA_FAMILY_LIST), make fpga-clean FPGA_FAMILY=$s;)
+
+
+#
+# DOCUMENT
+#
+
+doc-build: fpga-build-all
+	make -C $(DOC_DIR) all
+
+doc-build-all:
+	$(foreach s, $(DOC_LIST), make doc-build DOC=$s;)
+
+
+doc-clean:
+	make -C $(DOC_DIR) clean
+
+doc-clean-all:
+	$(foreach s, $(DOC_LIST), make doc-clean DOC=$s;)
+
+
+#
+# CLEAN ALL
+# 
+
+clean-all: sim-clean fpga-clean-all doc-clean-all
+

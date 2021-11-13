@@ -4,6 +4,8 @@
 
 module iob_cache_tb;
 
+   parameter cc = 2; //clock-cycle  
+   
    reg clk = 1;
    always #1 clk = ~clk;
    reg reset = 1;
@@ -14,145 +16,157 @@ module iob_cache_tb;
    reg                                 valid=0;
    wire [`DATA_W-1:0]                  rdata;
    wire                                ready;
-   reg                                 instr =0;
-   wire                                select = 0;//cache is always selected
+   reg                                 ctrl =0;
    wire                                i_select =0, d_select =0;
    reg [31:0]                          test = 0;
+   reg                                 pipe_en = 0;
    
 
    integer                             i,j;
+
    
    initial 
      begin
         
 `ifdef VCD
-	$dumpfile("iob_cache.vcd");
+	$dumpfile("uut.vcd");
 	$dumpvars();
 `endif  
         repeat (5) @(posedge clk);
-        reset <= 0;
+        reset = 0;
         #10;
-        $display("\nInitializing Cache testing - printing errors only\n");
-        $display("Test 1 - Writing entire memory (Data width words)\n");
+        
+        $display("\nInitializing Cache testing - check simulation results\n");
+        $display("Test 1 - Writing test\n");
         test <= 1;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-          begin
-             addr <= i;
-             wdata <= i+1;
-             wstrb <= {`DATA_W/8{1'b1}};
-             valid <= 1;
-             #2;
-`ifdef LA
-             addr <= 0;
-             wdata <= 0;
-             wstrb <= 0;
-             valid <= 0;
-`endif
-             while (ready == 1'b0) #2;
-             valid <= 0;
-             #2;
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-        addr  <= 0;
-        wdata <= 0;
-        wstrb <= 0;
-        #2;
-        $display("Test 2 - Reading entire memory (Data width words)\n");
-        test <= 2;
-        #2
-          for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-            begin 
-               addr <= i;
-               valid <= 1;
-               #2;
-`ifdef LA
-               addr <= 0;
-               valid <= 0;
-`endif   
-               while (ready == 1'b0) #2;
-               if(rdata != (i+1))
-                 $display("Error in: %h\n", i);
-               valid <= 0;
-               #2;
-            end
-        
-        $display("Test 3 - Byte addressing (Writting memory using Bytes)\n");
-        test <= 3;
-        #2;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-          begin
-             for( j = 0; j < `DATA_W/8; j = j + 1)
-               begin
-                  addr <= i;
-                  #2;
-                  wdata <= {`DATA_W/8{i[3:0]}};
-                  wstrb <= (1'b1) << j;
-                  valid <= 1;
-                  #2;
-`ifdef LA
-                  addr <= 0;
-                  wdata <= 0;
-                  wstrb <= 0;
-                  valid <= 0;
-`endif
-                  while (ready == 1'b0) #2;
-                  valid <= 0;
-                  #2;
-               end // for ( j = 0; j < `DATA_W/8; j = j + 1)
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-        wdata <= 0;
-        wstrb <= 0;
-        #2;
-        $display("Test 4 - Reading Byte Addressing using Data Width Words - only for 32-bit (BE_DATA_W = 32)\n");
-        test <= 4;
-        #2;
-        for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-          begin 
-             addr <= i;
-             valid <= 1;
-             #2
-`ifdef LA
-               addr <= 0;
-             valid <= 0;
-`endif   
-             while (ready == 1'b0) #2;
-             if(rdata != {`DATA_W/8{i[3:0]}})
-               $display("Error in: %h; wrote instead: %h\n", addr, rdata);
-             valid <= 0;
-             #2;
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
-
-
-/*
-        $display("Test 5 - Forcing a cache-line load, followed by a write and a read to the same position");
-        test <= 5;
-        #8;
-        addr <=0;
-        wstrb <= 0;
-        wdata <= 0;
         valid <= 1;
-        #2;
-        
-        while(ready == 1'b0) #2;
-        valid <= 0;
-        #8;
-        valid <= 1;
-        
-        wdata <= {`DATA_W{1'b1}};
+        addr <= 0;
+        wdata <= 0;
         wstrb <= {`DATA_W/8{1'b1}};
-        while(ready == 1'b0)#2;
-        wdata <= 0;
+        #2;
+        
+        for (i = 1; i < 10; i = i + 1)
+          begin
+             //wstrb <= {`DATA_W/8{1'b1}};
+             addr <= i;
+             wdata <=  i;
+             #2
+               while (ready == 1'b0)#2;
+             
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+        valid <= 0;
+        #80;
+        
+        $display("Test 2 - Reading Test\n");
+        test <= 2;
+        addr <= 0;
+        wdata <= 2880291038;
+        wstrb <= 0;
+        valid <= 1;
+        #2;
+        for (j = 1; j < 10; j = j + 1)
+          begin
+             addr <= j;
+             #2
+               while (ready == 1'b0) #2;  
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+        valid <=0;
+        addr <= 0;
+        #20;
+
+
+
+        $display("Test 3 - Writing (write-hit) test\n");
+        test <= 3;
+        addr <= 0;
+        wdata <= 10;
+        wstrb <= {`DATA_W/8{1'b1}};
+        valid <= 1;
+        // #2;
+        // valid <= 0;
+        
+        #2;
+        for (i = 1; i < 11; i = i + 1)
+          begin
+             addr <= i;
+             wdata <=  i + 10;
+             #2;
+             
+             while (ready == 1'b0) #2;
+          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+        valid <= 0;
+        addr <=0;
+        #80;
+        
+        $display("Test 4 - Testing RAW control (r-w-r)\n");
+        test <= 4;
+        addr <= 0;
+        valid <=1;
+        wstrb <=0;
+        #2;
+        while (ready == 1'b0) #2;
+        wstrb <= {`DATA_W/8{1'b1}};
+        wdata <= 57005;
+        #2;
+        wstrb <= 0;
+        #2
+          while (ready == 1'b0) #2;
+        valid <= 0;
+        #80;
+        
+        $display("Test 5 - Test Line Replacement with read the last written position\n");
+        test <= 5;
+        addr <= (2**`WORD_OFF_W)*5-1;
+        valid <= 1;
+        wstrb <= {`DATA_W/8{1'b1}};
+        wdata <= 3735928559;
+        #2;
+        while (ready == 1'b0) #2;
+        valid <= 0;
         wstrb <= 0;
         while (ready == 1'b0) #2;
-        if(rdata != {`DATA_W{1'b1}})
-          $display("Data was accessed too early, still read: %h, instead of all HIGH",  rdata);
-        #8;
-        
         valid <= 0;
+        #80;
+
+
+
+        $display("Test 6 - Testing RAW on different positions (r-w-r)\n");
+        test <= 6;
+        addr <= 0;
+        valid <=1;
+        wstrb <=0;
+        #20
+          wstrb <= {`DATA_W/8{1'b1}};
+        wdata <= 23434332205;
+        //while (ready == 1'b0) #2;
         #2;
-*/        
+        addr <= 1; //change of addr
+        wstrb <= 0;
+        #2
+          while (ready == 1'b0) #2;
+        valid <= 0;
+        #80;
+
+       
+        $display("Test 7 - Testing cache-invalidate (r-inv-r)\n");
+        test <= 7;
+        addr <= 0;
+        valid <=1;
+        wstrb <=0;
+        while (ready == 1'b0) #2;
+        ctrl <=1;  //ctrl function
+        addr <= 10;//invalidate
+        valid <=1;
+        #2;
+        while (ready == 1'b0) #2;
+        ctrl <=0;
+        addr <=0;
+        #80;
         $display("Cache testing completed\n");
         $finish;
-     end
+     end // initial begin
+
+
    
 `ifdef AXI
    //AXI connections
@@ -191,103 +205,98 @@ module iob_cache_tb;
    
 `endif  
    
+   ///////////////////////////////////////////////
+   // CPU-pipeline
+   //////////////////////////////////////////////
+   reg                             cpu_state;
+
+   reg [`ADDR_W-1  :$clog2(`DATA_W/8)] cpu_addr;
+   reg [`DATA_W-1:0]                   cpu_wdata;
+   reg [`DATA_W/8-1:0]                 cpu_wstrb;
+   reg                                 cpu_valid;
+
+   reg [`ADDR_W-1  :$clog2(`DATA_W/8)] cpu_addr_reg;
+   reg [`DATA_W-1:0]                   cpu_wdata_reg;
+   reg [`DATA_W/8-1:0]                 cpu_wstrb_reg;
+   reg                                 cpu_valid_reg;
+   
+   always @(posedge clk, posedge reset)
+     if (reset)
+       cpu_state <= 0;
+     else
+       case(cpu_state)
+         1'b0:
+           begin
+              if (valid)
+                cpu_state <= 1'b1;
+              else
+                cpu_state <= 1'b0;
+           end
+
+         1'b1:
+           begin
+              if (~ready | valid)
+                cpu_state<=1'b1;
+              else
+                cpu_state <= 1'b0;
+           end
+         default:;
+
+       endcase // case (cpu_state)
+
+
+
+   always @(posedge clk)
+     begin
+        cpu_addr_reg <= cpu_addr;
+        cpu_wdata_reg <= cpu_wdata;
+        cpu_wstrb_reg <= cpu_wstrb;
+        cpu_valid_reg <= cpu_valid;
+     end
+   
+   
+
+   always @*
+     begin 
+        cpu_valid = cpu_valid;
+        cpu_addr = cpu_addr;
+        cpu_wdata = cpu_wdata;
+        cpu_wstrb = cpu_wstrb;
+        case(cpu_state)
+          1'b0:
+            begin
+               cpu_valid = valid;
+               cpu_addr = addr;
+               cpu_wdata = wdata;
+               cpu_wstrb = wstrb;
+            end
+          1'b1:
+            if (ready)
+              begin
+                 cpu_valid = valid;
+                 cpu_addr = addr;
+                 cpu_wdata = wdata;
+                 cpu_wstrb = wstrb;
+              end
+            else
+              begin
+                 cpu_valid = cpu_valid_reg;
+                 cpu_addr = cpu_addr_reg;
+                 cpu_wdata = cpu_wdata_reg;
+                 cpu_wstrb = cpu_wstrb_reg;
+              end // else: !if(ready)
+          default:;
+        endcase // case (cpu_state)
+     end
+   
+   /////////////////////////////////////////////
+   /////////////////////////////////////////////
+
 
    
-`ifdef L2
    
-   L2_ID_1sp #(
-               .FE_ADDR_W(`ADDR_W),
-               .FE_DATA_W(`DATA_W),
-               .BE_ADDR_W(`MEM_ADDR_W),
-               .BE_DATA_W(`MEM_DATA_W),
- `ifdef AXI
-               .AXI_INTERF(1),
- `else
-               .AXI_INTERF(0),
- `endif
-               .REP_POLICY(`REP_POLICY),
- `ifdef LA
-               .LA_INTERF(1),
- `else
-               .LA_INTERF(0),
- `endif
-               .L1_LINE_OFF_W(`LINE_OFF_W),
-               .L1_WORD_OFF_W(`WORD_OFF_W),
-               .L2_LINE_OFF_W(`LINE_OFF_W),
-               .L2_WORD_OFF_W(`WORD_OFF_W),
-               .L2_N_WAYS    (`N_WAYS),
-               .L1_WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
-               .L2_WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
-               .CTRL_CNT(0)
-               
-               )
-   cache (
-	  .clk (clk),
-	  .reset (reset),
-	  .wdata (wdata),
-	  .addr  ({select, addr}),
-	  .wstrb (wstrb),
-	  .rdata (rdata),
-	  .valid (valid),
-	  .ready (ready),
-          .instr (instr),
-          //
-	  // AXI INTERFACE
-          //
-          //address write
-          .axi_awid(axi_awid), 
-          .axi_awaddr(axi_awaddr), 
-          .axi_awlen(axi_awlen), 
-          .axi_awsize(axi_awsize), 
-          .axi_awburst(axi_awburst), 
-          .axi_awlock(axi_awlock), 
-          .axi_awcache(axi_awcache), 
-          .axi_awprot(axi_awprot),
-          .axi_awqos(axi_awqos), 
-          .axi_awvalid(axi_awvalid), 
-          .axi_awready(axi_awready), 
-          //write
-          .axi_wdata(axi_wdata), 
-          .axi_wstrb(axi_wstrb), 
-          .axi_wlast(axi_wlast), 
-          .axi_wvalid(axi_wvalid), 
-          .axi_wready(axi_wready), 
-          //write response
-          .axi_bresp(axi_bresp), 
-          .axi_bvalid(axi_bvalid), 
-          .axi_bready(axi_bready), 
-          //address read
-          .axi_arid(axi_arid), 
-          .axi_araddr(axi_araddr), 
-          .axi_arlen(axi_arlen), 
-          .axi_arsize(axi_arsize), 
-          .axi_arburst(axi_arburst), 
-          .axi_arlock(axi_arlock), 
-          .axi_arcache(axi_arcache), 
-          .axi_arprot(axi_arprot), 
-          .axi_arqos(axi_arqos), 
-          .axi_arvalid(axi_arvalid), 
-          .axi_arready(axi_arready), 
-          //read 
-          .axi_rid(axi_rid), 
-          .axi_rdata(axi_rdata), 
-          .axi_rresp(axi_rresp), 
-          .axi_rlast(axi_rlast), 
-          .axi_rvalid(axi_rvalid),  
-          .axi_rready(axi_rready),
-          //
-          // NATIVE MEMORY INTERFACE
-          //
-          .mem_addr(mem_addr),
-          .mem_wdata(mem_wdata),
-          .mem_wstrb(mem_wstrb),
-          .mem_rdata(mem_rdata),
-          .mem_valid(mem_valid),
-          .mem_ready(mem_ready)
-	  );
-   
-`else // !`ifdef L2
- `ifdef AXI  
+
+`ifdef AXI  
    iob_cache_axi #(
                    .FE_ADDR_W(`ADDR_W),
                    .FE_DATA_W(`DATA_W),
@@ -297,25 +306,24 @@ module iob_cache_tb;
                    .BE_ADDR_W(`MEM_ADDR_W),
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
-  `ifdef LA
-                   .LA_INTERF(1),
-  `else
-                   .LA_INTERF(0),
-  `endif
-  `ifdef NO_CTRL
-                   .CTRL_CACHE(0),
-  `endif
-                   .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
+                   .CTRL_CACHE(1),
+                   .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+                   .WRITE_POL(`WRITE_POL)
                    )
    cache (
 	  .clk (clk),
 	  .reset (reset),
-	  .wdata (wdata),
-	  .addr  ({select, addr}),
-	  .wstrb (wstrb),
+	  .wdata (cpu_wdata),
+	  .addr  ({ctrl,cpu_addr}),
+	  .wstrb (cpu_wstrb),
 	  .rdata (rdata),
-	  .valid (valid),
+	  .valid (cpu_valid),
 	  .ready (ready),
+          //CTRL_IO
+          .force_inv_in(1'b0),
+          .force_inv_out(),
+          .wtb_empty_in(1'b1),
+          .wtb_empty_out(),
           //
 	  // AXI INTERFACE
           //
@@ -362,7 +370,7 @@ module iob_cache_tb;
 	  );
 
    
- `else // !`ifdef AXI
+`else // !`ifdef AXI
    
    iob_cache #(
                .FE_ADDR_W(`ADDR_W),
@@ -373,21 +381,24 @@ module iob_cache_tb;
                .BE_ADDR_W(`MEM_ADDR_W),
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),
-
-  `ifdef NO_CTRL
-               .CTRL_CACHE(0),
-  `endif
-               .WTBUF_DEPTH_W(`WTBUF_DEPTH_W)
+               .CTRL_CACHE(1),
+               .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+               .WRITE_POL (`WRITE_POL)
                )
    cache (
 	  .clk (clk),
 	  .reset (reset),
-	  .wdata (wdata),
-	  .addr  ({select, addr}),
-	  .wstrb (wstrb),
+	  .wdata (cpu_wdata),
+	  .addr  ({ctrl,cpu_addr}),
+	  .wstrb (cpu_wstrb),
 	  .rdata (rdata),
-	  .valid (valid),
+	  .valid (cpu_valid),
 	  .ready (ready),
+          //CTRL_IO
+          .force_inv_in(1'b0),
+          .force_inv_out(),
+          .wtb_empty_in(1'b1),
+          .wtb_empty_out(),
           //
           // NATIVE MEMORY INTERFACE
           //
@@ -400,20 +411,8 @@ module iob_cache_tb;
 	  );
 
    
- `endif // !`ifdef AXI
+`endif // !`ifdef AXI
    
-   
-`endif // !`ifdef L2
-   
-   
-
-   task cache_wait;
-      input ready;
-      begin
-         wait (ready == 1'b1);
-         #1;
-      end
-   endtask
    
    
 `ifdef AXI  
@@ -473,10 +472,11 @@ module iob_cache_tb;
 
 `else
 
-   iob_sp_ram #(
-		.DATA_W (`MEM_DATA_W),
-                .ADDR_W(`MEM_ADDR_W-2)
-                )
+   iob_sp_ram_be #(
+	           .NUM_COL(`MEM_N_BYTES),
+                   .COL_W(8),
+                   .ADDR_W(`MEM_ADDR_W-2)
+                   )
    native_ram
      (
       .clk(clk),
