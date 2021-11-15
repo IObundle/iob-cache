@@ -1,9 +1,9 @@
 include $(CACHE_DIR)/config.mk
 
+MODULES+=CACHE
+
 #SUBMODULES
-ifneq (INTERCON,$(filter INTERCON, $(SUBMODULES)))
-SUBMODULES+=INTERCON
-INTERCON_DIR:=$(CACHE_DIR)/submodules/INTERCON
+ifneq (INTERCON,$(filter INTERCON, $(MODULES)))
 include $(INTERCON_DIR)/software/software.mk
 endif
 
