@@ -12,9 +12,10 @@ SIM_DIR ?=$(CACHE_HW_DIR)/simulation
 FPGA_DIR ?=$(shell find $($(MODULE)_DIR)/hardware -name $(FPGA_FAMILY))
 DOC_DIR:=$(CACHE_DIR)/document
 
-# SUBMODULE PATHS
-SUBMODULES_LIST=$(shell ls $(SUBMODULES_DIR))
-$(foreach p, $(SUBMODULES_LIST), $(if $(filter $p, $(SUBMODULES)),,$(eval $p_DIR ?=$(SUBMODULES_DIR)/$p)))
+# submodule paths
+SUBMODULES_DIR=$(CACHE_DIR)/submodules
+SUBMODULES_TMP=$(shell ls $(SUBMODULES_DIR))
+$(foreach p, $(SUBMODULES_TMP), $(eval $p_DIR ?=$(SUBMODULES_DIR)/$p))
 
 #DEFAULT FPGA FAMILY
 FPGA_FAMILY ?=CYCLONEV-GT
