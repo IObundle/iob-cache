@@ -7,7 +7,7 @@ CACHE_INC_DIR = $(CACHE_HW_DIR)/include
 CACHE_SRC_DIR = $(CACHE_HW_DIR)/src
 
 #add itself to MODULES list
-MODULES+=$(MODULE)
+MODULES+=CACHE
 
 #import submodules hardware
 
