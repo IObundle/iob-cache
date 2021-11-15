@@ -30,7 +30,7 @@ DOC_LIST:=pb ug
 # VERSION
 VERSION= 0.1
 VLINE:="V$(VERSION)"
-UART_version.txt:
+CACHE_version.txt:
 ifeq ($(VERSION),)
 	$(error "variable VERSION is not set")
 endif
