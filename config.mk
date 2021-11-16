@@ -15,8 +15,8 @@ DOC_DIR ?=$(CACHE_DIR)/document
 SUBMODULES_DIR:=$(CACHE_DIR)/submodules
 
 # submodule paths
-SUBMODULES_TMP=$(shell ls $(SUBMODULES_DIR))
-$(foreach p, $(SUBMODULES_TMP), $(eval $p_DIR ?=$(SUBMODULES_DIR)/$p))
+SUBMODULES=$(shell ls $(SUBMODULES_DIR))
+$(foreach p, $(SUBMODULES), $(eval $p_DIR ?=$(SUBMODULES_DIR)/$p))
 
 #DEFAULT FPGA FAMILY
 FPGA_FAMILY ?=CYCLONEV-GT
