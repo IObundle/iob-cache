@@ -1,6 +1,8 @@
 MODULE=CACHE
 TOP_MODULE=iob_cache
 
+USE_DDR ?=1
+
 #PATHS
 #paths that need disambiguation by prefix CACHE_
 CACHE_HW_DIR:=$(CACHE_DIR)/hardware
