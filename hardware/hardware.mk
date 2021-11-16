@@ -6,6 +6,7 @@ USE_NETLIST ?=0
 CACHE_INC_DIR = $(CACHE_HW_DIR)/include
 CACHE_SRC_DIR = $(CACHE_HW_DIR)/src
 
+ifeq ($(USE_DDR),1)
 #add itself to MODULES list
 MODULES+=CACHE
 
@@ -25,3 +26,4 @@ VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
 #sources
 VSRC+=$(wildcard $(CACHE_SRC_DIR)/*.v)
+endif
