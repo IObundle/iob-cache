@@ -5,7 +5,7 @@
 #include "obj_dir/Viob_cache.h"
 
 int main(int argc, char** argv) {
-    std::cout << "Iob_cache simulation start" << std::endl;
+    std::cout << std::endl << "Iob_cache simulation start" << std::endl;
 
     Verilated::commandArgs(argc, argv);
     Verilated::traceEverOn(true);
@@ -44,10 +44,12 @@ int main(int argc, char** argv) {
 
     tfp->close();
 
+    std::cout << "Generated vcd file" << std::endl;
+
     delete tb;
     delete tfp;
 
-    std::cout << "Iob_cache simulation end" << std::endl;
+    std::cout << "Iob_cache simulation end" << std::endl << std::endl;
 
     return 0;
 }
