@@ -7,16 +7,17 @@
 int main(int argc, char** argv) {
     std::cout << std::endl << "Iob_cache simulation start" << std::endl;
 
+    // Init verilator context and enable tracing
     Verilated::commandArgs(argc, argv);
     Verilated::traceEverOn(true);
 
-    Viob_cache* tb = new Viob_cache;
-    VerilatedVcdC* tfp = new VerilatedVcdC;
+    Viob_cache* tb = new Viob_cache; // Create UUT
+    VerilatedVcdC* tfp = new VerilatedVcdC; // Create tracing object
 
     tb->trace(tfp,99); // Trace 99 levels of hierarchy
-    tb->reset = 0;
+    tfp->open("vcd.vcd"); // Open tracing file
 
-    tfp->open("vcd.vcd");
+    tb->reset = 0; // Init wire to initial value
 
     int main_time = 0;
     while (!Verilated::gotFinish()) {
@@ -30,7 +31,7 @@ int main(int argc, char** argv) {
             tb->clk = 0;
         }
         tb->eval();
-        tfp->dump(main_time);
+        tfp->dump(main_time); // Dump values into tracing file
         main_time++;
 
         // Stop after a set time, since otherwise the current design would simulate forever
@@ -40,9 +41,9 @@ int main(int argc, char** argv) {
     }
 
     tb->final();
-    tfp->dump(main_time);
+    tfp->dump(main_time); // Dump last values
 
-    tfp->close();
+    tfp->close(); // Close tracing file
 
     std::cout << "Generated vcd file" << std::endl;
 
