@@ -1,6 +1,9 @@
 CACHE_DIR:=.
 include ./config.mk
 
+corename:
+	@echo $(MODULE)
+
 #
 # SIMULATE
 #
@@ -50,5 +53,5 @@ doc-clean-all:
 # CLEAN ALL
 # 
 
-clean-all: sim-clean fpga-clean-all doc-clean-all
+clean-all: corename sim-clean fpga-clean-all doc-clean-all
 
