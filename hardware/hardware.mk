@@ -16,7 +16,7 @@ MODULES+=CACHE
 MEM_MODULES+=regfile/sp_reg_file fifo/sfifo ram/sp_ram
 
 #include submodule's hardware
-$(foreach p, $(filter.out MEM, $(SUBMODULES)), $(if $(filter $p, $(MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
+$(foreach p, $(SUBMODULES), $(if $(filter $p, $(MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
 
 #include
 INCLUDE+=$(incdir) $(CACHE_INC_DIR)
