@@ -28,7 +28,7 @@
 `define CTRL
 
 // print VCD for GTKWave (necessary)
-`define VCD
+//`define VCD
 
 //Replacement Policy
 `define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
