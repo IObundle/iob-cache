@@ -2,13 +2,16 @@
 CACHE_DIR:=../..
 incdir:=-I
 defmacro:=-D
+VCD:=0
 
 include $(CACHE_DIR)/hardware/hardware.mk
 
 #defines
 DEFINE+=$(defmacro)DATA_W=32 $(defmacro)ADDR_W=32
-DEFINE+=$(defmacro)VCD
 
+ifeq ($(VCD),1)
+DEFINE+=$(defmacro)VCD
+endif
 
 #includes
 INCLUDE+=$(incdir) ./testbench
@@ -23,7 +26,6 @@ TB ?= testbench/pipeline-iob-cache_tb.v
 VSRC+=$(TB)
 #other sources
 VSRC+=$(AXIMEM_DIR)/rtl/axi_ram.v
-
 
 #icarus verilog simulator
 VLOG = 	iverilog -W all -g2005-sv
