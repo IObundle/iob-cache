@@ -4,7 +4,9 @@
 
 module iob_cache_tb;
 
-   parameter cc = 2; //clock-cycle  
+   parameter cc = 2; //clock-cycle
+
+   parameter AXI_ID_W = 1;
    
    reg clk = 1;
    always #1 clk = ~clk;
@@ -172,29 +174,41 @@ module iob_cache_tb;
    //AXI connections
    wire 			   axi_awvalid;
    wire 			   axi_awready;
+   wire [AXI_ID_W-1:0] axi_awid;
    wire [`MEM_ADDR_W-1:0]          axi_awaddr;
-   wire [ 2:0]                     axi_awprot;
+   wire [2:0]                      axi_awprot;
+   wire [3:0]                      axi_awqos;
    wire 			   axi_wvalid;
    wire 			   axi_wready;
    wire [`MEM_DATA_W-1:0]          axi_wdata;
    wire [`MEM_N_BYTES-1:0]         axi_wstrb;
+   wire                            axi_wlast;
    wire 			   axi_bvalid;
    wire 			   axi_bready;
    wire 			   axi_arvalid;
    wire 			   axi_arready;
+   wire [AXI_ID_W-1:0] axi_arid;
    wire [`MEM_ADDR_W-1:0]          axi_araddr;
-   wire [ 2:0]                     axi_arprot;
+   wire [2:0]                      axi_arprot;
+   wire [3:0]                      axi_arqos;
+   wire [AXI_ID_W-1:0]             axi_rid;
    wire 			   axi_rvalid;
    wire 			   axi_rready;
    wire [`MEM_DATA_W-1:0]          axi_rdata;
-   wire 			   axi_rlast;
+   wire [1:0]                      axi_rresp;
+   wire                            axi_rlast;
+   wire [AXI_ID_W-1:0]             axi_bid;
    wire [1:0]                      axi_bresp;
    wire [7:0]                      axi_arlen;
    wire [2:0]                      axi_arsize;
    wire [1:0]                      axi_arburst;
+   wire                            axi_arlock;
+   wire [3:0]                      axi_arcache;
    wire [7:0]                      axi_awlen;
    wire [2:0]                      axi_awsize;
    wire [1:0]                      axi_awburst;
+   wire                            axi_awlock;
+   wire [3:0]                      axi_awcache;
 `else
    //Native connections
    wire [`MEM_ADDR_W-1:0]          mem_addr;
@@ -298,6 +312,7 @@ module iob_cache_tb;
 
 `ifdef AXI  
    iob_cache_axi #(
+                   .AXI_ID_W(AXI_ID_W),
                    .FE_ADDR_W(`ADDR_W),
                    .FE_DATA_W(`DATA_W),
                    .N_WAYS(`N_WAYS),
@@ -418,6 +433,7 @@ module iob_cache_tb;
 `ifdef AXI  
    axi_ram 
      #(
+       .ID_WIDTH(AXI_ID_W),
        .DATA_WIDTH (`MEM_DATA_W),
        .ADDR_WIDTH (`MEM_ADDR_W)
        )

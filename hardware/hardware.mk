@@ -2,13 +2,9 @@ include $(CACHE_DIR)/config.mk
 
 USE_NETLIST ?=0
 
-#internal paths
-CACHE_INC_DIR = $(CACHE_HW_DIR)/include
-CACHE_SRC_DIR = $(CACHE_HW_DIR)/src
-
 ifeq ($(USE_DDR),1)
 #add itself to MODULES list
-MODULES+=CACHE
+MODULES+=$(MODULE)
 
 #import submodules hardware
 
@@ -16,10 +12,10 @@ MODULES+=CACHE
 MEM_MODULES+=regfile/sp_reg_file fifo/sfifo ram/sp_ram
 
 #include submodule's hardware
-$(foreach p, $(filter.out MEM, $(SUBMODULES)), $(if $(filter $p, $(MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
+$(foreach p, $(SUBMODULES), $(if $(filter $p, $(MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
 
 #include
-INCLUDE+=$(incdir) $(CACHE_INC_DIR)
+INCLUDE+=$(incdir)$(CACHE_INC_DIR)
 
 #headers
 VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
