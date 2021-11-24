@@ -31,7 +31,7 @@ module iob_cache_tb;
      begin
         
 `ifdef VCD
-	$dumpfile("uut.vcd");
+	$dumpfile("cache.vcd");
 	$dumpvars();
 `endif  
         repeat (5) @(posedge clk);
