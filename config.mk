@@ -1,4 +1,3 @@
-MODULE=CACHE
 TOP_MODULE=iob_cache
 
 USE_DDR ?=1

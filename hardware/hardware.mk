@@ -8,7 +8,7 @@ CACHE_SRC_DIR = $(CACHE_HW_DIR)/src
 
 ifeq ($(USE_DDR),1)
 #add itself to MODULES list
-MODULES+=$(MODULE)
+MODULES+=$(shell make -C $(CACHE_DIR) corename | grep -v make)
 
 #import submodules hardware
 

@@ -2,7 +2,7 @@ CACHE_DIR:=.
 include ./config.mk
 
 corename:
-	@echo $(MODULE)
+	@echo "CACHE"
 
 #
 # SIMULATE
