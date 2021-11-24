@@ -1,29 +1,21 @@
 #module paths
 CACHE_DIR:=../../..
+
 incdir:=-I
 defmacro:=-D
 
-include $(CACHE_DIR)/hardware/hardware.mk
+SIMULATOR=verilator
 
-#headers
-VHDR+=../testbench/iob-cache_tb.vh
+include ../simulation.mk
 
-#sources
-VSRC+=$(AXIMEM_DIR)/rtl/axi_ram.v
+TB=testbench.cpp
 
-INCLUDE=$(incdir)$(CACHE_INC_DIR)
-INCLUDE+=$(incdir)../testbench
-
-include $(MEM_DIR)/config.mk
-$(foreach p, $(MEM_MODULES), $(eval include $(MEM_DIR)/hardware/$(p)/hardware.mk))
-
-all: $(VSRC) testbench.cpp
-	verilator -Wno-WIDTH --trace --cc --exe $(INCLUDE) $(VSRC) testbench.cpp --top-module iob_cache
-	cd ./obj_dir && make -f Viob_cache.mk
-	./obj_dir/Viob_cache
+run: $(VSRC) $(VHDR)
+	verilator -Wno-WIDTH --trace --cc --exe $(INCLUDE) $(VSRC) --top-module $(TOP_MODULE)
+	cd ./obj_dir && make -f V$(TOP_MODULE).mk
+	./obj_dir/V$(TOP_MODULE)
 
 clean:
-	rm -r ./obj_dir
-	rm vcd.vcd
+	@rm -rf *# *~ *.vcd ./obj_dir
 
-.PHONY: all clean
+.PHONY: run clean

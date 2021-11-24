@@ -14,6 +14,9 @@ sim:
 sim-clean:
 	make -C $(SIM_DIR) clean
 
+sim-clean-all:
+	$(foreach s, $(SIMULATOR_LIST), make sim-clean SIMULATOR=$s;)
+
 #
 # FPGA COMPILE
 #
@@ -53,5 +56,9 @@ doc-clean-all:
 # CLEAN ALL
 # 
 
-clean-all: corename sim-clean fpga-clean-all doc-clean-all
+clean-all: corename sim-clean-all fpga-clean-all doc-clean-all
 
+.PHONY: corename \
+	sim sim-clean sim-clean-all \
+	fpga-build fpga-clean fpga-build-all fpga-clean-all \
+	doc-build doc-clean doc-build-all doc-clean-all
