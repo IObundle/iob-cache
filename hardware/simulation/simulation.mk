@@ -1,4 +1,4 @@
-VCD ?=1
+VCD :=0
 
 #defines
 DEFINE+=$(defmacro)DATA_W=32 $(defmacro)ADDR_W=32
