@@ -26,4 +26,4 @@ a.out: $(VSRC) $(VHDR)
 clean:
 	@rm -f *# *~ *.vcd a.out *_tb
 
-.PHONY: run clean
+.PHONY: a.out run clean
