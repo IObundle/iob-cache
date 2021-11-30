@@ -4,8 +4,6 @@ CACHE_DIR:=../../..
 incdir:=-I
 defmacro:=-D
 
-SIMULATOR=verilator
-
 include ../simulation.mk
 
 TB=testbench.cpp
