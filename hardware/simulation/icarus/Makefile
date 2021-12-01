@@ -13,9 +13,16 @@ TB ?= $(CACHE_TB_DIR)/pipeline-iob-cache_tb.v
 #icarus verilog simulator
 VLOG = 	iverilog -W all -g2005-sv
 
+run:
+
+ifeq ($(VCD),0)
 run: a.out
-	./$<
+	./$< 
+endif
+
 ifeq ($(VCD),1)
+run: clean-a a.out
+	./$(word 2,$^)
 	if [ "`pgrep -u $(USER) gtkwave`" ]; then killall -q -9 gtkwave; fi
 	gtkwave -a ../waves.gtkw uut.vcd &
 endif
@@ -23,7 +30,10 @@ endif
 a.out: $(VSRC) $(VHDR)
 	$(VLOG) $(INCLUDE) $(DEFINE) $(VSRC)
 
+clean-a: 
+	@rm -f *# *~ uut.vcd a.out *_tb
+	
 clean:
 	@rm -f *# *~ *.vcd a.out *_tb
 
-.PHONY: a.out run clean
+.PHONY: run clean-a clean
