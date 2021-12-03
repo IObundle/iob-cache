@@ -24,4 +24,19 @@ VSRC+=$(AXIMEM_DIR)/rtl/axi_ram.v
 waves:
 	gtkwave uut.vcd
 
-.PHONY: waves
+test: clean-testlog test1
+	diff -q test.log test.expected
+
+test1: clean
+	make run VCD=0 TEST_LOG=">> test.log"
+
+#clean test log only when tests begin
+clean-testlog:
+	@rm -f test.log
+
+clean-all: clean-testlog clean
+	@rm -rf *# *~ *.vcd
+
+.PHONY: waves \
+	test test1 \
+	clean-testlog clean clean-all

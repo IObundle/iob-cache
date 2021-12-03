@@ -1,0 +1,20 @@
+VCD info: dumpfile uut.vcd opened for output.
+
+Initializing Cache testing - check simulation results
+
+Test 1 - Writing test
+
+Test 2 - Reading Test
+
+Test 3 - Writing (write-hit) test
+
+Test 4 - Testing RAW control (r-w-r)
+
+Test 5 - Test Line Replacement with read the last written position
+
+Test 6 - Testing RAW on different positions (r-w-r)
+
+Test 7 - Testing cache-invalidate (r-inv-r)
+
+Cache testing completed
+
