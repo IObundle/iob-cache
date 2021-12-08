@@ -1,106 +1,135 @@
-# iob-cache
+# IOb-cache
 
 IOb-cache is a high-performance configurable open-source Verilog cache. If you use or like this repository, please cite the following article:
 
 Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218. https://doi.org/10.3390/a14080218 
 
-IOb-cache supports pipeline architectures, allowing 1 request per clock cycle (read and write).
-
+IOb-cache supports pipeline architectures, allowing 1 request per clock cycle (read and write). 
 IOb-cache has both Native (pipelined) and AXI4 back-end interfaces.
-
 The write policy is configurable: either write-through/not-allocate or write-back/allocate.
+Configuration supports the number of ways, address-width, cache's word-size (front-end data width), the memory's word-size (back-end data width), the number of lines and words per line, replacement policy (if set associative), and cache-control module (allows performance measurement, cache invalidation and write-through buffer status).
 
-Configuration supports the number of ways, address-width, cache's word-size (front-end data with), the memory's word-size (back-end data width), the number of lines and words per line, replacement policy (if set associative), and cache-control module (allows performance measurement, cache invalidation and write-through buffer status).
+## Environment setup
+IOb-SoC provides helpful information to set up your environment, please refer to [IOb-SoC](https://github.com/IObundle/iob-soc) in order to
+* prepare your environment to connect to Github with ssh.
+* install required tools and set your environment variables.
 
-## Organization of the repository
+## Cloning the repository
+```
+git clone --recursive git@github.com:IObundle/iob-cache.git
+```
 
-/hardware/:
-
-	./src/: cache's Verilog sources.
-		
-		iob_cache, iob_cache_axi: IOb-Cache's top-level module, back-end Native 
-		and AXI4 interface respectively.
-		
-		front_end: Front-End, interface that connects the cache to a master. 
-		Only this modules requires to be adapted when implmenting a cache in a 
-		different system.
-		
-		cache_memory: cache's core module, contains all memories (including 
-		write-through buffer) and the "main-controller" (datapath that asserts ready 
-		when all conditions are met).
-		
-		back_end_native, back_end_axi: Back-End modules, contain both the controllers 
-		write_channel and read_channel respective for the top-level selected.
-		
-		replacement_policy: replacement policy module, only implemented if cache is 
-		set-associative. Currently has LRU, PLRU mru-based, and PLRU (binary) tree-based.
-		
-		cache_control: optional module used for performance measurement (if 
-		counters are implemented), cache invalidation and buffer status.
-		
-	
-	./header/: IOb-Cache's Verilog header source.
-	
-	./simulation/: simulation sources, available for the cache (both native and AXI) 
-	and replacement policy module. Change the header files in this folder to change 
-	the test's settings. Requires Icarus Verilog and GTKwave.
-	
-	./fpga/: synthesis sources, currently setup for Kintex KU040 Ultrascale FPGA
-	
-		synth.tcl: The module for the synthesis can be selected here.
-		
-		synth.xdc: The clock can be changed for different synthesis results (both 
-		resources and timings).
-		
-/software/: Software C programing drivers.
-
-/submodules/: Submodules required for both IOb-Cache (or its benchmarks) and other IObundle 
-projects (IOb-SoC).
-
-
-## Clone the repository
-
-``git clone --recursive git@github.com:IObundle/iob-cache.git``
-
-Access to Github by *ssh* is mandatory so that submodules can be updated.
-
-
+## Configuration
+Edit config.mk file and update its variables according to your needs. This file is located at the root repository. 
 
 ## Simulation
+To simulate, run:
+```
+make sim SIMULATOR=<simulator directory name>  
+```
+SIMULATOR is a parameter used to select a specific simulator. Its value is the name of the simulator's run directory.
+For example:
+```
+make sim SIMULATOR=icarus
+```
+To simulate with Icarus Verilog and generate VCD file for waveform visualization with Gtkwave open-source program, run:
+```
+make sim SIMULATOR=icarus VCD=1 
+```
+To execute a simple test suite by simulation, run 
+``` 
+make sim-test SIMULATOR=<simulator directory name>
+```
+SIMULATOR parameter is used to select a given simulator, as explained above. 
 
-The following commands will run the simulations. Requires Icarus Verilog and GTKWAVE.
+To execute the test suite for all simulators listed in SIMULATOR\_LIST, run 
+```
+make test-sim
+```
+It is to note that SIMULATOR\_LIST is a variable set in config.mk file. 
 
-To simulate IOb-Cache:
+To clean simulation generated files, run
 ```
-make sim
+make sim-clean SIMULATOR=<simulator directory name>
 ```
-Follow by seeing the results using GTKWAVE
+SIMULATOR parameter is used as explained above. 
 
+To clean simulation generated files for all simulators, run
 ```
-make gtkwave
-```
-
-To simulate Replacement Policy module:
-```
-make rp_sim
-```
-Follow by seeing the results using GTKWAVE
-
-```
-make gtkwave_rp
+make sim-clean-all
 ```
 
-## Synthesis
+## FPGA
 
-The following commands will run synthesis, requires Vivado (with application open: "source /Vivado's path/setting64.sh").
-Setting can be changed in /hardware/fpga/"board of choice (currently only 1 available)".
+To build for a target FPGA, run
 ```
-make synth
+make fpga-build FPGA_FAMILY=<board directory name>
+```
+FPGA_FAMILY is a parameter set to the name of the board's run directory.
+For example:
+```
+make fpga-build FPGA_FAMILY=CYCLONEV-GT
+```
+To build for all target FPGAs listed in FPGA\_FAMILY\_LIST, run
+```
+make fpga-build-all
+```
+FPGA\_FAMILY\_LIST is a variable set in config.mk file
+
+To build and execute a simple board test suite, run
+```
+make fpga-test FPGA_FAMILY=<board directory name>
+```
+FPGA_FAMILY parameter is set a explained above.
+
+To clean the FPGA build generated files
+```
+make fpga-clean FPGA_FAMILY=<board directory name>
+```
+FPGA_FAMILY parameter is used as indicated above.
+
+To clean the FPGA build generated files for all boards, run
+```
+make fpga-clean-all
 ```
 
-## Cleaning
+## Documentation
+Two document types are generated: the Product Brief refered to as pb and the User Guide refered to as ug. 
 
-The following command will clean all directories: 
+To build a given ducument type, run
 ```
-make clean
+make doc-build DOC=<document directory name>
+```
+DOC is a parameter whose value can be pb or ug.
+For example:
+```
+make doc-build DOC=pb
+```
+To build all ducument types listed in DOC\_LIST, run
+```
+make doc-build-all
+```
+DOC\_LIST is a variable set in config.mk
+
+To test the generated document, run
+```
+make doc-test DOC=<document directory name>
+```
+DOC is set as explained above.
+
+To clean generated files for a specific document type, run
+```
+make doc-clean DOC=<document directory name>
+```
+DOC is set as explained above.
+
+To clean generated files for all document types, run
+```
+make doc-clean-all
+```
+
+## Cleaning all directories
+To clean all generated files, run
+```
+make clean-all
 ```
