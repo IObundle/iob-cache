@@ -13,7 +13,7 @@ run: $(VSRC) $(VHDR)
 	cd ./obj_dir && make -f V$(TOP_MODULE).mk
 	./obj_dir/V$(TOP_MODULE) $(TEST_LOG)
 
-clean:
+clean: cache-gen-clean
 	@rm -rf ./obj_dir
 
 .PHONY: run clean

@@ -35,7 +35,7 @@ clean-testlog:
 	@rm -f test.log
 
 clean-all: clean-testlog clean
-	@rm -rf *# *~ *.vcd
+	@rm -rf *.vcd
 
 .PHONY: waves \
 	test test1 \
