@@ -42,7 +42,7 @@ ifeq ($(VERSION),)
 endif
 	echo $(VLINE) > version.txt
 
-gen-clean:
+cache-gen-clean:
 	@rm -f *# *~
-	
-.PHONY: gen-clean
+
+.PHONY: cache-gen-clean
