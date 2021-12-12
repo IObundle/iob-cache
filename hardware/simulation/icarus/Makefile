@@ -22,5 +22,5 @@ ifeq ($(VCD),1)
 	gtkwave -a ../waves.gtkw uut.vcd &
 endif	
 
-clean: gen-clean
-	@rm -f uut.vcd a.out
+clean: cache-gen-clean
+	@rm -f a.out
