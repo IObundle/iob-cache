@@ -41,3 +41,8 @@ ifeq ($(VERSION),)
 	$(error "variable VERSION is not set")
 endif
 	echo $(VLINE) > version.txt
+
+cache-gen-clean:
+	@rm -f *# *~
+
+.PHONY: cache-gen-clean

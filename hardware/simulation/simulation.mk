@@ -1,4 +1,4 @@
-VCD ?=1
+VCD :=0
 
 #defines
 DEFINE+=$(defmacro)DATA_W=32 $(defmacro)ADDR_W=32
@@ -35,7 +35,7 @@ clean-testlog:
 	@rm -f test.log
 
 clean-all: clean-testlog clean
-	@rm -rf *# *~ *.vcd
+	@rm -rf *.vcd
 
 .PHONY: waves \
 	test test1 \
