@@ -32,7 +32,8 @@ For example:
 ```
 make sim SIMULATOR=icarus
 ```
-To simulate with Icarus Verilog and generate VCD file for waveform visualization with Gtkwave open-source program, run:
+
+To simulate with Icarus Verilog and to generate a VCD file for waveform visualization with the Gtkwave open-source program, run:
 ```
 make sim SIMULATOR=icarus VCD=1 
 ```
@@ -82,7 +83,9 @@ make fpga-test FPGA_FAMILY=<board directory name>
 ```
 FPGA_FAMILY parameter is set a explained above.
 
-To clean the FPGA build generated files
+
+To clean the FPGA build generated files, run
+
 ```
 make fpga-clean FPGA_FAMILY=<board directory name>
 ```
