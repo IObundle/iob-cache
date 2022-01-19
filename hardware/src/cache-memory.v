@@ -104,7 +104,7 @@ module cache_memory
    generate
       if(WRITE_POL == `WRITE_THROUGH) begin
 
-         iob_sync_fifo #(
+         iob_fifo_sync #(
 		         .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
 		         .ADDRESS_WIDTH (WTBUF_DEPTH_W)
 		         )
@@ -114,11 +114,11 @@ module cache_memory
             .rst     (reset),
             .fifo_ocupancy(),
             .r_data  (buffer_dout),
-            .empty   (buffer_empty),
-            .read_en (write_ready),
+            .r_empty (buffer_empty),
+            .r_en    (write_ready),
             .w_data  ({addr_reg,wdata_reg,wstrb_reg}),
-            .full    (buffer_full),
-            .write_en(write_access & ready)
+            .w_full  (buffer_full),
+            .w_en    (write_access & ready)
             );
 
          //buffer status
@@ -297,7 +297,7 @@ module cache_memory
                   v[k] <= v_reg [(2**LINE_OFF_W)*k + index];
 
               //tag-memory
-              iob_sp_ram
+              iob_ram_sp
                 #(
                   .DATA_W(TAG_W),
                   .ADDR_W(LINE_OFF_W)
@@ -402,7 +402,7 @@ module cache_memory
                v <= v_reg [index];
 
            //tag-memory
-           iob_sp_ram
+           iob_ram_sp
              #(
                .DATA_W(TAG_W),
                .ADDR_W(LINE_OFF_W)
@@ -478,7 +478,7 @@ module iob_gen_sp_ram #(
    generate
       for (i = 0; i < (DATA_W/8); i = i + 1)
         begin : ram
-           iob_sp_ram
+           iob_ram_sp
                #(
                  .DATA_W(8),
                  .ADDR_W(ADDR_W)
