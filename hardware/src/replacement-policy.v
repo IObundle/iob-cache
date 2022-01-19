@@ -110,7 +110,7 @@ module replacement_policy
           assign way_select[0] = ~mru_out[0];
 
            //Most Recently Used (MRU) memory
-           iob_reg_file_sp
+           iob_regfile_sp
              #(
                .ADDR_W(LINE_OFF_W),
                .DATA_W(N_WAYS)
@@ -185,7 +185,7 @@ module replacement_policy
            assign way_select = (1 << way_select_bin);
 
            //Most Recently Used (MRU) memory
-           iob_sp_reg_file
+           iob_regfile_sp
              #(
                .ADDR_W(LINE_OFF_W),
                .DATA_W(N_WAYS-1)
