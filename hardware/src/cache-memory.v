@@ -104,10 +104,11 @@ module cache_memory
    generate
       if(WRITE_POL == `WRITE_THROUGH) begin
 
-         iob_fifo_sync #(
-		         .DATA_WIDTH    (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
-		         .ADDRESS_WIDTH (WTBUF_DEPTH_W)
-		         )
+         iob_fifo_sync 
+           #(
+	     .DATA_W (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
+	     .ADDR_W (WTBUF_DEPTH_W)
+	     )
          write_throught_buffer
            (
             .clk     (clk),
