@@ -9,7 +9,7 @@ MODULES+=$(shell make -C $(CACHE_DIR) corename | grep -v make)
 #import submodules hardware
 
 #select modules to import from MEM
-MEM_MODULES+=sp_reg_file sfifo sp_ram
+MEM_MODULES+=iob_reg_file_sp iob_fifo_sync iob_ram_sp
 
 #include submodule's hardware
 $(foreach p, $(SUBMODULES), $(if $(filter $p, $(MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
