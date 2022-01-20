@@ -68,7 +68,7 @@ module replacement_policy
 
 
            //Most Recently Used (MRU) memory
-           iob_sp_reg_file
+           iob_regfile_sp
              #(
                .ADDR_W(LINE_OFF_W),
                .DATA_W(N_WAYS*NWAY_W)
