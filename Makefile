@@ -97,7 +97,7 @@ test-clean: test-sim-clean test-fpga-clean #test-doc-clean
 # CLEAN ALL
 # 
 
-clean-all: sim-clean-all fpga-clean-all doc-clean-all
+clean-all: sim-clean-all fpga-clean-all #doc-clean-all
 
 .PHONY: corename \
 	sim sim-test sim-clean sim-clean-all \
