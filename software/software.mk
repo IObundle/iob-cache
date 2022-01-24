@@ -3,8 +3,8 @@ include $(CACHE_DIR)/config.mk
 MODULES+=CACHE
 
 #SUBMODULES
-ifneq (INTERCON,$(filter INTERCON, $(MODULES)))
-include $(INTERCON_DIR)/software/software.mk
+ifneq (LIB,$(filter LIB, $(MODULES)))
+include $(LIB_DIR)/software/software.mk
 endif
 
 #INCLUDE
