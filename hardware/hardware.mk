@@ -1,7 +1,9 @@
 ifeq ($(filter CACHE, $(HW_MODULES)),)
-ifeq ($(USE_DDR),1)
 
 include $(CACHE_DIR)/config.mk
+
+ifeq ($(USE_DDR),1)
+
 
 USE_NETLIST ?=0
 
