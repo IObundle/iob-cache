@@ -35,6 +35,7 @@ clean-testlog:
 clean:
 	find . -type f -not \( -name 'Makefile' -o -name 'test.expected' -o -name 'test.log' \) -delete
 ifneq ($(FPGA_SERVER),)
+	ssh $(FPGA_USER)@$(FPGA_SERVER) "if [ ! -d $(REMOTE_ROOT_DIR) ]; then mkdir -p $(REMOTE_ROOT_DIR); fi"
 	rsync -avz --delete --exclude .git $(CACHE_DIR) $(FPGA_USER)@$(FPGA_SERVER):$(REMOTE_ROOT_DIR)
 	ssh $(FPGA_USER)@$(FPGA_SERVER) 'cd $(REMOTE_ROOT_DIR); make fpga-clean FPGA_FAMILY=$(FPGA_FAMILY)'
 endif

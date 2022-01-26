@@ -1,7 +1,9 @@
 ifeq ($(filter CACHE, $(HW_MODULES)),)
-ifeq ($(USE_DDR),1)
 
 include $(CACHE_DIR)/config.mk
+
+ifeq ($(USE_DDR),1)
+
 
 USE_NETLIST ?=0
 
@@ -11,10 +13,10 @@ HW_MODULES+=CACHE
 #import submodules hardware
 
 #select modules to import from MEM
-MEM_HW_MODULES+=iob_regfile_sp iob_fifo_sync iob_ram_sp
+MEM_MODULES+=iob_regfile_sp iob_fifo_sync iob_ram_sp
 
 #include submodule's hardware
-$(foreach p, $(SUBHW_MODULES), $(if $(filter $p, $(HW_MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
+$(foreach p, $(SUBMODULES_DIR_LIST), $(if $(filter $p, $(HW_MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
 
 #include
 INCLUDE+=$(incdir)$(CACHE_INC_DIR)
