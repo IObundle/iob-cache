@@ -18,7 +18,7 @@ SUBMODULES_DIR:=$(CACHE_DIR)/submodules
 
 # submodule paths
 SUBMODULES_DIR_LIST=$(shell ls $(SUBMODULES_DIR))
-$(foreach d, $(SUBMODULES_DIR_LIST), $(eval $d_DIR ?=$(SUBMODULES_DIR)/$d) $(info $($d_DIR)))
+$(foreach d, $(SUBMODULES_DIR_LIST), $(eval $d_DIR ?=$(SUBMODULES_DIR)/$d))
 
 #DEFAULT SIMULATOR
 SIMULATOR ?=icarus
