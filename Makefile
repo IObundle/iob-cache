@@ -1,8 +1,14 @@
 CACHE_DIR:=.
 include ./config.mk
 
-corename:
-	@echo "CACHE"
+.PHONY:	sim sim-test sim-clean sim-clean-all \
+	fpga-build fpga-build-all fpga-test fpga-clean fpga-clean-all \
+	doc-build doc-build-all doc-test doc-clean doc-clean-all \
+	test-sim test-sim-clean \
+	test-fpga test-fpga-clean \
+	test-doc test-doc-clean \
+	test test-clean \
+	clean-all
 
 #
 # SIMULATE
@@ -99,12 +105,3 @@ test-clean: test-sim-clean test-fpga-clean #test-doc-clean
 
 clean-all: sim-clean-all fpga-clean-all #doc-clean-all
 
-.PHONY: corename \
-	sim sim-test sim-clean sim-clean-all \
-	fpga-build fpga-build-all fpga-test fpga-clean fpga-clean-all \
-	doc-build doc-build-all doc-test doc-clean doc-clean-all \
-	test-sim test-sim-clean \
-	test-fpga test-fpga-clean \
-	test-doc test-doc-clean \
-	test test-clean \
-	clean-all

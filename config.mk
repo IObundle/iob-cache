@@ -17,9 +17,8 @@ DOC_DIR ?=$(CACHE_DIR)/document
 SUBMODULES_DIR:=$(CACHE_DIR)/submodules
 
 # submodule paths
-SUBMODULES=
-SUBMODULE_DIRS=$(shell ls $(SUBMODULES_DIR))
-$(foreach d, $(SUBMODULE_DIRS), $(eval TMP=$(shell make -C $(SUBMODULES_DIR)/$d corename | grep -v make)) $(eval SUBMODULES+=$(TMP)) $(eval $(TMP)_DIR ?=$(SUBMODULES_DIR)/$d))
+SUBMODULES_DIR_LIST=$(shell ls $(SUBMODULES_DIR))
+$(foreach d, $(SUBMODULE_DIRS), $(eval $d_DIR ?=$(SUBMODULES_DIR)/$d))
 
 #DEFAULT SIMULATOR
 SIMULATOR ?=icarus
