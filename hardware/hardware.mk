@@ -12,14 +12,13 @@ HW_MODULES+=CACHE
 
 #import submodules hardware
 
-#select modules to import from MEM
-MEM_MODULES+=iob_regfile_sp iob_fifo_sync iob_ram_sp
-
-#include submodule's hardware
-$(foreach p, $(SUBMODULES_DIR_LIST), $(if $(filter $p, $(HW_MODULES)),,$(eval include $($p_DIR)/hardware/hardware.mk)))
+#select mem modules to import
+include $(MEM_DIR)/hardware/regfile/iob_regfile_sp/hardware.mk
+include $(MEM_DIR)/hardware/fifo/iob_fifo_sync/hardware.mk
+include $(MEM_DIR)/hardware/ram/iob_ram_sp/hardware.mk
 
 #include
-INCLUDE+=$(incdir)$(CACHE_INC_DIR)
+INCLUDE+=$(incdir)$(CACHE_INC_DIR) $(incdir)$(LIB_DIR)/hardware/include
 
 #headers
 VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
