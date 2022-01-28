@@ -106,14 +106,15 @@ module cache_memory
 
          iob_fifo_sync 
            #(
-	     .DATA_W (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
+	     .R_DATA_W (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
+	     .W_DATA_W (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
 	     .ADDR_W (WTBUF_DEPTH_W)
 	     )
          write_throught_buffer
            (
             .clk     (clk),
             .rst     (reset),
-            .fifo_ocupancy(),
+            .level   (),
             .r_data  (buffer_dout),
             .r_empty (buffer_empty),
             .r_en    (write_ready),
