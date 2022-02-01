@@ -9,16 +9,17 @@ CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
 CACHE_SRC_DIR:=$(CACHE_HW_DIR)/src
 CACHE_TB_DIR:=$(CACHE_HW_DIR)/testbench
 CACHE_SW_DIR:=$(CACHE_DIR)/software
+
 #paths that need no disambiguation
 REMOTE_ROOT_DIR ?= sandbox/iob-soc/submodules/CACHE
 SIM_DIR ?=$(CACHE_HW_DIR)/simulation/$(SIMULATOR)
 FPGA_DIR ?=$(shell find $(CACHE_DIR)/hardware -name $(FPGA_FAMILY))
 DOC_DIR ?=$(CACHE_DIR)/document
-SUBMODULES_DIR:=$(CACHE_DIR)/submodules
 
 # submodule paths
-SUBMODULES_DIR_LIST=$(shell ls $(SUBMODULES_DIR))
-$(foreach d, $(SUBMODULES_DIR_LIST), $(eval $d_DIR ?=$(SUBMODULES_DIR)/$d))
+SUBMODULES_DIR:=$(CACHE_DIR)/submodules
+LIB_DIR ?=$(SUBMODULES_DIR_LIST)/LIB
+MEM_DIR ?=$(SUBMODULES_DIR_LIST)/MEM
 
 #DEFAULT SIMULATOR
 SIMULATOR ?=icarus
