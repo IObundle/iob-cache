@@ -17,9 +17,8 @@ FPGA_DIR ?=$(shell find $(CACHE_DIR)/hardware -name $(FPGA_FAMILY))
 DOC_DIR ?=$(CACHE_DIR)/document
 
 # submodule paths
-SUBMODULES_DIR:=$(CACHE_DIR)/submodules
-LIB_DIR ?=$(SUBMODULES_DIR)/LIB
-MEM_DIR ?=$(SUBMODULES_DIR)/MEM
+LIB_DIR ?=$(CACHE_DIR)/submodules/LIB
+MEM_DIR ?=$(CACHE_DIR)/submodules/MEM
 
 #DEFAULT SIMULATOR
 SIMULATOR ?=icarus
