@@ -20,7 +20,7 @@ VHDR+=$(CACHE_TB_DIR)/iob-cache_tb.vh
 VSRC+=$(TB)
 
 #axi memory
-VSRC+=$(LIB_DIR)/submodules/AXI/rtl/axi_ram.v
+include $(AXI_DIR)/hardware/axiram/hardware.mk
 
 waves:
 	gtkwave uut.vcd
