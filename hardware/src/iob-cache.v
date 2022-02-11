@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 `include "iob-cache.vh"
+`include "iob_lib.vh"
 
 ///////////////
 // IOb-cache //
@@ -37,35 +38,34 @@ module iob_cache
     parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
-    input                                       clk,
-    input                                       reset,
+    `INPUT(clk, 1),   //System clock     
+    `INPUT(reset, 1), //System reset
     //Master i/f
-    input                                       valid,
+    `INPUT(valid,1),  //CPU interface valid signal   
 `ifdef WORD_ADDR   
-    input [CTRL_CACHE + FE_ADDR_W -1:FE_BYTE_W] addr, //MSB is used for Controller selection
+    `INPUT(addr,(CTRL_CACHE + FE_ADDR_WFE_BYTE_W), //MSB is used for Controller selection
 `else
-    input [CTRL_CACHE + FE_ADDR_W -1:0]         addr, //MSB is used for Controller selection
+    `INPUT(addr, CTRL_CACHE + FE_ADDR_W), //MSB is used for Controller selection
 `endif
-    input [FE_DATA_W-1:0]                       wdata,
-    input [FE_NBYTES-1:0]                       wstrb,
-    output [FE_DATA_W-1:0]                      rdata,
-    output                                      ready,
+    `INPUT(wdata,FE_DATA_W),  //CPU interface write data signal
+    `INPUT(wstrb,FE_NBYTES),  //CPU interface write strobe
+    `INPUT(rdata,FE_DATA_W),  //CPU interface read data signal
+    `OUTPUT(ready,1),         //CPU interface ready signal
 `ifdef CTRL_IO
     //control-status io
-    input                                       force_inv_in, //force 1'b0 if unused
-    output                                      force_inv_out, 
-    input                                       wtb_empty_in, //force 1'b1 if unused
-    output                                      wtb_empty_out, 
+    `INPUT(force_inv_in,1),  //force 1'b0 if unused
+    `OUTPUT(force_inv_out,1), 
+    `INPUT(wtb_empty_in,1), //force 1'b1 if unused
+    `OUTPUT(wtb_empty_out,1), 
 `endif  
     //Slave i/f - Native
-    output                                      mem_valid,
-    output [BE_ADDR_W-1:0]                      mem_addr,
-    output [BE_DATA_W-1:0]                      mem_wdata,
-    output [BE_NBYTES-1:0]                      mem_wstrb,
-    input [BE_DATA_W-1:0]                       mem_rdata,
-    input                                       mem_ready
+    `OUTPUT(mem_valid,1),
+    `OUTPUT(mem_addr,BE_ADDR_W),
+    `OUTPUT(mem_wdata,BE_DATA_W),
+    `OUTPUT(mem_wstrb,BE_NBYTES),
+    `INPUT(mem_rdata,BE_DATA_W), 
+    `INPUT(mem_ready,1)
     );
-
    
    //internal signals (front-end inputs)
    wire                                         data_valid, data_ready;
