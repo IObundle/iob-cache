@@ -1,0 +1,50 @@
+\begin{table}[H]
+\ifnum\XILINX=1
+\ifnum\INTEL=1
+\begin{minipage}{0.45\linewidth}
+\else
+\begin{minipage}{\linewidth}
+\fi
+\centering
+\begin{tabular}{|l|r|}
+\hline
+\rowcolor{iob-green}
+\textbf{Resource}  & \textbf{Used} \\
+\hline
+\hline
+\input xil_results.tex 
+\end{tabular}
+\end{minipage}
+\fi
+\ifnum\INTEL=1
+\ifnum\XILINX=1
+\begin{minipage}{0.45\linewidth}
+\else
+\begin{minipage}{\linewidth}
+\fi
+\centering
+\begin{tabular}{|l|r|}
+\hline
+\rowcolor{iob-green}
+\textbf{Resource}  & \textbf{Used} \\
+\hline
+\hline
+\input alt_results.tex 
+\end{tabular}
+\end{minipage}
+\fi
+\ifnum\INTEL=1
+\ifnum\XILINX=1
+\caption{FPGA results for Kintex Ultrascale (left) and Cyclone V GT (right).}
+\fi
+\ifnum\XILINX=0
+\caption{FPGA results for Cyclone V GT.}
+\fi
+\fi
+\ifnum\XILINX=1
+\ifnum\INTEL=0
+\caption{FPGA results for Kintex Ultrascale.}
+\fi
+\fi
+\label{tab:fpga_results}
+\end{table}

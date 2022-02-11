@@ -14,7 +14,7 @@ CACHE_SW_DIR:=$(CACHE_DIR)/software
 REMOTE_ROOT_DIR ?= sandbox/iob-soc/submodules/CACHE
 SIM_DIR ?=$(CACHE_HW_DIR)/simulation/$(SIMULATOR)
 FPGA_DIR ?=$(shell find $(CACHE_DIR)/hardware -name $(FPGA_FAMILY))
-DOC_DIR ?=$(CACHE_DIR)/document
+DOC_DIR ?=$(CACHE_DIR)/document/$(DOC)
 
 # submodule paths
 LIB_DIR ?=$(CACHE_DIR)/submodules/LIB
