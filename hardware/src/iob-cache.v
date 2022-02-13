@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
-`include "iob-cache.vh"
 `include "iob_lib.vh"
+`include "iob-cache.vh"
 
 ///////////////
 // IOb-cache //
@@ -38,34 +38,35 @@ module iob_cache
     parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
-    `INPUT(clk, 1),   //System clock     
-    `INPUT(reset, 1), //System reset
+    `INPUT(clk,1),   //System clock
+    `INPUT(reset,1), //System reset
     //Master i/f
-    `INPUT(valid,1),  //CPU interface valid signal   
+    `INPUT(valid, 1), //CPU interface valid signal
 `ifdef WORD_ADDR   
-    `INPUT(addr,(CTRL_CACHE + FE_ADDR_WFE_BYTE_W), //MSB is used for Controller selection
+    `INPUT(addr,CTRL_CACHE + FE_ADDR_W - FE_BYTE_W),
 `else
-    `INPUT(addr, CTRL_CACHE + FE_ADDR_W), //MSB is used for Controller selection
+    `INPUT(addr,CTRL_CACHE + FE_ADDR_W),
 `endif
-    `INPUT(wdata,FE_DATA_W),  //CPU interface write data signal
-    `INPUT(wstrb,FE_NBYTES),  //CPU interface write strobe
-    `INPUT(rdata,FE_DATA_W),  //CPU interface read data signal
-    `OUTPUT(ready,1),         //CPU interface ready signal
+    `INPUT(wdata,FE_DATA_W),    //CPU interface write data signal
+    `INPUT(wstrb,FE_NBYTES),    //CPU interface write strobe
+    `OUTPUT(rdata, FE_DATA_W),  //CPU interface read data signal
+    `OUTPUT(ready,1),           //CPU interface ready signal
 `ifdef CTRL_IO
     //control-status io
-    `INPUT(force_inv_in,1),  //force 1'b0 if unused
+    `INPUT(force_inv_in,1),     //force 1'b0 if unused
     `OUTPUT(force_inv_out,1), 
-    `INPUT(wtb_empty_in,1), //force 1'b1 if unused
-    `OUTPUT(wtb_empty_out,1), 
+    `INPUT(wtb_empty_in,1),     //force 1'b1 if unused
+    `OUTPUT(wtb_empty_out,1),
 `endif  
     //Slave i/f - Native
     `OUTPUT(mem_valid,1),
     `OUTPUT(mem_addr,BE_ADDR_W),
     `OUTPUT(mem_wdata,BE_DATA_W),
     `OUTPUT(mem_wstrb,BE_NBYTES),
-    `INPUT(mem_rdata,BE_DATA_W), 
+    `INPUT(mem_rdata,BE_DATA_W),      
     `INPUT(mem_ready,1)
     );
+
    
    //internal signals (front-end inputs)
    wire                                         data_valid, data_ready;
