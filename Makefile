@@ -50,8 +50,8 @@ fpga-clean-all:
 # DOCUMENT
 #
 
-doc-build: fpga-build-all
-	make -C $(DOC_DIR) all
+doc-build:
+	make -C $(DOC_DIR) $(DOC).pdf
 
 doc-build-all:
 	$(foreach s, $(DOC_LIST), make doc-build DOC=$s;)
@@ -105,3 +105,5 @@ test-clean: test-sim-clean test-fpga-clean #test-doc-clean
 
 clean-all: sim-clean-all fpga-clean-all #doc-clean-all
 
+debug:
+	@echo(DOC_DIR)
