@@ -36,7 +36,7 @@ DOC_LIST ?=pb ug
 # VERSION
 VERSION ?=0.1
 VLINE ?="V$(VERSION)"
-CACHE_version.txt:
+$(TOP_MODULE)_version.txt:
 ifeq ($(VERSION),)
 	$(error "variable VERSION is not set")
 endif
