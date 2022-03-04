@@ -38,33 +38,38 @@ module iob_cache
     parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
-    `INPUT(clk,1),   //System clock
-    `INPUT(reset,1), //System reset
+    //START_IO_TABLE gen
+    `IOB_INPUT(clk,1),   //System clock input
+    `IOB_INPUT(reset,1), //System reset, asynchronous and active high
+
     //Master i/f
-    `INPUT(valid, 1), //CPU interface valid signal
+    //START_IO_TABLE iob_m
+    `IOB_INPUT(valid, 1),          //Native CPU interface valid signal
 `ifdef WORD_ADDR   
-    `INPUT(addr,CTRL_CACHE + FE_ADDR_W - FE_BYTE_W),
+    `IOB_INPUT(addr,CTRL_CACHE + FE_ADDR_W - FE_BYTE_W), //Native CPU interface address signal
 `else
-    `INPUT(addr,CTRL_CACHE + FE_ADDR_W),
+    `IOB_INPUT(addr,CTRL_CACHE + FE_ADDR_W), //Native CPU interface address signal
 `endif
-    `INPUT(wdata,FE_DATA_W),    //CPU interface write data signal
-    `INPUT(wstrb,FE_NBYTES),    //CPU interface write strobe
-    `OUTPUT(rdata, FE_DATA_W),  //CPU interface read data signal
-    `OUTPUT(ready,1),           //CPU interface ready signal
+    `IOB_INPUT(wdata,FE_DATA_W),   //Native CPU interface data write signal
+    `IOB_INPUT(wstrb,FE_NBYTES),   //Native CPU interface write strobe signal
+    `IOB_OUTPUT(rdata, FE_DATA_W), //Native CPU interface read data signal
+    `IOB_OUTPUT(ready,1),          //Native CPU interface ready signal
 `ifdef CTRL_IO
     //control-status io
-    `INPUT(force_inv_in,1),     //force 1'b0 if unused
-    `OUTPUT(force_inv_out,1), 
-    `INPUT(wtb_empty_in,1),     //force 1'b1 if unused
-    `OUTPUT(wtb_empty_out,1),
+    //START_IO_TABLE cs_io
+    `IOB_INPUT(force_inv_in,1),     //force 1'b0 if unused
+    `IOB_OUTPUT(force_inv_out,1),
+    `IOB_INPUT(wtb_empty_in,1),     //force 1'b1 if unused
+    `IOB_OUTPUT(wtb_empty_out,1),
 `endif  
     //Slave i/f - Native
-    `OUTPUT(mem_valid,1),
-    `OUTPUT(mem_addr,BE_ADDR_W),
-    `OUTPUT(mem_wdata,BE_DATA_W),
-    `OUTPUT(mem_wstrb,BE_NBYTES),
-    `INPUT(mem_rdata,BE_DATA_W),      
-    `INPUT(mem_ready,1)
+    //START_IO_TABLE iob_s
+    `IOB_OUTPUT(mem_valid,1),         //Native CPU interface valid signal
+    `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Native CPU interface address signal
+    `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Native CPU interface data write signal
+    `IOB_OUTPUT(mem_wstrb,BE_NBYTES), //Native CPU interface write strobe signal
+    `IOB_INPUT(mem_rdata,BE_DATA_W),  //Native CPU interface read data signal
+    `IOB_INPUT(mem_ready,1)           //Native CPU interface ready signal
     );
 
    
@@ -111,7 +116,8 @@ module iob_cache
         assign wtb_empty_out = wtbuf_empty & wtb_empty_in;//to remove unconnected port warning. If unused wtb_empty_in = 1'b1
    endgenerate 
 `endif
-   
+
+   //BLOCK Front-end & Front-end block.
    front_end
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -148,7 +154,7 @@ module iob_cache
       );
 
 
-   
+   //BLOCK Cache memory & Cache memory block.
    cache_memory
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -207,10 +213,8 @@ module iob_cache
       .invalidate  (invalidate)
 `endif
       );
-   
 
-
-   
+   //BLOCK Back-end & Back-end block.
    back_end_native
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -247,7 +251,7 @@ module iob_cache
       );
    
    
-   
+   //BLOCK Cache control & Cache control block.
    generate
       if (CTRL_CACHE)
          

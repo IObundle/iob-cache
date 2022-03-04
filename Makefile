@@ -94,16 +94,16 @@ test-doc-clean:
 	make doc-clean DOC=pb
 	make doc-clean DOC=ug
 
-test: test-clean test-sim test-fpga #test-doc
+test: test-clean test-sim test-fpga test-doc
 
-test-clean: test-sim-clean test-fpga-clean #test-doc-clean
+test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
 
 #
 # CLEAN ALL
 # 
 
-clean-all: sim-clean-all fpga-clean-all #doc-clean-all
+clean-all: sim-clean-all fpga-clean-all doc-clean-all
 
 debug:
 	@echo(DOC_DIR)
