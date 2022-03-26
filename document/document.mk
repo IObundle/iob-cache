@@ -14,12 +14,6 @@ NOCLEAN+=-o -name "test.expected" -o -name "Makefile"
 #root directory
 CORE_DIR:=$(CACHE_DIR)
 
-#RTL files used to generate tables
-VHDR+=$(CACHE_DIR)/hardware/include/gen_if.vh
-VHDR+=$(CACHE_DIR)/hardware/include/iob_m_if.vh
-VHDR+=$(CACHE_DIR)/hardware/include/cs_io_if.vh
-VHDR+=$(CACHE_DIR)/hardware/include/iob_s_if.vh
-
 #export definitions
 export DEFINE
 
