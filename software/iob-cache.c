@@ -11,9 +11,9 @@ void cache_init(int ext_mem, int cache_addr)
 
 int cache_invalidate()   {return (CACHEFUNC(cache_base,INVALIDATE));}
 
-int cache_buffer_empty() {return (CACHEFUNC(cache_base,BUFFER_EMPTY));}
+int cache_wtb_empty() {return (CACHEFUNC(cache_base,BUFFER_EMPTY));}
 
-int cache_buffer_full()  {return (CACHEFUNC(cache_base,BUFFER_FULL));}
+int cache_wtb_full()  {return (CACHEFUNC(cache_base,BUFFER_FULL));}
 
 int cache_hit()          {return (CACHEFUNC(cache_base,HIT));}
 

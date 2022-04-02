@@ -18,8 +18,8 @@
 // Cache Controllers's functions
 void cache_init(int ext_mem, int cache_addr); // initialized the cache_base static integer
 int cache_invalidate(); 
-int cache_buffer_empty();    
-int cache_buffer_full();
+int cache_wtb_empty();    
+int cache_wtb_full();
 int cache_hit();        
 int cache_miss();                       
 int cache_read_hit();    
