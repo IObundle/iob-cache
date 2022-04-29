@@ -15,6 +15,7 @@ HW_MODULES+=CACHE
 #select mem modules to import
 include $(MEM_DIR)/hardware/regfile/iob_regfile_sp/hardware.mk
 include $(MEM_DIR)/hardware/fifo/iob_fifo_sync/hardware.mk
+include $(MEM_DIR)/hardware/ram/iob_ram_2p/hardware.mk
 include $(MEM_DIR)/hardware/ram/iob_ram_sp/hardware.mk
 
 #include
