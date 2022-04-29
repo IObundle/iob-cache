@@ -104,20 +104,62 @@ module cache_memory
    generate
       if(WRITE_POL == `WRITE_THROUGH) begin
 
+         localparam FIFO_DATA_W = FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES;
+         localparam FIFO_ADDR_W = WTBUF_DEPTH_W;
+
+         wire mem_w_en;
+         wire [FIFO_ADDR_W-1:0] mem_w_addr;
+         wire [FIFO_DATA_W-1:0] mem_w_data;
+
+         wire mem_r_en;
+         wire [FIFO_ADDR_W-1:0] mem_r_addr;
+         wire [FIFO_DATA_W-1:0] mem_r_data;
+
+         // FIFO memory
+         iob_ram_2p
+           #(
+             .DATA_W(FIFO_DATA_W),
+             .ADDR_W(FIFO_ADDR_W)
+             )
+         iob_ram_2p0
+           (
+            .clk    (clk),
+
+            .w_en   (mem_w_en),
+            .w_addr (mem_w_addr),
+            .w_data (mem_w_data),
+
+            .r_en   (mem_r_en),
+            .r_addr (mem_r_addr),
+            .r_data (mem_r_data)
+            );
+
          iob_fifo_sync 
            #(
-	     .R_DATA_W (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
-	     .W_DATA_W (FE_ADDR_W-FE_BYTE_W + FE_DATA_W + FE_NBYTES),
-	     .ADDR_W (WTBUF_DEPTH_W)
-	     )
+             .R_DATA_W (FIFO_DATA_W),
+             .W_DATA_W (FIFO_DATA_W),
+             .ADDR_W   (FIFO_ADDR_W)
+             )
          write_throught_buffer
            (
             .clk     (clk),
             .rst     (reset),
+            .arst    (reset),
+
+            .ext_mem_w_en   (mem_w_en),
+            .ext_mem_w_addr (mem_w_addr),
+            .ext_mem_w_data (mem_w_data),
+
+            .ext_mem_r_en   (mem_r_en),
+            .ext_mem_r_addr (mem_r_addr),
+            .ext_mem_r_data (mem_r_data),
+
             .level   (),
+
             .r_data  (buffer_dout),
             .r_empty (buffer_empty),
             .r_en    (write_ready),
+
             .w_data  ({addr_reg,wdata_reg,wstrb_reg}),
             .w_full  (buffer_full),
             .w_en    (write_access & ready)
