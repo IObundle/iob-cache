@@ -9,33 +9,33 @@
 module iob_cache 
   #(
     //memory cache's parameters
-    parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
-    parameter FE_DATA_W  = 32,       //Data width - word size used for the cache
-    parameter N_WAYS   = 2,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W = 7,  //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
-    parameter WTBUF_DEPTH_W = 5,   //Depth Width of Write-Through Buffer
+    parameter FE_ADDR_W = 32,  //PARAM & ? & ? & Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
+    parameter FE_DATA_W = 32,   //PARAM & ? & ? & Data width - word size used for the cache
+    parameter N_WAYS = 2,      //PARAM & ? & ? & Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
+    parameter LINE_OFF_W = 7,    //PARAM & ? & ? & Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFF_W = 3,    //PARAM & ? & ? & Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
+    parameter WTBUF_DEPTH_W = 5,   //PARAM & ? & ? & Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `PLRU_mru, //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
+    parameter REP_POLICY = `PLRU_mru, //PARAM & ? & ? & LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     //Do NOT change - memory cache's parameters - dependency
-    parameter NWAY_W   = $clog2(N_WAYS),  //Cache Ways Width
-    parameter FE_NBYTES  = FE_DATA_W/8,        //Number of Bytes per Word
-    parameter FE_BYTE_W  = $clog2(FE_NBYTES), //Byte Offset
+    parameter NWAY_W = $clog2(N_WAYS),  //PARAM & ? & ? & Cache Ways Width
+    parameter FE_NBYTES = FE_DATA_W/8,       //PARAM & ? & ? & Number of Bytes per Word
+    parameter FE_BYTE_W = $clog2(FE_NBYTES), //PARAM & ? & ? & Byte Offset
     /*---------------------------------------------------*/
     //Higher hierarchy memory (slave) interface parameters 
-    parameter BE_ADDR_W = FE_ADDR_W, //Address width of the higher hierarchy memory
-    parameter BE_DATA_W = FE_DATA_W, //Data width of the memory 
-    parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
-    parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
+    parameter BE_ADDR_W = FE_ADDR_W, //PARAM & ? & ? & Address width of the higher hierarchy memory
+    parameter BE_DATA_W = FE_DATA_W, //PARAM & ? & ? & Data width of the memory 
+    parameter BE_NBYTES = BE_DATA_W/8, //PARAM & ? & ? & Number of bytes
+    parameter BE_BYTE_W = $clog2(BE_NBYTES), //PARAM & ? & ? & Offset of Number of Bytes
     //Cache-Memory base Offset
-    parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
+    parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),  //PARAM & ? & ? & Logarithm Ratio between the size of the cache-line and the BE's data width 
     /*---------------------------------------------------*/
     //Write Policy 
-    parameter WRITE_POL = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
+    parameter WRITE_POL = `WRITE_THROUGH, //MACRO & ? & ? & write policy: write-through (0), write-back (1)
     /*---------------------------------------------------*/
     //Controller's options
-    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 0  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+    parameter CTRL_CACHE = 0, //PARAM & ? & ? & Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
+    parameter CTRL_CNT = 0    //PARAM & ? & ? & Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
     ) 
    (
     //START_IO_TABLE gen
