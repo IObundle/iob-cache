@@ -1,0 +1,57 @@
+\subsubsection{Macros}
+
+\ifdefined\SM
+
+The configuration macros apply to all instances of the core, and are listed in
+Table~\ref{tab:sm}.
+
+\begin{table}[h]
+  \centering
+    \begin{tabularx}{\textwidth}{ | c | c | c | c | X | }
+    \hline
+    \rowcolor{iob-green}
+    {\bf Parameter} & {\bf Min} & {\bf Typ} & {\bf Max} & {\bf Description} \\\hline
+
+    \input{sm_tab}
+
+    \end{tabularx}
+  \caption{Synthesis Macros.}
+  \label{tab:sm}
+\end{table}
+
+\noindent
+
+\else
+The IP core has no user-definable macros other than the default configuration parameter values, described in Section~\ref{sec:cp} if available.
+\fi
+
+
+\subsubsection{Parameters}
+\label{sec:cp}
+\ifdefined\SP
+
+The configuration parameters of the core are presented in
+Table~\ref{tab:sp}. Configuration parameters can vary from instance to instance.
+
+\begin{landscape}
+\begin{table}[p]
+  \centering
+    \begin{tabular}{|l|c|c|c|p{9cm}|}
+    \hline
+    \rowcolor{iob-green}
+    \multicolumn{1}{|c}{\bf Parameter} & \multicolumn{1}{|c|}{\bf Min} & \multicolumn{1}{c|}{\bf Typ} & \multicolumn{1}{c|}{\bf Max} & \multicolumn{1}{c|}{\bf Description}  \\ \hline \hline
+
+    \input{sp_tab}
+
+    \end{tabular}
+    
+\caption{Synthesis Parameters.}
+  \label{tab:sp}
+\end{table}
+\end{landscape}
+
+\else
+
+This IP core has no synthesis parameters.
+
+\fi
