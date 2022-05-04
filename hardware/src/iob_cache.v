@@ -16,7 +16,7 @@ module iob_cache
     parameter WORD_OFF_W = 3,    //PARAM & ? & ? & Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 5,   //PARAM & ? & ? & Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
-    parameter REP_POLICY = `PLRU_mru, //PARAM & ? & ? & LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
+    parameter REP_POLICY = `PLRU_mru, //MACRO & ? & ? & LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
     //Do NOT change - memory cache's parameters - dependency
     parameter NWAY_W = $clog2(N_WAYS),  //PARAM & ? & ? & Cache Ways Width
     parameter FE_NBYTES = FE_DATA_W/8,       //PARAM & ? & ? & Number of Bytes per Word
