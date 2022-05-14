@@ -1,15 +1,6 @@
 CACHE_DIR:=.
 include ./config.mk
 
-.PHONY:	sim sim-test sim-clean sim-clean-all \
-	fpga-build fpga-build-all fpga-test fpga-clean fpga-clean-all \
-	doc-build doc-build-all doc-test doc-clean doc-clean-all \
-	test-sim test-sim-clean \
-	test-fpga test-fpga-clean \
-	test-doc test-doc-clean \
-	test test-clean \
-	clean-all
-
 #
 # SIMULATE
 #
@@ -27,7 +18,7 @@ sim-clean-all:
 	$(foreach s, $(SIMULATOR_LIST), make sim-clean SIMULATOR=$s;)
 
 #
-# FPGA COMPILE
+# FPGA
 #
 
 fpga-build:
@@ -67,7 +58,7 @@ doc-clean-all:
 
 
 #
-# TEST ON SIMULATORS AND BOARDS
+# TEST
 #
 
 test-sim:
@@ -100,10 +91,25 @@ test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
 
 #
-# CLEAN ALL
+# CLEAN
 # 
 
 clean-all: sim-clean-all fpga-clean-all doc-clean-all
 
 debug:
 	@echo(DOC_DIR)
+
+update:
+	find . -name .git -exec git co master \;
+	find . -name .git -exec git pull origin master \;
+	find . -name .git -exec git submodule update --init --recursive \;
+
+.PHONY:	sim sim-test sim-clean sim-clean-all \
+	fpga-build fpga-build-all fpga-test fpga-clean fpga-clean-all \
+	doc-build doc-build-all doc-test doc-clean doc-clean-all \
+	test-sim test-sim-clean \
+	test-fpga test-fpga-clean \
+	test-doc test-doc-clean \
+	test test-clean \
+	clean-all debug update
+

@@ -24,37 +24,37 @@ module front_end
 `endif
     input [FE_DATA_W-1:0]                       wdata,
     input [FE_NBYTES-1:0]                       wstrb,
-    input                                       valid,
-    output                                      ready,
+    input                                       req,
+    output                                      ack,
     output [FE_DATA_W-1:0]                      rdata,
 
     //internal input signals
-    output                                      data_valid,
+    output                                      data_req,
     output [FE_ADDR_W-1:FE_BYTE_W]              data_addr,
     //output [FE_DATA_W-1:0]                      data_wdata,
     //output [FE_NBYTES-1:0]                      data_wstrb,
     input [FE_DATA_W-1:0]                       data_rdata,
-    input                                       data_ready,
+    input                                       data_ack,
     //stored input signals
-    output                                      data_valid_reg,
+    output                                      data_req_reg,
     output [FE_ADDR_W-1:FE_BYTE_W]              data_addr_reg,
     output [FE_DATA_W-1:0]                      data_wdata_reg,
     output [FE_NBYTES-1:0]                      data_wstrb_reg,
     //cache-control
-    output                                      ctrl_valid,
+    output                                      ctrl_req,
     output [`CTRL_ADDR_W-1:0]                   ctrl_addr, 
     input [CTRL_CACHE*(FE_DATA_W-1):0]          ctrl_rdata,
-    input                                       ctrl_ready
+    input                                       ctrl_ack
     );
    
-   wire                                         valid_int;
+   wire                                         req_int;
    
-   reg                                          valid_reg;
+   reg                                          req_reg;
    reg [FE_ADDR_W-1:FE_BYTE_W]                  addr_reg;
    reg [FE_DATA_W-1:0]                          wdata_reg;
    reg [FE_NBYTES-1:0]                          wstrb_reg;
 
-   assign data_valid_reg = valid_reg;
+   assign data_req_reg = req_reg;
    assign data_addr_reg = addr_reg;
    assign data_wdata_reg = wdata_reg;
    assign data_wstrb_reg = wstrb_reg;
@@ -68,24 +68,24 @@ module front_end
         begin
 
            //Front-end output signals
-           assign ready = ctrl_ready | data_ready;
-           assign rdata = (ctrl_ready)? ctrl_rdata  : data_rdata;     
+           assign ack = ctrl_ack | data_ack;
+           assign rdata = (ctrl_ack)? ctrl_rdata  : data_rdata;     
            
-           assign valid_int  = ~addr[CTRL_CACHE + FE_ADDR_W -1] & valid;
+           assign req_int  = ~addr[CTRL_CACHE + FE_ADDR_W -1] & req;
            
-           assign ctrl_valid =  addr[CTRL_CACHE + FE_ADDR_W -1] & valid;       
+           assign ctrl_req =  addr[CTRL_CACHE + FE_ADDR_W -1] & req;       
            assign ctrl_addr  =  addr[FE_BYTE_W +: `CTRL_ADDR_W];
            
         end // if (CTRL_CACHE)
       else 
         begin
            //Front-end output signals
-           assign ready = data_ready; 
+           assign ack = data_ack; 
            assign rdata = data_rdata;
            
-           assign valid_int = valid;
+           assign req_int = req;
            
-           assign ctrl_valid = 1'bx;
+           assign ctrl_req = 1'bx;
            assign ctrl_addr = `CTRL_ADDR_W'dx;
            
         end // else: !if(CTRL_CACHE)
@@ -99,7 +99,7 @@ module front_end
      begin
         if(reset)
           begin
-             valid_reg <= 0;
+             req_reg <= 0;
              addr_reg  <= 0;
              wdata_reg <= 0;
              wstrb_reg <= 0;
@@ -107,7 +107,7 @@ module front_end
           end
         else
           begin
-             valid_reg <= valid_int;
+             req_reg <= req_int;
              addr_reg  <= addr[FE_ADDR_W-1:FE_BYTE_W];
              wdata_reg <= wdata;
              wstrb_reg <= wstrb;
@@ -121,11 +121,11 @@ module front_end
    
    
    assign data_addr  = addr[FE_ADDR_W-1:FE_BYTE_W];
-   assign data_valid = valid_int | valid_reg;
+   assign data_req = req_int | req_reg;
    
    assign data_addr_reg  = addr_reg[FE_ADDR_W-1:FE_BYTE_W];
    assign data_wdata_reg = wdata_reg;
    assign data_wstrb_reg = wstrb_reg;
-   assign data_valid_reg = valid_reg;
+   assign data_req_reg = req_reg;
    
 endmodule

@@ -13,17 +13,17 @@ module write_channel_native
     parameter BE_BYTE_W = $clog2(BE_NBYTES),
     // Write-Policy
     parameter WRITE_POL  = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
-    parameter WORD_OFF_W = 3, //required for write-back
-    parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache and memory word size
+    parameter WORD_OFFSET_W = 3, //required for write-back
+    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache and memory word size
     )
    (
     input                                                                   clk,
     input                                                                   reset,
 
     input                                                                   valid,
-    input [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFF_W]                    addr,
+    input [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFFSET_W]                    addr,
     input [FE_NBYTES-1:0]                                                   wstrb,
-    input [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFF_W)-FE_DATA_W)-1:0] wdata, //try [FE_DATA_W*((2**WORD_OFF_W)**WRITE_POL)-1:0] (f(x)=a*b^x)
+    input [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1:0] wdata, //try [FE_DATA_W*((2**WORD_OFFSET_W)**WRITE_POL)-1:0] (f(x)=a*b^x)
     output reg                                                              ready,
     //Native Memory interface
     output [BE_ADDR_W -1:0]                                                 mem_addr,

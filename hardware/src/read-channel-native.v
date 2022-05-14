@@ -6,14 +6,14 @@ module read_channel_native
     parameter FE_ADDR_W   = 32,
     parameter FE_DATA_W   = 32,
     parameter FE_NBYTES  = FE_DATA_W/8,
-    parameter WORD_OFF_W = 3,
+    parameter WORD_OFFSET_W = 3,
     //Higher hierarchy memory (slave) interface parameters 
     parameter BE_ADDR_W = FE_ADDR_W, //Address width of the higher hierarchy memory
     parameter BE_DATA_W = FE_DATA_W, //Data width of the memory 
     parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
     parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of the Number of Bytes
     //Cache-Memory base Offset
-    parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
+    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W) //burst offset based on the cache word's and memory word size
     )
    (
     input                                        clk,
@@ -202,7 +202,7 @@ module read_channel_native
                 endcase
              end
            
-        end // else: !if(MEM_OFF_W > 0)
+        end // else: !if(MEM_OFFSET_W > 0)
    endgenerate
    
 endmodule // read_process_native

@@ -84,7 +84,7 @@ module rep_pol_tb;
 
    replacement_policy #(
 	                 .N_WAYS    (`N_WAYS    ),
-	                 .LINE_OFF_W(0          ),
+	                 .LINE_OFFSET_W(0          ),
                          .REP_POLICY(`REP_POLICY)
 	                 )
                 replacement_policy_algorithm

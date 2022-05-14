@@ -7,8 +7,8 @@ module iob_cache_axi
     parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
     parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
     parameter N_WAYS   = 2,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
-    parameter LINE_OFF_W  = 7,     //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
+    parameter LINE_OFFSET_W  = 7,     //Line-Offset Width - 2**NLINE_W total cache lines
+    parameter WORD_OFFSET_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
     parameter WTBUF_DEPTH_W = 5,   //Depth Width of Write-Through Buffer
     //Replacement policy (N_WAYS > 1)
     parameter REP_POLICY = `PLRU_tree, //LRU - Least Recently Used; PLRU_mru (1) - MRU-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU 
@@ -23,7 +23,7 @@ module iob_cache_axi
     parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
     parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of Number of Bytes
     //Cache-Memory base Offset
-    parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
+    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W),//Logarithm Ratio between the size of the cache-line and the BE's data width 
     /*---------------------------------------------------*/
     //Write Policy 
     parameter WRITE_POL = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
@@ -113,8 +113,8 @@ module iob_cache_axi
 
    //back-end write-channel
    wire                                               write_valid, write_ready;
-   wire [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFF_W] write_addr;
-   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFF_W)-FE_DATA_W)-1 :0] write_wdata;
+   wire [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFFSET_W] write_addr;
+   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 :0] write_wdata;
    wire [FE_NBYTES-1:0]                                                    write_wstrb;
    
    //back-end read-channel
@@ -131,17 +131,7 @@ module iob_cache_axi
    wire                                                                    write_hit, write_miss, read_hit, read_miss;
    wire [CTRL_CACHE*(FE_DATA_W-1):0]                                       ctrl_rdata;
    wire                                                                    invalidate;
-   
-`ifdef CTRL_IO
-   assign force_inv_out = invalidate;
-   
-   generate
-      if (CTRL_CACHE)
-        assign wtb_empty_out = wtbuf_empty;
-      else
-        assign wtb_empty_out = wtbuf_empty & wtb_empty_in;//to remove unconnected port warning. If unused wtb_empty_in = 1'b1
-   endgenerate 
-`endif
+
    
    front_end
      #(
@@ -186,8 +176,8 @@ module iob_cache_axi
        .FE_DATA_W (FE_DATA_W),
        .BE_DATA_W (BE_DATA_W),
        .N_WAYS     (N_WAYS),
-       .LINE_OFF_W (LINE_OFF_W),
-       .WORD_OFF_W (WORD_OFF_W),
+       .LINE_OFFSET_W (LINE_OFFSET_W),
+       .WORD_OFFSET_W (WORD_OFFSET_W),
        .REP_POLICY (REP_POLICY),    
        .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
        .CTRL_CACHE(CTRL_CACHE),
@@ -247,7 +237,7 @@ module iob_cache_axi
        .FE_DATA_W (FE_DATA_W),  
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
-       .WORD_OFF_W(WORD_OFF_W),
+       .WORD_OFFSET_W(WORD_OFFSET_W),
        .WRITE_POL (WRITE_POL),
        .AXI_ID_W(AXI_ID_W),
        .AXI_ID(AXI_ID)

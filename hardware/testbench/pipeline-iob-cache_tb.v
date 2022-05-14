@@ -118,7 +118,7 @@ module iob_cache_tb;
         
         $display("Test 5 - Test Line Replacement with read the last written position\n");
         test <= 5;
-        addr <= (2**`WORD_OFF_W)*5-1;
+        addr <= (2**`WORD_OFFSET_W)*5-1;
         valid <= 1;
         wstrb <= {`DATA_W/8{1'b1}};
         wdata <= 3735928559;
@@ -316,8 +316,8 @@ module iob_cache_tb;
                    .FE_ADDR_W(`ADDR_W),
                    .FE_DATA_W(`DATA_W),
                    .N_WAYS(`N_WAYS),
-                   .LINE_OFF_W(`LINE_OFF_W),
-                   .WORD_OFF_W(`WORD_OFF_W),
+                   .LINE_OFFSET_W(`LINE_OFFSET_W),
+                   .WORD_OFFSET_W(`WORD_OFFSET_W),
                    .BE_ADDR_W(`MEM_ADDR_W),
                    .BE_DATA_W(`MEM_DATA_W),
                    .REP_POLICY(`REP_POLICY),
@@ -391,8 +391,8 @@ module iob_cache_tb;
                .FE_ADDR_W(`ADDR_W),
                .FE_DATA_W(`DATA_W),
                .N_WAYS(`N_WAYS),
-               .LINE_OFF_W(`LINE_OFF_W),
-               .WORD_OFF_W(`WORD_OFF_W),
+               .LINE_OFFSET_W(`LINE_OFFSET_W),
+               .WORD_OFFSET_W(`WORD_OFFSET_W),
                .BE_ADDR_W(`MEM_ADDR_W),
                .BE_DATA_W(`MEM_DATA_W),
                .REP_POLICY(`REP_POLICY),

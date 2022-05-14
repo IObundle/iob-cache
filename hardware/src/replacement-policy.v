@@ -9,7 +9,7 @@
 module replacement_policy
   #(
     parameter N_WAYS     = 8,
-    parameter LINE_OFF_W = 0,
+    parameter LINE_OFFSET_W = 0,
     parameter NWAY_W = $clog2(N_WAYS),
     parameter REP_POLICY = `PLRU_tree //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU
     )
@@ -18,7 +18,7 @@ module replacement_policy
     input                  reset,
     input                  write_en,
     input [N_WAYS-1:0]     way_hit,
-    input [LINE_OFF_W-1:0] line_addr,
+    input [LINE_OFFSET_W-1:0] line_addr,
     output [N_WAYS-1:0]    way_select,
     output [NWAY_W-1:0]    way_select_bin
     );
@@ -70,7 +70,7 @@ module replacement_policy
            //Most Recently Used (MRU) memory
            iob_regfile_sp
              #(
-               .ADDR_W(LINE_OFF_W),
+               .ADDR_W(LINE_OFFSET_W),
                .DATA_W(N_WAYS*NWAY_W)
                )
            mru_memory //simply uses the same format as valid memory
@@ -112,7 +112,7 @@ module replacement_policy
            //Most Recently Used (MRU) memory
            iob_regfile_sp
              #(
-               .ADDR_W(LINE_OFF_W),
+               .ADDR_W(LINE_OFFSET_W),
                .DATA_W(N_WAYS)
                )
            mru_memory //simply uses the same format as valid memory
@@ -187,7 +187,7 @@ module replacement_policy
            //Most Recently Used (MRU) memory
            iob_regfile_sp
              #(
-               .ADDR_W(LINE_OFF_W),
+               .ADDR_W(LINE_OFFSET_W),
                .DATA_W(N_WAYS-1)
                )
            mru_memory //simply uses the same format as valid memory

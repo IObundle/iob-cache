@@ -15,16 +15,16 @@ module write_channel_axi
     parameter [AXI_ID_W-1:0] AXI_ID = 0,
     // Write-Policy
     parameter WRITE_POL  = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
-    parameter WORD_OFF_W = 3, //required for write-back
-    parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W)  //burst offset based on the cache and memory word size
+    parameter WORD_OFFSET_W = 3, //required for write-back
+    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W)  //burst offset based on the cache and memory word size
     )
    (
     input                                                                    clk,
     input                                                                    reset,
 
     input                                                                    valid,
-    input [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFF_W]                     addr,
-    input [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFF_W)-FE_DATA_W)-1 :0] wdata,
+    input [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFFSET_W]                     addr,
+    input [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 :0] wdata,
     input [FE_NBYTES-1:0]                                                    wstrb,
     output reg                                                               ready,
     // Address Write
@@ -181,7 +181,7 @@ module write_channel_axi
             assign axi_awburst = 2'b01; //incremental burst
 
             //memory address
-            assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {(FE_BYTE_W+WORD_OFF_W){1'b0}}}; //base address for the burst, with width extension
+            assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {(FE_BYTE_W+WORD_OFFSET_W){1'b0}}}; //base address for the burst, with width extension
 
             // memory write-data
             reg [LINE2MEM_W-1:0] word_counter;
