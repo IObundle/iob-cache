@@ -18,14 +18,10 @@ module rep_pol_tb;
    reg [31:0]                 test = 0;
    wire [`N_WAYS -1:0]        way_select;
 
-   
-
    // linear-feedback-shift-register for random number generation
    reg [31 :0]                random = `LFSR_IN;
    reg [$clog2(`N_WAYS) :0] random_sel; //store random singal in a specific period
    wire [`N_WAYS -1:0]        way_random_bin = 1 << random_sel[$clog2(`N_WAYS):1];
-   
-   
 
    integer                            i,j;
    
@@ -86,21 +82,22 @@ module rep_pol_tb;
         $finish;
      end      
 
-   replacement_policy #(
-	                 .N_WAYS    (`N_WAYS    ),
-	                 .LINE_OFFSET_W(0          ),
-                         .REP_POLICY(`REP_POLICY)
-	                 )
-                replacement_policy_algorithm
-                  (
-                   .clk       (clk       ),
-                   .reset     (reset     ),
-                   .write_en  (write_en  ),
-                   .way_hit   (way_hit   ),
-                   .line_addr (1'b0      ),
-                   .way_select(way_select),
-                   .way_select_bin(way_select_bin)
-                   );
+   replacement_policy 
+     #(
+       .N_WAYS (`N_WAYS),
+       .NLINES_W (0),
+       .REP_POLICY (`REP_POLICY)
+       )
+   replacement_policy0
+     (
+      .clk (clk),
+      .reset (reset),
+      .write_en (write_en),
+      .way_hit (way_hit),
+      .line_addr (1'b0),
+      .way_select (way_select),
+      .way_select_bin (way_select_bin)
+      );
      
    genvar f;
    

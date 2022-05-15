@@ -2,7 +2,7 @@
 
 //Cache parameters (including front-end's)
 `define NWAYS_W 0
-`define LINE_OFFSET_W 3
+`define NLINES_W 3
 `define WORD_OFFSET_W 1
 `define ADDR_W 12
 `define DATA_W 32
@@ -324,13 +324,13 @@ module iob_cache_tb;
      end
    
 
-   iob_cache 
+   iob_cache_axi
      #(
        .AXI_ID_W(AXI_ID_W),
        .FE_ADDR_W(`ADDR_W),
        .FE_DATA_W(`DATA_W),
        .NWAYS_W(`NWAYS_W),
-       .LINE_OFFSET_W(`LINE_OFFSET_W),
+       .NLINES_W(`NLINES_W),
        .WORD_OFFSET_W(`WORD_OFFSET_W),
        .BE_ADDR_W(`MEM_ADDR_W),
        .BE_DATA_W(`MEM_DATA_W),
@@ -343,13 +343,22 @@ module iob_cache_tb;
      (
       .clk (clk),
       .reset (reset),
+
+      //front-end
       .wdata (cpu_wdata),
       .addr  ({ctrl,cpu_addr}),
       .wstrb (cpu_wstrb),
       .rdata (rdata),
       .req (cpu_req),
       .ack (ack),
-      
+
+      //invalidate / wtb empty
+      .invalidate_in(1'b0),
+      .invalidate_out(),
+      .wtb_empty_in(1'b1),
+      .wtb_empty_out(),
+
+      //back-end
 `ifdef AXI
       //address write
       .axi_awid(axi_awid), 

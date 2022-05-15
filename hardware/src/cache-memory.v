@@ -5,11 +5,10 @@ module cache_memory
   #(
     parameter FE_ADDR_W   = 32,
     parameter FE_DATA_W   = 32,
-
     parameter BE_DATA_W = FE_DATA_W,
 
     parameter NWAYS_W   = 1,
-    parameter LINE_OFFSET_W  = 10,
+    parameter NLINES_W  = 10,
     parameter WORD_OFFSET_W = 3,
     parameter WTBUF_DEPTH_W = 3,
 
@@ -72,7 +71,7 @@ module cache_memory
     );
 
 
-   localparam TAG_W = FE_ADDR_W - (FE_BYTE_W + WORD_OFFSET_W + LINE_OFFSET_W);
+   localparam TAG_W = FE_ADDR_W - (FE_BYTE_W + WORD_OFFSET_W + NLINES_W);
    localparam NWAYS = 2**NWAYS_W;
    
    wire                                                                          hit;
@@ -81,12 +80,12 @@ module cache_memory
    wire [NWAYS-1:0]                                                              way_hit, way_select;
 
    wire [TAG_W-1:0]                                                              tag = addr_reg[FE_ADDR_W-1 -:TAG_W]; //so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [LINE_OFFSET_W-1:0]                                                      index = addr[FE_ADDR_W-TAG_W-1 -: LINE_OFFSET_W];//cant wait, doesnt update during a write-access
-   wire [LINE_OFFSET_W-1:0]                                                      index_reg = addr_reg[FE_ADDR_W-TAG_W-1 -:LINE_OFFSET_W];//cant wait, doesnt update during a write-access
+   wire [NLINES_W-1:0]                                                      index = addr[FE_ADDR_W-TAG_W-1 -: NLINES_W];//cant wait, doesnt update during a write-access
+   wire [NLINES_W-1:0]                                                      index_reg = addr_reg[FE_ADDR_W-TAG_W-1 -:NLINES_W];//cant wait, doesnt update during a write-access
    wire [WORD_OFFSET_W-1:0]                                                      offset = addr_reg[FE_BYTE_W +: WORD_OFFSET_W]; //so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
    wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0]                                 line_rdata;
    wire [NWAYS*TAG_W-1:0]                                                        line_tag;
-   reg [NWAYS*(2**LINE_OFFSET_W)-1:0]                                            v_reg;
+   reg [NWAYS*(2**NLINES_W)-1:0]                                            v_reg;
    reg [NWAYS-1:0]                                                               v;
 
 
@@ -103,7 +102,7 @@ module cache_memory
 
    //for write-back write-allocate only
    reg [NWAYS-1:0]                                                            dirty;
-   reg [NWAYS*(2**LINE_OFFSET_W)-1:0]                                            dirty_reg;
+   reg [NWAYS*(2**NLINES_W)-1:0]                                            dirty_reg;
 
 
    generate
@@ -288,7 +287,7 @@ module cache_memory
             iob_gen_sp_ram
             #(
               .DATA_W(FE_DATA_W),
-              .ADDR_W(LINE_OFFSET_W)
+              .ADDR_W(NLINES_W)
             ) cache_memory (
               .clk (clk),
               .en  (req),
@@ -332,7 +331,7 @@ module cache_memory
               else if (invalidate)
                 v_reg <= 0;
               else if(replace_req)
-                v_reg <= v_reg | (1<<(way_select_bin*(2**LINE_OFFSET_W) + index_reg));
+                v_reg <= v_reg | (1<<(way_select_bin*(2**NLINES_W) + index_reg));
               else
                 v_reg <= v_reg;
            end
@@ -343,13 +342,13 @@ module cache_memory
                 if(invalidate)
                   v[k] <= 0;
                 else
-                  v[k] <= v_reg [(2**LINE_OFFSET_W)*k + index];
+                  v[k] <= v_reg [(2**NLINES_W)*k + index];
 
               //tag-memory
               iob_ram_sp
                 #(
                   .DATA_W(TAG_W),
-                  .ADDR_W(LINE_OFFSET_W)
+                  .ADDR_W(NLINES_W)
                   )
               tag_memory
                 (
@@ -373,7 +372,7 @@ module cache_memory
            replacement_policy 
              #(
 	       .N_WAYS (NWAYS),
-	       .LINE_OFFSET_W(LINE_OFFSET_W),
+	       .NLINES_W(NLINES_W),
                .REP_POLICY(REP_POLICY)
 	       )
            replacement_policy_algorithm
@@ -405,9 +404,9 @@ module cache_memory
                    if (reset)
                      dirty_reg <= 0;
                    else if(write_req)
-                     dirty_reg <= dirty_reg & ~(1<<(way_select_bin*(2**LINE_OFFSET_W) + index_reg));// updates position with 0
+                     dirty_reg <= dirty_reg & ~(1<<(way_select_bin*(2**NLINES_W) + index_reg));// updates position with 0
                    else if(write_access & hit)
-                     dirty_reg <= dirty_reg |  (1<<(way_hit_bin*(2**LINE_OFFSET_W) + index_reg));//updates position with 1
+                     dirty_reg <= dirty_reg |  (1<<(way_hit_bin*(2**NLINES_W) + index_reg));//updates position with 1
                    else
                      dirty_reg <= dirty_reg;
                 end
@@ -415,7 +414,7 @@ module cache_memory
                 for(k = 0; k < NWAYS; k = k+1) begin : dirty_block
                   //valid-memory output stage register - 1 c.c. read-latency (cleaner simulation during rep.)
                   always @(posedge clk)
-                    dirty[k] <= dirty_reg [(2**LINE_OFFSET_W)*k + index];
+                    dirty[k] <= dirty_reg [(2**NLINES_W)*k + index];
                 end
 
 
@@ -456,7 +455,7 @@ module cache_memory
            iob_ram_sp
              #(
                .DATA_W(TAG_W),
-               .ADDR_W(LINE_OFFSET_W)
+               .ADDR_W(NLINES_W)
                )
            tag_memory
              (
@@ -512,18 +511,19 @@ endmodule // cache_memory
 //For cycle that generated byte-width (single enable) single-port SRAM
 //older synthesis tool may require this approch
 
-module iob_gen_sp_ram #(
-                        parameter DATA_W = 32,
-                        parameter ADDR_W = 10
-                        )
+module iob_gen_sp_ram 
+  #(
+    parameter DATA_W = 32,
+    parameter ADDR_W = 10
+    )
    (
-                    input                clk,
-                    input                en,
-                    input [DATA_W/8-1:0] we,
-                    input [ADDR_W-1:0]   addr,
-                    output [DATA_W-1:0]  data_out,
-                    input [DATA_W-1:0]   data_in
-                    );
+    input                clk,
+    input                en,
+    input [DATA_W/8-1:0] we,
+    input [ADDR_W-1:0]   addr,
+    output [DATA_W-1:0]  data_out,
+    input [DATA_W-1:0]   data_in
+    );
 
    genvar                                i;
    generate

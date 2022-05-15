@@ -2,28 +2,18 @@
 `include "iob_lib.vh"
 `include "iob-cache.vh"
 
-///////////////
-// IOb-cache //
-///////////////
-
 module iob_cache 
   #(
-    //memory cache's parameters
-    parameter FE_ADDR_W = 32, //PARAM &  NS & NS & Front-end address width
+    parameter FE_ADDR_W = 32, //PARAM &  NS & 64 & The front-end address width defines the memory space accessible via the cache.
     parameter FE_DATA_W = 32, //PARAM & 32 & 64 & Front-end data width
-    parameter BE_ADDR_W = 32, //PARAM &  NS & NS & Back-end address width
+    parameter BE_ADDR_W = FE_ADDR_W, //PARAM &   & NS & Back-end address width. This width can be set higher than FE_ADDR_W to match the width of the back-end interface but the address space is still dictated by FE_ADDR_W.
     parameter BE_DATA_W = 32, //PARAM & 32 & 256 & Back-end data width
     parameter NWAYS_W = 1, //PARAM & ? 0 3 & Number of ways (log2)
-    parameter LINE_OFFSET_W = 7, //PARAM & NS & NS & Line offset width: 2**LINE_OFFSET_W is the number of cache lines
+    parameter NLINES_W = 7, //PARAM & NS & NS & Line offset width: 2**NLINES_W is the number of cache lines
     parameter WORD_OFFSET_W = 3, //PARAM & 0 & NS & Word offset width: 2**OFFSET_W is the number of words per line
     parameter WTBUF_DEPTH_W = 5, //PARAM & NS & NS & Write-through buffer depth (log2)
-    //Replacement policy when NWAYS > 1
     parameter REP_POLICY = `PLRU_MRU, //PARAM & 0 & 3 & Line replacement policy. Set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-base Pseudo LRU (PLRU_TREE)
-
-    //Write Policy 
     parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back
-    /*---------------------------------------------------*/
-    //Controller's options
     parameter CTRL_CACHE = 0, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated and the write through buffer empty status can be read
     parameter CTRL_CNT = 0, //PARAM & 0 & 1 & If CTRL_CACHE=1 and CTRL_CNT=1 , the cache will include software accessible hit/miss counters
 
@@ -36,26 +26,33 @@ module iob_cache
     ) 
    (
     //START_IO_TABLE gen
-    `IOB_INPUT(clk,1),   //System clock
-    `IOB_INPUT(reset,1), //System reset, asynchronous and active high
+    `IOB_INPUT(clk, 1),   //System clock
+    `IOB_INPUT(reset, 1), //System reset, asynchronous and active high
 
     //Front-end interface (IOb native slave)
     //START_IO_TABLE fe_if
     `IOB_INPUT(req, 1), //Read or write request from CPU or other user core. If {\tt ack} becomes high in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt ack} is high in reponse to the previous request
     `IOB_INPUT(addr, CTRL_CACHE+FE_ADDR_W-FE_NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
-    `IOB_INPUT(wdata,FE_DATA_W), //Write data
-    `IOB_INPUT(wstrb,FE_NBYTES), //Byte write strobe
-    `IOB_OUTPUT(rdata, FE_DATA_W), //Read data
+    `IOB_INPUT(wdata,FE_DATA_W), //Write data fom host.
+    `IOB_INPUT(wstrb,FE_NBYTES), //Byte write strobe.
+    `IOB_OUTPUT(rdata, FE_DATA_W), //Read data to host.
     `IOB_OUTPUT(ack,1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signla is low but has already pulsed high in response to the last request.
 
     //Back-end interface
     //START_IO_TABLE be_if
     `IOB_OUTPUT(mem_req, 1),         ////Read or write request to next-level cache or memory. If {\tt mem_ack} becomes high in the next cyle the request has been served; otherwise {\tt mem_req} should remain high until {\tt mem_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt mem_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt mem_ack} is high in reponse to the previous request.
-    `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Address
-    `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Write data
-    `IOB_OUTPUT(mem_wstrb,BE_NBYTES), //Write strobe
-    `IOB_INPUT(mem_rdata,BE_DATA_W),  //Read data
-    `IOB_INPUT(mem_ack,1) // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+    `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Address to next-level cache or memory
+    `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Write data to next-level cache or memory
+    `IOB_OUTPUT(mem_wstrb,BE_NBYTES), //Write strobe to next-level cache or memory
+    `IOB_INPUT(mem_rdata,BE_DATA_W),  //Read data to host.
+    `IOB_INPUT(mem_ack,1), // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+
+    //Cache invalidate and write-trough buffer IO chain
+    //START_IO_TABLE hw_if
+    `IOB_INPUT(invalidate_in,1),  //Invalidates all cache lines if high.
+    `IOB_OUTPUT(invalidate_out,1), //This output is asserted high whenever the cache is invalidated.
+    `IOB_INPUT(wtb_empty_in,1), //This input may be driven the next-level cache, when its write-through buffer is empty. It should be tied to high if there no next-level cache.
+    `IOB_OUTPUT(wtb_empty_out,1) //This output is high if the cache's write-through buffer is empty and the {\tt wtb_empty_in} signal is high.
     );
 
    //BLOCK Front-end & Front-end interface.
@@ -71,7 +68,13 @@ module iob_cache
    wire                              ctrl_req, ctrl_ack;   
    wire [`CTRL_ADDR_W-1:0]           ctrl_addr;
    wire [CTRL_CACHE*(FE_DATA_W-1):0] ctrl_rdata;
+   wire                              ctrl_invalidate;
 
+   wire                              wtbuf_full, wtbuf_empty;
+
+   assign invalidate_out = ctrl_invalidate | invalidate_in;
+   assign wtb_empty_out = wtbuf_empty & wtb_empty_in;
+   
    front_end
      #(
        .ADDR_W (FE_ADDR_W-FE_NBYTES_W),
@@ -109,10 +112,7 @@ module iob_cache
 
 
    //BLOCK Cache memory & This block implements the cache memory.
-   wire                              wtbuf_full, wtbuf_empty;
    wire                              write_hit, write_miss, read_hit, read_miss;
-   wire                              invalidate;   
-
    //back-end write-channel
    wire                              write_req, write_ack;
    wire [FE_ADDR_W-1:FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
@@ -131,7 +131,7 @@ module iob_cache
        .FE_DATA_W (FE_DATA_W),
        .BE_DATA_W (BE_DATA_W),
        .NWAYS_W (NWAYS_W),
-       .LINE_OFFSET_W (LINE_OFFSET_W),
+       .NLINES_W (NLINES_W),
        .WORD_OFFSET_W (WORD_OFFSET_W),
        .REP_POLICY (REP_POLICY),    
        .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
@@ -175,7 +175,7 @@ module iob_cache
       .write_miss (write_miss),
       .read_hit (read_hit),
       .read_miss (read_miss),
-      .invalidate (invalidate)
+      .invalidate (invalidate_out)
       );
 
    //BLOCK Back-end interface & This block interfaces with the system level or next-level cache.
@@ -194,25 +194,25 @@ module iob_cache
       .clk(clk),
       .reset(reset),
       //write-through-buffer (write-channel)
-      .write_req (write_req),
+      .write_valid (write_req),
       .write_addr  (write_addr),
       .write_wdata (write_wdata),
       .write_wstrb (write_wstrb),
-      .write_ack (write_ack),
+      .write_ready (write_ack),
       //cache-line replacement (read-channel)
-      .replace_req (replace_req),
+      .replace_valid (replace_req),
       .replace_addr  (replace_addr),
       .replace (replace),
-      .read_req (read_req),
+      .read_valid (read_req),
       .read_addr  (read_addr),
       .read_rdata (read_rdata),
       //back-end native interface
-      .mem_req (mem_req),
+      .mem_valid (mem_req),
       .mem_addr  (mem_addr),
       .mem_wdata (mem_wdata),
       .mem_wstrb (mem_wstrb),
       .mem_rdata (mem_rdata),
-      .mem_ack (mem_ack)  
+      .mem_ready (mem_ack)  
       );
    
    //BLOCK Cache control & Cache control block.
@@ -241,13 +241,13 @@ module iob_cache
          ////////////
          .rdata (ctrl_rdata),
          .ready (ctrl_ack),
-         .invalidate (invalidate)
+         .invalidate (ctrl_invalidate)
          );
       else
         begin
            assign ctrl_rdata = 1'bx;
            assign ctrl_ack = 1'bx;
-           assign invalidate = 1'b0;
+           assign ctrl_invalidate = 1'b0;
         end
       
    endgenerate
