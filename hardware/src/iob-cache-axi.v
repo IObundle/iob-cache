@@ -32,7 +32,11 @@ module iob_cache
     parameter FE_NBYTES_W = $clog2(FE_NBYTES),
     parameter BE_NBYTES = BE_DATA_W/8,
     parameter BE_NBYTES_W = $clog2(BE_NBYTES),
-    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W) //line over back-end number of words ratio (log2)
+    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W), //line over back-end number of words ratio (log2)
+
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0 //AXI ID value
     ) 
    (
     //START_IO_TABLE gen
@@ -48,14 +52,47 @@ module iob_cache
     `IOB_OUTPUT(rdata, FE_DATA_W), //Read data
     `IOB_OUTPUT(ack,1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signla is low but has already pulsed high in response to the last request.
 
-    //Back-end interface
+    //Back-end interface (AXI4 master)
     //START_IO_TABLE be_if
-    `IOB_OUTPUT(mem_req, 1),         ////Read or write request to next-level cache or memory. If {\tt mem_ack} becomes high in the next cyle the request has been served; otherwise {\tt mem_req} should remain high until {\tt mem_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt mem_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt mem_ack} is high in reponse to the previous request.
-    `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Address
-    `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Write data
-    `IOB_OUTPUT(mem_wstrb,BE_NBYTES), //Write strobe
-    `IOB_INPUT(mem_rdata,BE_DATA_W),  //Read data
-    `IOB_INPUT(mem_ack,1) // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+    //Address Read
+    output                                      axi_arvalid, 
+    output [BE_ADDR_W-1:0]                      axi_araddr, 
+    output [7:0]                                axi_arlen,
+    output [2:0]                                axi_arsize,
+    output [1:0]                                axi_arburst,
+    output [0:0]                                axi_arlock,
+    output [3:0]                                axi_arcache,
+    output [2:0]                                axi_arprot,
+    output [3:0]                                axi_arqos,
+    output [AXI_ID_W-1:0]                       axi_arid,
+    input                                       axi_arready,
+    //Read
+    input                                       axi_rvalid, 
+    input [BE_DATA_W-1:0]                       axi_rdata,
+    input [1:0]                                 axi_rresp,
+    input                                       axi_rlast, 
+    output                                      axi_rready,
+    // Address Write
+    output                                      axi_awvalid,
+    output [BE_ADDR_W-1:0]                      axi_awaddr,
+    output [7:0]                                axi_awlen,
+    output [2:0]                                axi_awsize,
+    output [1:0]                                axi_awburst,
+    output [0:0]                                axi_awlock,
+    output [3:0]                                axi_awcache,
+    output [2:0]                                axi_awprot,
+    output [3:0]                                axi_awqos,
+    output [AXI_ID_W-1:0]                       axi_awid, 
+    input                                       axi_awready,
+    //Write
+    output                                      axi_wvalid, 
+    output [BE_DATA_W-1:0]                      axi_wdata,
+    output [BE_NBYTES-1:0]                      axi_wstrb,
+    output                                      axi_wlast,
+    input                                       axi_wready,
+    input                                       axi_bvalid,
+    input [1:0]                                 axi_bresp,
+    output                                      axi_bready
     );
 
    //BLOCK Front-end & Front-end interface.
@@ -180,39 +217,76 @@ module iob_cache
 
    //BLOCK Back-end interface & This block interfaces with the system level or next-level cache.
 
-   back_end_native
+   back_end_axi
      #(
        .FE_ADDR_W (FE_ADDR_W),
        .FE_DATA_W (FE_DATA_W),  
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
-       .WORD_OFFSET_W (WORD_OFFSET_W),
-       .WRITE_POL (WRITE_POL)
+       .WORD_OFFSET_W(WORD_OFFSET_W),
+       .WRITE_POL (WRITE_POL),
+       .AXI_ID_W(AXI_ID_W),
+       .AXI_ID(AXI_ID)
        )
    back_end
      (
       .clk(clk),
       .reset(reset),
       //write-through-buffer (write-channel)
-      .write_req (write_req),
-      .write_addr  (write_addr),
+      .write_valid (write_req),
+      .write_addr (write_addr),
       .write_wdata (write_wdata),
       .write_wstrb (write_wstrb),
-      .write_ack (write_ack),
+      .write_ready (write_ack),
       //cache-line replacement (read-channel)
-      .replace_req (replace_req),
-      .replace_addr  (replace_addr),
+      .replace_valid (replace_req),
+      .replace_addr (replace_addr),
       .replace (replace),
-      .read_req (read_req),
-      .read_addr  (read_addr),
+      .read_valid (read_req),
+      .read_addr (read_addr),
       .read_rdata (read_rdata),
-      //back-end native interface
-      .mem_req (mem_req),
-      .mem_addr  (mem_addr),
-      .mem_wdata (mem_wdata),
-      .mem_wstrb (mem_wstrb),
-      .mem_rdata (mem_rdata),
-      .mem_ack (mem_ack)  
+      //back-end read-channel
+      //read address
+      .axi_arvalid (axi_arvalid), 
+      .axi_araddr (axi_araddr), 
+      .axi_arlen (axi_arlen),
+      .axi_arsize (axi_arsize),
+      .axi_arburst (axi_arburst),
+      .axi_arlock (axi_arlock),
+      .axi_arcache (axi_arcache),
+      .axi_arprot (axi_arprot),
+      .axi_arqos (axi_arqos),
+      .axi_arid (axi_arid),
+      .axi_arready (axi_arready),
+      //read data
+      .axi_rvalid (axi_rvalid), 
+      .axi_rdata (axi_rdata),
+      .axi_rresp (axi_rresp),
+      .axi_rlast (axi_rlast), 
+      .axi_rready (axi_rready),
+      //back-end write-channel
+      //write address
+      .axi_awvalid (axi_awvalid), 
+      .axi_awaddr (axi_awaddr), 
+      .axi_awlen (axi_awlen),
+      .axi_awsize (axi_awsize),
+      .axi_awburst (axi_awburst),
+      .axi_awlock (axi_awlock),
+      .axi_awcache (axi_awcache),
+      .axi_awprot (axi_awprot),
+      .axi_awqos (axi_awqos),
+      .axi_awid (axi_awid),
+      .axi_awready (axi_awready),
+      //write data
+      .axi_wvalid (axi_wvalid),
+      .axi_wdata (axi_wdata),
+      .axi_wstrb (axi_wstrb),
+      .axi_wready (axi_wready),
+      .axi_wlast (axi_wlast),
+      //write response
+      .axi_bvalid (axi_bvalid), 
+      .axi_bresp (axi_bresp),
+      .axi_bready (axi_bready) 
       );
    
    //BLOCK Cache control & Cache control block.

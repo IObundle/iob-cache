@@ -1,6 +1,3 @@
-//Back-end interface
-`define AXI
-
 //Replacement Policy
 `define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
 `define PLRU_MRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
