@@ -2,10 +2,8 @@ ifeq ($(filter CACHE, $(HW_MODULES)),)
 
 include $(CACHE_DIR)/config.mk
 
-ifeq ($(USE_DDR),1)
-
-
-USE_NETLIST ?=0
+CACHE_INC_DIR:=$(CACHE_HW_DIR)/include
+CACHE_SRC_DIR:=$(CACHE_HW_DIR)/src
 
 #add itself to HW_MODULES list
 HW_MODULES+=CACHE
@@ -26,5 +24,5 @@ VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
 #sources
 VSRC+=$(wildcard $(CACHE_SRC_DIR)/*.v)
-endif
+
 endif

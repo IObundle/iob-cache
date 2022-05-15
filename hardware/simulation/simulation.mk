@@ -9,6 +9,8 @@ endif
 
 include $(CACHE_DIR)/hardware/hardware.mk
 
+CACHE_TB_DIR:=$(CACHE_HW_DIR)/simulation/testbench
+
 #includes
 INCLUDE+=$(incdir)$(CACHE_TB_DIR)
 

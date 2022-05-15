@@ -1,17 +1,12 @@
 `timescale 1ns / 1ps
 `include "iob-cache.vh"
 
-/*--------------------*/
-/* Replacement Policy */
-/*--------------------*/
-// Module that contains all iob-cache's replacement policies
-
 module replacement_policy
   #(
-    parameter N_WAYS     = 8,
+    parameter N_WAYS = 8,
     parameter LINE_OFFSET_W = 0,
     parameter NWAY_W = $clog2(N_WAYS),
-    parameter REP_POLICY = `PLRU_tree //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU
+    parameter REP_POLICY = `PLRU_TREE
     )
    (
     input                  clk,
@@ -29,8 +24,6 @@ module replacement_policy
    generate
       if (REP_POLICY == `LRU)
         begin
-
-
            wire [N_WAYS*NWAY_W -1:0] mru_out, mru_in;
            wire [N_WAYS*NWAY_W -1:0] mru; //Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
            wire [N_WAYS*NWAY_W -1:0] mru_cnt; //updates the MRU line, the way used will be the highest value, while the others are decremented
@@ -95,7 +88,7 @@ module replacement_policy
                   );
 
         end // if (REP_POLICU == `LRU)
-      else if (REP_POLICY == `PLRU_mru)
+      else if (REP_POLICY == `PLRU_MRU)
         begin
 
            wire [N_WAYS -1:0]      mru_in, mru_out;
@@ -136,8 +129,8 @@ module replacement_policy
                   .bin(way_select_bin)
                   );
 
-        end // if (REP_POLICY == PLRU_mru)
-      else // (REP_POLICY == PLRU_tree)
+        end
+      else // (REP_POLICY == PLRU_TREE)
         begin
            /*
             i: tree level, start from 1, i <= NWAY_W

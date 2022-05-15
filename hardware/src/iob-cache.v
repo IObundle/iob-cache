@@ -17,11 +17,11 @@ module iob_cache
     parameter LINE_OFFSET_W = 7, //PARAM & NS & NS & Line offset width: 2**LINE_OFFSET_W is the number of cache lines
     parameter WORD_OFFSET_W = 3, //PARAM & 0 & NS & Word offset width: 2**OFFSET_W is the number of words per line
     parameter WTBUF_DEPTH_W = 5, //PARAM & NS & NS & Write-through buffer depth (log2)
-    //Replacement policy when N_WAYS > 1
-    parameter REP_POLICY = `PLRU_mru, //PARAM & 0 & 3 & Line replacement policy: Least Recently Used (LRU, 0); Pseudo LRU (PLRU) based on Most Recently Used (PLRU_mru, 1); Tree-base PLRU (3)
+    //Replacement policy when NWAYS > 1
+    parameter REP_POLICY = `PLRU_MRU, //PARAM & 0 & 3 & Line replacement policy. Set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-base Pseudo LRU (PLRU_TREE)
 
     //Write Policy 
-    parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: write-through (0), write-back (1)
+    parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back
     /*---------------------------------------------------*/
     //Controller's options
     parameter CTRL_CACHE = 0, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated and the write through buffer empty status can be read
@@ -32,32 +32,77 @@ module iob_cache
     parameter FE_NBYTES_W = $clog2(FE_NBYTES),
     parameter BE_NBYTES = BE_DATA_W/8,
     parameter BE_NBYTES_W = $clog2(BE_NBYTES),
-    //Cache-Memory base Offset
-    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W) //line over back-end number of words ratio (log2)
+    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W), //line over back-end number of words ratio (log2)
 
+    //AXI specific parameters
+    parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter [AXI_ID_W-1:0] AXI_ID = 0 //AXI ID value
     ) 
    (
     //START_IO_TABLE gen
     `IOB_INPUT(clk,1),   //System clock
     `IOB_INPUT(reset,1), //System reset, asynchronous and active high
 
-    //Master i/f
-    //START_IO_TABLE iob_m
-    `IOB_INPUT(req, 1),          //Read or write request from CPU or other user core.
-    `IOB_INPUT(addr,CTRL_CACHE + FE_ADDR_W), //Address from CPU or other user core.
-    `IOB_INPUT(wdata,FE_DATA_W),   //Write data
-    `IOB_INPUT(wstrb,FE_NBYTES),   //Native CPU interface write strobe signal
-    `IOB_OUTPUT(rdata, FE_DATA_W), //Native CPU interface read data signal
-    `IOB_OUTPUT(ack,1),          //Native CPU interface ack signal
+    //Front-end interface (IOb native slave)
+    //START_IO_TABLE fe_if
+    `IOB_INPUT(req, 1), //Read or write request from CPU or other user core. If {\tt ack} becomes high in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt ack} is high in reponse to the previous request
+    `IOB_INPUT(addr, CTRL_CACHE+FE_ADDR_W-FE_NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
+    `IOB_INPUT(wdata,FE_DATA_W), //Write data
+    `IOB_INPUT(wstrb,FE_NBYTES), //Byte write strobe
+    `IOB_OUTPUT(rdata, FE_DATA_W), //Read data
+    `IOB_OUTPUT(ack,1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signla is low but has already pulsed high in response to the last request.
 
-    //Slave i/f - Native
-    //START_IO_TABLE iob_s
-    `IOB_OUTPUT(mem_req,1),         //Native CPU interface req signal
-    `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Native CPU interface address signal
-    `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Native CPU interface data write signal
-    `IOB_OUTPUT(mem_wstrb,BE_NBYTES), //Native CPU interface write strobe signal
-    `IOB_INPUT(mem_rdata,BE_DATA_W),  //Native CPU interface read data signal
-    `IOB_INPUT(mem_ack,1)           //Native CPU interface ack signal
+    //Back-end interface (AXI4 master)
+    //START_IO_TABLE be_if
+`ifdef AXI
+    //Address Read
+    output                                      axi_arvalid, 
+    output [BE_ADDR_W-1:0]                      axi_araddr, 
+    output [7:0]                                axi_arlen,
+    output [2:0]                                axi_arsize,
+    output [1:0]                                axi_arburst,
+    output [0:0]                                axi_arlock,
+    output [3:0]                                axi_arcache,
+    output [2:0]                                axi_arprot,
+    output [3:0]                                axi_arqos,
+    output [AXI_ID_W-1:0]                       axi_arid,
+    input                                       axi_arready,
+    //Read
+    input                                       axi_rvalid, 
+    input [BE_DATA_W-1:0]                       axi_rdata,
+    input [1:0]                                 axi_rresp,
+    input                                       axi_rlast, 
+    output                                      axi_rready,
+    // Address Write
+    output                                      axi_awvalid,
+    output [BE_ADDR_W-1:0]                      axi_awaddr,
+    output [7:0]                                axi_awlen,
+    output [2:0]                                axi_awsize,
+    output [1:0]                                axi_awburst,
+    output [0:0]                                axi_awlock,
+    output [3:0]                                axi_awcache,
+    output [2:0]                                axi_awprot,
+    output [3:0]                                axi_awqos,
+    output [AXI_ID_W-1:0]                       axi_awid, 
+    input                                       axi_awready,
+    //Write
+    output                                      axi_wvalid, 
+    output [BE_DATA_W-1:0]                      axi_wdata,
+    output [BE_NBYTES-1:0]                      axi_wstrb,
+    output                                      axi_wlast,
+    input                                       axi_wready,
+    input                                       axi_bvalid,
+    input [1:0]                                 axi_bresp,
+    output                                      axi_bready
+`else
+    `IOB_OUTPUT(mem_req, 1),         ////Read or write request to next-level cache or memory. If {\tt mem_ack} becomes high in the next cyle the request has been served; otherwise {\tt mem_req} should remain high until {\tt mem_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt mem_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt mem_ack} is high in reponse to the previous request.
+    `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Address
+    `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Write data
+    `IOB_OUTPUT(mem_wstrb,BE_NBYTES), //Write strobe
+    `IOB_INPUT(mem_rdata,BE_DATA_W),  //Read data
+    `IOB_INPUT(mem_ack,1) // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+
+`endif
     );
 
    //BLOCK Front-end & Front-end interface.
@@ -76,8 +121,8 @@ module iob_cache
 
    front_end
      #(
-       .FE_ADDR_W (FE_ADDR_W),
-       .FE_DATA_W (FE_DATA_W),
+       .ADDR_W (FE_ADDR_W-FE_NBYTES_W),
+       .DATA_W (FE_DATA_W),
        .CTRL_CACHE(CTRL_CACHE)
        )
    front_end
@@ -180,8 +225,81 @@ module iob_cache
       .invalidate (invalidate)
       );
 
-   //BLOCK Back-end & Back-end block.
-   
+   //BLOCK Back-end interface & This block interfaces with the system level or next-level cache.
+
+`ifdef AXI
+   back_end_axi
+     #(
+       .FE_ADDR_W (FE_ADDR_W),
+       .FE_DATA_W (FE_DATA_W),  
+       .BE_ADDR_W (BE_ADDR_W),
+       .BE_DATA_W (BE_DATA_W),
+       .WORD_OFFSET_W(WORD_OFFSET_W),
+       .WRITE_POL (WRITE_POL),
+       .AXI_ID_W(AXI_ID_W),
+       .AXI_ID(AXI_ID)
+       )
+   back_end
+     (
+      .clk(clk),
+      .reset(reset),
+      //write-through-buffer (write-channel)
+      .write_valid (write_req),
+      .write_addr (write_addr),
+      .write_wdata (write_wdata),
+      .write_wstrb (write_wstrb),
+      .write_ready (write_ack),
+      //cache-line replacement (read-channel)
+      .replace_valid (replace_req),
+      .replace_addr (replace_addr),
+      .replace (replace),
+      .read_valid (read_req),
+      .read_addr (read_addr),
+      .read_rdata (read_rdata),
+      //back-end read-channel
+      //read address
+      .axi_arvalid (axi_arvalid), 
+      .axi_araddr (axi_araddr), 
+      .axi_arlen (axi_arlen),
+      .axi_arsize (axi_arsize),
+      .axi_arburst (axi_arburst),
+      .axi_arlock (axi_arlock),
+      .axi_arcache (axi_arcache),
+      .axi_arprot (axi_arprot),
+      .axi_arqos (axi_arqos),
+      .axi_arid (axi_arid),
+      .axi_arready (axi_arready),
+      //read data
+      .axi_rvalid (axi_rvalid), 
+      .axi_rdata (axi_rdata),
+      .axi_rresp (axi_rresp),
+      .axi_rlast (axi_rlast), 
+      .axi_rready (axi_rready),
+      //back-end write-channel
+      //write address
+      .axi_awvalid (axi_awvalid), 
+      .axi_awaddr (axi_awaddr), 
+      .axi_awlen (axi_awlen),
+      .axi_awsize (axi_awsize),
+      .axi_awburst (axi_awburst),
+      .axi_awlock (axi_awlock),
+      .axi_awcache (axi_awcache),
+      .axi_awprot (axi_awprot),
+      .axi_awqos (axi_awqos),
+      .axi_awid (axi_awid),
+      .axi_awready (axi_awready),
+      //write data
+      .axi_wvalid (axi_wvalid),
+      .axi_wdata (axi_wdata),
+      .axi_wstrb (axi_wstrb),
+      .axi_wready (axi_wready),
+      .axi_wlast (axi_wlast),
+      //write response
+      .axi_bvalid (axi_bvalid), 
+      .axi_bresp (axi_bresp),
+      .axi_bready (axi_bready) 
+      );
+`else
    back_end_native
      #(
        .FE_ADDR_W (FE_ADDR_W),
@@ -216,7 +334,7 @@ module iob_cache
       .mem_rdata (mem_rdata),
       .mem_ack (mem_ack)  
       );
-   
+`endif
    
    //BLOCK Cache control & Cache control block.
    generate
@@ -232,7 +350,7 @@ module iob_cache
          .clk (clk),
          .reset (reset),
          //control's signals
-         .req (ctrl_req),
+         .valid (ctrl_req),
          .addr (ctrl_addr),
          //write data
          .wtbuf_full (wtbuf_full),
@@ -243,7 +361,7 @@ module iob_cache
          .read_miss (read_miss),
          ////////////
          .rdata (ctrl_rdata),
-         .ack (ctrl_ack),
+         .ready (ctrl_ack),
          .invalidate (invalidate)
          );
       else

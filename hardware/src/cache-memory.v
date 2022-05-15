@@ -3,30 +3,30 @@
 
 module cache_memory
   #(
-    //memory cache's parameters
-    parameter FE_ADDR_W   = 32,       //Address width - width that will used for the cache
-    parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
-    parameter NWAYS_W   = 1,        //Number of Cache Ways
-    parameter LINE_OFFSET_W  = 10,      //Line-Offset Width - 2**NLINE_W total cache lines
-    parameter WORD_OFFSET_W = 3,       //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line
-    //Do NOT change - memory cache's parameters - dependency
-    parameter FE_NBYTES  = FE_DATA_W/8,      //Number of Bytes per Word
-    parameter FE_BYTE_W = $clog2(FE_NBYTES), //Offset of the Number of Bytes per Word
-    /*---------------------------------------------------*/
-    //Higher hierarchy memory (slave) interface parameters
-    parameter BE_DATA_W = FE_DATA_W, //Data width of the memory
-    parameter BE_NBYTES = BE_DATA_W/8, //Number of bytes
-    parameter BE_BYTE_W = $clog2(BE_NBYTES), //Offset of the Number of Bytes per Word
-    //Do NOT change - slave parameters - dependency
-    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W), //burst offset based on the cache and memory word size
+    parameter FE_ADDR_W   = 32,
+    parameter FE_DATA_W   = 32,
+
+    parameter BE_DATA_W = FE_DATA_W,
+
+    parameter NWAYS_W   = 1,
+    parameter LINE_OFFSET_W  = 10,
+    parameter WORD_OFFSET_W = 3,
     parameter WTBUF_DEPTH_W = 3,
-    //Replacement policy (NWAYS > 1)
-    parameter REP_POLICY = `PLRU_tree, //LRU - Least Recently Used; PLRU_mru (1) - mru-based pseudoLRU; PLRU_tree (3) - tree-based pseudoLRU
-    // //Controller's options
-    parameter CTRL_CACHE = 0, //Adds a Controller to the cache, to use functions sent by the master or count the hits and misses
-    parameter CTRL_CNT = 0,  //Counters for Cache Hits and Misses - Disabling this and previous, the Controller only store the buffer states and allows cache invalidation
+
+    parameter WRITE_POL = `WRITE_THROUGH,
+    parameter REP_POLICY = `PLRU_TREE,
+
+    parameter CTRL_CACHE = 0,
+    parameter CTRL_CNT = 0,
     // Write-Policy
-    parameter WRITE_POL = `WRITE_THROUGH //write policy: write-through (0), write-back (1)
+
+    
+    //Derived parameters DO NOT CHANGE
+    parameter FE_NBYTES  = FE_DATA_W/8,
+    parameter FE_BYTE_W = $clog2(FE_NBYTES),
+    parameter BE_NBYTES = BE_DATA_W/8,
+    parameter BE_BYTE_W = $clog2(BE_NBYTES),
+    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W)
     )
    (
     input                                                                        clk,
@@ -546,4 +546,4 @@ module iob_gen_sp_ram #(
         end
    endgenerate
 
-endmodule // iob_gen_sp_ram
+endmodule

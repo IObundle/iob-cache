@@ -1,39 +1,3 @@
-//Cache parameters (including front-end's)
-`define N_WAYS 1
-`define LINE_OFFSET_W 3
-`define WORD_OFFSET_W 1
-`define ADDR_W 12
-`define DATA_W 32
-`define N_BYTES 4
-// Replacement Policy (N_WAYS > 1 only) - check below the values
-`define REP_POLICY 0
-
-//Write Policy 
-`define WRITE_POL 1 //write policy: write-through (0), write-back (1)
-
-
-//Back-end Memory interface AXI or Native  
-`define AXI //comment for Native
-
-//Cache back-end parameters
-`define MEM_ADDR_W 12
-`define MEM_DATA_W 64
-`define MEM_N_BYTES 8
-
-//Write-through Buffer depth
-`define WTBUF_DEPTH_W 4
-
-
-//Cache Controller - comment to remove it
-`define CTRL
-
-
-//Replacement Policy
-`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
-`define BIT_PLRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
-`define TREE_PLRU 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
-
-
 //CONTROLLER
 `define CTRL_COUNTER_W 3
 `define CTRL_ADDR_W 5

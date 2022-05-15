@@ -1,6 +1,10 @@
 `timescale 1ns/10ps
 
-`include "rep_pol_tb.vh"
+`define N_CYCLES 3//Number of cycles of read-misses during simulation
+`define N_WAYS 4
+`define REP_POLICY 1 // check Replacement Policy
+//Linear-Feedback-Shift-Register - Random generator
+`define LFSR_IN 5 // input for random-value generator - way-hit
 
 module rep_pol_tb;
 

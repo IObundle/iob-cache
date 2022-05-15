@@ -6,7 +6,7 @@ defmacro:=-D
 include ../simulation.mk
 
 #testbench
-TB ?= $(CACHE_TB_DIR)/pipeline-iob-cache_tb.v
+TB ?= $(CACHE_TB_DIR)/iob-cache_tb.v
 #TB ?=$(CACHE_TB_DIR)/rep_pol_tb.v
 
 #icarus verilog simulator
