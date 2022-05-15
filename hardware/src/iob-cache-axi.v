@@ -6,7 +6,7 @@
 // IOb-cache //
 ///////////////
 
-module iob_cache 
+module iob_cache_axi
   #(
     //memory cache's parameters
     parameter FE_ADDR_W = 32, //PARAM &  NS & NS & Front-end address width
