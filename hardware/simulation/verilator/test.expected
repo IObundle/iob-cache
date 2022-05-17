@@ -1,5 +1,12 @@
 
 Iob_cache simulation start
+Test 1: Writing Test
+Test 2: Reading Test
+	Reading 0 at addr 0: PASSED
+	Reading 0x3 at addr 0x1: PASSED
+	Reading 0x6 at addr 0x2: PASSED
+	Reading 0x9 at addr 0x3: PASSED
+	Reading 0xc at addr 0x4: PASSED
 Generated vcd file
 Iob_cache simulation end
 
