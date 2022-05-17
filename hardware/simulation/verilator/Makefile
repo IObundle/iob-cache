@@ -1,5 +1,6 @@
 #module paths
 CACHE_DIR:=../../..
+DUT_MODULE=iob_cache_wrapper
 
 incdir:=-I
 defmacro:=-D
@@ -7,11 +8,16 @@ defmacro:=-D
 include ../simulation.mk
 
 TB=testbench.cpp
+VSRC+=iob_cache_wrapper.v
+
+VFLAGS=--cc --exe $(INCLUDE) $(VSRC) --top-module $(DUT_MODULE)
+WNO=-Wno-lint #Disable lint warnings
+WAVE=--trace  #Generate waveforms
 
 run: $(VSRC) $(VHDR)
-	verilator -Wno-WIDTH --trace --cc --exe $(INCLUDE) $(VSRC) --top-module $(TOP_MODULE)
-	cd ./obj_dir && make -f V$(TOP_MODULE).mk
-	./obj_dir/V$(TOP_MODULE) $(TEST_LOG)
+	verilator $(VFLAGS) $(WNO) $(WAVE)	
+	cd ./obj_dir && make -f V$(DUT_MODULE).mk
+	./obj_dir/V$(DUT_MODULE) $(TEST_LOG)
 
 clean: cache-gen-clean
 	@rm -rf ./obj_dir
