@@ -183,15 +183,6 @@ module iob_cache_memory
          // back-end read channel
          assign replace_req = (~|way_hit) & (write_ack) & req_reg & ~replace;
          assign replace_addr = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
-
-         // buffer status (non-existant)
-`ifdef CTRL_IO
-         assign wtbuf_full = 1'b0;
-         assign wtbuf_empty = 1'b1;
-`else
-         assign wtbuf_full = 1'bx;
-         assign wtbuf_empty = 1'bx;
-`endif
       end
    endgenerate
 
