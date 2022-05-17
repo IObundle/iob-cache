@@ -12,9 +12,8 @@ module iob_cache_back_end_axi
 
     parameter FE_NBYTES  = FE_DATA_W/8,
     parameter FE_BYTE_W  = $clog2(FE_NBYTES),
-    parameter BE_NBYTES = BE_DATA_W/8,       // Number of bytes
-    parameter BE_BYTE_W = $clog2(BE_NBYTES), // Offset of Number of Bytes
-    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W),
+    parameter BE_NBYTES_W = BE_DATA_W/8,     // Number of bytes
+    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W),
     parameter WRITE_POL = `WRITE_THROUGH,    // write policy: write-through (0), write-back (1)
     parameter AXI_ID_W = 1,                  // AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0      // AXI ID value
@@ -35,7 +34,7 @@ module iob_cache_back_end_axi
     input [FE_ADDR_W -1: FE_BYTE_W + WORD_OFFSET_W]                             replace_addr,
     output                                                                      replace,
     output                                                                      read_valid,
-    output [LINE2MEM_W -1:0]                                                    read_addr,
+    output [LINE2BE_W -1:0]                                                     read_addr,
     output [BE_DATA_W -1:0]                                                     read_rdata,
 
     // Slave i/f -AXI
@@ -75,7 +74,7 @@ module iob_cache_back_end_axi
     // Write
     output                                                                      axi_wvalid,
     output [BE_DATA_W-1:0]                                                      axi_wdata,
-    output [BE_NBYTES-1:0]                                                      axi_wstrb,
+    output [BE_NBYTES_W-1:0]                                                    axi_wstrb,
     output                                                                      axi_wlast,
     input                                                                       axi_wready,
     input                                                                       axi_bvalid,

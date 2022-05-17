@@ -23,8 +23,8 @@ module iob_cache_memory
     parameter FE_NBYTES  = FE_DATA_W/8,
     parameter FE_BYTE_W = $clog2(FE_NBYTES),
     parameter BE_NBYTES = BE_DATA_W/8,
-    parameter BE_BYTE_W = $clog2(BE_NBYTES),
-    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W)
+    parameter BE_NBYTES_W = $clog2(BE_NBYTES),
+    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W)
     )
    (
     input                                                                        clk,
@@ -32,7 +32,7 @@ module iob_cache_memory
 
     // front-end
     input                                                                        req,
-    input [FE_ADDR_W-1:BE_BYTE_W + LINE2MEM_W]                                   addr,
+    input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W]                                    addr,
     output [FE_DATA_W-1:0]                                                       rdata,
     output                                                                       ack,
 
@@ -53,10 +53,10 @@ module iob_cache_memory
 
     // back-end read-channel
     output                                                                       replace_req,
-    output [FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W]                                   replace_addr,
+    output [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W]                                   replace_addr,
     input                                                                        replace,
     input                                                                        read_req,
-    input [LINE2MEM_W-1:0]                                                       read_addr,
+    input [LINE2BE_W-1:0]                                                        read_addr,
     input [BE_DATA_W-1:0]                                                        read_rdata,
 
     // cache-control
@@ -173,8 +173,8 @@ module iob_cache_memory
          assign write_wstrb = buffer_dout[0                     +: FE_NBYTES            ];
 
          // back-end read channel
-         assign replace_req = (~hit & read_access & ~replace) & (buffer_empty & write_ack);
-         assign replace_addr  = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
+         assign replace_req  = (~hit & read_access & ~replace) & (buffer_empty & write_ack);
+         assign replace_addr = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
       end else begin // if (WRITE_POL == WRITE_BACK)
          // back-end write channel
          assign write_wstrb = {FE_NBYTES{1'bx}};
@@ -182,7 +182,7 @@ module iob_cache_memory
 
          // back-end read channel
          assign replace_req = (~|way_hit) & (write_ack) & req_reg & ~replace;
-         assign replace_addr = addr[FE_ADDR_W -1:BE_BYTE_W+LINE2MEM_W];
+         assign replace_addr = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
 
          // buffer status (non-existant)
 `ifdef CTRL_IO
@@ -261,7 +261,7 @@ module iob_cache_memory
    generate
       // Data-Memory
       for (k=0; k < NWAYS; k=k+1) begin : n_ways_block
-        for (j=0; j < 2**LINE2MEM_W; j=j+1) begin : line2mem_block
+        for (j=0; j < 2**LINE2BE_W; j=j+1) begin : line2mem_block
           for (i=0; i < BE_DATA_W/FE_DATA_W; i=i+1) begin : BE_FE_block
              iob_gen_sp_ram
                #(
@@ -282,7 +282,7 @@ module iob_cache_memory
       end
 
       // Cache Line Write Strobe
-      if (LINE2MEM_W > 0) begin
+      if (LINE2BE_W > 0) begin
          always @*
            if (replace)
              line_wstrb = {BE_NBYTES{read_req}} << (read_addr*BE_NBYTES); // line-replacement: read_addr indexes the words in cache-line

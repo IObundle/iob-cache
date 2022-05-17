@@ -10,51 +10,51 @@ module iob_cache_read_channel_axi
     parameter WORD_OFFSET_W = 3,
 
     // Higher hierarchy memory (slave) interface parameters
-    parameter BE_ADDR_W = FE_ADDR_W,         // Address width of the higher hierarchy memory
-    parameter BE_DATA_W = FE_DATA_W,         // Data width of the memory
-    parameter BE_NBYTES = BE_DATA_W/8,       // Number of bytes
-    parameter BE_BYTE_W = $clog2(BE_NBYTES), // Offset of the Number of Bytes
+    parameter BE_ADDR_W = FE_ADDR_W,           // Address width of the higher hierarchy memory
+    parameter BE_DATA_W = FE_DATA_W,           // Data width of the memory
+    parameter BE_NBYTES = BE_DATA_W/8,         // Number of bytes
+    parameter BE_NBYTES_W = $clog2(BE_NBYTES), // Offset of the Number of Bytes
 
     // Cache-Memory base Offset
-    parameter LINE2MEM_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W), // burst offset based on the cache word's and memory word size
+    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W), // burst offset based on the cache word's and memory word size
 
     // AXI specific parameters
     parameter AXI_ID_W              = 1, // AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0  // AXI ID value
     )
    (
-    input                                        clk,
-    input                                        reset,
-    input                                        replace_valid,
-    input [FE_ADDR_W -1: BE_BYTE_W + LINE2MEM_W] replace_addr,
-    output reg                                   replace,
-    output                                       read_valid,
-    output reg [LINE2MEM_W-1:0]                  read_addr,
-    output [BE_DATA_W-1:0]                       read_rdata,
+    input                                     clk,
+    input                                     reset,
+    input                                     replace_valid,
+    input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr,
+    output reg                                replace,
+    output                                    read_valid,
+    output reg [LINE2BE_W-1:0]                read_addr,
+    output [BE_DATA_W-1:0]                    read_rdata,
 
     // Address Read
-    output reg                                   axi_arvalid,
-    output [BE_ADDR_W-1:0]                       axi_araddr,
-    output [7:0]                                 axi_arlen,
-    output [2:0]                                 axi_arsize,
-    output [1:0]                                 axi_arburst,
-    output [0:0]                                 axi_arlock,
-    output [3:0]                                 axi_arcache,
-    output [2:0]                                 axi_arprot,
-    output [3:0]                                 axi_arqos,
-    output [AXI_ID_W-1:0]                        axi_arid,
-    input                                        axi_arready,
+    output reg                                axi_arvalid,
+    output [BE_ADDR_W-1:0]                    axi_araddr,
+    output [7:0]                              axi_arlen,
+    output [2:0]                              axi_arsize,
+    output [1:0]                              axi_arburst,
+    output [0:0]                              axi_arlock,
+    output [3:0]                              axi_arcache,
+    output [2:0]                              axi_arprot,
+    output [3:0]                              axi_arqos,
+    output [AXI_ID_W-1:0]                     axi_arid,
+    input                                     axi_arready,
 
     // Read
-    input                                        axi_rvalid,
-    input [BE_DATA_W-1:0]                        axi_rdata,
-    input [1:0]                                  axi_rresp,
-    input                                        axi_rlast,
-    output reg                                   axi_rready
+    input                                     axi_rvalid,
+    input [BE_DATA_W-1:0]                     axi_rdata,
+    input [1:0]                               axi_rresp,
+    input                                     axi_rlast,
+    output reg                                axi_rready
     );
 
    generate
-      if (LINE2MEM_W > 0) begin
+      if (LINE2BE_W > 0) begin
          // Constant AXI signals
          assign axi_arid    = AXI_ID;
          assign axi_arlock  = 1'b0;
@@ -63,10 +63,10 @@ module iob_cache_read_channel_axi
          assign axi_arqos   = 4'd0;
 
          // Burst parameters
-         assign axi_arlen   = 2**LINE2MEM_W -1; // will choose the burst lenght depending on the cache's and slave's data width
-         assign axi_arsize  = BE_BYTE_W;        // each word will be the width of the memory for maximum bandwidth
+         assign axi_arlen   = 2**LINE2BE_W - 1; // will choose the burst lenght depending on the cache's and slave's data width
+         assign axi_arsize  = BE_NBYTES_W;      // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst = 2'b01;            // incremental burst
-         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(LINE2MEM_W+BE_BYTE_W){1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(LINE2BE_W+BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
          assign read_rdata = axi_rdata;
@@ -155,10 +155,10 @@ module iob_cache_read_channel_axi
            assign axi_arqos   = 4'd0;
 
            // Burst parameters - single
-           assign axi_arlen   = 8'd0;      // A single burst of Memory data width word
-           assign axi_arsize  = BE_BYTE_W; // each word will be the width of the memory for maximum bandwidth
+           assign axi_arlen   = 8'd0;        // A single burst of Memory data width word
+           assign axi_arsize  = BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
            assign axi_arburst = 2'b00;
-           assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {BE_BYTE_W{1'b0}}}; // base address for the burst, with width extension
+           assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
            // Read Line values
            assign read_valid = axi_rvalid;

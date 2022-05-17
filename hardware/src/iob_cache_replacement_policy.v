@@ -6,45 +6,45 @@ module iob_cache_replacement_policy
   #(
     parameter N_WAYS = 8,
     parameter NLINES_W = 0,
-    parameter NWAY_W = $clog2(N_WAYS),
+    parameter NWAYS_W = $clog2(N_WAYS),
     parameter REP_POLICY = `PLRU_TREE
     )
    (
-    input                  clk,
-    input                  reset,
-    input                  write_en,
-    input [N_WAYS-1:0]     way_hit,
+    input                clk,
+    input                reset,
+    input                write_en,
+    input [N_WAYS-1:0]   way_hit,
     input [NLINES_W-1:0] line_addr,
-    output [N_WAYS-1:0]    way_select,
-    output [NWAY_W-1:0]    way_select_bin
+    output [N_WAYS-1:0]  way_select,
+    output [NWAYS_W-1:0] way_select_bin
     );
 
-   genvar                  i, j, k;
+   genvar                i, j, k;
 
    generate
       if (REP_POLICY == `LRU) begin
-         wire [N_WAYS*NWAY_W -1:0] mru_out, mru_in;
-         wire [N_WAYS*NWAY_W -1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
-         wire [N_WAYS*NWAY_W -1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
-         wire [NWAY_W-1:0]         mru_index, way_hit_bin;
+         wire [N_WAYS*NWAYS_W-1:0] mru_out, mru_in;
+         wire [N_WAYS*NWAYS_W-1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
+         wire [N_WAYS*NWAYS_W-1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
+         wire [NWAYS_W-1:0]        mru_index, way_hit_bin;
 
          iob_cache_onehot_to_bin
-           #(NWAY_W)
+           #(NWAYS_W)
          way_hit_binary
            (
             .onehot(way_hit[N_WAYS-1:1]),
             .bin(way_hit_bin)
             );
 
-         assign mru_index [NWAY_W-1:0] = mru_out >> (NWAY_W*way_hit_bin);
+         assign mru_index [NWAYS_W-1:0] = mru_out >> (NWAYS_W*way_hit_bin);
 
          for (i=0; i < N_WAYS; i=i+1) begin : encoder_decoder
             // LRU - Encoder
-            assign mru [i*NWAY_W +: NWAY_W] = (|mru_out)? mru_out [i*NWAY_W +: NWAY_W] : i; // verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values
-            assign mru_cnt [i*NWAY_W +: NWAY_W] = (way_hit[i])? {NWAY_W{1'b1}} : (mru[i*NWAY_W +: NWAY_W] > mru_index) ? mru[i*NWAY_W +: NWAY_W] - 1 : mru[i*NWAY_W +: NWAY_W]; // the MRU way gets updated to the the highest value; the remaining, if their value was bigger than the MRU index previous value (mru_index), they get decremented
+            assign mru [i*NWAYS_W +: NWAYS_W] = (|mru_out)? mru_out [i*NWAYS_W +: NWAYS_W] : i; // verifies if the mru line has been initialized (if any bit in mru_output is HIGH), otherwise applies the priority values
+            assign mru_cnt [i*NWAYS_W +: NWAYS_W] = (way_hit[i])? {NWAYS_W{1'b1}} : (mru[i*NWAYS_W +: NWAYS_W] > mru_index) ? mru[i*NWAYS_W +: NWAYS_W] - 1 : mru[i*NWAYS_W +: NWAYS_W]; // the MRU way gets updated to the the highest value; the remaining, if their value was bigger than the MRU index previous value (mru_index), they get decremented
 
             // LRU - Decoder (checks every index in search for the lowest (0)
-            assign way_select [i] = ~(|mru[i*NWAY_W +: NWAY_W]); // selects the way that has the lowest priority (mru = 0)
+            assign way_select [i] = ~(|mru[i*NWAYS_W+:NWAYS_W]); // selects the way that has the lowest priority (mru = 0)
          end
 
          assign mru_in = (|way_hit)? mru_cnt : mru_out; // If an hit occured, then it updates, to avoid updating during a (write) miss (mru_cnt would decrement every way besides the lowest)
@@ -53,7 +53,7 @@ module iob_cache_replacement_policy
          iob_regfile_sp
            #(
              .ADDR_W(NLINES_W),
-             .DATA_W(N_WAYS*NWAY_W)
+             .DATA_W(N_WAYS*NWAYS_W)
              )
          mru_memory // simply uses the same format as valid memory
            (
@@ -67,7 +67,7 @@ module iob_cache_replacement_policy
             );
 
          iob_cache_onehot_to_bin
-           #(NWAY_W)
+           #(NWAYS_W)
          onehot_bin
            (
             .onehot(way_select[N_WAYS-1:1]),
@@ -103,7 +103,7 @@ module iob_cache_replacement_policy
             );
 
          iob_cache_onehot_to_bin
-           #(NWAY_W)
+           #(NWAYS_W)
          onehot_bin
            (
             .onehot(way_select[N_WAYS-1:1]),
@@ -111,13 +111,13 @@ module iob_cache_replacement_policy
             );
         end else begin // (REP_POLICY == PLRU_TREE)
            /*
-            i: tree level, start from 1, i <= NWAY_W
+            i: tree level, start from 1, i <= NWAYS_W
             j: tree node id @ i level, start from 0, j < (1<<(i-1))
-            (((1<<(i-1))+j)*2)*(1<<(NWAY_W-i))   ==> start node id of left tree @ the lowest level node pointed to
-            (((1<<(i-1))+j)*2+1)*(1<<(NWAY_W-i)) ==> start node id of right tree @ the lowest level node pointed to
+            (((1<<(i-1))+j)*2)*(1<<(NWAYS_W-i))   ==> start node id of left tree @ the lowest level node pointed to
+            (((1<<(i-1))+j)*2+1)*(1<<(NWAYS_W-i)) ==> start node id of right tree @ the lowest level node pointed to
 
-            way_hit[(((1<<(i-1))+j)*2)*(1<<(NWAY_W-i))-N_WAYS +: (N_WAYS>>i)]   ==> way hit range of left tree
-            way_hit[(((1<<(i-1))+j)*2+1)*(1<<(NWAY_W-i))-N_WAYS +: (N_WAYS>>i)] ==> way hit range of right tree
+            way_hit[(((1<<(i-1))+j)*2)*(1<<(NWAYS_W-i))-N_WAYS +: (N_WAYS>>i)]   ==> way hit range of left tree
+            way_hit[(((1<<(i-1))+j)*2+1)*(1<<(NWAYS_W-i))-N_WAYS +: (N_WAYS>>i)] ==> way hit range of right tree
 
 
             == tree traverse ==
@@ -132,26 +132,26 @@ module iob_cache_replacement_policy
             node value is 0 -> left tree traverse
             node value is 1 -> right tree traverse
 
-            node id mapping to way idx: node_id[NWAY_W]-N_WAYS
+            node id mapping to way idx: node_id[NWAYS_W]-N_WAYS
             */
 
            wire [N_WAYS -1: 1] tree_in, tree_out;
-           wire [NWAY_W:0]     node_id[NWAY_W:1];
+           wire [NWAYS_W:0]    node_id[NWAYS_W:1];
            assign node_id[1] = tree_out[1] ? 3 : 2; // next node id @ level2 to traverse
-           for (i=2; i <= NWAY_W; i=i+1) begin : traverse_tree_level
+           for (i=2; i <= NWAYS_W; i=i+1) begin : traverse_tree_level
               // next node id @ level3, level4, ..., to traverse
               assign node_id[i] = tree_out[node_id[i-1]] ? ((node_id[i-1]<<1)+1) : (node_id[i-1]<<1);
            end
 
-           for (i=1; i <= NWAY_W; i=i+1) begin : tree_level
+           for (i=1; i <= NWAYS_W; i=i+1) begin : tree_level
               for (j=0; j < (1<<(i-1)); j=j+1) begin : tree_level_node
                  assign tree_in[(1<<(i-1))+j] = ~(|way_hit) ? tree_out[(1<<(i-1))+j] :
-                                                (|way_hit[((((1<<(i-1))+j)*2)*(1<<(NWAY_W-i)))-N_WAYS +: (N_WAYS>>i)]) ||
-                                                (tree_out[(1<<(i-1))+j] && (~(|way_hit[((((1<<(i-1))+j)*2+1)*(1<<(NWAY_W-i)))-N_WAYS +: (N_WAYS>>i)])));
+                                                (|way_hit[((((1<<(i-1))+j)*2)*(1<<(NWAYS_W-i)))-N_WAYS +: (N_WAYS>>i)]) ||
+                                                (tree_out[(1<<(i-1))+j] && (~(|way_hit[((((1<<(i-1))+j)*2+1)*(1<<(NWAYS_W-i)))-N_WAYS +: (N_WAYS>>i)])));
               end
            end
 
-           assign way_select_bin = node_id[NWAY_W]-N_WAYS;
+           assign way_select_bin = node_id[NWAYS_W]-N_WAYS;
            assign way_select = (1 << way_select_bin);
 
            // Most Recently Used (MRU) memory
