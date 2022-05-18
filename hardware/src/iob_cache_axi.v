@@ -5,10 +5,10 @@
 
 module iob_cache_axi
   #(
-    parameter FE_ADDR_W = 32,
-    parameter FE_DATA_W = 32,
+    parameter FE_ADDR_W = `ADDR_W,
+    parameter FE_DATA_W = `DATA_W,
     parameter BE_ADDR_W = FE_ADDR_W,
-    parameter BE_DATA_W = 32,
+    parameter BE_DATA_W = `DATA_W,
     parameter NWAYS_W = 1,
     parameter NLINES_W = 7,
     parameter WORD_OFFSET_W = 3,
@@ -30,10 +30,6 @@ module iob_cache_axi
     parameter [AXI_ID_W-1:0] AXI_ID = 0 // AXI ID value
     )
    (
-    //START_IO_TABLE gen
-    `IOB_INPUT(clk, 1),
-    `IOB_INPUT(reset, 1),
-
     // Front-end interface (IOb native slave)
     `IOB_INPUT(req, 1),
     `IOB_INPUT(addr, CTRL_CACHE+FE_ADDR_W-FE_NBYTES_W),
@@ -49,49 +45,8 @@ module iob_cache_axi
     `IOB_OUTPUT(wtb_empty_out, 1),
 
     // Back-end interface (AXI4 master)
-    //START_IO_TABLE be_if
-    // Address Read
-    output                                      axi_arvalid,
-    output [BE_ADDR_W-1:0]                      axi_araddr,
-    output [7:0]                                axi_arlen,
-    output [2:0]                                axi_arsize,
-    output [1:0]                                axi_arburst,
-    output [0:0]                                axi_arlock,
-    output [3:0]                                axi_arcache,
-    output [2:0]                                axi_arprot,
-    output [3:0]                                axi_arqos,
-    output [AXI_ID_W-1:0]                       axi_arid,
-    input                                       axi_arready,
-
-    // Read
-    input                                       axi_rvalid,
-    input [BE_DATA_W-1:0]                       axi_rdata,
-    input [1:0]                                 axi_rresp,
-    input                                       axi_rlast,
-    output                                      axi_rready,
-
-    // Address Write
-    output                                      axi_awvalid,
-    output [BE_ADDR_W-1:0]                      axi_awaddr,
-    output [7:0]                                axi_awlen,
-    output [2:0]                                axi_awsize,
-    output [1:0]                                axi_awburst,
-    output [0:0]                                axi_awlock,
-    output [3:0]                                axi_awcache,
-    output [2:0]                                axi_awprot,
-    output [3:0]                                axi_awqos,
-    output [AXI_ID_W-1:0]                       axi_awid,
-    input                                       axi_awready,
-
-    // Write
-    output                                      axi_wvalid,
-    output [BE_DATA_W-1:0]                      axi_wdata,
-    output [BE_NBYTES-1:0]                      axi_wstrb,
-    output                                      axi_wlast,
-    input                                       axi_wready,
-    input                                       axi_bvalid,
-    input [1:0]                                 axi_bresp,
-    output                                      axi_bready
+`include "axi_m_port.vh"
+`include "gen_if.vh"
     );
 
    //BLOCK Front-end & Front-end interface.
@@ -123,7 +78,7 @@ module iob_cache_axi
    front_end
      (
       .clk   (clk),
-      .reset (reset),
+      .reset (rst),
 
       // front-end port
       .req (req),
@@ -187,7 +142,7 @@ module iob_cache_axi
    cache_memory
      (
       .clk   (clk),
-      .reset (reset),
+      .reset (rst),
 
       // front-end
       .req (data_req),
@@ -240,7 +195,7 @@ module iob_cache_axi
    back_end
      (
       .clk(clk),
-      .reset(reset),
+      .reset(rst),
 
       // write-through-buffer (write-channel)
       .write_valid (write_req),
@@ -316,7 +271,7 @@ module iob_cache_axi
         cache_control
           (
            .clk   (clk),
-           .reset (reset),
+           .reset (rst),
 
            // control's signals
            .valid (ctrl_req),

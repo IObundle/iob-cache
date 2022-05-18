@@ -28,10 +28,10 @@ module iob_cache
    (
     //START_IO_TABLE gen
     `IOB_INPUT(clk, 1),   //System clock
-    `IOB_INPUT(reset, 1), //System reset, asynchronous and active high
+    `IOB_INPUT(rst, 1), //System reset, asynchronous and active high
 
     // Front-end interface (IOb native slave)
-    //START_IO_TABLE fe_if
+    //START_IO_TABLE fe
     `IOB_INPUT(req, 1), //Read or write request from CPU or other user core. If {\tt ack} becomes high in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt ack} is high in reponse to the previous request
     `IOB_INPUT(addr, CTRL_CACHE+FE_ADDR_W-FE_NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
     `IOB_INPUT(wdata,FE_DATA_W), //Write data fom host.
@@ -40,7 +40,7 @@ module iob_cache
     `IOB_OUTPUT(ack,1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signla is low but has already pulsed high in response to the last request.
 
     // Back-end interface
-    //START_IO_TABLE be_if
+    //START_IO_TABLE be
     `IOB_OUTPUT(mem_req, 1),         ////Read or write request to next-level cache or memory. If {\tt mem_ack} becomes high in the next cyle the request has been served; otherwise {\tt mem_req} should remain high until {\tt mem_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt mem_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt mem_ack} is high in reponse to the previous request.
     `IOB_OUTPUT(mem_addr,BE_ADDR_W),  //Address to next-level cache or memory
     `IOB_OUTPUT(mem_wdata,BE_DATA_W), //Write data to next-level cache or memory
@@ -49,7 +49,7 @@ module iob_cache
     `IOB_INPUT(mem_ack,1), // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
 
     // Cache invalidate and write-trough buffer IO chain
-    //START_IO_TABLE hw_if
+    //START_IO_TABLE ie
     `IOB_INPUT(invalidate_in,1),  //Invalidates all cache lines if high.
     `IOB_OUTPUT(invalidate_out,1), //This output is asserted high whenever the cache is invalidated.
     `IOB_INPUT(wtb_empty_in,1), //This input may be driven the next-level cache, when its write-through buffer is empty. It should be tied to high if there no next-level cache.
@@ -85,7 +85,7 @@ module iob_cache
    front_end
      (
       .clk   (clk),
-      .reset (reset),
+      .reset (rst),
 
       // front-end port
       .req   (req),
@@ -149,7 +149,7 @@ module iob_cache
    cache_memory
      (
       .clk   (clk),
-      .reset (reset),
+      .reset (rst),
 
       // front-end
       .req       (data_req),
@@ -200,7 +200,7 @@ module iob_cache
    back_end
      (
       .clk   (clk),
-      .reset (reset),
+      .reset (rst),
 
       // write-through-buffer (write-channel)
       .write_valid (write_req),
@@ -237,7 +237,7 @@ module iob_cache
         cache_control
           (
            .clk   (clk),
-           .reset (reset),
+           .reset (rst),
 
            // control's signals
            .valid (ctrl_req),

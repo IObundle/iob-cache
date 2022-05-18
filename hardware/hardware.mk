@@ -21,8 +21,16 @@ INCLUDE+=$(incdir)$(CACHE_INC_DIR) $(incdir)$(LIB_DIR)/hardware/include
 
 #headers
 VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
+VHDR+=axi_m_port.vh
+
 
 #sources
 VSRC+=$(wildcard $(CACHE_SRC_DIR)/*.v)
+
+#CORE INTERFACES
+#memory interface
+AXI_GEN:=$(AXI_DIR)/software/axi_gen.py
+axi_m_port.vh:
+	set -e; $(AXI_GEN) axi_m_port $(ADDR_W) $(DATA_W)
 
 endif

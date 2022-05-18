@@ -16,6 +16,10 @@ LIB_DIR ?=$(CACHE_DIR)/submodules/LIB
 MEM_DIR ?=$(CACHE_DIR)/submodules/MEM
 AXI_DIR ?=$(CACHE_DIR)/submodules/AXI
 
+
+DATA_W ?=32
+ADDR_W ?=32
+
 #DEFAULT SIMULATOR
 SIMULATOR ?=icarus
 SIMULATOR_LIST ?=icarus verilator

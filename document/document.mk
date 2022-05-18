@@ -9,6 +9,11 @@ XIL_FAMILY ?=XCKU
 #root directory
 CORE_DIR:=$(CACHE_DIR)
 
+
+#VHDR+=$(FPGA_DIR)/iob_cache_def.vh
+VHDR+=axi_m_port.vh
+VSRC+=$(CACHE_HW_DIR)/src/iob_cache_axi.v
+
 #export definitions
 export DEFINE
 

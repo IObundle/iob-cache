@@ -6,6 +6,7 @@
 `define WORD_OFFSET_W 1
 `define ADDR_W 12
 `define DATA_W 32
+
 `define N_BYTES 4
 // Replacement Policy (N_WAYS > 1 only) - check below the values
 `define REP_POLICY 0
@@ -251,78 +252,8 @@ module iob_cache_tb;
    reg [`DATA_W/8-1:0]                 cpu_wstrb;
    reg                                 cpu_req;
 
-   reg [`ADDR_W-1  :$clog2(`DATA_W/8)] cpu_addr_reg;
-   reg [`DATA_W-1:0]                   cpu_wdata_reg;
-   reg [`DATA_W/8-1:0]                 cpu_wstrb_reg;
-   reg                                 cpu_req_reg;
    
-   always @(posedge clk, posedge reset)
-     if (reset)
-       cpu_state <= 0;
-     else
-       case(cpu_state)
-         1'b0:
-           begin
-              if (valid)
-                cpu_state <= 1'b1;
-              else
-                cpu_state <= 1'b0;
-           end
-
-         1'b1:
-           begin
-              if (~ack | valid)
-                cpu_state<=1'b1;
-              else
-                cpu_state <= 1'b0;
-           end
-         default:;
-
-       endcase // case (cpu_state)
-
-
-
-   always @(posedge clk)
-     begin
-        cpu_addr_reg <= cpu_addr;
-        cpu_wdata_reg <= cpu_wdata;
-        cpu_wstrb_reg <= cpu_wstrb;
-        cpu_req_reg <= cpu_req;
-     end
-
-   always @*
-     begin 
-        cpu_req = cpu_req;
-        cpu_addr = cpu_addr;
-        cpu_wdata = cpu_wdata;
-        cpu_wstrb = cpu_wstrb;
-        case(cpu_state)
-          1'b0:
-            begin
-               cpu_req = valid;
-               cpu_addr = addr;
-               cpu_wdata = wdata;
-               cpu_wstrb = wstrb;
-            end
-          1'b1:
-            if (ack)
-              begin
-                 cpu_req = valid;
-                 cpu_addr = addr;
-                 cpu_wdata = wdata;
-                 cpu_wstrb = wstrb;
-              end
-            else
-              begin
-                 cpu_req = cpu_req_reg;
-                 cpu_addr = cpu_addr_reg;
-                 cpu_wdata = cpu_wdata_reg;
-                 cpu_wstrb = cpu_wstrb_reg;
-              end
-          default:;
-        endcase
-     end
-   
+  
 
    iob_cache_axi
      #(
@@ -342,15 +273,15 @@ module iob_cache_tb;
    cache 
      (
       .clk (clk),
-      .reset (reset),
+      .rst (reset),
 
       //front-end
       .wdata (cpu_wdata),
-      .addr  ({ctrl,cpu_addr}),
+      .addr  (cpu_addr),
       .wstrb (cpu_wstrb),
       .rdata (rdata),
       .req (cpu_req),
-      .ack (ack),
+      .ack (cpu_ack),
 
       //invalidate / wtb empty
       .invalidate_in(1'b0),
