@@ -41,8 +41,8 @@ module iob_cache_axi
     `IOB_OUTPUT(wtb_empty_out, 1),
 
     // Back-end interface (AXI4 master)
-`include "axi_m_port.vh"
-`include "gen_if.vh"
+`include "iob_cache_axi_m_port.vh"
+`include "iob_gen_if.vh"
     );
    
    //BLOCK Front-end & Front-end interface.

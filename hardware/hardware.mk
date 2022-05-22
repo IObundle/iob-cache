@@ -29,12 +29,6 @@ VHDR+=gen_if.vh
 gen_if.vh:
 	cp $(LIB_DIR)/hardware/include/$@ .
 
-#back-end interface
-VHDR+=axi_m_port.vh
-AXI_GEN:=$(AXI_DIR)/software/axi_gen.py
-axi_m_port.vh:
-	set -e; $(AXI_GEN) axi_m_port $(BE_ADDR_W) $(BE_DATA_W)
-
 #SOURCES
 VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v)
 
