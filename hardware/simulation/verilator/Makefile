@@ -10,7 +10,7 @@ include ../simulation.mk
 TB=testbench.cpp
 VSRC+=iob_cache_wrapper.v
 
-VFLAGS=--cc --exe $(INCLUDE) $(VSRC) --top-module $(DUT_MODULE)
+VFLAGS=--cc --exe $(INCLUDE) $(DEFINE) $(VSRC) $(TB) --top-module $(DUT_MODULE)
 WNO=-Wno-lint #Disable lint warnings
 WAVE=--trace  #Generate waveforms
 
