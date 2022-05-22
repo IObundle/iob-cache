@@ -19,7 +19,7 @@ run: $(VSRC) $(VHDR)
 	cd ./obj_dir && make -f V$(DUT_MODULE).mk
 	./obj_dir/V$(DUT_MODULE) $(TEST_LOG)
 
-clean: cache-gen-clean
+clean: sim-clean
 	@rm -rf ./obj_dir
 
 .PHONY: run clean

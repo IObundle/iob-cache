@@ -4,25 +4,12 @@
 
 module iob_cache_back_end
   #(
-    // memory cache's parameters
-    parameter FE_ADDR_W   = 32,
-    parameter FE_DATA_W   = 32,
-    parameter WORD_OFFSET_W = 3,
-    parameter BE_ADDR_W = FE_ADDR_W,
-    parameter BE_DATA_W = FE_DATA_W,
-
-    // Derived parameters DO NOT CHANGE
-    parameter FE_NBYTES  = FE_DATA_W/8,
-    parameter FE_BYTE_W  = $clog2(FE_NBYTES), // Byte Offset
-
-    // Higher hierarchy memory (slave) interface parameters
-    parameter BE_NBYTES_W = BE_DATA_W/8,      // Number of bytes
-
-    // Cache-Memory base Offset
-    parameter LINE2BE_W = WORD_OFFSET_W-$clog2(BE_DATA_W/FE_DATA_W),
-
-    // Write-Policy
-    parameter WRITE_POL = `WRITE_THROUGH // write policy: write-through (0), write-back (1)
+    parameter ADDR_W   = `ADDR_W,
+    parameter DATA_W   = `DATA_W,
+    parameter BE_ADDR_W = `BE_ADDR_W,
+    parameter BE_DATA_W = `BE_DATA_W,
+    parameter WORD_OFFSET_W = `WORD_OFFSET_W,
+    parameter WRITE_POL = `WRITE_THROUGH
     )
    (
     input                                                                       clk,
@@ -30,24 +17,24 @@ module iob_cache_back_end
 
     // write-through-buffer
     input                                                                       write_valid,
-    input [FE_ADDR_W-1:FE_BYTE_W + WRITE_POL*WORD_OFFSET_W]                     write_addr,
-    input [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 :0] write_wdata,
-    input [FE_NBYTES-1:0]                                                       write_wstrb,
+    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]                     write_addr,
+    input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] write_wdata,
+    input [`NBYTES-1:0]                                                       write_wstrb,
     output                                                                      write_ready,
 
     // cache-line replacement
     input                                                                       replace_valid,
-    input [FE_ADDR_W -1: FE_BYTE_W + WORD_OFFSET_W]                             replace_addr,
+    input [ADDR_W -1: `NBYTES_W + WORD_OFFSET_W]                             replace_addr,
     output                                                                      replace,
     output                                                                      read_valid,
-    output [LINE2BE_W -1:0]                                                     read_addr,
+    output [`LINE2BE_W -1:0]                                                     read_addr,
     output [BE_DATA_W -1:0]                                                     read_rdata,
 
     // back-end memory interface
     output                                                                      mem_valid,
     output [BE_ADDR_W -1:0]                                                     mem_addr,
     output [BE_DATA_W-1:0]                                                      mem_wdata,
-    output [BE_NBYTES_W-1:0]                                                    mem_wstrb,
+    output [`BE_NBYTES-1:0]                                                    mem_wstrb,
     input [BE_DATA_W-1:0]                                                       mem_rdata,
     input                                                                       mem_ready
     );
@@ -60,11 +47,11 @@ module iob_cache_back_end
 
    iob_cache_read_channel
      #(
-       .FE_ADDR_W(FE_ADDR_W),
-       .FE_DATA_W(FE_DATA_W),
-       .WORD_OFFSET_W(WORD_OFFSET_W),
+       .ADDR_W(ADDR_W),
+       .DATA_W(DATA_W),
        .BE_ADDR_W (BE_ADDR_W),
-       .BE_DATA_W (BE_DATA_W)
+       .BE_DATA_W (BE_DATA_W),
+       .WORD_OFFSET_W (WORD_OFFSET_W)
        )
    read_fsm
      (
@@ -84,8 +71,8 @@ module iob_cache_back_end
 
    iob_cache_write_channel
      #(
-       .FE_ADDR_W (FE_ADDR_W),
-       .FE_DATA_W (FE_DATA_W),
+       .ADDR_W (ADDR_W),
+       .DATA_W (DATA_W),
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
        .WRITE_POL (WRITE_POL),
@@ -95,11 +82,13 @@ module iob_cache_back_end
      (
       .clk(clk),
       .reset(reset),
+      
       .valid (write_valid),
       .addr (write_addr),
       .wstrb (write_wstrb),
       .wdata (write_wdata),
       .ready (write_ready),
+
       .mem_addr(mem_addr_write),
       .mem_valid(mem_valid_write),
       .mem_ready(mem_ready),

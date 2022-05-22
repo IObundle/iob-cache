@@ -9,7 +9,7 @@
 
 module iob_cache_control
   #(
-    parameter FE_DATA_W = 32,
+    parameter DATA_W = 32,
     parameter CTRL_CNT = 1
     )
    (
@@ -23,15 +23,15 @@ module iob_cache_control
     input                      write_miss,
     input                      read_hit,
     input                      read_miss,
-    output reg [FE_DATA_W-1:0] rdata,
+    output reg [DATA_W-1:0] rdata,
     output reg                 ready,
     output reg                 invalidate
     );
 
    generate
       if (CTRL_CNT) begin
-         reg [FE_DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
-         wire [FE_DATA_W-1:0]            hit_cnt, miss_cnt;
+         reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
+         wire [DATA_W-1:0]            hit_cnt, miss_cnt;
          reg                             counter_reset;
 
          assign hit_cnt  = read_hit_cnt  + write_hit_cnt;
@@ -39,16 +39,16 @@ module iob_cache_control
 
          always @(posedge clk, posedge reset) begin
             if (reset) begin
-               read_hit_cnt   <= {FE_DATA_W{1'b0}};
-               read_miss_cnt  <= {FE_DATA_W{1'b0}};
-               write_hit_cnt  <= {FE_DATA_W{1'b0}};
-               write_miss_cnt <= {FE_DATA_W{1'b0}};
+               read_hit_cnt   <= {DATA_W{1'b0}};
+               read_miss_cnt  <= {DATA_W{1'b0}};
+               write_hit_cnt  <= {DATA_W{1'b0}};
+               write_miss_cnt <= {DATA_W{1'b0}};
             end else begin
                if (counter_reset) begin
-                  read_hit_cnt   <= {FE_DATA_W{1'b0}};
-                  read_miss_cnt  <= {FE_DATA_W{1'b0}};
-                  write_hit_cnt  <= {FE_DATA_W{1'b0}};
-                  write_miss_cnt <= {FE_DATA_W{1'b0}};
+                  read_hit_cnt   <= {DATA_W{1'b0}};
+                  read_miss_cnt  <= {DATA_W{1'b0}};
+                  write_hit_cnt  <= {DATA_W{1'b0}};
+                  write_miss_cnt <= {DATA_W{1'b0}};
                end else if (read_hit) begin
                   read_hit_cnt <= read_hit_cnt + 1'b1;
                end else if (write_hit) begin
@@ -68,7 +68,7 @@ module iob_cache_control
          end
 
          always @(posedge clk) begin
-            rdata <= {FE_DATA_W{1'b0}};
+            rdata <= {DATA_W{1'b0}};
             invalidate <= 1'b0;
             counter_reset <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
@@ -97,7 +97,7 @@ module iob_cache_control
          end
       end else begin
          always @(posedge clk) begin
-            rdata <= {FE_DATA_W{1'b0}};
+            rdata <= {DATA_W{1'b0}};
             invalidate <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
             if (valid)

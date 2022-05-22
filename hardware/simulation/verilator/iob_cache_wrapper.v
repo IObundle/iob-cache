@@ -2,9 +2,9 @@
 
 module iob_cache_wrapper
      #(       
-       parameter FE_ADDR_W = 32,              
-       parameter FE_DATA_W = 32,                         
-       parameter BE_ADDR_W = 24, 
+       parameter ADDR_W = 32,              
+       parameter DATA_W = 32,                         
+       parameter ADDR_W = 24, 
        parameter BE_DATA_W = 32,
        parameter AXI_ID_W = 1
       )
@@ -13,15 +13,15 @@ module iob_cache_wrapper
        input 				  reset,
 	  
        input 				         req, 
-       input  [FE_ADDR_W-1:$clog2(FE_DATA_W/8)]  addr,
-       input  [FE_DATA_W-1:0] 		         wdata,
-       input  [FE_DATA_W/8-1:0] 		 wstrb,
-       output [FE_DATA_W-1:0] 		         rdata,
+       input  [ADDR_W-1:$clog2(DATA_W/8)]  addr,
+       input  [DATA_W-1:0] 		         wdata,
+       input  [DATA_W/8-1:0] 		 wstrb,
+       output [DATA_W-1:0] 		         rdata,
        output 				         ack      
       );	
 
        wire                                axi_arvalid; 
-       wire [BE_ADDR_W-1:0]                axi_araddr;
+       wire [ADDR_W-1:0]                axi_araddr;
        wire [7:0]                          axi_arlen;
        wire [2:0]                          axi_arsize;
        wire [1:0]                          axi_arburst;
@@ -36,7 +36,7 @@ module iob_cache_wrapper
        wire                                axi_rlast; 
        wire                                axi_rready;
        wire                                axi_awvalid;
-       wire [BE_ADDR_W-1:0]                axi_awaddr;
+       wire [ADDR_W-1:0]                axi_awaddr;
        wire [7:0]                          axi_awlen;
        wire [2:0]                          axi_awsize;
        wire [1:0]                          axi_awburst;
@@ -62,9 +62,9 @@ module iob_cache_wrapper
 
    iob_cache_axi 
      #(
-       .FE_ADDR_W(FE_ADDR_W),       
-       .FE_DATA_W(FE_DATA_W),
-       .BE_ADDR_W(BE_ADDR_W),
+       .ADDR_W(ADDR_W),       
+       .DATA_W(DATA_W),
+       .ADDR_W(ADDR_W),
        .BE_DATA_W(BE_DATA_W)
       ) 
    cache_axi    
@@ -122,7 +122,7 @@ module iob_cache_wrapper
    axi_ram
       #(
        .DATA_WIDTH(BE_DATA_W),
-       .ADDR_WIDTH(BE_ADDR_W),
+       .ADDR_WIDTH(ADDR_W),
        .ID_WIDTH(AXI_ID_W)
       )
    ddr_axi

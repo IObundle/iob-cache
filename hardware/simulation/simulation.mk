@@ -1,25 +1,8 @@
-VCD :=0
-
-#defines
-DEFINE+=$(defmacro)DATA_W=32 $(defmacro)ADDR_W=32
-
-ifeq ($(VCD),1)
-DEFINE+=$(defmacro)VCD
-endif
-
+MACRO_LIST+=VCD
 include $(CACHE_DIR)/hardware/hardware.mk
 
-CACHE_TB_DIR:=$(CACHE_HW_DIR)/simulation/testbench
-
-#includes
-INCLUDE+=$(incdir)$(CACHE_TB_DIR)
-
-#headers
-VHDR+=$(CACHE_TB_DIR)/iob-cache_tb.vh
-
-#sources
-#testbench
-VSRC+=$(TB)
+#testbench source 
+VSRC+=$(CACHE_HW_DIR)/simulation/testbench/iob_cache_tb.v
 
 #axi memory
 include $(AXI_DIR)/hardware/axiram/hardware.mk
@@ -34,12 +17,8 @@ test1: clean
 	make run VCD=0 TEST_LOG=">> test.log"
 
 #clean test log only when tests begin
-clean-testlog:
-	@rm -f test.log
 
-clean-all: clean-testlog clean
+sim-clean: hw-clean
 	@rm -rf *.vcd
 
-.PHONY: waves \
-	test test1 \
-	clean-testlog clean clean-all
+.PHONY: waves test test1 sim-clean
