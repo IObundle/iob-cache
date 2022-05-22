@@ -1,9 +1,6 @@
 MACRO_LIST+=VCD
 include $(CACHE_DIR)/hardware/hardware.mk
 
-#testbench source 
-VSRC+=$(CACHE_HW_DIR)/simulation/testbench/iob_cache_tb.v
-
 #axi memory
 include $(AXI_DIR)/hardware/axiram/hardware.mk
 

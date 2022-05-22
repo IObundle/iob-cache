@@ -106,8 +106,8 @@ module iob_cache_write_channel
             endcase
          end
       end else begin // if (WRITE_POL == WRITE_BACK)
-         if (LINE2BE_W > 0) begin
-            reg [LINE2BE_W-1:0] word_counter, word_counter_reg;
+         if (`LINE2BE_W > 0) begin
+            reg [`LINE2BE_W-1:0] word_counter, word_counter_reg;
             always @(posedge clk)
               word_counter_reg <= word_counter;
 
@@ -163,7 +163,7 @@ module iob_cache_write_channel
                  end
                endcase
             end
-         end else begin // if (LINE2BE_W == 0)
+         end else begin
             // memory address
             assign mem_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: `BE_NBYTES_W], {`BE_NBYTES_W{1'b0}}};
 

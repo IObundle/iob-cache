@@ -141,7 +141,7 @@ module iob_cache_write_channel_axi
             endcase
          end
       end else begin // if (WRITE_POL == `WRITE_BACK)
-         if (LINE2BE_W > 0) begin
+         if (`LINE2BE_W > 0) begin
             // Constant AXI signals
             assign axi_awid    = `AXI_ID;
             assign axi_awlock  = 1'b0;
@@ -150,7 +150,7 @@ module iob_cache_write_channel_axi
             assign axi_awqos   = 4'd0;
 
             // Burst parameters
-            assign axi_awlen   = 2**LINE2BE_W - 1; // will choose the burst lenght depending on the cache's and slave's data width
+            assign axi_awlen   = 2**`LINE2BE_W - 1; // will choose the burst lenght depending on the cache's and slave's data width
             assign axi_awsize  = `BE_NBYTES_W;      // each word will be the width of the memory for maximum bandwidth
             assign axi_awburst = 2'b01;            // incremental burst
 
@@ -158,7 +158,7 @@ module iob_cache_write_channel_axi
             assign axi_awaddr  = {BE_ADDR_W{1'b0}} + {addr, {(`NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
-            reg [LINE2BE_W-1:0] word_counter;
+            reg [`LINE2BE_W-1:0] word_counter;
             assign axi_wdata = wdata >> (word_counter*BE_DATA_W);
             assign axi_wstrb = {`BE_NBYTES{1'b1}};
             assign axi_wlast = &word_counter;
@@ -232,7 +232,7 @@ module iob_cache_write_channel_axi
                  end
                endcase
             end
-         end else  begin // if (LINE2BE_W == 0)
+         end else  begin
             // Constant AXI signals
             assign axi_awid    = `AXI_ID;
             assign axi_awlock  = 1'b0;
