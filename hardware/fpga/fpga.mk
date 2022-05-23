@@ -22,14 +22,14 @@ else
 	scp $(FPGA_USER)@$(FPGA_SERVER):$(REMOTE_ROOT_DIR)/hardware/fpga/$(TOOL)/$(FPGA_FAMILY)/$(FPGA_LOG) $(FPGA_DIR)
 endif
 
-test: clean-testlog test1
+test: iob-cache-clean-testlog test1
 	diff -q test.log test.expected
 
 test1: clean
 	make build TEST_LOG=">> test.log"
 
 #clean test log only when board testing begins
-clean-testlog:
+iob-cache-clean-testlog:
 	@rm -f test.log
 
 clean:
@@ -40,8 +40,8 @@ ifneq ($(FPGA_SERVER),)
 	ssh $(FPGA_USER)@$(FPGA_SERVER) 'cd $(REMOTE_ROOT_DIR); make fpga-clean FPGA_FAMILY=$(FPGA_FAMILY)'
 endif
 
-clean-all: clean-testlog clean
+clean-all: iob-cache-clean-testlog clean
 
 .PHONY: build \
 	test test1 \
-	clean-testlog clean clean-all
+	iob-cache-clean-testlog clean clean-all

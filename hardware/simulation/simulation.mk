@@ -7,7 +7,7 @@ include $(AXI_DIR)/hardware/axiram/hardware.mk
 waves:
 	gtkwave uut.vcd
 
-test: clean-testlog test1
+test: iob-cache-clean-testlog test1
 	diff -q test.log test.expected
 
 test1: clean
@@ -15,7 +15,7 @@ test1: clean
 
 #clean test log only when tests begin
 
-sim-clean: hw-clean
+sim-clean: iob-cache-hw-clean
 	@rm -rf *.vcd
 
 # AXI4 wrires

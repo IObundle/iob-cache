@@ -30,9 +30,9 @@ iob_gen_if.vh:
 	cp $(LIB_DIR)/hardware/include/$@ .
 
 #back-end interface verilog header file 
-VHDR+=iob_cache_iob_cache_axi_portmap.vh
-iob_cache_iob_cache_axi_portmap.vh:
-	set -e; $(AXI_GEN) axi_portmap $(BE_ADDR_W) $(BE_DATA_W) iob_cache_ iob_cache_
+VHDR+=iob_cache_axi_portmap.vh
+iob_cache_axi_portmap.vh:
+	set -e; $(AXI_GEN) axi_portmap $(BE_ADDR_W) $(BE_DATA_W) iob_cache_
 
 
 
@@ -40,14 +40,14 @@ iob_cache_iob_cache_axi_portmap.vh:
 #SOURCES
 VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v)
 
-clean-testlog:
+iob-cache-clean-testlog:
 	@rm -f test.log
 
-clean-all: clean-testlog clean
+clean-all: iob-cache-clean-testlog clean
 
-hw-clean: gen-clean
+iob-cache-hw-clean: iob-cache-gen-clean
 	@rm -f *.vh 
 
-.PHONY: clean-testlog clean-all hw-clean
+.PHONY: iob-cache-clean-testlog clean-all iob-cache-hw-clean
 
 endif

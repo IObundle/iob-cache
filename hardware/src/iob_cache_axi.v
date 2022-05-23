@@ -205,7 +205,7 @@ module iob_cache_axi
       .read_rdata (read_rdata),
 
       //back-end AXI4 interface
-`include "iob_cache_iob_cache_axi_portmap.vh"
+`include "iob_cache_axi_portmap.vh"
       .clk(clk),
       .rst(rst)  
       );

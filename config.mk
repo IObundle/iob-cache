@@ -66,4 +66,4 @@ iob_cache_axi_m_port.vh:
 iob-cache-gen-clean:
 	@rm -f *# *~
 
-.PHONY: gen-clean
+.PHONY: iob-cache-gen-clean
