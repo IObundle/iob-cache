@@ -176,44 +176,7 @@ module iob_cache_tb;
 
    
 `ifdef AXI
-   //AXI connections
-   wire 			   axi_awvalid;
-   wire 			   axi_awready;
-   wire [`AXI_ID_W-1:0]            axi_awid;
-   wire [`BE_ADDR_W-1:0]              axi_awaddr;
-   wire [2:0]                      axi_awprot;
-   wire [3:0]                      axi_awqos;
-   wire 			   axi_wvalid;
-   wire 			   axi_wready;
-   wire [`BE_DATA_W-1:0]           axi_wdata;
-   wire [`BE_NBYTES-1:0]           axi_wstrb;
-   wire                            axi_wlast;
-   wire 			   axi_bvalid;
-   wire 			   axi_bready;
-   wire 			   axi_arvalid;
-   wire 			   axi_arready;
-   wire [`AXI_ID_W-1:0]            axi_arid;
-   wire [`BE_ADDR_W-1:0]           axi_araddr;
-   wire [2:0]                      axi_arprot;
-   wire [3:0]                      axi_arqos;
-   wire [`AXI_ID_W-1:0]            axi_rid;
-   wire 			   axi_rvalid;
-   wire 			   axi_rready;
-   wire [`BE_DATA_W-1:0]           axi_rdata;
-   wire [1:0]                      axi_rresp;
-   wire                            axi_rlast;
-   wire [`AXI_ID_W-1:0]            axi_bid;
-   wire [1:0]                      axi_bresp;
-   wire [7:0]                      axi_arlen;
-   wire [2:0]                      axi_arsize;
-   wire [1:0]                      axi_arburst;
-   wire                            axi_arlock;
-   wire [3:0]                      axi_arcache;
-   wire [7:0]                      axi_awlen;
-   wire [2:0]                      axi_awsize;
-   wire [1:0]                      axi_awburst;
-   wire                            axi_awlock;
-   wire [3:0]                      axi_awcache;
+`include "iob_cache_axi_wire.vh"
 `else
    //Native connections
    wire [`BE_ADDR_W-1:0]           mem_addr;
@@ -250,9 +213,6 @@ module iob_cache_tb;
        )
    cache 
      (
-      .clk (clk),
-      .rst (reset),
-
       //front-end
       .wdata (cpu_wdata),
       .addr  ({ctrl,cpu_addr}),
@@ -269,56 +229,17 @@ module iob_cache_tb;
 
       //back-end
 `ifdef AXI
-      //address write
-      .axi_awid(axi_awid), 
-      .axi_awaddr(axi_awaddr), 
-      .axi_awlen(axi_awlen), 
-      .axi_awsize(axi_awsize), 
-      .axi_awburst(axi_awburst), 
-      .axi_awlock(axi_awlock), 
-      .axi_awcache(axi_awcache), 
-      .axi_awprot(axi_awprot),
-      .axi_awqos(axi_awqos), 
-      .axi_awvalid(axi_awvalid), 
-      .axi_awready(axi_awready), 
-      //write
-      .axi_wdata(axi_wdata), 
-      .axi_wstrb(axi_wstrb), 
-      .axi_wlast(axi_wlast), 
-      .axi_wvalid(axi_wvalid), 
-      .axi_wready(axi_wready), 
-      //write response
-      .axi_bresp(axi_bresp), 
-      .axi_bvalid(axi_bvalid), 
-      .axi_bready(axi_bready), 
-      .axi_bid(axi_bid), 
-      //address read
-      .axi_arid(axi_arid), 
-      .axi_araddr(axi_araddr), 
-      .axi_arlen(axi_arlen), 
-      .axi_arsize(axi_arsize), 
-      .axi_arburst(axi_arburst), 
-      .axi_arlock(axi_arlock), 
-      .axi_arcache(axi_arcache), 
-      .axi_arprot(axi_arprot), 
-      .axi_arqos(axi_arqos), 
-      .axi_arvalid(axi_arvalid), 
-      .axi_arready(axi_arready), 
-      //read 
-      .axi_rdata(axi_rdata), 
-      .axi_rresp(axi_rresp), 
-      .axi_rlast(axi_rlast), 
-      .axi_rvalid(axi_rvalid),  
-      .axi_rready(axi_rready),
-      .axi_rid(axi_rid)
-`else // !`ifdef AXI
+  `include "iob_cache_iob_cache_axi_portmap.vh"
+`else
       .mem_addr(mem_addr),
       .mem_wdata(mem_wdata),
       .mem_wstrb(mem_wstrb),
       .mem_rdata(mem_rdata),
       .mem_valid(mem_valid),
-      .mem_ready(mem_ready)
+      .mem_ready(mem_ready),
 `endif
+      .clk (clk),
+      .rst (reset)
       );
 
    
@@ -334,49 +255,49 @@ module iob_cache_tb;
       //address write
       .clk            (clk),
       .rst            (reset),
-      .s_axi_awid     (axi_awid),
-      .s_axi_awaddr   (axi_awaddr),
-      .s_axi_awlen    (axi_awlen),
-      .s_axi_awsize   (axi_awsize),
-      .s_axi_awburst  (axi_awburst),
-      .s_axi_awlock   (axi_awlock),
-      .s_axi_awprot   (axi_awprot),
-      .s_axi_awcache  (axi_awcache),
-      .s_axi_awvalid  (axi_awvalid),
-      .s_axi_awready  (axi_awready),
+      .s_axi_awid     (iob_cache_axi_awid),
+      .s_axi_awaddr   (iob_cache_axi_awaddr),
+      .s_axi_awlen    (iob_cache_axi_awlen),
+      .s_axi_awsize   (iob_cache_axi_awsize),
+      .s_axi_awburst  (iob_cache_axi_awburst),
+      .s_axi_awlock   (iob_cache_axi_awlock),
+      .s_axi_awprot   (iob_cache_axi_awprot),
+      .s_axi_awcache  (iob_cache_axi_awcache),
+      .s_axi_awvalid  (iob_cache_axi_awvalid),
+      .s_axi_awready  (iob_cache_axi_awready),
       
       //write  
-      .s_axi_wvalid   (axi_wvalid),
-      .s_axi_wready   (axi_wready),
-      .s_axi_wdata    (axi_wdata),
-      .s_axi_wstrb    (axi_wstrb),
-      .s_axi_wlast    (axi_wlast),
+      .s_axi_wvalid   (iob_cache_axi_wvalid),
+      .s_axi_wready   (iob_cache_axi_wready),
+      .s_axi_wdata    (iob_cache_axi_wdata),
+      .s_axi_wstrb    (iob_cache_axi_wstrb),
+      .s_axi_wlast    (iob_cache_axi_wlast),
       
       //write response
-      .s_axi_bready   (axi_bready),
-      .s_axi_bid      (axi_bid),
-      .s_axi_bresp    (axi_bresp),
-      .s_axi_bvalid   (axi_bvalid),
+      .s_axi_bready   (iob_cache_axi_bready),
+      .s_axi_bid      (iob_cache_axi_bid),
+      .s_axi_bresp    (iob_cache_axi_bresp),
+      .s_axi_bvalid   (iob_cache_axi_bvalid),
       
       //address read
-      .s_axi_arid     (axi_arid),
-      .s_axi_araddr   (axi_araddr),
-      .s_axi_arlen    (axi_arlen), 
-      .s_axi_arsize   (axi_arsize),    
-      .s_axi_arburst  (axi_arburst),
-      .s_axi_arlock   (axi_arlock),
-      .s_axi_arcache  (axi_arcache),
-      .s_axi_arprot   (axi_arprot),
-      .s_axi_arvalid  (axi_arvalid),
-      .s_axi_arready  (axi_arready),
+      .s_axi_arid     (iob_cache_axi_arid),
+      .s_axi_araddr   (iob_cache_axi_araddr),
+      .s_axi_arlen    (iob_cache_axi_arlen), 
+      .s_axi_arsize   (iob_cache_axi_arsize),    
+      .s_axi_arburst  (iob_cache_axi_arburst),
+      .s_axi_arlock   (iob_cache_axi_arlock),
+      .s_axi_arcache  (iob_cache_axi_arcache),
+      .s_axi_arprot   (iob_cache_axi_arprot),
+      .s_axi_arvalid  (iob_cache_axi_arvalid),
+      .s_axi_arready  (iob_cache_axi_arready),
       
       //read   
-      .s_axi_rready   (axi_rready),
-      .s_axi_rid      (axi_rid),
-      .s_axi_rdata    (axi_rdata),
-      .s_axi_rresp    (axi_rresp),
-      .s_axi_rlast    (axi_rlast),
-      .s_axi_rvalid   (axi_rvalid)
+      .s_axi_rready   (iob_cache_axi_rready),
+      .s_axi_rid      (iob_cache_axi_rid),
+      .s_axi_rdata    (iob_cache_axi_rdata),
+      .s_axi_rresp    (iob_cache_axi_rresp),
+      .s_axi_rlast    (iob_cache_axi_rlast),
+      .s_axi_rvalid   (iob_cache_axi_rvalid)
       ); 
    
 `else

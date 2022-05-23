@@ -56,10 +56,10 @@ endif
 
 
 #back-end interface verilog header file 
-VHDR+=axi_m_port.vh
+VHDR+=iob_cache_axi_m_port.vh
 AXI_GEN:=$(AXI_DIR)/software/axi_gen.py
-axi_m_port.vh:
-	set -e; $(AXI_GEN) axi_m_port $(BE_ADDR_W) $(BE_DATA_W)
+iob_cache_axi_m_port.vh:
+	set -e; $(AXI_GEN) axi_m_port $(BE_ADDR_W) $(BE_DATA_W) iob_cache_
 
 
 

@@ -189,9 +189,6 @@ module iob_cache_axi
        )
    back_end
      (
-      .clk(clk),
-      .reset(rst),
-
       // write-through-buffer (write-channel)
       .write_valid (write_req),
       .write_addr (write_addr),
@@ -207,52 +204,10 @@ module iob_cache_axi
       .read_addr (read_addr),
       .read_rdata (read_rdata),
 
-      // back-end read-channel
-      // read address
-      .axi_arvalid (axi_arvalid),
-      .axi_araddr (axi_araddr),
-      .axi_arlen (axi_arlen),
-      .axi_arsize (axi_arsize),
-      .axi_arburst (axi_arburst),
-      .axi_arlock (axi_arlock),
-      .axi_arcache (axi_arcache),
-      .axi_arprot (axi_arprot),
-      .axi_arqos (axi_arqos),
-      .axi_arid (axi_arid),
-      .axi_arready (axi_arready),
-
-      // read data
-      .axi_rvalid (axi_rvalid),
-      .axi_rdata (axi_rdata),
-      .axi_rresp (axi_rresp),
-      .axi_rlast (axi_rlast),
-      .axi_rready (axi_rready),
-
-      // back-end write-channel
-      // write address
-      .axi_awvalid (axi_awvalid),
-      .axi_awaddr (axi_awaddr),
-      .axi_awlen (axi_awlen),
-      .axi_awsize (axi_awsize),
-      .axi_awburst (axi_awburst),
-      .axi_awlock (axi_awlock),
-      .axi_awcache (axi_awcache),
-      .axi_awprot (axi_awprot),
-      .axi_awqos (axi_awqos),
-      .axi_awid (axi_awid),
-      .axi_awready (axi_awready),
-
-      // write data
-      .axi_wvalid (axi_wvalid),
-      .axi_wdata (axi_wdata),
-      .axi_wstrb (axi_wstrb),
-      .axi_wready (axi_wready),
-      .axi_wlast (axi_wlast),
-
-      // write response
-      .axi_bvalid (axi_bvalid),
-      .axi_bresp (axi_bresp),
-      .axi_bready (axi_bready)
+      //back-end AXI4 interface
+`include "iob_cache_iob_cache_axi_portmap.vh"
+      .clk(clk),
+      .rst(rst)  
       );
 
    //BLOCK Cache control & Cache control block.

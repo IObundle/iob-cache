@@ -25,9 +25,17 @@ VHDR+=iob_lib.vh
 iob_lib.vh:
 	cp $(LIB_DIR)/hardware/include/$@ .
 #clk/rst interface
-VHDR+=gen_if.vh
-gen_if.vh:
+VHDR+=iob_gen_if.vh
+iob_gen_if.vh:
 	cp $(LIB_DIR)/hardware/include/$@ .
+
+#back-end interface verilog header file 
+VHDR+=iob_cache_iob_cache_axi_portmap.vh
+iob_cache_iob_cache_axi_portmap.vh:
+	set -e; $(AXI_GEN) axi_portmap $(BE_ADDR_W) $(BE_DATA_W) iob_cache_ iob_cache_
+
+
+
 
 #SOURCES
 VSRC+=$(wildcard $(CACHE_HW_DIR)/src/*.v)
