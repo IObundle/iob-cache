@@ -29,7 +29,13 @@ VHDR+=iob_gen_if.vh
 iob_gen_if.vh:
 	cp $(LIB_DIR)/hardware/include/$@ .
 
-#back-end interface verilog header file 
+#back-end AXI4 interface verilog header file 
+VHDR+=iob_cache_axi_m_port.vh
+AXI_GEN:=$(AXI_DIR)/software/axi_gen.py
+iob_cache_axi_m_port.vh:
+	set -e; $(AXI_GEN) axi_m_port iob_cache_
+
+#back-end AXI4 portmap verilog header file 
 VHDR+=iob_cache_axi_portmap.vh
 iob_cache_axi_portmap.vh:
 	set -e; $(AXI_GEN) axi_portmap iob_cache_
