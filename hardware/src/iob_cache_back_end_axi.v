@@ -9,7 +9,10 @@ module iob_cache_back_end_axi
     parameter BE_ADDR_W = `BE_ADDR_W,
     parameter BE_DATA_W = `BE_DATA_W,
     parameter WORD_OFFSET_W = `WORD_OFFSET_W,
-    parameter WRITE_POL = `WRITE_THROUGH
+    parameter WRITE_POL = `WRITE_THROUGH,
+    //derived parameters
+    parameter AXI_ADDR_W = BE_ADDR_W,
+    parameter AXI_DATA_W = BE_DATA_W
     )
    (
     // write-through-buffer
@@ -25,7 +28,7 @@ module iob_cache_back_end_axi
     output                                                             replace,
     output                                                             read_valid,
     output [`LINE2BE_W -1:0]                                           read_addr,
-    output [BE_DATA_W -1:0]                                            read_rdata,
+    output [AXI_DATA_W -1:0]                                            read_rdata,
 
     // Back-end interface (AXI4 master)
 `include "iob_cache_axi_m_port.vh"
@@ -36,8 +39,8 @@ module iob_cache_back_end_axi
      #(
        .ADDR_W(ADDR_W),
        .DATA_W(DATA_W),
-       .BE_ADDR_W (BE_ADDR_W),
-       .BE_DATA_W (BE_DATA_W)
+       .BE_ADDR_W (AXI_ADDR_W),
+       .BE_DATA_W (AXI_DATA_W)
        )
    read_fsm
      (
@@ -75,8 +78,8 @@ module iob_cache_back_end_axi
      #(
        .ADDR_W(ADDR_W),
        .DATA_W(DATA_W),
-       .BE_ADDR_W (BE_ADDR_W),
-       .BE_DATA_W (BE_DATA_W),
+       .BE_ADDR_W (AXI_ADDR_W),
+       .BE_DATA_W (AXI_DATA_W),
        .WRITE_POL (WRITE_POL),
        .WORD_OFFSET_W(WORD_OFFSET_W)
        )

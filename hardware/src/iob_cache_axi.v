@@ -23,7 +23,9 @@ module iob_cache_axi
     parameter REP_POLICY = `PLRU_MRU,
     parameter WRITE_POL = `WRITE_THROUGH,
     parameter CTRL_CACHE = `CTRL_CACHE,
-    parameter CTRL_CNT = `CTRL_CNT
+    parameter CTRL_CNT = `CTRL_CNT,
+    parameter AXI_ADDR_W = BE_ADDR_W,
+    parameter AXI_DATA_W = BE_DATA_W
     )
    (
     // Front-end interface (IOb native slave)

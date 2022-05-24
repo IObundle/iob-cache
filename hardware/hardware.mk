@@ -32,7 +32,7 @@ iob_gen_if.vh:
 #back-end interface verilog header file 
 VHDR+=iob_cache_axi_portmap.vh
 iob_cache_axi_portmap.vh:
-	set -e; $(AXI_GEN) axi_portmap $(BE_ADDR_W) $(BE_DATA_W) iob_cache_
+	set -e; $(AXI_GEN) axi_portmap iob_cache_
 
 
 

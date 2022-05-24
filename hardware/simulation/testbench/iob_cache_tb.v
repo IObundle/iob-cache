@@ -7,8 +7,9 @@
 
 module iob_cache_tb;
 
-   //parameters needed by macros
-   localparam BE_DATA_W = `BE_DATA_W;
+   //AXI4 parameters to use generated wires
+   localparam AXI_ADDR_W = `BE_ADDR_W;
+   localparam AXI_DATA_W = `BE_DATA_W;
    
 
    //clock                        

@@ -21,7 +21,7 @@ sim-clean: iob-cache-hw-clean
 # AXI4 wrires
 VHDR+=iob_cache_axi_wire.vh
 iob_cache_axi_wire.vh:
-	set -e; $(AXI_GEN) axi_wire $(BE_ADDR_W) $(BE_DATA_W) iob_cache_
+	set -e; $(AXI_GEN) axi_wire iob_cache_
 
 
 .PHONY: waves test test1 sim-clean

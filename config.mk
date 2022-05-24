@@ -59,7 +59,7 @@ endif
 VHDR+=iob_cache_axi_m_port.vh
 AXI_GEN:=$(AXI_DIR)/software/axi_gen.py
 iob_cache_axi_m_port.vh:
-	set -e; $(AXI_GEN) axi_m_port $(BE_ADDR_W) $(BE_DATA_W) iob_cache_
+	set -e; $(AXI_GEN) axi_m_port iob_cache_
 
 
 
