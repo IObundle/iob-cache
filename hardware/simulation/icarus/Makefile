@@ -1,10 +1,12 @@
 CACHE_DIR:=../../..
+ELAB_MODULE=iob_cache_tb
+
 include ../simulation.mk
 
 VSRC+=$(CACHE_HW_DIR)/simulation/testbench/iob_cache_tb.v
 
 run: $(VHDR) $(VSRC)
-	iverilog -W all -g2005-sv $(VSRC)
+	iverilog -W all -g2005-sv $(VSRC) -s $(ELAB_MODULE)
 	./a.out $(TEST_LOG)
 ifeq ($(VCD),1)
 	if [ "`pgrep -u $(USER) gtkwave`" ]; then killall -q -9 gtkwave; fi

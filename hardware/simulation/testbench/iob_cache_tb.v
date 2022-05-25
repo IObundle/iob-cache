@@ -3,7 +3,7 @@
 `include "iob_cache.vh"
 `include "iob_cache_conf.vh"
 
-`define AXI //use AXI4 back-end interface
+`define AXI  //use AXI4 back-end interface
 
 module iob_cache_tb;
 
@@ -26,10 +26,7 @@ module iob_cache_tb;
    wire [`DATA_W-1:0]                  rdata;
    reg                                 ctrl =0;
 
-   wire                                i_select =0, d_select =0;
    reg [31:0]                          test = 0;
-   reg                                 pipe_en = 0;
-   
 
    integer                             i,j;
 
@@ -183,22 +180,16 @@ module iob_cache_tb;
    wire [`BE_ADDR_W-1:0]           mem_addr;
    wire [`BE_DATA_W-1:0]           mem_wdata, mem_rdata;
    wire [`BE_N_BYTES-1:0]          mem_wstrb;
-   wire                            mem_valid;
-   reg                             mem_ready;
+   wire                            mem_req;
+   reg                             mem_ack;
    
 `endif  
-   
-   reg                             cpu_state;
 
-   reg [`ADDR_W-1  :$clog2(`DATA_W/8)] cpu_addr;
-   reg [`DATA_W-1:0]                   cpu_wdata;
-   reg [`DATA_W/8-1:0]                 cpu_wstrb;
-   reg                                 cpu_req;
-
-   
-   
-
+`ifdef AXI   
    iob_cache_axi
+`else
+   iob_cache
+`endif     
      #(
        .ADDR_W(`ADDR_W),
        .DATA_W(`DATA_W),
@@ -215,9 +206,9 @@ module iob_cache_tb;
    cache 
      (
       //front-end
-      .wdata (cpu_wdata),
-      .addr  ({ctrl,cpu_addr}),
-      .wstrb (cpu_wstrb),
+      .wdata (wdata),
+      .addr  (addr),
+      .wstrb (wstrb),
       .rdata (rdata),
       .req (req),
       .ack (ack),
@@ -236,8 +227,8 @@ module iob_cache_tb;
       .mem_wdata(mem_wdata),
       .mem_wstrb(mem_wstrb),
       .mem_rdata(mem_rdata),
-      .mem_valid(mem_valid),
-      .mem_ready(mem_ready),
+      .mem_req(mem_req),
+      .mem_ack(mem_ack),
 `endif
       .clk (clk),
       .rst (reset)
@@ -312,7 +303,7 @@ module iob_cache_tb;
    native_ram
      (
       .clk(clk),
-      .en  (mem_valid),
+      .en  (mem_req),
       .we  (mem_wstrb),
       .addr(mem_addr[`BE_ADDR_W-1:$clog2(`BE_DATA_W/8)]),
       .dout(mem_rdata),
@@ -320,7 +311,7 @@ module iob_cache_tb;
       );
    
    always @(posedge clk)
-     mem_ready <= mem_valid;
+     mem_ack <= mem_req;
    
 `endif
 
