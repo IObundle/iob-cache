@@ -12,38 +12,38 @@ module iob_cache_back_end
     parameter WRITE_POL = `WRITE_THROUGH
     )
    (
-    input                                                                       clk,
-    input                                                                       reset,
+    input                                                              clk,
+    input                                                              reset,
 
     // write-through-buffer
-    input                                                                       write_valid,
-    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]                     write_addr,
+    input                                                              write_valid,
+    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]             write_addr,
     input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] write_wdata,
-    input [`NBYTES-1:0]                                                       write_wstrb,
-    output                                                                      write_ready,
+    input [`NBYTES-1:0]                                                write_wstrb,
+    output                                                             write_ready,
 
     // cache-line replacement
-    input                                                                       replace_valid,
-    input [ADDR_W -1: `NBYTES_W + WORD_OFFSET_W]                             replace_addr,
-    output                                                                      replace,
-    output                                                                      read_valid,
-    output [`LINE2BE_W -1:0]                                                     read_addr,
-    output [BE_DATA_W -1:0]                                                     read_rdata,
+    input                                                              replace_valid,
+    input [ADDR_W-1:`BE_NBYTES_W + `LINE2BE_W]                         replace_addr,
+    output                                                             replace,
+    output                                                             read_valid,
+    output [`LINE2BE_W -1:0]                                           read_addr,
+    output [BE_DATA_W -1:0]                                            read_rdata,
 
     // back-end memory interface
-    output                                                                      mem_valid,
-    output [BE_ADDR_W -1:0]                                                     mem_addr,
-    output [BE_DATA_W-1:0]                                                      mem_wdata,
-    output [`BE_NBYTES-1:0]                                                    mem_wstrb,
-    input [BE_DATA_W-1:0]                                                       mem_rdata,
-    input                                                                       mem_ready
+    output                                                             be_valid,
+    output [BE_ADDR_W -1:0]                                            be_addr,
+    output [BE_DATA_W-1:0]                                             be_wdata,
+    output [`BE_NBYTES-1:0]                                            be_wstrb,
+    input [BE_DATA_W-1:0]                                              be_rdata,
+    input                                                              be_ready
     );
 
-   wire [BE_ADDR_W-1:0]                                                         mem_addr_read,  mem_addr_write;
-   wire                                                                         mem_valid_read, mem_valid_write;
+   wire [BE_ADDR_W-1:0]                                                         be_addr_read,  be_addr_write;
+   wire                                                                         be_valid_read, be_valid_write;
 
-   assign mem_addr  = (mem_valid_read)? mem_addr_read : mem_addr_write;
-   assign mem_valid = mem_valid_read | mem_valid_write;
+   assign be_addr  = (be_valid_read)? be_addr_read : be_addr_write;
+   assign be_valid = be_valid_read | be_valid_write;
 
    iob_cache_read_channel
      #(
@@ -63,10 +63,10 @@ module iob_cache_back_end
       .read_valid (read_valid),
       .read_addr (read_addr),
       .read_rdata (read_rdata),
-      .mem_addr(mem_addr_read),
-      .mem_valid(mem_valid_read),
-      .mem_ready(mem_ready),
-      .mem_rdata(mem_rdata)
+      .be_addr(be_addr_read),
+      .be_valid(be_valid_read),
+      .be_ready(be_ready),
+      .be_rdata(be_rdata)
       );
 
    iob_cache_write_channel
@@ -89,11 +89,11 @@ module iob_cache_back_end
       .wdata (write_wdata),
       .ready (write_ready),
 
-      .mem_addr(mem_addr_write),
-      .mem_valid(mem_valid_write),
-      .mem_ready(mem_ready),
-      .mem_wdata(mem_wdata),
-      .mem_wstrb(mem_wstrb)
+      .be_addr(be_addr_write),
+      .be_valid(be_valid_write),
+      .be_ready(be_ready),
+      .be_wdata(be_wdata),
+      .be_wstrb(be_wstrb)
       );
 
 endmodule

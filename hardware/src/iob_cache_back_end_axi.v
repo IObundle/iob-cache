@@ -16,23 +16,23 @@ module iob_cache_back_end_axi
     )
    (
     // write-through-buffer
-    input                                                              write_valid,
-    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]             write_addr,
-    input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] write_wdata,
-    input [`NBYTES-1:0]                                                write_wstrb,
-    output                                                             write_ready,
+    input                                                           write_valid,
+    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]          write_addr,
+    input [DATA_W+WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1:0] write_wdata,
+    input [`NBYTES-1:0]                                             write_wstrb,
+    output                                                          write_ready,
 
     // cache-line replacement
-    input                                                              replace_valid,
-    input [ADDR_W -1: `NBYTES_W + WORD_OFFSET_W]                       replace_addr,
-    output                                                             replace,
-    output                                                             read_valid,
-    output [`LINE2BE_W -1:0]                                           read_addr,
-    output [AXI_DATA_W -1:0]                                            read_rdata,
-
-    // Back-end interface (AXI4 master)
-`include "iob_cache_axi_m_port.vh"
-`include "iob_gen_if.vh"
+    input                                                           replace_valid,
+    input [ADDR_W-1:`BE_NBYTES_W + `LINE2BE_W]                      replace_addr,
+    output                                                          replace,
+    output                                                          read_valid,
+    output [`LINE2BE_W -1:0]                                        read_addr,
+    output [AXI_DATA_W -1:0]                                        read_rdata,
+                                                                    
+                                                                    // Back-end interface (AXI4 master)
+                                                                    `include "iob_cache_axi_m_port.vh"
+                                                                    `include "iob_gen_if.vh"
     );
 
    iob_cache_read_channel_axi
@@ -40,7 +40,8 @@ module iob_cache_back_end_axi
        .ADDR_W(ADDR_W),
        .DATA_W(DATA_W),
        .BE_ADDR_W (AXI_ADDR_W),
-       .BE_DATA_W (AXI_DATA_W)
+       .BE_DATA_W (AXI_DATA_W),
+       .WORD_OFFSET_W(WORD_OFFSET_W)
        )
    read_fsm
      (
@@ -54,24 +55,24 @@ module iob_cache_back_end_axi
       .read_rdata (read_rdata),
 
       // read address
-      .axi_arvalid(axi_arvalid),
-      .axi_araddr(axi_araddr),
-      .axi_arlen(axi_arlen),
-      .axi_arsize(axi_arsize),
-      .axi_arburst(axi_arburst),
-      .axi_arlock(axi_arlock),
-      .axi_arcache(axi_arcache),
-      .axi_arprot(axi_arprot),
-      .axi_arqos(axi_arqos),
-      .axi_arid(axi_arid),
-      .axi_arready(axi_arready),
+      .axi_arvalid (axi_arvalid),
+      .axi_araddr (axi_araddr),
+      .axi_arlen (axi_arlen),
+      .axi_arsize (axi_arsize),
+      .axi_arburst (axi_arburst),
+      .axi_arlock (axi_arlock),
+      .axi_arcache (axi_arcache),
+      .axi_arprot (axi_arprot),
+      .axi_arqos (axi_arqos),
+      .axi_arid (axi_arid),
+      .axi_arready (axi_arready),
 
       // read data
-      .axi_rvalid(axi_rvalid),
-      .axi_rdata(axi_rdata),
-      .axi_rresp(axi_rresp),
-      .axi_rlast(axi_rlast),
-      .axi_rready(axi_rready)
+      .axi_rvalid (axi_rvalid),
+      .axi_rdata (axi_rdata),
+      .axi_rresp (axi_rresp),
+      .axi_rlast (axi_rlast),
+      .axi_rready (axi_rready)
       );
 
    iob_cache_write_channel_axi

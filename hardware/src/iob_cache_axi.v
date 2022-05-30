@@ -189,7 +189,7 @@ module iob_cache_axi
        .WORD_OFFSET_W(WORD_OFFSET_W),
        .WRITE_POL (WRITE_POL)
        )
-   back_end
+   back_end_axi
      (
       // write-through-buffer (write-channel)
       .write_valid (write_req),

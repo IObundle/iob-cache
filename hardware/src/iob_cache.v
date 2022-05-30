@@ -31,12 +31,12 @@ module iob_cache
 
     // Back-end interface
     //START_IO_TABLE be
-    `IOB_OUTPUT(mem_req, 1),         ////Read or write request to next-level cache or memory. If {\tt mem_ack} becomes high in the next cyle the request has been served; otherwise {\tt mem_req} should remain high until {\tt mem_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt mem_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt mem_ack} is high in reponse to the previous request.
-    `IOB_OUTPUT(mem_addr, BE_ADDR_W),  //Address to next-level cache or memory
-    `IOB_OUTPUT(mem_wdata, BE_DATA_W), //Write data to next-level cache or memory
-    `IOB_OUTPUT(mem_wstrb, `BE_NBYTES), //Write strobe to next-level cache or memory
-    `IOB_INPUT(mem_rdata, BE_DATA_W),  //Read data to host.
-    `IOB_INPUT(mem_ack, 1), // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+    `IOB_OUTPUT(be_req, 1),         ////Read or write request to next-level cache or memory. If {\tt be_ack} becomes high in the next cyle the request has been served; otherwise {\tt be_req} should remain high until {\tt be_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt be_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt be_ack} is high in reponse to the previous request.
+    `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory
+    `IOB_OUTPUT(be_wdata, BE_DATA_W), //Write data to next-level cache or memory
+    `IOB_OUTPUT(be_wstrb, `BE_NBYTES), //Write strobe to next-level cache or memory
+    `IOB_INPUT(be_rdata, BE_DATA_W),  //Read data to host.
+    `IOB_INPUT(be_ack, 1), // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
 
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
@@ -209,12 +209,12 @@ module iob_cache
       .read_rdata    (read_rdata),
 
       // back-end native interface
-      .mem_valid (mem_req),
-      .mem_addr  (mem_addr),
-      .mem_wdata (mem_wdata),
-      .mem_wstrb (mem_wstrb),
-      .mem_rdata (mem_rdata),
-      .mem_ready (mem_ack)
+      .be_valid (be_req),
+      .be_addr  (be_addr),
+      .be_wdata (be_wdata),
+      .be_wstrb (be_wstrb),
+      .be_rdata (be_rdata),
+      .be_ready (be_ack)
       );
 
    //BLOCK Cache control & Cache control block.

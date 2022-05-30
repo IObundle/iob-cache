@@ -18,7 +18,7 @@ test1: clean
 sim-clean: iob-cache-hw-clean
 	@rm -rf *.vcd
 
-# AXI4 wrires
+# AXI4 wires
 VHDR+=iob_cache_axi_wire.vh
 iob_cache_axi_wire.vh:
 	set -e; $(AXI_GEN) axi_wire iob_cache_

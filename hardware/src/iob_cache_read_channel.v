@@ -22,18 +22,18 @@ module iob_cache_read_channel
     output [BE_DATA_W-1:0]                   read_rdata,
 
     // Native memory interface
-    output [BE_ADDR_W-1:0]                   mem_addr,
-    output reg                               mem_valid,
-    input                                    mem_ready,
-    input [BE_DATA_W-1:0]                    mem_rdata
+    output [BE_ADDR_W-1:0]                   be_addr,
+    output reg                               be_valid,
+    input                                    be_ready,
+    input [BE_DATA_W-1:0]                    be_rdata
     );
 
    generate
       if (`LINE2BE_W > 0) begin
          reg [`LINE2BE_W-1:0] word_counter;
 
-         assign mem_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[ADDR_W-1 : `BE_NBYTES_W+`LINE2BE_W], word_counter, {`BE_NBYTES_W{1'b0}}};
-         assign read_rdata = mem_rdata;
+         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[ADDR_W-1 : `BE_NBYTES_W+`LINE2BE_W], word_counter, {`BE_NBYTES_W{1'b0}}};
+         assign read_rdata = be_rdata;
 
          localparam
            idle             = 2'd0,
@@ -57,7 +57,7 @@ module iob_cache_read_channel
                       state <= idle;
                  end
                  handshake: begin
-                    if (mem_ready)
+                    if (be_ready)
                       if (read_addr == {`LINE2BE_W{1'b1}}) begin
                          state <= end_handshake;
                       end else begin
@@ -76,7 +76,7 @@ module iob_cache_read_channel
          end
 
          always @* begin
-            mem_valid    = 1'b0;
+            be_valid    = 1'b0;
             replace      = 1'b1;
             word_counter = 0;
             read_valid   = 1'b0;
@@ -86,16 +86,16 @@ module iob_cache_read_channel
                  replace = 1'b0;
               end
               handshake: begin
-                 mem_valid    = ~mem_ready | ~(&read_addr);
-                 word_counter = read_addr + mem_ready;
-                 read_valid   = mem_ready;
+                 be_valid    = ~be_ready | ~(&read_addr);
+                 word_counter = read_addr + be_ready;
+                 read_valid   = be_ready;
               end
               default:;
             endcase
          end
       end else begin
-         assign mem_addr   = {BE_ADDR_W{1'b0}} + {replace_addr, {`BE_NBYTES_W{1'b0}}};
-         assign read_rdata = mem_rdata;
+         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr, {`BE_NBYTES_W{1'b0}}};
+         assign read_rdata = be_rdata;
 
          localparam
            idle             = 2'd0,
@@ -116,7 +116,7 @@ module iob_cache_read_channel
                       state <= idle;
                  end
                  handshake: begin
-                    if (mem_ready)
+                    if (be_ready)
                       state <= end_handshake;
                     else
                       state <= handshake;
@@ -130,7 +130,7 @@ module iob_cache_read_channel
          end
 
          always @* begin
-            mem_valid  = 1'b0;
+            be_valid  = 1'b0;
             replace    = 1'b1;
             read_valid = 1'b0;
 
@@ -139,8 +139,8 @@ module iob_cache_read_channel
                  replace = 1'b0;
               end
               handshake: begin
-                 mem_valid = ~mem_ready;
-                 read_valid = mem_ready;
+                 be_valid = ~be_ready;
+                 read_valid = be_ready;
               end
               default:;
             endcase

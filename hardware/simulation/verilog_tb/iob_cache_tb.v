@@ -17,10 +17,10 @@ module iob_cache_tb;
    always #1 clk = ~clk;
    reg reset = 1;
    
-   //native bus signals
+   //iob-native bus signals
    reg                                 req=0;
    wire                                ack;
-   reg [`ADDR_W-1  :$clog2(`DATA_W/8)] addr =0;
+   reg [`ADDR_W-1:$clog2(`DATA_W/8)]   addr =0;
    reg [`DATA_W-1:0]                   wdata=0;
    reg [`DATA_W/8-1:0]                 wstrb=0;
    wire [`DATA_W-1:0]                  rdata;
@@ -203,11 +203,15 @@ module iob_cache_tb;
        .REP_POLICY(`REP_POLICY),
        .CTRL_CACHE(1)
        )
-   cache 
-     (
+`ifdef AXI   
+   cache_axi
+`else
+   cache
+`endif     
+      (
       //front-end
       .wdata (wdata),
-      .addr  (addr),
+      .addr  ({ctrl, addr}),
       .wstrb (wstrb),
       .rdata (rdata),
       .req (req),
