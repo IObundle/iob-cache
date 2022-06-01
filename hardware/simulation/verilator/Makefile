@@ -1,5 +1,5 @@
 #module paths
-CACHE_DIR:=../../..
+ROOT_DIR:=../../..
 DUT_MODULE=iob_cache_wrapper
 
 incdir:=-I

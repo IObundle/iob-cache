@@ -1,10 +1,11 @@
-CACHE_DIR:=.
+ROOT_DIR:=.
 include ./config.mk
 
 #
 # SIMULATE
 #
 
+SIM_DIR=hardware/simulation
 sim:
 	make -C $(SIM_DIR) run
 
@@ -21,6 +22,7 @@ sim-clean-all:
 # FPGA
 #
 
+FPGA_DIR:=hardware/fpga
 fpga-build:
 	make -C $(FPGA_DIR) build
 
@@ -40,6 +42,9 @@ fpga-clean-all:
 #
 # DOCUMENT
 #
+
+DOC?=pb
+DOC_DIR:=document/$(DOC)
 
 doc-build:
 	make -C $(DOC_DIR) $(DOC).pdf
