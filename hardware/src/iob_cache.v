@@ -183,7 +183,6 @@ module iob_cache
      #(
        .ADDR_W (ADDR_W),
        .DATA_W (DATA_W),
-       .ADDR_W (ADDR_W),
        .BE_DATA_W (BE_DATA_W),
        .WORD_OFFSET_W (WORD_OFFSET_W),
        .WRITE_POL (WRITE_POL)

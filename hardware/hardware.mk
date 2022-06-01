@@ -27,7 +27,7 @@ iob_gen_if.vh: 	$(LIB_DIR)/hardware/include/iob_gen_if.vh
 	cp $< $@
 
 #back-end AXI4 interface verilog header file 
-AXI_GEN:=$(AXI_DIR)/software/axi_gen.py
+AXI_GEN:=$(LIB_DIR)/software/python/axi_gen.py
 VHDR+=iob_cache_axi_m_port.vh
 iob_cache_axi_m_port.vh:
 	set -e; $(AXI_GEN) axi_m_port iob_cache_
@@ -38,6 +38,9 @@ iob_cache_axi_portmap.vh:
 	set -e; $(AXI_GEN) axi_portmap iob_cache_
 
 #SOURCES
-VSRC+=$(CACHE_DIR)/hardware/src/$(wildcard *.v)
-%.v : $(CACHE_DIR)/hardware/src/%.v
-	cp $< $@
+VSRC1=$(wildcard $(CACHE_DIR)/hardware/src/*.v)
+VSRC2=$(foreach i, $(VSRC1), $(lastword $(subst /, ,$i)))
+VSRC+=$(VSRC2)
+
+$(VSRC2): $(VSRC1)
+	cp $(CACHE_DIR)/hardware/src/$@ .

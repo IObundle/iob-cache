@@ -102,7 +102,7 @@ test-clean: test-sim-clean test-fpga-clean test-doc-clean
 clean-all: sim-clean-all fpga-clean-all doc-clean-all
 
 debug:
-	@echo(DOC_DIR)
+
 
 update:
 	find . -name .git -exec git co master \;
