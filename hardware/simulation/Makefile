@@ -1,3 +1,15 @@
+
+CACHE_DIR:=../..
+include $(CACHE_DIR)/config.mk
+
+ROOT_DIR:=../..
+include $(ROOT_DIR)/submodules/LIB/hardware/simulation/simulation.mk
+
+NOCLEAN:= -name 'Makefile' -o -name 'iob_cache_tb.v' -o \
+	-name 'iob_cache_tb.vh' -o -name 'rep_pol_tb.v' -o -name 'icarus.expected'\
+	-name 'iob_cache_tb.cpp' -o -name 'verilator.expected' -o -name 'iob_cache_wrapper.v'
+
+
 ifeq ($(VCD),1)
 MACRO_LIST+=VCD
 endif
