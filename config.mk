@@ -1,8 +1,3 @@
-TOP_MODULE=iob_cache
-LIB_DIR=$(ROOT_DIR)/submodules/LIB
-
-#core configurations
-
 DATA_W ?= 32
 ADDR_W ?= 15
 BE_DATA_W ?= 64

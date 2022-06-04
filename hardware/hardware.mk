@@ -1,10 +1,8 @@
 #import hardware from submodules
-MEM_DIR:=$(CACHE_DIR)/submodules/LIB/hardware
-
-include $(MEM_DIR)/regfile/iob_regfile_sp/hardware.mk
-include $(MEM_DIR)/fifo/iob_fifo_sync/hardware.mk
-include $(MEM_DIR)/ram/iob_ram_2p/hardware.mk
-include $(MEM_DIR)/ram/iob_ram_sp/hardware.mk
+include $(LIB_DIR)/hardware/regfile/iob_regfile_sp/hardware.mk
+include $(LIB_DIR)/hardware//fifo/iob_fifo_sync/hardware.mk
+include $(LIB_DIR)/hardware//ram/iob_ram_2p/hardware.mk
+include $(LIB_DIR)/hardware//ram/iob_ram_sp/hardware.mk
 
 #HEADERS
 

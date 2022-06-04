@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);   //Enable tracing
     VerilatedVcdC* tfp = new VerilatedVcdC;     //Create tracing object
     dut->trace(tfp,99);    //Trace 99 levels of hierarchy
-    tfp->open("dut.vcd");  //Open tracing file
+    tfp->open("uut.vcd");  //Open tracing file
 #endif
 
     dut->clk=1; dut->reset=0;    

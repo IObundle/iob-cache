@@ -6,17 +6,20 @@ include ./config.mk
 #
 
 SIM_DIR=hardware/simulation
-sim:
+sim-build:
+	make -C $(SIM_DIR) build
+
+sim-run:
 	make -C $(SIM_DIR) run
+
+sim-debug:
+	make -C $(SIM_DIR) debug
 
 sim-test:
 	make -C $(SIM_DIR) test
 
 sim-clean:
-	make -C $(SIM_DIR) clean-all
-
-sim-clean-all:
-	$(foreach s, $(SIMULATOR_LIST), make sim-clean SIMULATOR=$s;)
+	make -C $(SIM_DIR) clean
 
 #
 # FPGA
@@ -26,18 +29,14 @@ FPGA_DIR:=hardware/fpga
 fpga-build:
 	make -C $(FPGA_DIR) build
 
-fpga-build-all:
-	$(foreach s, $(FPGA_FAMILY_LIST), make fpga-build FPGA_FAMILY=$s;)
+fpga-debug:
+	make -C $(FPGA_DIR) debug
 
 fpga-test:
 	make -C $(FPGA_DIR) test
 
 fpga-clean:
-	make -C $(FPGA_DIR) clean-all
-
-fpga-clean-all:
-	$(foreach s, $(FPGA_FAMILY_LIST), make fpga-clean FPGA_FAMILY=$s;)
-
+	make -C $(FPGA_DIR) clean
 
 #
 # DOCUMENT
@@ -49,17 +48,11 @@ DOC_DIR:=document/$(DOC)
 doc-build:
 	make -C $(DOC_DIR) $(DOC).pdf
 
-doc-build-all:
-	$(foreach s, $(DOC_LIST), make doc-build DOC=$s;)
-
 doc-test:
 	make -C $(DOC_DIR) test
 
 doc-clean:
 	make -C $(DOC_DIR) clean
-
-doc-clean-all:
-	$(foreach s, $(DOC_LIST), make doc-clean DOC=$s;)
 
 
 #
@@ -94,27 +87,21 @@ test: test-clean test-sim test-fpga test-doc
 
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
-
-#
-# CLEAN
-# 
-
-clean-all: sim-clean-all fpga-clean-all doc-clean-all
-
 debug:
 
+clean: sim-clean fpga-clean doc-clean
 
 update:
 	find . -name .git -exec git co master \;
 	find . -name .git -exec git pull origin master \;
 	find . -name .git -exec git submodule update --init --recursive \;
 
-.PHONY:	sim sim-test sim-clean sim-clean-all \
-	fpga-build fpga-build-all fpga-test fpga-clean fpga-clean-all \
-	doc-build doc-build-all doc-test doc-clean doc-clean-all \
+.PHONY:	sim sim-test sim-clean \
+	fpga-build fpga-test fpga-clean \
+	doc-build doc-test doc-clean\
 	test-sim test-sim-clean \
 	test-fpga test-fpga-clean \
 	test-doc test-doc-clean \
 	test test-clean \
-	clean-all debug update
+	clean debug update
 
