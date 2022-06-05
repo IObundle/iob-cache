@@ -2,7 +2,7 @@
 #include <iostream>
 #include "obj_dir/Viob_cache_wrapper.h"
 
-#ifdef VM_TRACE    //If verilator was invoked with --trace
+#if (VM_TRACE == 1)    //If verilator was invoked with --trace
 #include <verilated_vcd_c.h>
 #endif
 
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);   //Init verilator context
     Viob_cache_wrapper* dut = new Viob_cache_wrapper; //Create DUT object
 
-#ifdef VM_TRACE    
+#if (VM_TRACE == 1)
     Verilated::traceEverOn(true);   //Enable tracing
     VerilatedVcdC* tfp = new VerilatedVcdC;     //Create tracing object
     dut->trace(tfp,99);    //Trace 99 levels of hierarchy
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 	  }
 	}
 	
-#ifdef VM_TRACE	
+#if (VM_TRACE == 1)
 	tfp->dump(main_time); //Dump values into tracing file
 #endif
         main_time++;
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 
     dut->final();
     
-#ifdef VM_TRACE
+#if (VM_TRACE == 1)
     tfp->dump(main_time); //Dump last values
     tfp->close(); //Close tracing file
     std::cout << "Generated vcd file" << std::endl;
