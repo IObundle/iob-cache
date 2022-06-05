@@ -1,9 +1,9 @@
 # root and lib paths
-ROOT_DIR:=../..
-LIB_DIR:=$(ROOT_DIR)/submodules/LIB
+CORE_DIR:=../..
+LIB_DIR:=$(CORE_DIR)/submodules/LIB
 
 # core configuration
-include $(ROOT_DIR)/config.mk
+include $(CORE_DIR)/config.mk
 
 #MODULE HARDWARE
 CACHE_DIR:=../..
@@ -17,7 +17,7 @@ NOCLEAN:= -name 'Makefile' -o -name 'iob_cache.xdc' -o -name 'iob_cache.sdc'
 
 debug:
 	@echo $(REMOTE_ROOT_DIR)
-	@echo $(ROOT_DIR)
+	@echo $(CORE_DIR)
 	@echo $(CACHE_DIR)
 	@echo $(VHDR)
 	@echo $(VSRC)

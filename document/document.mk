@@ -1,14 +1,8 @@
-include $(CACHE_DIR)/config.mk
-
+#uncomment to include implementation results
 #RESULTS=1
 
 INT_FAMILY ?=CYCLONEV-GT
 XIL_FAMILY ?=XCKU
-
-#include tex submodule makefile segment
-#root directory
-CORE_DIR:=$(CACHE_DIR)
-
 
 #VHDR+=$(FPGA_DIR)/iob_cache_def.vh
 VHDR+=axi_m_port.vh
