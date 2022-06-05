@@ -51,6 +51,9 @@ doc-build:
 doc-test:
 	make -C $(DOC_DIR) test
 
+doc-debug:
+	make -C $(DOC_DIR) debug
+
 doc-clean:
 	make -C $(DOC_DIR) clean
 

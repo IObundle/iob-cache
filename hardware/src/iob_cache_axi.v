@@ -29,6 +29,7 @@ module iob_cache_axi
     )
    (
     // Front-end interface (IOb native slave)
+    //START_IO_TABLE fe
     `IOB_INPUT(req, 1),
     `IOB_INPUT(addr, CTRL_CACHE+ADDR_W-`NBYTES_W),
     `IOB_INPUT(wdata, DATA_W),
@@ -37,6 +38,7 @@ module iob_cache_axi
     `IOB_OUTPUT(ack, 1),
 
     // Cache invalidate and write-trough buffer IO chain
+    //START_IO_TABLE ie
     `IOB_INPUT(invalidate_in, 1),
     `IOB_OUTPUT(invalidate_out, 1),
     `IOB_INPUT(wtb_empty_in, 1),
