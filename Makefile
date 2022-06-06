@@ -1,5 +1,18 @@
-ROOT_DIR:=.
-include ./config.mk
+#
+# CREATE BUILD DIRECTORY
+#
+CACHE_DIR=
+LIB_DIR=submodules/LIB
+BUILD_DIR_NAME=iob_cache
+
+#cache directory from LIB's perspective
+build-dir:
+	make -C $(LIB_DIR) build-dir TOP_MODULE=$(BUILD_DIR_NAME) CACHE_DIR=../..
+
+clean:
+	make -C $(LIB_DIR) clean TOP_MODULE=$(BUILD_DIR_NAME)
+
+
 
 #
 # SIMULATE
@@ -91,8 +104,6 @@ test: test-clean test-sim test-fpga test-doc
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
 debug:
-
-clean: sim-clean fpga-clean doc-clean
 
 update:
 	find . -name .git -exec git co master \;
