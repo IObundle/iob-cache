@@ -1,3 +1,4 @@
+VERSION ?=0010
 DATA_W ?= 32
 ADDR_W ?= 15
 BE_DATA_W ?= 64

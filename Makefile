@@ -1,16 +1,31 @@
+SHELL=/bin/bash
+
+include config.mk
+
+CACHE_DIR=.
+LIB_DIR=submodules/LIB
+TOP_MODULE:=iob_cache
+export TOP_MODULE VERSION
+
+
 #
 # CREATE BUILD DIRECTORY
 #
-CACHE_DIR=
-LIB_DIR=submodules/LIB
-BUILD_DIR_NAME=iob_cache
-
 #cache directory from LIB's perspective
-build-dir:
-	make -C $(LIB_DIR) build-dir TOP_MODULE=$(BUILD_DIR_NAME) CACHE_DIR=../..
+
+
+BUILD_DIR := $(TOP_MODULE)_$(VERSION)
+
+build-dir: $(BUILD_DIR)
+
+$(BUILD_DIR):
+	make -C $(LIB_DIR) build-dir CACHE_DIR=../..
 
 clean:
-	make -C $(LIB_DIR) clean TOP_MODULE=$(BUILD_DIR_NAME)
+	rm -rf $(BUILD_DIR)
+
+debug:
+	make -C $(LIB_DIR) debug
 
 
 
@@ -18,14 +33,17 @@ clean:
 # SIMULATE
 #
 
-SIM_DIR=hardware/simulation
-sim-build:
+SIM_DIR=$(BUILD_DIR)/sim
+SIMULATOR?=icarus
+export SIMULATOR
+
+sim-build: build-dir
 	make -C $(SIM_DIR) build
 
-sim-run:
+sim-run: sim-build
 	make -C $(SIM_DIR) run
 
-sim-debug:
+sim-debug: build-dir
 	make -C $(SIM_DIR) debug
 
 sim-test:
@@ -103,13 +121,6 @@ test: test-clean test-sim test-fpga test-doc
 
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
-debug:
-
-update:
-	find . -name .git -exec git co master \;
-	find . -name .git -exec git pull origin master \;
-	find . -name .git -exec git submodule update --init --recursive \;
-
 .PHONY:	sim sim-test sim-clean \
 	fpga-build fpga-test fpga-clean \
 	doc-build doc-test doc-clean\
@@ -117,5 +128,5 @@ update:
 	test-fpga test-fpga-clean \
 	test-doc test-doc-clean \
 	test test-clean \
-	clean debug update
+	clean debug
 
