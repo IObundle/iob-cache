@@ -31,12 +31,12 @@ module iob_cache
 
     // Back-end interface
     //START_IO_TABLE be
-    `IOB_OUTPUT(be_req, 1),         ////Read or write request to next-level cache or memory. If {\tt be_ack} becomes high in the next cyle the request has been served; otherwise {\tt be_req} should remain high until {\tt be_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt be_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt be_ack} is high in reponse to the previous request.
+    `IOB_OUTPUT(be_req, 1),         //Read or write request to next-level cache or memory. If {\tt be_ack} becomes high in the next cyle the request has been served; otherwise {\tt be_req} should remain high until {\tt be_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt be_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt be_ack} is high in reponse to the previous request.
     `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory
     `IOB_OUTPUT(be_wdata, BE_DATA_W), //Write data to next-level cache or memory
     `IOB_OUTPUT(be_wstrb, `BE_NBYTES), //Write strobe to next-level cache or memory
     `IOB_INPUT(be_rdata, BE_DATA_W),  //Read data to host.
-    `IOB_INPUT(be_ack, 1), // //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+    `IOB_INPUT(be_ack, 1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
 
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
