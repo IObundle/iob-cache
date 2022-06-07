@@ -30,19 +30,19 @@ module iob_cache_axi
    (
     // Front-end interface (IOb native slave)
     //START_IO_TABLE fe
-    `IOB_INPUT(req, 1),
-    `IOB_INPUT(addr, CTRL_CACHE+ADDR_W-`NBYTES_W),
-    `IOB_INPUT(wdata, DATA_W),
-    `IOB_INPUT(wstrb, `NBYTES),
-    `IOB_OUTPUT(rdata, DATA_W),
-    `IOB_OUTPUT(ack, 1),
+    `IOB_INPUT(req, 1),   //Request signal
+    `IOB_INPUT(addr, CTRL_CACHE+ADDR_W-`NBYTES_W),   //Address signal
+    `IOB_INPUT(wdata, DATA_W),   //Write data signal
+    `IOB_INPUT(wstrb, `NBYTES),  //Write strobe signal
+    `IOB_OUTPUT(rdata, DATA_W),  //Read data signal
+    `IOB_OUTPUT(ack, 1),         //Acknowledgment signal
 
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
-    `IOB_INPUT(invalidate_in, 1),
-    `IOB_OUTPUT(invalidate_out, 1),
+    `IOB_INPUT(invalidate_in, 1),    
+    `IOB_OUTPUT(invalidate_out, 1),  //Cache invalidate signal
     `IOB_INPUT(wtb_empty_in, 1),
-    `IOB_OUTPUT(wtb_empty_out, 1),
+    `IOB_OUTPUT(wtb_empty_out, 1),   //Write-through buffer empty signal
 
     // Back-end interface (AXI4 master)
 `include "iob_cache_axi_m_port.vh"
