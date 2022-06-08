@@ -1,12 +1,10 @@
 SHELL=/bin/bash
+export
 
 include config.mk
 
-CACHE_DIR=.
-LIB_DIR=submodules/LIB
+CACHE_DIR=../..
 TOP_MODULE:=iob_cache
-export TOP_MODULE VERSION
-
 
 #
 # CREATE BUILD DIRECTORY
@@ -19,13 +17,13 @@ BUILD_DIR := $(TOP_MODULE)_$(VERSION)
 build-dir: $(BUILD_DIR)
 
 $(BUILD_DIR):
-	make -C $(LIB_DIR) build-dir CACHE_DIR=../..
+	make -C submodules/LIB build-dir
 
 clean:
 	rm -rf $(BUILD_DIR)
 
 debug:
-	make -C $(LIB_DIR) debug
+	make -C submodules/LIB debug
 
 
 
@@ -35,7 +33,6 @@ debug:
 
 SIM_DIR=$(BUILD_DIR)/sim
 SIMULATOR?=icarus
-export SIMULATOR
 
 sim-build: build-dir
 	make -C $(SIM_DIR) build

@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
-
-`define AXI  //use AXI4 back-end interface
+`include "iob_lib.vh"
 
 module iob_cache_wrapper
   #(
