@@ -94,6 +94,8 @@ module iob_cache_control
                 rdata <= wtbuf_empty;
               else if (addr == `ADDR_BUFFER_FULL)
                 rdata <= wtbuf_full;
+              else if (addr == `ADDR_CACHE_VERSION)
+		rdata <= `VERSION;
          end
       end else begin
          always @(posedge clk) begin
