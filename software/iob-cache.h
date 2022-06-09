@@ -14,6 +14,7 @@
 #define WRITE_MISS      8
 #define COUNTER_RESET   9
 #define INVALIDATE      10
+#define CACHE_VERSION   11
 
 // Cache Controllers's functions
 void cache_init(int ext_mem, int cache_addr); // initialized the cache_base static integer
@@ -27,3 +28,4 @@ int cache_read_miss();
 int cache_write_hit();  
 int cache_write_miss();  
 int cache_counter_reset();
+int cache_version();

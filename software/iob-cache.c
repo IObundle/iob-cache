@@ -29,3 +29,4 @@ int cache_write_miss()   {return (CACHEFUNC(cache_base,WRITE_MISS));}
 
 int cache_counter_reset(){return (CACHEFUNC(cache_base,COUNTER_RESET));}
 
+int cache_version()      {return (CACHEFUNC(cache_base,CACHE_VERSION));}
