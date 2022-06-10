@@ -55,7 +55,7 @@ sim-clean:
 
 FPGA_DIR:=$(BUILD_DIR)/fpga
 FPGA_FAMILY?=CYCLONEV-GT
-fpga-build:
+fpga-build: build-dir
 	make -C $(FPGA_DIR) build
 
 fpga-debug:
