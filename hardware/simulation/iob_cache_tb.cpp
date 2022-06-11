@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
         if(dut->clk == 1) {
 	  posedge_cnt++; 
 
-	  if(posedge_cnt == 7) VL_PRINTF("IOb-Cache Version: %d\n", cache_version());
+	  //if(posedge_cnt == 7) VL_PRINTF("IOb-Cache Version: %d\n", cache_version());
 	  
 	  if((posedge_cnt >= 8) && (iw < 5)) {
 	     if(posedge_cnt == 8) VL_PRINTF("Test 1: Writing Test\n");

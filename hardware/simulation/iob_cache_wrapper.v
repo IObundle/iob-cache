@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
+
 `include "iob_lib.vh"
+`include "iob_cache_conf.vh"
 
 module iob_cache_wrapper
   #(
