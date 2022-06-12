@@ -1,11 +1,12 @@
-SHELL=/bin/bash
+SHELL:=/bin/bash
 export
 
 include config.mk
 
 CACHE_DIR=../..
-TOP_MODULE:=iob_cache
-
+TOP_MODULE=iob_cache
+REMOTE_ROOT_DIR=sandbox/$(TOP_MODULE)
+export REMOTE_ROOT_DIR
 #
 # CREATE BUILD DIRECTORY
 #
@@ -20,6 +21,9 @@ $(BUILD_DIR):
 	make -C submodules/LIB build-dir
 
 clean:
+	make sim-clean
+	make fpga-clean
+	make doc-clean
 	rm -rf $(BUILD_DIR)
 
 debug:
@@ -47,7 +51,7 @@ sim-test:
 	make -C $(SIM_DIR) test
 
 sim-clean:
-	make -C $(SIM_DIR) clean
+	if [ -d $(SIM_DIR) ]; then make -C $(SIM_DIR) clean; fi
 
 #
 # FPGA
@@ -65,7 +69,7 @@ fpga-test:
 	make -C $(FPGA_DIR) test
 
 fpga-clean:
-	make -C $(FPGA_DIR) clean
+	if [ -d $(FPGA_DIR) ]; then make -C $(FPGA_DIR) clean; fi
 
 #
 # DOCUMENT
