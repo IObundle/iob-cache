@@ -1,4 +1,7 @@
-//CORE DEFAULTS
+// CORE VERSION
+`include "iob_cache_version.vh"
+
+//CORE DEFAULT PARAMETER CONFIGURATION
 
 `define DATA_W 32
 `define ADDR_W 15

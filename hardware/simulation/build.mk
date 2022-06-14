@@ -2,7 +2,15 @@
 # This file segment is included in LIB_DIR/Makefile
 #
 
-# add axi memory module
+# copy simulation wrapper
+VSRC+=$(BUILD_SRC_DIR)/$(TOP_MODULE)_wrapper.v
+$(BUILD_SRC_DIR)/$(TOP_MODULE)_wrapper.v: $(CORE_SIM_DIR)/$(TOP_MODULE)_wrapper.v
+	cp $< $(BUILD_SRC_DIR)
+
+# copy non-axi memory
+include hardware/ram/iob_ram_sp_be/hardware.mk
+
+# copy axi memory module
 include hardware/axiram/hardware.mk
 
 # add AXI4 wires

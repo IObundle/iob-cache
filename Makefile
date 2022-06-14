@@ -3,11 +3,12 @@ export
 
 include info.mk
 
-
 #
 # BUILD DIRECTORY
 #
 
+VERSION_STR=$(shell $(LIB_DIR)/software/python/version.py $(TOP_MODULE) $(VERSION))
+BUILD_DIR = $(TOP_MODULE)_$(VERSION_STR)
 LIB_DIR=submodules/LIB
 build-dir:
 	make -C $(LIB_DIR) build-dir
@@ -22,9 +23,6 @@ build-clean:
 build-debug:
 	make -C $(LIB_DIR) debug
 
-#VERSION_STR=$(shell ./software/python/version.py $(TOP_MODULE) $(VERSION))
-VERSION_STR=$(VERSION)
-BUILD_DIR = $(TOP_MODULE)_$(VERSION_STR)
 
 #
 # SIMULATE
@@ -45,9 +43,6 @@ sim-debug: build-dir
 sim-test:
 	make -C $(SIM_DIR) test
 
-sim-clean:
-	if [ -d $(SIM_DIR) ]; then make -C $(SIM_DIR) clean; fi
-
 #
 # FPGA
 #
@@ -62,9 +57,6 @@ fpga-debug:
 
 fpga-test:
 	make -C $(FPGA_DIR) test
-
-fpga-clean:
-	if [ -d $(FPGA_DIR) ]; then make -C $(FPGA_DIR) clean; fi
 
 #
 # DOCUMENT
@@ -118,6 +110,11 @@ test: test-clean test-sim test-fpga test-doc
 
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
+clean: test-clean
+	@rm -rf iob_cache_version.vh
+
+debug:
+	@echo $(VERSION_STR)
 
 .PHONY: build-dir build-clean build-debug \
 	sim-test sim-clean \

@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_lib.vh"
+`include "iob_cache.vh"
 
 module iob_cache_wrapper
   #(
@@ -10,15 +11,15 @@ module iob_cache_wrapper
     parameter BE_DATA_W = 32
     )
    (   
-       input                             clk,
-       input                             reset,
+       input                           clk,
+       input                           reset,
        
-       input                             req, 
+       input                           req, 
        input [ADDR_W:$clog2(DATA_W/8)] addr,
-       input [DATA_W-1:0]                wdata,
-       input [DATA_W/8-1:0]              wstrb,
-       output [DATA_W-1:0]               rdata,
-       output                            ack      
+       input [DATA_W-1:0]              wdata,
+       input [DATA_W/8-1:0]            wstrb,
+       output [DATA_W-1:0]             rdata,
+       output                          ack      
        );	
 
 `ifdef AXI
@@ -27,11 +28,11 @@ module iob_cache_wrapper
  `include "iob_cache_axi_wire.vh"
 `else
    //Native connections
-   wire [`BE_ADDR_W-1:0]           mem_addr;
-   wire [`BE_DATA_W-1:0]           mem_wdata, mem_rdata;
-   wire [`BE_N_BYTES-1:0]          mem_wstrb;
-   wire                            mem_req;
-   reg                             mem_ack;
+   wire [`BE_ADDR_W-1:0]           be_addr;
+   wire [`BE_DATA_W-1:0]           be_wdata, be_rdata;
+   wire [`BE_NBYTES-1:0]           be_wstrb;
+   wire                            be_req;
+   reg                             be_ack;
    
 `endif  
 
@@ -78,19 +79,17 @@ module iob_cache_wrapper
 `ifdef AXI
   `include "iob_cache_axi_portmap.vh"
 `else
-      .mem_addr(mem_addr),
-      .mem_wdata(mem_wdata),
-      .mem_wstrb(mem_wstrb),
-      .mem_rdata(mem_rdata),
-      .mem_req(mem_req),
-      .mem_ack(mem_ack),
+      .be_addr(be_addr),
+      .be_wdata(be_wdata),
+      .be_wstrb(be_wstrb),
+      .be_rdata(be_rdata),
+      .be_req(be_req),
+      .be_ack(be_ack),
 `endif
       .clk (clk),
       .rst (reset)
       );
    
-
-
    
 `ifdef AXI  
    axi_ram 
@@ -151,24 +150,23 @@ module iob_cache_wrapper
    
 `else
 
-   iob_sp_ram_be 
+   iob_ram_sp_be 
      #(
-       .NUM_COL(`BE_N_BYTES),
-       .COL_W(8),
-       .ADDR_W(`BE_ADDR_W-2)
+       .DATA_W(`BE_DATA_W),
+       .ADDR_W(`BE_ADDR_W)
        )
    native_ram
      (
       .clk(clk),
-      .en  (mem_req),
-      .we  (mem_wstrb),
-      .addr(mem_addr[`BE_ADDR_W-1:$clog2(`BE_DATA_W/8)]),
-      .dout(mem_rdata),
-      .din (mem_wdata)
+      .en  (be_req),
+      .we  (be_wstrb),
+      .addr(be_addr),
+      .dout(be_rdata),
+      .din (be_wdata)
       );
    
    always @(posedge clk)
-     mem_ack <= mem_req;
+     be_ack <= be_req;
    
 `endif
 
