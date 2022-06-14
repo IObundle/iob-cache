@@ -1,0 +1,63 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{5}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{5}{Introduction}{section.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces IP Core Symbol.\relax }}{5}{figure.caption.4}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:symbol}{{1}{5}{IP Core Symbol.\relax }{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Features}{5}{subsection.1.1}\protected@file@percent }
+\newlabel{sec:feat}{{1.1}{5}{Features}{subsection.1.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Benefits}{5}{subsection.1.2}\protected@file@percent }
+\newlabel{sec:benef}{{1.2}{5}{Benefits}{subsection.1.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Deliverables}{5}{subsection.1.3}\protected@file@percent }
+\newlabel{sec:deliv}{{1.3}{5}{Deliverables}{subsection.1.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Description}{6}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Block Diagram}{6}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:bdd}{{2.1}{6}{Block Diagram}{subsection.2.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces High-Level Block Diagram.\relax }}{6}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:bd}{{2}{6}{High-Level Block Diagram.\relax }{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Configuration}{6}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:ipconfig}{{2.2}{6}{Configuration}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.1}Macros}{6}{subsubsection.2.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Synthesis Macros.\relax }}{7}{table.caption.6}\protected@file@percent }
+\newlabel{tab:sm}{{1}{7}{Synthesis Macros.\relax }{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.2.2}Parameters}{7}{subsubsection.2.2.2}\protected@file@percent }
+\newlabel{sec:cp}{{2.2.2}{7}{Parameters}{subsubsection.2.2.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Synthesis Parameters.\relax }}{8}{table.caption.7}\protected@file@percent }
+\newlabel{tab:sp}{{2}{8}{Synthesis Parameters.\relax }{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Interface Signals}{9}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:ifsig}{{2.3}{9}{Interface Signals}{subsection.2.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces General Interface Signals\relax }}{9}{table.caption.8}\protected@file@percent }
+\newlabel{gen_if_tab:is}{{3}{9}{General Interface Signals\relax }{table.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces IObundle Master Interface Signals\relax }}{9}{table.caption.9}\protected@file@percent }
+\newlabel{tab:if_iob_s}{{4}{9}{IObundle Master Interface Signals\relax }{table.caption.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Control-Status Interface Signals\relax }}{9}{table.caption.10}\protected@file@percent }
+\newlabel{tab:if_cs_io}{{5}{9}{Control-Status Interface Signals\relax }{table.caption.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces IObundle Slave Interface Signals\relax }}{9}{table.caption.11}\protected@file@percent }
+\newlabel{tab:if_iob_s}{{6}{9}{IObundle Slave Interface Signals\relax }{table.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Usage}{9}{section.3}\protected@file@percent }
+\newlabel{sec:inst}{{3}{9}{Usage}{section.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Core Instance and Required Surrounding Blocks\relax }}{10}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:inst}{{3}{10}{Core Instance and Required Surrounding Blocks\relax }{figure.caption.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Simulation}{11}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:tbbd}{{3.1}{11}{Simulation}{subsection.3.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Testbench Block Diagram\relax }}{11}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:tbbd}{{4}{11}{Testbench Block Diagram\relax }{figure.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Synthesis}{12}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:synth}{{3.2}{12}{Synthesis}{subsection.3.2}{}}
