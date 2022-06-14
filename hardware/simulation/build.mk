@@ -8,8 +8,6 @@ include hardware/axiram/hardware.mk
 # add AXI4 wires
 VHDR+=$(BUILD_SRC_DIR)/iob_cache_axi_wire.vh
 
-$(BUILD_SRC_DIR)/iob_cache_axi_wire.vh: iob_cache_axi_wire.vh
-	mv $< $@
-
-iob_cache_axi_wire.vh:
+$(BUILD_SRC_DIR)/iob_cache_axi_wire.vh:
 	./software/python/axi_gen.py axi_wire iob_cache_
+	mv $(subst $(BUILD_SRC_DIR)/, , $@) $(BUILD_SRC_DIR)

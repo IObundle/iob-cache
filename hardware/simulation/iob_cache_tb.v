@@ -1,7 +1,6 @@
 `timescale 1ns/10ps
 
 `include "iob_cache.vh"
-`include "iob_cache_conf.vh"
 
 module iob_cache_tb;
 
