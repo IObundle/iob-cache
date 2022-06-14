@@ -1,4 +1,17 @@
-//CONSTANTS
+//CORE DEFAULTS
+
+`define DATA_W 32
+`define ADDR_W 15
+`define BE_DATA_W 64
+`define BE_ADDR_W 24
+`define NWAYS_W 1
+`define NLINES_W 7
+`define WORD_OFFSET_W 3
+`define WTBUF_DEPTH_W 4
+`define REP_POLICY 0
+`define WRITE_POL 0
+`define CTRL_CACHE 0
+`define CTRL_CNT 0
 
 //Replacement Policy
 `define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters

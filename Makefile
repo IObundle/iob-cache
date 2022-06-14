@@ -1,35 +1,30 @@
 SHELL:=/bin/bash
 export
 
-include config.mk
+include info.mk
 
-CACHE_DIR=../..
-TOP_MODULE=iob_cache
-REMOTE_ROOT_DIR=sandbox/$(TOP_MODULE)
-export REMOTE_ROOT_DIR
+
 #
-# CREATE BUILD DIRECTORY
+# BUILD DIRECTORY
 #
-#cache directory from LIB's perspective
 
+LIB_DIR=submodules/LIB
+build-dir:
+	make -C $(LIB_DIR) build-dir
 
-BUILD_DIR := $(TOP_MODULE)_$(VERSION)
-
-build-dir: $(BUILD_DIR)
-
-$(BUILD_DIR):
-	make -C submodules/LIB build-dir
-
-clean:
+build-clean:
 	make sim-clean
 	make fpga-clean
 	make doc-clean
-	rm -rf $(BUILD_DIR)
-
-debug:
-	make -C submodules/LIB debug
+	make -C $(LIB_DIR) clean-build-dir
 
 
+build-debug:
+	make -C $(LIB_DIR) debug
+
+#VERSION_STR=$(shell ./software/python/version.py $(TOP_MODULE) $(VERSION))
+VERSION_STR=$(VERSION)
+BUILD_DIR = $(TOP_MODULE)_$(VERSION_STR)
 
 #
 # SIMULATE
@@ -123,7 +118,9 @@ test: test-clean test-sim test-fpga test-doc
 
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
-.PHONY:	sim sim-test sim-clean \
+
+.PHONY: build-dir build-clean build-debug \
+	sim-test sim-clean \
 	fpga-build fpga-test fpga-clean \
 	doc-build doc-test doc-clean\
 	test-sim test-sim-clean \

@@ -4,9 +4,6 @@ LIB_DIR:=$(CORE_DIR)/submodules/LIB
 
 TOP_MODULE ?=iob_cache_axi
 
-# core configuration
-include $(CORE_DIR)/config.mk
-
 VSRC+=$(CORE_DIR)/hardware/src/$(TOP_MODULE).v \
 $(CORE_DIR)/hardware/src/iob_cache.v
 
