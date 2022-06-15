@@ -11,4 +11,8 @@ test: iob-cache-clean-testlog test1
 test1: clean
 	make run TEST_LOG=">> test.log"
 
+ifeq ($(BE_IF),axi)
+VFLAGS+=-DAXI
+endif
+
 .PHONY: test test1 debug

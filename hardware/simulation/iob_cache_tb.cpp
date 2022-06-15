@@ -1,6 +1,6 @@
 #include <verilated.h>
 #include <iostream>
-#include "obj_dir/Viob_cache_wrapper.h"
+#include "Viob_cache_wrapper.h"
 
 #if (VM_TRACE == 1)    //If verilator was invoked with --trace
 #include <verilated_vcd_c.h>

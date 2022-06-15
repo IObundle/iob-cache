@@ -18,6 +18,7 @@ build-clean:
 	make fpga-clean
 	make doc-clean
 	make -C $(LIB_DIR) clean-build-dir
+	@rm hardware/src/$(TOP_MODULE).v
 
 
 build-debug:
@@ -37,11 +38,14 @@ sim-build: build-dir
 sim-run: sim-build
 	make -C $(SIM_DIR) run
 
-sim-debug: build-dir
-	make -C $(SIM_DIR) debug
-
 sim-test:
 	make -C $(SIM_DIR) test
+
+sim-clean:
+	if [ -d $(SIM_DIR) ]; then make -C $(SIM_DIR) clean; fi
+
+sim-debug: build-dir
+	make -C $(SIM_DIR) debug
 
 #
 # FPGA
@@ -49,14 +53,21 @@ sim-test:
 
 FPGA_DIR:=$(BUILD_DIR)/fpga
 FPGA_FAMILY?=CYCLONEV-GT
+
 fpga-build: build-dir
 	make -C $(FPGA_DIR) build
 
-fpga-debug:
-	make -C $(FPGA_DIR) debug
+fpga-run: build-build
+	make -C $(FPGA_DIR) run
 
 fpga-test:
 	make -C $(FPGA_DIR) test
+
+fpga-clean:
+	if [ -d $(FPGA_DIR) ]; then make -C $(FPGA_DIR) clean; fi
+
+fpga-debug:
+	make -C $(FPGA_DIR) debug
 
 #
 # DOCUMENT
@@ -71,12 +82,11 @@ doc-build:
 doc-test:
 	make -C $(DOC_DIR) test
 
-doc-debug:
-	make -C $(DOC_DIR) debug
-
 doc-clean:
 	make -C $(DOC_DIR) clean
 
+doc-debug:
+	make -C $(DOC_DIR) debug
 
 #
 # TEST
@@ -117,9 +127,9 @@ debug:
 	@echo $(VERSION_STR)
 
 .PHONY: build-dir build-clean build-debug \
-	sim-test sim-clean \
-	fpga-build fpga-test fpga-clean \
-	doc-build doc-test doc-clean\
+	sim-build sim-run sim-test sim-debug sim-clean \
+	fpga-build fpga-run fpga-test fpga-clean fpga-debug \
+	doc-build doc-test doc-clean doc-debug \
 	test-sim test-sim-clean \
 	test-fpga test-fpga-clean \
 	test-doc test-doc-clean \
