@@ -16,6 +16,12 @@ on:
   # Allow manual workflow runs
   workflow_dispatch:
 
+# Run only one instance of this workflow at a time
+# cancel-in-progress: stop running workflow and run latest instead
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sim:
     runs-on: self-hosted
