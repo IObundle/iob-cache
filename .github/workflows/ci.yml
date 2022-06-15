@@ -16,6 +16,12 @@ on:
   # Allow manual workflow runs
   workflow_dispatch:
 
+# Run only one instance of this workflow at a time
+# cancel-in-progress: stop running workflow and run latest instead
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sim:
     runs-on: self-hosted
@@ -33,8 +39,8 @@ jobs:
   fpga:
     runs-on: self-hosted
     timeout-minutes: 30
-    # run even if previous job failed
-    if: ${{ always() }}
+    # always run, except when previous job was cancelled
+    if: ${{ !cancelled() }}
     # run after indicated job
     needs: sim
 
@@ -50,8 +56,8 @@ jobs:
   doc:
     runs-on: self-hosted
     timeout-minutes: 30
-    # run even if previous job failed
-    if: ${{ always() }}
+    # always run, except when previous job was cancelled
+    if: ${{ !cancelled() }}
     # run after indicated job
     needs: fpga
 
