@@ -15,4 +15,19 @@ ifeq ($(BE_IF),axi)
 VFLAGS+=-DAXI
 endif
 
-.PHONY: test test1 debug
+# choose top module file 
+VSRC+=$(BUILD_SRC_DIR)/$(TOP_MODULE).v
+
+TOP_ROOT=$(BUILD_SRC_DIR)/top/$(TOP_MODULE).v
+TOP_CURR=$(BUILD_SRC_DIR)/$(TOP_MODULE).v
+
+$(TOP_CURR): top
+
+top:
+ifeq ($(BE_IF),axi)
+	if [ ! -f $(TOP_CURR) ]; then cp $(TOP_ROOT)_axi.v $(TOP_CURR); elif [ "`diff -q $(TOP_ROOT)_axi.v $(TOP_CURR)`" ]; then cp $(TOP_ROOT)_axi.v $(TOP_CURR); fi
+else
+	if [ ! -f $(TOP_CURR) ]; then cp $(TOP_ROOT)_iob.v $(TOP_CURR); elif [ "`diff -q $(TOP_ROOT)_iob.v $(TOP_CURR)`" ]; then cp $(TOP_ROOT)_iob.v $(TOP_CURR); fi
+endif
+
+.PHONY: test test1 top

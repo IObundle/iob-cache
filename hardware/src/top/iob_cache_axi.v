@@ -46,7 +46,6 @@ module iob_cache_axi
     //General Interface Signals
     `IOB_INPUT(clk,          1), //System clock input
     `IOB_INPUT(rst,          1)  //System reset, asynchronous and active high
-`include "iob_gen_if.vh"
     );
    
    //BLOCK Front-end & Front-end interface.
