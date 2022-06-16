@@ -135,7 +135,7 @@ module iob_cache_tb;
         wstrb =0;
         #20
           wstrb = {`DATA_W/8{1'b1}};
-        wdata = 23434332205;
+        wdata = 3434332205;
         #2;
         addr = 1; //change of addr
         wstrb = 0;

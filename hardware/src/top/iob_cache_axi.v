@@ -41,8 +41,11 @@ module iob_cache_axi
     `IOB_INPUT(wtb_empty_in, 1),
     `IOB_OUTPUT(wtb_empty_out, 1),
 
-    // Back-end interface (AXI4 master)
+    // AXI4 back-end interface
 `include "iob_cache_axi_m_port.vh"
+    //General Interface Signals
+    `IOB_INPUT(clk,          1), //System clock input
+    `IOB_INPUT(rst,          1)  //System reset, asynchronous and active high
 `include "iob_gen_if.vh"
     );
    
