@@ -15,11 +15,11 @@ ifeq ($(BE_IF),axi)
 VFLAGS+=-DAXI
 endif
 
-# choose top module file 
-VSRC+=$(BUILD_SRC_DIR)/$(TOP_MODULE).v
+# choose top module file
 
-TOP_ROOT=$(BUILD_SRC_DIR)/top/$(TOP_MODULE).v
-TOP_CURR=$(BUILD_SRC_DIR)/$(TOP_MODULE).v
+TOP_ROOT=../vsrc/top/$(TOP_MODULE)
+TOP_CURR=../vsrc/top/$(TOP_MODULE).v
+VSRC+=$(TOP_CURR)
 
 $(TOP_CURR): top
 
