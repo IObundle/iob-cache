@@ -2,11 +2,7 @@
 # This file is included in BUILD_DIR/sim/Makefile
 #
 
-test: iob-cache-clean-testlog $(TEST_LIST)
-	diff -q test.log test.expected
-
 # choose top module file for iob or axi back-end interface 
-
 TOP_ROOT=../vsrc/top/$(TOP_MODULE)
 TOP_CURR=../vsrc/top/$(TOP_MODULE).v
 VSRC+=$(TOP_CURR)

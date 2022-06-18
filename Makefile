@@ -25,19 +25,17 @@ build-debug:
 #
 
 SIM_DIR=$(BUILD_DIR)/sim
-SIMULATOR?=icarus
-
 sim-build: build-dir
 	make -C $(SIM_DIR) build
 
 sim-run: sim-build
 	make -C $(SIM_DIR) run
 
-sim-test:
+sim-test: build-dir
 	make -C $(SIM_DIR) test
 
-sim-clean:
-	if [ -f $(SIM_DIR)/Makefile ]; then make -C $(SIM_DIR) clean; fi
+sim-clean: build-dir
+	make -C $(SIM_DIR) clean
 
 sim-debug: build-dir
 	make -C $(SIM_DIR) debug
@@ -47,19 +45,17 @@ sim-debug: build-dir
 #
 
 FPGA_DIR:=$(BUILD_DIR)/fpga
-FPGA_FAMILY?=CYCLONEV-GT
-
 fpga-build: build-dir
 	make -C $(FPGA_DIR) build
 
 fpga-run: build-build
 	make -C $(FPGA_DIR) run
 
-fpga-test:
+fpga-test: build-build
 	make -C $(FPGA_DIR) test
 
-fpga-clean:
-	if [ -f $(FPGA_DIR)/Makefile ]; then make -C $(FPGA_DIR) clean; fi
+fpga-clean: build-build
+	make -C $(FPGA_DIR) clean; fi
 
 fpga-debug: build-dir
 	make -C $(FPGA_DIR) debug
@@ -68,66 +64,36 @@ fpga-debug: build-dir
 # DOCUMENT
 #
 
-DOC?=pb
-DOC_DIR:=document/$(DOC)
-
-doc-build:
+DOC_DIR:=$(BUILD_DIR)/doc
+doc-build: build-dir
 	make -C $(DOC_DIR) $(DOC).pdf
 
-doc-test:
+doc-test: build-build
 	make -C $(DOC_DIR) test
 
-doc-clean:
+doc-clean: build-build
 	make -C $(DOC_DIR) clean
 
-doc-debug:
+doc-debug: build-dir
 	make -C $(DOC_DIR) debug
 
 #
 # TEST
 #
 
-test-sim:
-	make sim-test SIMULATOR=icarus
-	make sim-test SIMULATOR=verilator
+test: build-clean sim-test fpga-test doc-test
 
-test-sim-clean:
-	make sim-clean SIMULATOR=icarus
-	make sim-clean SIMULATOR=verilator
-
-test-fpga:
-	make fpga-test FPGA_FAMILY=CYCLONEV-GT
-	make fpga-test FPGA_FAMILY=XCKU
-
-test-fpga-clean:
-	make fpga-clean FPGA_FAMILY=CYCLONEV-GT
-	make fpga-clean FPGA_FAMILY=XCKU
-
-test-doc:
-	make doc-test DOC=pb
-	make doc-test DOC=ug
-
-test-doc-clean:
-	make doc-clean DOC=pb
-	make doc-clean DOC=ug
-
-test: test-clean test-sim test-fpga test-doc
-
-test-clean: test-sim-clean test-fpga-clean test-doc-clean
-
-clean: test-clean
-	@rm -rf iob_cache_version.vh
+#
+# DEBUG: add makefile variables here for debugging
+#
 
 debug:
 	@echo $(VERSION_STR)
 
+
 .PHONY: build-dir build-clean build-debug \
 	sim-build sim-run sim-test sim-debug sim-clean \
-	fpga-build fpga-run fpga-test fpga-clean fpga-debug \
+	fpga-build fpga-test fpga-clean fpga-debug \
 	doc-build doc-test doc-clean doc-debug \
-	test-sim test-sim-clean \
-	test-fpga test-fpga-clean \
-	test-doc test-doc-clean \
-	test test-clean \
-	clean debug
+	test debug
 
