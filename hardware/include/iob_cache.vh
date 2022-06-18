@@ -22,8 +22,8 @@
 `define PLRU_TREE 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
 
 //Write Policy
-`define WRITE_THROUGH 0 //write-through not allocate: implements a write-through buffer
-`define WRITE_BACK 1    //write-back allocate: implementes a dirty-memory
+`define WRITE_THROUGH 1 //write-through not allocate: implements a write-through buffer
+`define WRITE_BACK 0    //write-back allocate: implementes a dirty-memory
 
 //Cache controller address width
 `define CTRL_ADDR_W 4
