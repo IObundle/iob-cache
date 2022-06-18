@@ -13,10 +13,8 @@ LIB_DIR=submodules/LIB
 build-dir:
 	make -C $(LIB_DIR) build-dir
 
-build-clean: sim-clean fpga-clean doc-clean
-	make -C $(LIB_DIR) clean-build-dir
-	@rm -f hardware/src/$(TOP_MODULE).v
-
+build-clean:
+	make -C $(LIB_DIR) clean
 
 build-debug:
 	make -C $(LIB_DIR) debug
@@ -63,7 +61,7 @@ fpga-test:
 fpga-clean:
 	if [ -f $(FPGA_DIR)/Makefile ]; then make -C $(FPGA_DIR) clean; fi
 
-fpga-debug:
+fpga-debug: build-dir
 	make -C $(FPGA_DIR) debug
 
 #
