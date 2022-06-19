@@ -17,16 +17,13 @@ test1:
 	make run SIMULATOR=icarus BE_IF=iob
 
 TEST_LIST+=test2
-test2:
+test2: test.log
 	make run SIMULATOR=icarus BE_IF=axi
 
 TEST_LIST+=test3
-test3:
+test3: test.log
 	make run SIMULATOR=verilator BE_IF=iob
 
 TEST_LIST+=test4
-test4:
+test4: test.log
 	make run SIMULATOR=verilator BE_IF=axi
-
-
-.PHONY: test1 test2 test3 test4
