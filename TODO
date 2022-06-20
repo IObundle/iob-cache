@@ -1,0 +1,4 @@
+1. Check invalidate while read request completes (see iob-soc ext_mem old fix)
+2. Move doc building to build directory
+3. Fix testbenches
+4. Finish doc and respond to issues
