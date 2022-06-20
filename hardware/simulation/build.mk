@@ -3,8 +3,8 @@
 #
 
 # copy simulation wrapper
-VSRC+=$(BUILD_SRC_DIR)/$(TOP_MODULE)_wrapper.v
-$(BUILD_SRC_DIR)/$(TOP_MODULE)_wrapper.v: $(CORE_SIM_DIR)/$(TOP_MODULE)_wrapper.v
+VSRC+=$(BUILD_SRC_DIR)/iob_cache_wrapper.v
+$(BUILD_SRC_DIR)/$(TOP_MODULE)_wrapper.v: $(CORE_SIM_DIR)/iob_cache_wrapper.v
 	cp $< $(BUILD_SRC_DIR)
 
 # copy non-axi memory

@@ -2,7 +2,7 @@
 # This file is included in BUILD_DIR/sim/Makefile
 #
 
-ifeq ($(BE_IF),axi)
+ifeq ($(TOP_MODULE),iob_cache_axi)
 VFLAGS+=-DAXI
 endif
 
@@ -12,16 +12,16 @@ VTOP:=iob_cache_wrapper
 #tests
 TEST_LIST+=test1
 test1:
-	make run SIMULATOR=icarus BE_IF=iob
+	make run SIMULATOR=icarus TOP_MODULE=iob_cache_iob
 
 TEST_LIST+=test2
 test2: test.log
-	make run SIMULATOR=icarus BE_IF=axi
+	make run SIMULATOR=icarus TOP_MODULE=iob_cache_axi
 
 TEST_LIST+=test3
 test3: test.log
-	make run SIMULATOR=verilator BE_IF=iob
+	make run SIMULATOR=verilator TOP_MODULE=iob_cache_iob
 
 TEST_LIST+=test4
 test4: test.log
-	make run SIMULATOR=verilator BE_IF=axi
+	make run SIMULATOR=verilator TOP_MODULE=iob_cache_axi

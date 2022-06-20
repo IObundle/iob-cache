@@ -1,5 +1,9 @@
-TOP_MODULE=iob_cache
+# core name
+NAME=iob_cache
+# core version 
 VERSION=0010
-BE_IF?=iob
-# cache directory as seen from lib
-CACHE_DIR=../..
+# top-leel module
+TOP_MODULE?=iob_cache_axi
+#TOP_MODULE?=iob_cache_iob
+# core path as seen from LIB's makefile
+CACHE_DIR=$(CORE_DIR)
