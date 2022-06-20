@@ -2,8 +2,6 @@
 # This file is included in BUILD_DIR/sim/Makefile
 #
 
-include ../hw-comp.mk
-
 ifeq ($(BE_IF),axi)
 VFLAGS+=-DAXI
 endif

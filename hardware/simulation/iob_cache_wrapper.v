@@ -40,7 +40,7 @@ module iob_cache_wrapper
 `ifdef AXI   
    iob_cache_axi
 `else
-   iob_cache
+   iob_cache_iob
 `endif     
      #(
        .ADDR_W(`ADDR_W),
@@ -58,7 +58,7 @@ module iob_cache_wrapper
 `ifdef AXI   
    cache_axi
 `else
-   cache
+   cache_iob
 `endif     
       (
       //front-end

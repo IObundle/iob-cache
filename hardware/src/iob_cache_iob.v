@@ -3,7 +3,7 @@
 `include "iob_lib.vh"
 `include "iob_cache.vh"
 
-module iob_cache
+module iob_cache_iob
   #(
     parameter ADDR_W = `ADDR_W, //PARAM &  NS & 64 & The front-end address width defines the memory space accessible via the cache.
     parameter DATA_W = `DATA_W, //PARAM & 32 & 64 & Front-end data width
