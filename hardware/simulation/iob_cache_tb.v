@@ -5,8 +5,11 @@
 module iob_cache_tb;
 
    //clock                        
+   parameter clk_per = 10;
    reg clk = 1;
-   always #1 clk = ~clk;
+   always #clk_per clk = ~clk;
+
+
    reg reset = 1;
    
    //iob-native bus signals
