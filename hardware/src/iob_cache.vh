@@ -17,13 +17,18 @@
 `define CTRL_CNT 0
 
 //Replacement Policy
-`define LRU       0 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
-`define PLRU_MRU  1 // bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
-`define PLRU_TREE 2 // tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
+// Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
+`define LRU 0
+// bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
+`define PLRU_MRU 1
+// tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
+`define PLRU_TREE 2
 
 //Write Policy
-`define WRITE_THROUGH 0 //write-through not allocate: implements a write-through buffer
-`define WRITE_BACK 1    //write-back allocate: implementes a dirty-memory
+//write-through not allocate: implements a write-through buffer  
+`define WRITE_THROUGH 0
+//write-back allocate: implementes a dirty-memory  
+`define WRITE_BACK 1
 
 //Cache controller address width
 `define CTRL_ADDR_W 4
