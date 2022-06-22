@@ -29,17 +29,43 @@ module iob_cache_tb;
    initial 
      begin
         
-`ifdef VCD
-	$dumpfile("uut.vcd");
-	$dumpvars();
-`endif  
-        repeat (5) @(posedge clk);
-        reset = 0;
-        #10;
+      `ifdef VCD
+ 	 $dumpfile("uut.vcd");
+	 $dumpvars();
+      `endif  
+         repeat (5) @(posedge clk);
+         reset = 0;
+         #10;
         
-        $display("\nInitializing Cache testing - check simulation results\n");
-        $display("Test 1 - Writing test\n");
-        test = 1;
+        $display("\nStart of Cache Testing");
+	
+        $display("Test 1: Writing Test");
+        for(i=0; i<5; i=i+1) begin
+	   @(posedge clk) #1 req=1;
+	   wstrb={`DATA_W/8{1'b1}};
+	   addr=i;
+           wdata=i*3;
+	   wait(ack); #1 req=0;
+	end   
+
+        #80 @(posedge clk);
+
+	$display("Test 2: Reading Test");
+        for(i=0; i<5; i=i+1) begin
+           @(posedge clk) #1 req=1;
+           wstrb={`DATA_W/8{1'b0}};
+           addr=i;
+           wait(ack); #1 req=0;
+	   if(rdata == i*3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
+           else $display("\tReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);  
+        end
+
+        #100;
+        $display("End of Cache Testing\n");
+        $finish;
+     end
+	
+        /*test = 1;
         req = 1;
         addr = 0;
         wdata = 0;
@@ -162,9 +188,7 @@ module iob_cache_tb;
         ctrl =0;
         addr =0;
         #80;
-        $display("Cache testing completed\n");
-        $finish;
-     end // initial begin
+*/	 
 
    iob_cache_wrapper 
      #(

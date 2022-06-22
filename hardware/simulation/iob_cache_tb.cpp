@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 	     if(posedge_cnt == 8) VL_PRINTF("Test 1: Writing Test\n");
              RW=0;
              dut->req=1;
-             dut->wstrb=1;
+             dut->wstrb=15;
              dut->addr=iw;
 	     dut->wdata=iw*3;
           }
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
           }
 	
 	  if((RW==1) && dut->ack && (itest < 5)){
-	     (dut->rdata == itest*3) ? VL_PRINTF("\tReading %#x at addr %#x: PASSED\n",3*itest,itest) : VL_PRINTF("\tReading %#x at addr %#x: FAILED\n",3*itest,itest);
+	    (dut->rdata == itest*3) ? VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n",dut->rdata,itest) : VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n",dut->rdata,itest);
 	     itest++;				      
 	  }
 	}
