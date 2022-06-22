@@ -2,6 +2,9 @@
 # This file is included in BUILD_DIR/fpga/Makefile
 #
 
+# include core basic info
+include ../../info.mk
+
 ifeq ($(TOP_MODULE),iob_cache_axi)
 DEFINE=AXI
 else

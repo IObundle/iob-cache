@@ -1,3 +1,0 @@
-
-include ../document.mk
-
