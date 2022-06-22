@@ -17,32 +17,32 @@ include hardware/ram/iob_ram_sp/hardware.mk
 #HEADERS
 
 #core header
-VHDR+=$(BUILD_SRC_DIR)/iob_cache.vh
-$(BUILD_SRC_DIR)/iob_cache.vh: $(CACHE_DIR)/hardware/src/iob_cache.vh
-	cp $< $(BUILD_SRC_DIR)
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache.vh
+$(BUILD_VSRC_DIR)/iob_cache.vh: $(CACHE_DIR)/hardware/src/iob_cache.vh
+	cp $< $(BUILD_VSRC_DIR)
 
 #clk/rst interface
-VHDR+=$(BUILD_SRC_DIR)/iob_gen_if.vh
-$(BUILD_SRC_DIR)/iob_gen_if.vh: hardware/include/iob_gen_if.vh
-	cp $< $(BUILD_SRC_DIR)
+VHDR+=$(BUILD_VSRC_DIR)/iob_gen_if.vh
+$(BUILD_VSRC_DIR)/iob_gen_if.vh: hardware/include/iob_gen_if.vh
+	cp $< $(BUILD_VSRC_DIR)
 
 #back-end AXI4 interface verilog header file 
 AXI_GEN:=software/python/axi_gen.py
-VHDR+=$(BUILD_SRC_DIR)/iob_cache_axi_m_port.vh
-$(BUILD_SRC_DIR)/iob_cache_axi_m_port.vh:
-	$(AXI_GEN) axi_m_port iob_cache_ && mv iob_cache_axi_m_port.vh $(BUILD_SRC_DIR)
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
+$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
+	$(AXI_GEN) axi_m_port iob_cache_ && mv iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
 
 #back-end AXI4 portmap verilog header file 
-VHDR+=$(BUILD_SRC_DIR)/iob_cache_axi_portmap.vh
-$(BUILD_SRC_DIR)/iob_cache_axi_portmap.vh:
-	$(AXI_GEN) axi_portmap iob_cache_ && mv iob_cache_axi_portmap.vh $(BUILD_SRC_DIR)
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh:
+	$(AXI_GEN) axi_portmap iob_cache_ && mv iob_cache_axi_portmap.vh $(BUILD_VSRC_DIR)
 
 #SOURCES
 VSRC1=$(wildcard $(CACHE_DIR)/hardware/src/*.v)
-VSRC2=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_SRC_DIR)/%, $(VSRC1))
+VSRC2=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(VSRC1))
 VSRC+=$(VSRC2)
 
-$(BUILD_SRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
+$(BUILD_VSRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
 	cp $< $@
 
 
@@ -51,9 +51,9 @@ $(BUILD_SRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
 #
 
 # copy simulation wrapper
-VSRC+=$(BUILD_SRC_DIR)/iob_cache_wrapper.v
-$(BUILD_SRC_DIR)/iob_cache_wrapper.v: $(CORE_SIM_DIR)/iob_cache_wrapper.v
-	cp $< $(BUILD_SRC_DIR)
+VSRC+=$(BUILD_VSRC_DIR)/iob_cache_wrapper.v
+$(BUILD_VSRC_DIR)/iob_cache_wrapper.v: $(CORE_SIM_DIR)/iob_cache_wrapper.v
+	cp $< $(BUILD_VSRC_DIR)
 
 # copy external memory for iob interface
 include hardware/ram/iob_ram_sp_be/hardware.mk
@@ -62,7 +62,7 @@ include hardware/ram/iob_ram_sp_be/hardware.mk
 include hardware/axiram/hardware.mk
 
 # generate and copy AXI4 wires to connect cache to axi memory
-VHDR+=$(BUILD_SRC_DIR)/iob_cache_axi_wire.vh
-$(BUILD_SRC_DIR)/iob_cache_axi_wire.vh:
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_wire.vh
+$(BUILD_VSRC_DIR)/iob_cache_axi_wire.vh:
 	./software/python/axi_gen.py axi_wire iob_cache_
-	mv $(subst $(BUILD_SRC_DIR)/, , $@) $(BUILD_SRC_DIR)
+	mv $(subst $(BUILD_VSRC_DIR)/, , $@) $(BUILD_VSRC_DIR)
