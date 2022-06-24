@@ -190,25 +190,16 @@ module iob_cache_tb;
         #80;
 */	 
 
-   iob_cache_wrapper 
-     #(
-       .ADDR_W(`ADDR_W),
-       .DATA_W(`DATA_W),
-       .BE_ADDR_W(`BE_ADDR_W),
-       .BE_DATA_W(`BE_DATA_W)
-       )
-   iob_cache_wrapper0
-     (
-      .clk(clk),
-      .reset(reset),
-
-      .req(req),
-      .addr({ctrl, addr}),
-      .wdata(wdata),
-      .wstrb(wstrb),
-      .rdata(rdata),
-      .ack(ack)
-      );
+   iob_cache_wrapper iob_cache_wrapper0 (
+          .clk(clk),
+          .reset(reset),
+          .req(req),
+          .addr({ctrl, addr}),
+          .wdata(wdata),
+          .wstrb(wstrb),
+          .rdata(rdata),
+          .ack(ack)
+   );
    
 endmodule
 
