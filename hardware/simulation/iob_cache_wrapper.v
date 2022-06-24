@@ -4,22 +4,16 @@
 `include "iob_cache.vh"
 
 module iob_cache_wrapper
-  #(
-    parameter ADDR_W = 32,              
-    parameter DATA_W = 32,                         
-    parameter BE_ADDR_W = 24, 
-    parameter BE_DATA_W = 32
-    )
-   (   
-       input                           clk,
-       input                           reset,
+      (
+       input                              clk,
+       input                              reset,
        
-       input                           req, 
-       input [ADDR_W:$clog2(DATA_W/8)] addr,
-       input [DATA_W-1:0]              wdata,
-       input [DATA_W/8-1:0]            wstrb,
-       output [DATA_W-1:0]             rdata,
-       output                          ack      
+       input                              req, 
+       input  [`ADDR_W:$clog2(`DATA_W/8)] addr,
+       input  [`DATA_W-1:0]               wdata,
+       input  [`DATA_W/8-1:0]             wstrb,
+       output [`DATA_W-1:0]               rdata,
+       output                             ack      
        );	
 
 `ifdef AXI
@@ -30,7 +24,7 @@ module iob_cache_wrapper
    //Native connections
    wire [`BE_ADDR_W-1:0]           be_addr;
    wire [`BE_DATA_W-1:0]           be_wdata, be_rdata;
-   wire [`BE_NBYTES-1:0]           be_wstrb;
+   wire [`BE_DATA_W/8-1:0]         be_wstrb;
    wire                            be_req;
    reg                             be_ack;
    
