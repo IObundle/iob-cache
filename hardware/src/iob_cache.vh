@@ -12,9 +12,9 @@
 `define WORD_OFFSET_W 3
 `define WTBUF_DEPTH_W 4
 `define REP_POLICY 0
-`define WRITE_POL 0
-`define CTRL_CACHE 0
-`define CTRL_CNT 0
+`define WRITE_POL 0 
+`define USE_CTRL 0
+`define USE_CTRL_CNT 0
 
 //Replacement Policy
 // Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters

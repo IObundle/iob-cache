@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     dut->clk=1; dut->reset=0;    
     while (main_time < MAX_SIM_TIME) {
         dut->clk=!dut->clk;  
-        dut->reset=(main_time > 1 && main_time < 8) ? 1 : 0; 	
+        dut->reset=(main_time >=1 && main_time <= 8) ? 1 : 0; 	
         dut->eval();
 
         if(dut->clk == 1) {

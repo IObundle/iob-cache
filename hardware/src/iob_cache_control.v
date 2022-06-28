@@ -10,7 +10,7 @@
 module iob_cache_control
   #(
     parameter DATA_W = 32,
-    parameter CTRL_CNT = 1
+    parameter USE_CTRL_CNT = 1
     )
    (
     input                      clk,
@@ -29,7 +29,7 @@ module iob_cache_control
     );
 
    generate
-      if (CTRL_CNT) begin
+      if (USE_CTRL_CNT) begin
          reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
          wire [DATA_W-1:0]            hit_cnt, miss_cnt;
          reg                             counter_reset;

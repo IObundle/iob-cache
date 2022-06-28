@@ -17,8 +17,8 @@ module iob_cache_memory
     parameter WRITE_POL = `WRITE_THROUGH,
     parameter REP_POLICY = `PLRU_TREE,
 
-    parameter CTRL_CACHE = `CTRL_CACHE,
-    parameter CTRL_CNT = `CTRL_CNT
+    parameter USE_CTRL = `USE_CTRL,
+    parameter USE_CTRL_CNT = `USE_CTRL_CNT
     )
    (
     input                                                                        clk,
@@ -225,7 +225,7 @@ module iob_cache_memory
 
    // cache-control hit-miss counters enables
    generate
-      if (CTRL_CACHE & CTRL_CNT) begin
+      if (USE_CTRL & USE_CTRL_CNT) begin
          // cache-control hit-miss counters enables
          assign write_hit  = ack & ( hit & write_access);
          assign write_miss = ack & (~hit & write_access);

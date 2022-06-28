@@ -15,14 +15,14 @@ module iob_cache_iob
     parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2)
     parameter REP_POLICY = `PLRU_MRU, //PARAM & 0 & 3 & Line replacement policy. Set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-base Pseudo LRU (PLRU_TREE)
     parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back
-    parameter CTRL_CACHE = `CTRL_CACHE, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated and the write through buffer empty status can be read
-    parameter CTRL_CNT = `CTRL_CNT //PARAM & 0 & 1 & If CTRL_CACHE=1 and CTRL_CNT=1 , the cache will include software accessible hit/miss counters
+    parameter USE_CTRL = `USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated and the write through buffer empty status can be read
+    parameter USE_CTRL_CNT = `USE_CTRL_CNT //PARAM & 0 & 1 & If USE_CTRL=1 and USE_CTRL_CNT=1 , the cache will include software accessible hit/miss counters
     )
    (
     // Front-end interface (IOb native slave)
     //START_IO_TABLE fe
     `IOB_INPUT(req, 1), //Read or write request from CPU or other user core. If {\tt ack} becomes high in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt ack} is high in reponse to the previous request
-    `IOB_INPUT(addr, CTRL_CACHE+ADDR_W-`NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
+    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
     `IOB_INPUT(wdata, DATA_W), //Write data fom host.
     `IOB_INPUT(wstrb, `NBYTES), //Byte write strobe.
     `IOB_OUTPUT(rdata, DATA_W), //Read data to host.
@@ -60,7 +60,7 @@ module iob_cache_iob
 
    wire                              ctrl_req, ctrl_ack;
    wire [`CTRL_ADDR_W-1:0]           ctrl_addr;
-   wire [CTRL_CACHE*(DATA_W-1):0]    ctrl_rdata;
+   wire [USE_CTRL*(DATA_W-1):0]      ctrl_rdata;
    wire                              ctrl_invalidate;
 
    wire                              wtbuf_full, wtbuf_empty;
@@ -72,7 +72,7 @@ module iob_cache_iob
      #(
        .ADDR_W (ADDR_W-`NBYTES_W),
        .DATA_W (DATA_W),
-       .CTRL_CACHE(CTRL_CACHE)
+       .USE_CTRL(USE_CTRL)
        )
    front_end
      (
@@ -135,8 +135,8 @@ module iob_cache_iob
        .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
        .REP_POLICY (REP_POLICY),
        .WRITE_POL (WRITE_POL),
-       .CTRL_CACHE(CTRL_CACHE),
-       .CTRL_CNT (CTRL_CNT)
+       .USE_CTRL(USE_CTRL),
+       .USE_CTRL_CNT (USE_CTRL_CNT)
        )
    cache_memory
      (
@@ -219,11 +219,11 @@ module iob_cache_iob
 
    //BLOCK Cache control & Cache control block.
    generate
-      if (CTRL_CACHE)
+      if (USE_CTRL)
         iob_cache_control
           #(
             .DATA_W (DATA_W),
-            .CTRL_CNT  (CTRL_CNT)
+            .USE_CTRL_CNT  (USE_CTRL_CNT)
             )
       cache_control
         (

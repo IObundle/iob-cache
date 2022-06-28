@@ -21,15 +21,15 @@ module iob_cache_axi
     parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W,
     parameter REP_POLICY = `PLRU_MRU,
     parameter WRITE_POL = `WRITE_THROUGH,
-    parameter CTRL_CACHE = `CTRL_CACHE,
-    parameter CTRL_CNT = `CTRL_CNT,
+    parameter USE_CTRL = `USE_CTRL,
+    parameter USE_CTRL_CNT = `USE_CTRL_CNT,
     parameter AXI_ADDR_W = BE_ADDR_W,
     parameter AXI_DATA_W = BE_DATA_W
     )
    (
     // Front-end interface (IOb native slave)
     `IOB_INPUT(req, 1),
-    `IOB_INPUT(addr, CTRL_CACHE+ADDR_W-`NBYTES_W),
+    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`NBYTES_W),
     `IOB_INPUT(wdata, DATA_W),
     `IOB_INPUT(wstrb, `NBYTES),
     `IOB_OUTPUT(rdata, DATA_W),
@@ -60,7 +60,7 @@ module iob_cache_axi
 
    wire                                         ctrl_req, ctrl_ack;
    wire [`CTRL_ADDR_W-1:0]                      ctrl_addr;
-   wire [CTRL_CACHE*(DATA_W-1):0]               ctrl_rdata;
+   wire [USE_CTRL*(DATA_W-1):0]                 ctrl_rdata;
    wire                                         ctrl_invalidate;
 
    wire                                         wtbuf_full, wtbuf_empty;
@@ -72,7 +72,7 @@ module iob_cache_axi
      #(
        .ADDR_W (ADDR_W-`NBYTES_W),
        .DATA_W (DATA_W),
-       .CTRL_CACHE(CTRL_CACHE)
+       .USE_CTRL(USE_CTRL)
        )
    front_end
      (
@@ -136,8 +136,8 @@ module iob_cache_axi
        .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
        .REP_POLICY (REP_POLICY),
        .WRITE_POL (WRITE_POL),
-       .CTRL_CACHE(CTRL_CACHE),
-       .CTRL_CNT (CTRL_CNT)
+       .USE_CTRL(USE_CTRL),
+       .USE_CTRL_CNT (USE_CTRL_CNT)
        )
    cache_memory
      (
@@ -215,11 +215,11 @@ module iob_cache_axi
 
    //BLOCK Cache control & Cache control block.
    generate
-      if (CTRL_CACHE)
+      if (USE_CTRL)
         iob_cache_control
           #(
             .DATA_W  (DATA_W),
-            .CTRL_CNT   (CTRL_CNT)
+            .USE_CTRL_CNT   (USE_CTRL_CNT)
             )
       cache_control
         (
