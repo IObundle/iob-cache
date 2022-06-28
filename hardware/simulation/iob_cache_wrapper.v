@@ -47,7 +47,7 @@ module iob_cache_wrapper
        .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
        .WRITE_POL(`WRITE_POL),
        .REP_POLICY(`REP_POLICY),
-       .CTRL_CACHE(1)
+       .USE_CTRL(`USE_CTRL)
        )
 `ifdef AXI   
    cache_axi

@@ -9,14 +9,14 @@ module iob_cache_front_end
 
     // Derived parameters DO NOT CHANGE
     parameter NBYTES  = DATA_W/8,
-    parameter CTRL_CACHE = 0,
-    parameter CTRL_CNT = 0
+    parameter USE_CTRL = 0,
+    parameter USE_CTRL_CNT = 0
     )
    (
     // front-end port
     input                            clk,
     input                            reset,
-    input [CTRL_CACHE + ADDR_W -1:0] addr,
+    input [USE_CTRL + ADDR_W -1:0] addr,
     input [DATA_W-1:0]               wdata,
     input [NBYTES-1:0]               wstrb,
     input                            req,
@@ -38,7 +38,7 @@ module iob_cache_front_end
     // cache-control
     output                           ctrl_req,
     output [`CTRL_ADDR_W-1:0]        ctrl_addr,
-    input [CTRL_CACHE*(DATA_W-1):0]  ctrl_rdata,
+    input [USE_CTRL*(DATA_W-1):0]  ctrl_rdata,
     input                            ctrl_ack
     );
 
@@ -46,14 +46,14 @@ module iob_cache_front_end
 
    // select cache memory ir controller
    generate
-      if (CTRL_CACHE) begin
+      if (USE_CTRL) begin
          // Front-end output signals
          assign ack   = ctrl_ack | data_ack;
          assign rdata = (ctrl_ack)? ctrl_rdata  : data_rdata;
 
-         assign data_req_int = ~addr[CTRL_CACHE + ADDR_W -1] & req;
+         assign data_req_int = ~addr[USE_CTRL + ADDR_W -1] & req;
 
-         assign ctrl_req  = addr[CTRL_CACHE + ADDR_W -1] & req;
+         assign ctrl_req  = addr[USE_CTRL + ADDR_W -1] & req;
          assign ctrl_addr = addr[`CTRL_ADDR_W-1:0];
 
       end else begin
