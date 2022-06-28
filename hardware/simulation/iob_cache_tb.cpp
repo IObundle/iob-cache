@@ -6,7 +6,7 @@
 #include <verilated_vcd_c.h>
 #endif
 
-#define MAX_SIM_TIME 100
+#define MAX_SIM_TIME 120
 
 vluint64_t main_time = 0;
 vluint64_t posedge_cnt=0;
@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
 	     dut->wdata=iw*3;
           }
 
-	  if((posedge_cnt >= 24) && (ir < 5)){
-	     if(posedge_cnt == 24) VL_PRINTF("Test 2: Reading Test\n");
+	  if((posedge_cnt >= 30) && (ir < 5)){
+	     if(posedge_cnt == 30) VL_PRINTF("Test 2: Reading Test\n");
              RW=1;
 	     dut->req=1;
              dut->wstrb=0;
@@ -58,8 +58,8 @@ int main(int argc, char** argv) {
 	  
           if(dut->ack) {
 	     dut->req=0; 
-	     if ((posedge_cnt >= 8) && (posedge_cnt < 24)) iw++;
-	     else if (posedge_cnt >= 24) ir++;		      
+	     if ((posedge_cnt >= 8) && (posedge_cnt < 30)) iw++;
+	     else if (posedge_cnt >= 30) ir++;		      
           }
 	
 	  if((RW==1) && dut->ack && (itest < 5)){
