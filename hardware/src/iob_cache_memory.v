@@ -72,10 +72,10 @@ module iob_cache_memory
    wire [NWAYS-1:0]                                                              way_hit, way_select;
 
    wire [TAG_W-1:0]                                                              tag = addr_reg[ADDR_W-1 -: TAG_W];                // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [NLINES_W-1:0]                                                           index = addr[ADDR_W-TAG_W-1 -: NLINES_W];        // cant wait, doesnt update during a write-access
-   wire [NLINES_W-1:0]                                                           index_reg = addr_reg[ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [NWAYS_W+NLINES_W-1:0] 							 index = addr[ADDR_W-TAG_W-1 -: NLINES_W];        // cant wait, doesnt update during a write-access
+   wire [NWAYS_W+NLINES_W-1:0] 							 index_reg = addr_reg[ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
    wire [WORD_OFFSET_W-1:0]                                                      offset = addr_reg[`NBYTES_W +: WORD_OFFSET_W];      // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
-   wire [NWAYS*(2**WORD_OFFSET_W)*DATA_W-1:0]                                 line_rdata;
+   wire [NWAYS*(2**WORD_OFFSET_W)*DATA_W-1:0] 					 line_rdata;
    wire [NWAYS*TAG_W-1:0]                                                        line_tag;
    reg [NWAYS*(2**NLINES_W)-1:0]                                                 v_reg;
    reg [NWAYS-1:0]                                                               v;
@@ -324,8 +324,9 @@ module iob_cache_memory
             assign way_hit[k] = (tag == line_tag[TAG_W*k +: TAG_W]) & v[k];
          end
          // Read Data Multiplexer
-         assign rdata [DATA_W-1:0] = line_rdata >> DATA_W*(offset + (2**WORD_OFFSET_W)*way_hit_bin);
-
+	 wire [NWAYS*(2**WORD_OFFSET_W)*DATA_W-1:0] line_rdata_tmp = line_rdata >> (DATA_W*(offset + (2**WORD_OFFSET_W)*way_hit_bin));
+         assign rdata [DATA_W-1:0] = line_rdata_tmp[DATA_W-1:0];
+	 
          // replacement-policy module
          iob_cache_replacement_policy
            #(
