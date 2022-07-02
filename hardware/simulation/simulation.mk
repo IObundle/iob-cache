@@ -15,6 +15,14 @@ INCLUDE+=$(incdir)$(CACHE_TB_DIR)
 #headers
 VHDR+=$(CACHE_TB_DIR)/iob-cache_tb.vh
 
+VHDR+=s_axi_portmap.vh
+s_axi_portmap.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_portmap 's_' 's_' 'm_'
+
+VHDR+=m_axi_wire.vh
+m_axi_wire.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_wire 'm_' 'm_'
+
 #sources
 #testbench
 VSRC+=$(TB)
@@ -36,7 +44,7 @@ clean-testlog:
 	@rm -f test.log
 
 clean-all: clean-testlog clean
-	@rm -rf *.vcd
+	@rm -rf *.vcd *.vh
 
 .PHONY: waves \
 	test test1 \

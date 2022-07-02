@@ -33,6 +33,17 @@ module write_channel_axi
     input                                                                    reset
     );
 
+   reg                                                                       m_axi_awvalid_int;
+   reg                                                                       m_axi_wvalid_int;
+   reg                                                                       m_axi_bready_int;
+
+   assign m_axi_awvalid = m_axi_awvalid_int;
+   assign m_axi_wvalid = m_axi_wvalid_int;
+   assign m_axi_bready = m_axi_bready_int;
+           
+
+
+   
    genvar                                                                       i;
    generate
       if(WRITE_POL == `WRITE_THROUGH) begin
@@ -45,8 +56,7 @@ module write_channel_axi
          assign m_axi_awlock  = 1'b0; // 00 - Normal Access
          assign m_axi_awcache = 4'b0011;
          assign m_axi_awprot  = 3'd0;
-         assign m_axi_awqos   = 4'd0;
-         assign m_axi_wlast   = m_axi_wvalid;
+         assign m_axi_wlast   = m_axi_wvalid_int;
 
          //AXI Buffer Output signals
          assign m_axi_awaddr = {BE_ADDR_W{1'b0}} + {addr[FE_ADDR_W-1:BE_BYTE_W], {BE_BYTE_W{1'b0}}};
@@ -126,20 +136,20 @@ module write_channel_axi
          always @*
            begin
               ready       = 1'b0;
-              m_axi_awvalid = 1'b0;
-              m_axi_wvalid  = 1'b0;
-              m_axi_bready  = 1'b0;
+              m_axi_awvalid_int = 1'b0;
+              m_axi_wvalid_int  = 1'b0;
+              m_axi_bready_int  = 1'b0;
               case(state)
                 idle:
                   ready = 1'b1;
                 address:
-                  m_axi_awvalid = 1'b1;
+                  m_axi_awvalid_int = 1'b1;
                 write:
-                  m_axi_wvalid  = 1'b1;
+                  m_axi_wvalid_int  = 1'b1;
                 //verif:
                 default:
                   begin
-                     m_axi_bready = 1'b1;
+                     m_axi_bready_int = 1'b1;
                      ready      = m_axi_bvalid & ~(|m_axi_bresp);
                   end
               endcase
@@ -156,7 +166,6 @@ module write_channel_axi
             assign m_axi_awlock  = 1'b0;
             assign m_axi_awcache = 4'b0011;
             assign m_axi_awprot  = 3'd0;
-            assign m_axi_awqos   = 4'd0;
 
             //Burst parameters
             assign m_axi_awlen   = 2**LINE2MEM_W -1; //will choose the burst lenght depending on the cache's and slave's data width
@@ -233,24 +242,24 @@ module write_channel_axi
             always @*
               begin
                  ready       = 1'b0;
-                 m_axi_awvalid = 1'b0;
-                 m_axi_wvalid  = 1'b0;
-                 m_axi_bready  = 1'b0;
+                 m_axi_awvalid_int = 1'b0;
+                 m_axi_wvalid_int  = 1'b0;
+                 m_axi_bready_int  = 1'b0;
 
                  case(state)
                    idle:
                      ready = ~valid;
 
                    address:
-                     m_axi_awvalid = 1'b1;
+                     m_axi_awvalid_int = 1'b1;
 
                    write:
-                     m_axi_wvalid  = 1'b1;
+                     m_axi_wvalid_int  = 1'b1;
 
                    //verif:
                    default:
                      begin
-                        m_axi_bready = 1'b1;
+                        m_axi_bready_int = 1'b1;
                         ready      = m_axi_bvalid & ~(|m_axi_bresp);
                      end
                  endcase
@@ -264,7 +273,6 @@ module write_channel_axi
             assign m_axi_awlock  = 1'b0;
             assign m_axi_awcache = 4'b0011;
             assign m_axi_awprot  = 3'd0;
-            assign m_axi_awqos   = 4'd0;
 
             //Burst parameters - single
             assign m_axi_awlen   = 8'd0; //A single burst of Memory data width word
@@ -328,24 +336,24 @@ module write_channel_axi
             always @*
               begin
                  ready       = 1'b0;
-                 m_axi_awvalid = 1'b0;
-                 m_axi_wvalid  = 1'b0;
-                 m_axi_bready  = 1'b0;
+                 m_axi_awvalid_int = 1'b0;
+                 m_axi_wvalid_int  = 1'b0;
+                 m_axi_bready_int  = 1'b0;
 
                  case(state)
                    idle:
                      ready = ~valid;
 
                    address:
-                     m_axi_awvalid = 1'b1;
+                     m_axi_awvalid_int = 1'b1;
 
                    write:
-                        m_axi_wvalid  = 1'b1;
+                        m_axi_wvalid_int  = 1'b1;
 
                    //verif:
                    default:
                      begin
-                        m_axi_bready = 1'b1;
+                        m_axi_bready_int = 1'b1;
                         ready      = m_axi_bvalid & ~(|m_axi_bresp);
                      end
                  endcase

@@ -34,6 +34,13 @@ module read_channel_axi
     input                                        reset
     );
 
+
+   reg                                           m_axi_arvalid_int;
+   reg                                           m_axi_rready_int;
+
+   assign m_axi_arvalid = m_axi_arvalid_int;
+   assign m_axi_rready = m_axi_rready_int;
+           
    generate
       if(LINE2MEM_W > 0)
         begin
@@ -43,7 +50,6 @@ module read_channel_axi
            assign m_axi_arlock  = 1'b0;
            assign m_axi_arcache = 4'b0011;
            assign m_axi_arprot  = 3'd0;
-           assign m_axi_arqos   = 4'd0;
            //Burst parameters
            assign m_axi_arlen   = 2**LINE2MEM_W -1; //will choose the burst lenght depending on the cache's and slave's data width
            assign m_axi_arsize  = BE_BYTE_W; //each word will be the width of the memory for maximum bandwidth
@@ -124,20 +130,20 @@ module read_channel_axi
                          end
 
                        //end_process://delay for the read_latency of the memories (if the rdata is the last word)
-                       default:
-                         if (slave_error)
-                           state <= init_process;
-                         else
-                           state <= idle;
+                                     default:
+                                       if (slave_error)
+                                         state <= init_process;
+                                       else
+                                         state <= idle;
                        
                      endcase
                   end
              end
-           
+
            always @*
              begin
                 m_axi_arvalid   = 1'b0;
-                m_axi_rready    = 1'b0;
+                m_axi_rready_int    = 1'b0;
                 replace = 1'b1;
                 case(state)
 
@@ -145,11 +151,11 @@ module read_channel_axi
                     replace = 1'b0;
                   
                   init_process:
-                    m_axi_arvalid = 1'b1;
+                    m_axi_arvalid_int = 1'b1;
 
                   //load_process:
                   default:
-                    m_axi_rready  = 1'b1;
+                    m_axi_rready_int  = 1'b1;
                   
                 endcase
              end // always @ *
@@ -164,7 +170,6 @@ module read_channel_axi
            assign m_axi_arlock  = 1'b0;
            assign m_axi_arcache = 4'b0011;
            assign m_axi_arprot  = 3'd0;
-           assign m_axi_arqos   = 4'd0;
            //Burst parameters - single 
            assign m_axi_arlen   = 8'd0; //A single burst of Memory data width word
            assign m_axi_arsize  = BE_BYTE_W; //each word will be the width of the memory for maximum bandwidth
@@ -233,8 +238,8 @@ module read_channel_axi
            
            always @*
              begin
-                m_axi_arvalid   = 1'b0;
-                m_axi_rready    = 1'b0;
+                m_axi_arvalid_int   = 1'b0;
+                m_axi_rready_int    = 1'b0;
                 replace = 1'b1;
                 case(state)
 
@@ -245,12 +250,12 @@ module read_channel_axi
                   
                   init_process:
                     begin
-                       m_axi_arvalid = 1'b1;
+                       m_axi_arvalid_int = 1'b1;
                     end
 
                   load_process:
                     begin
-                       m_axi_rready  = 1'b1;             
+                       m_axi_rready_int  = 1'b1;             
                     end
                   
                   default:;

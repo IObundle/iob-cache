@@ -5,8 +5,9 @@
 module iob_cache_tb;
 
    parameter cc = 2; //clock-cycle
-
-   parameter AXI_ID_W = 1;
+   parameter AXI_ID_W = 4;
+   parameter AXI_ADDR_W=`MEM_ADDR_W;
+   parameter AXI_DATA_W=`MEM_DATA_W;
    
    reg clk = 1;
    always #1 clk = ~clk;
@@ -23,10 +24,8 @@ module iob_cache_tb;
    reg [31:0]                          test = 0;
    reg                                 pipe_en = 0;
    
-
    integer                             i,j;
 
-   
    initial 
      begin
         
@@ -172,43 +171,7 @@ module iob_cache_tb;
    
 `ifdef AXI
    //AXI connections
-   wire 			   axi_awvalid;
-   wire 			   axi_awready;
-   wire [AXI_ID_W-1:0] axi_awid;
-   wire [`MEM_ADDR_W-1:0]          axi_awaddr;
-   wire [2:0]                      axi_awprot;
-   wire [3:0]                      axi_awqos;
-   wire 			   axi_wvalid;
-   wire 			   axi_wready;
-   wire [`MEM_DATA_W-1:0]          axi_wdata;
-   wire [`MEM_N_BYTES-1:0]         axi_wstrb;
-   wire                            axi_wlast;
-   wire 			   axi_bvalid;
-   wire 			   axi_bready;
-   wire 			   axi_arvalid;
-   wire 			   axi_arready;
-   wire [AXI_ID_W-1:0] axi_arid;
-   wire [`MEM_ADDR_W-1:0]          axi_araddr;
-   wire [2:0]                      axi_arprot;
-   wire [3:0]                      axi_arqos;
-   wire [AXI_ID_W-1:0]             axi_rid;
-   wire 			   axi_rvalid;
-   wire 			   axi_rready;
-   wire [`MEM_DATA_W-1:0]          axi_rdata;
-   wire [1:0]                      axi_rresp;
-   wire                            axi_rlast;
-   wire [AXI_ID_W-1:0]             axi_bid;
-   wire [1:0]                      axi_bresp;
-   wire [7:0]                      axi_arlen;
-   wire [2:0]                      axi_arsize;
-   wire [1:0]                      axi_arburst;
-   wire                            axi_arlock;
-   wire [3:0]                      axi_arcache;
-   wire [7:0]                      axi_awlen;
-   wire [2:0]                      axi_awsize;
-   wire [1:0]                      axi_awburst;
-   wire                            axi_awlock;
-   wire [3:0]                      axi_awcache;
+ `include "m_axi_wire.vh"   
 `else
    //Native connections
    wire [`MEM_ADDR_W-1:0]          mem_addr;
@@ -216,12 +179,8 @@ module iob_cache_tb;
    wire [`MEM_N_BYTES-1:0]         mem_wstrb;
    wire                            mem_valid;
    reg                             mem_ready;
-   
 `endif  
    
-   ///////////////////////////////////////////////
-   // CPU-pipeline
-   //////////////////////////////////////////////
    reg                             cpu_state;
 
    reg [`ADDR_W-1  :$clog2(`DATA_W/8)] cpu_addr;
@@ -256,9 +215,7 @@ module iob_cache_tb;
            end
          default:;
 
-       endcase // case (cpu_state)
-
-
+       endcase
 
    always @(posedge clk)
      begin
@@ -302,131 +259,93 @@ module iob_cache_tb;
           default:;
         endcase // case (cpu_state)
      end
-   
-   /////////////////////////////////////////////
-   /////////////////////////////////////////////
-
 
    
-   
-
 `ifdef AXI  
-   iob_cache_axi #(
-                   .AXI_ID_W(AXI_ID_W),
-                   .FE_ADDR_W(`ADDR_W),
-                   .FE_DATA_W(`DATA_W),
-                   .N_WAYS(`N_WAYS),
-                   .LINE_OFF_W(`LINE_OFF_W),
-                   .WORD_OFF_W(`WORD_OFF_W),
-                   .BE_ADDR_W(`MEM_ADDR_W),
-                   .BE_DATA_W(`MEM_DATA_W),
-                   .REP_POLICY(`REP_POLICY),
-                   .CTRL_CACHE(1),
-                   .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
-                   .WRITE_POL(`WRITE_POL)
-                   )
-   cache (
-	  .clk (clk),
-	  .reset (reset),
-	  .wdata (cpu_wdata),
-	  .addr  ({ctrl,cpu_addr}),
-	  .wstrb (cpu_wstrb),
-	  .rdata (rdata),
-	  .valid (cpu_valid),
-	  .ready (ready),
-          //CTRL_IO
-          .force_inv_in(1'b0),
-          .force_inv_out(),
-          .wtb_empty_in(1'b1),
-          .wtb_empty_out(),
-          //
-	  // AXI INTERFACE
-          //
-          //address write
-          .axi_awid(axi_awid), 
-          .axi_awaddr(axi_awaddr), 
-          .axi_awlen(axi_awlen), 
-          .axi_awsize(axi_awsize), 
-          .axi_awburst(axi_awburst), 
-          .axi_awlock(axi_awlock), 
-          .axi_awcache(axi_awcache), 
-          .axi_awprot(axi_awprot),
-          .axi_awqos(axi_awqos), 
-          .axi_awvalid(axi_awvalid), 
-          .axi_awready(axi_awready), 
-          //write
-          .axi_wdata(axi_wdata), 
-          .axi_wstrb(axi_wstrb), 
-          .axi_wlast(axi_wlast), 
-          .axi_wvalid(axi_wvalid), 
-          .axi_wready(axi_wready), 
-          //write response
-          .axi_bresp(axi_bresp), 
-          .axi_bvalid(axi_bvalid), 
-          .axi_bready(axi_bready), 
-          //address read
-          .axi_arid(axi_arid), 
-          .axi_araddr(axi_araddr), 
-          .axi_arlen(axi_arlen), 
-          .axi_arsize(axi_arsize), 
-          .axi_arburst(axi_arburst), 
-          .axi_arlock(axi_arlock), 
-          .axi_arcache(axi_arcache), 
-          .axi_arprot(axi_arprot), 
-          .axi_arqos(axi_arqos), 
-          .axi_arvalid(axi_arvalid), 
-          .axi_arready(axi_arready), 
-          //read 
-          .axi_rdata(axi_rdata), 
-          .axi_rresp(axi_rresp), 
-          .axi_rlast(axi_rlast), 
-          .axi_rvalid(axi_rvalid),  
-          .axi_rready(axi_rready)
-	  );
+   iob_cache_axi 
+     #(
+       .AXI_ID_W(4),
+       .AXI_ADDR_W(`MEM_ADDR_W),
+       .AXI_DATA_W(`MEM_DATA_W),
+       .FE_ADDR_W(`ADDR_W),
+       .FE_DATA_W(`DATA_W),
+       .N_WAYS(`N_WAYS),
+       .LINE_OFF_W(`LINE_OFF_W),
+       .WORD_OFF_W(`WORD_OFF_W),
+       .BE_ADDR_W(`MEM_ADDR_W),
+       .BE_DATA_W(`MEM_DATA_W),
+       .REP_POLICY(`REP_POLICY),
+       .CTRL_CACHE(1),
+       .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+       .WRITE_POL(`WRITE_POL)
+       )
+   cache 
+     (
+      .valid (cpu_valid),
+      .addr  ({ctrl,cpu_addr}),
+      .wstrb (cpu_wstrb),
+      .wdata (cpu_wdata),
+      .rdata (rdata),
+      .ready (ready),
+
+      .force_inv_in(1'b0),
+      .force_inv_out(),
+      .wtb_empty_in(1'b1),
+      .wtb_empty_out(),
+      
+ `include "m_axi_portmap.vh"
+      .clk (clk),
+      .reset (reset)      
+      );
 
    
-`else // !`ifdef AXI
+`else
    
-   iob_cache #(
-               .FE_ADDR_W(`ADDR_W),
-               .FE_DATA_W(`DATA_W),
-               .N_WAYS(`N_WAYS),
-               .LINE_OFF_W(`LINE_OFF_W),
-               .WORD_OFF_W(`WORD_OFF_W),
-               .BE_ADDR_W(`MEM_ADDR_W),
-               .BE_DATA_W(`MEM_DATA_W),
-               .REP_POLICY(`REP_POLICY),
-               .CTRL_CACHE(1),
-               .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
-               .WRITE_POL (`WRITE_POL)
-               )
-   cache (
-	  .clk (clk),
-	  .reset (reset),
-	  .wdata (cpu_wdata),
-	  .addr  ({ctrl,cpu_addr}),
-	  .wstrb (cpu_wstrb),
-	  .rdata (rdata),
-	  .valid (cpu_valid),
-	  .ready (ready),
-          //CTRL_IO
-          .force_inv_in(1'b0),
-          .force_inv_out(),
-          .wtb_empty_in(1'b1),
-          .wtb_empty_out(),
-          //
-          // NATIVE MEMORY INTERFACE
-          //
-          .mem_addr(mem_addr),
-          .mem_wdata(mem_wdata),
-          .mem_wstrb(mem_wstrb),
-          .mem_rdata(mem_rdata),
-          .mem_valid(mem_valid),
-          .mem_ready(mem_ready)
-	  );
-
+   iob_cache 
+     #(
+       .FE_ADDR_W(`ADDR_W),
+       .FE_DATA_W(`DATA_W),
+       .N_WAYS(`N_WAYS),
+       .LINE_OFF_W(`LINE_OFF_W),
+       .WORD_OFF_W(`WORD_OFF_W),
+       .BE_ADDR_W(`MEM_ADDR_W),
+       .BE_DATA_W(`MEM_DATA_W),
+       .REP_POLICY(`REP_POLICY),
+       .CTRL_CACHE(1),
+       .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
+       .WRITE_POL (`WRITE_POL),
+       .AXI_ID_W (4),
+       .AXI_ADDR_W (`ADDR_W),
+       .AXI_DATA_W (`DATA_W),
+       )
+   cache 
+     (
+      .clk (clk),
+      .reset (reset),
+      .wdata (cpu_wdata),
+      .addr  ({ctrl,cpu_addr}),
+      .wstrb (cpu_wstrb),
+      .rdata (rdata),
+      .valid (cpu_valid),
+      .ready (ready),
+      //CTRL_IO
+      .force_inv_in(1'b0),
+      .force_inv_out(),
+      .wtb_empty_in(1'b1),
+      .wtb_empty_out(),
+      //
+      // NATIVE MEMORY INTERFACE
+      //
+      .mem_addr(mem_addr),
+      .mem_wdata(mem_wdata),
+      .mem_wstrb(mem_wstrb),
+      .mem_rdata(mem_rdata),
+      .mem_valid(mem_valid),
+      .mem_ready(mem_ready)
+      );
    
-`endif // !`ifdef AXI
+   
+`endif
    
    
    
@@ -437,61 +356,20 @@ module iob_cache_tb;
        .DATA_WIDTH (`MEM_DATA_W),
        .ADDR_WIDTH (`MEM_ADDR_W)
        )
-   axi_ram(
-           //address write
-           .clk            (clk),
-           .rst            (reset),
-	   .s_axi_awid     (axi_awid),
-	   .s_axi_awaddr   (axi_awaddr),
-           .s_axi_awlen    (axi_awlen),
-           .s_axi_awsize   (axi_awsize),
-           .s_axi_awburst  (axi_awburst),
-           .s_axi_awlock   (axi_awlock),
-	   .s_axi_awprot   (axi_awprot),
-	   .s_axi_awcache  (axi_awcache),
-     	   .s_axi_awvalid  (axi_awvalid),
-	   .s_axi_awready  (axi_awready),
-      
-	   //write  
-	   .s_axi_wvalid   (axi_wvalid),
-	   .s_axi_wready   (axi_wready),
-	   .s_axi_wdata    (axi_wdata),
-	   .s_axi_wstrb    (axi_wstrb),
-           .s_axi_wlast    (axi_wlast),
-      
-	   //write response
-	   .s_axi_bready   (axi_bready),
-           .s_axi_bid      (axi_bid),
-           .s_axi_bresp    (axi_bresp),
-	   .s_axi_bvalid   (axi_bvalid),
-      
-	   //address read
-	   .s_axi_arid     (axi_arid),
-	   .s_axi_araddr   (axi_araddr),
-	   .s_axi_arlen    (axi_arlen), 
-	   .s_axi_arsize   (axi_arsize),    
-           .s_axi_arburst  (axi_arburst),
-           .s_axi_arlock   (axi_arlock),
-           .s_axi_arcache  (axi_arcache),
-           .s_axi_arprot   (axi_arprot),
-	   .s_axi_arvalid  (axi_arvalid),
-	   .s_axi_arready  (axi_arready),
-      
-	   //read   
-	   .s_axi_rready   (axi_rready),
-	   .s_axi_rid      (axi_rid),
-	   .s_axi_rdata    (axi_rdata),
-	   .s_axi_rresp    (axi_rresp),
-           .s_axi_rlast    (axi_rlast),
-	   .s_axi_rvalid   (axi_rvalid)
-           ); 
+   axi_ram
+     (
+ `include "s_axi_portmap.vh"
+      .clk            (clk),
+      .rst            (reset)
+      ); 
 
 `else
 
-   iob_sp_ram_be #(
-	           .NUM_COL(`MEM_N_BYTES),
-                   .COL_W(8),
-                   .ADDR_W(`MEM_ADDR_W-2)
+   iob_sp_ram_be 
+     #(
+       .NUM_COL(`MEM_N_BYTES),
+       .COL_W(8),
+       .ADDR_W(`MEM_ADDR_W-2)
                    )
    native_ram
      (

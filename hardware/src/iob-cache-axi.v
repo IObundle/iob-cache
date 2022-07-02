@@ -5,8 +5,8 @@
 module iob_cache_axi 
   #(
     //memory cache's parameters
-    parameter FE_ADDR_W   = 32,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
-    parameter FE_DATA_W   = 32,       //Data width - word size used for the cache
+    parameter FE_ADDR_W   = `ADDR_W,       //Address width - width of the Master's entire access address (including the LSBs that are discarded, but discarding the Controller's)
+    parameter FE_DATA_W   = `DATA_W,       //Data width - word size used for the cache
     parameter N_WAYS   = 2,        //Number of Cache Ways (Needs to be Potency of 2: 1, 2, 4, 8, ..)
     parameter LINE_OFF_W  = 7,     //Line-Offset Width - 2**NLINE_W total cache lines
     parameter WORD_OFF_W = 3,      //Word-Offset Width - 2**OFFSET_W total FE_DATA_W words per line - WARNING about LINE2MEM_DATA_RATIO_W (can cause word_counter [-1:0]
