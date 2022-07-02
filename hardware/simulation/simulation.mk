@@ -15,10 +15,12 @@ INCLUDE+=$(incdir)$(CACHE_TB_DIR)
 #headers
 VHDR+=$(CACHE_TB_DIR)/iob-cache_tb.vh
 
+#axi portmap for axi ram
 VHDR+=s_axi_portmap.vh
 s_axi_portmap.vh:
 	$(LIB_DIR)/software/python/axi_gen.py axi_portmap 's_' 's_' 'm_'
 
+#axi wires to connect cache to axi ram in testbench
 VHDR+=m_axi_wire.vh
 m_axi_wire.vh:
 	$(LIB_DIR)/software/python/axi_gen.py axi_wire 'm_' 'm_'

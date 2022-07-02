@@ -142,7 +142,7 @@ module read_channel_axi
 
            always @*
              begin
-                m_axi_arvalid   = 1'b0;
+                m_axi_arvalid_int   = 1'b0;
                 m_axi_rready_int    = 1'b0;
                 replace = 1'b1;
                 case(state)
