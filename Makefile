@@ -45,6 +45,10 @@ fpga-clean:
 fpga-clean-all:
 	$(foreach s, $(FPGA_FAMILY_LIST), make fpga-clean FPGA_FAMILY=$s;)
 
+fpga-debug:
+	make -C $(FPGA_DIR) debug
+
+
 
 #
 # DOCUMENT

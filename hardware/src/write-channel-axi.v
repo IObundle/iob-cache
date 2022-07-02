@@ -11,12 +11,12 @@ module write_channel_axi
     parameter BE_DATA_W = FE_DATA_W,
     parameter BE_NBYTES = BE_DATA_W/8,
     parameter BE_BYTE_W = $clog2(BE_NBYTES),
-    parameter AXI_ADDR_W            = `ADDR_W,
-    parameter AXI_DATA_W            = `DATA_W,
+    parameter AXI_ADDR_W = BE_ADDR_W,
+    parameter AXI_DATA_W = BE_DATA_W,
     parameter AXI_ID_W  = 1,
     parameter [AXI_ID_W-1:0] AXI_ID = 0,
     // Write-Policy
-    parameter WRITE_POL  = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
+    parameter WRITE_POL = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
     parameter WORD_OFF_W = 3, //required for write-back
     parameter LINE2MEM_W = WORD_OFF_W-$clog2(BE_DATA_W/FE_DATA_W)  //burst offset based on the cache and memory word size
     )

@@ -32,8 +32,8 @@ test1: clean
 clean-testlog:
 	@rm -f test.log
 
-clean:
-	find . -type f -not \( -name 'Makefile' -o -name 'test.expected' -o -name 'test.log' \) -delete
+clean: local-clean
+	find . -type f -not \( -name 'Makefile' -o -name 'test.expected' \) -delete
 ifneq ($(FPGA_SERVER),)
 	ssh $(FPGA_USER)@$(FPGA_SERVER) "if [ ! -d $(REMOTE_ROOT_DIR) ]; then mkdir -p $(REMOTE_ROOT_DIR); fi"
 	rsync -avz --delete --exclude .git $(CACHE_DIR) $(FPGA_USER)@$(FPGA_SERVER):$(REMOTE_ROOT_DIR)
@@ -42,6 +42,9 @@ endif
 
 clean-all: clean-testlog clean
 
-.PHONY: build \
-	test test1 \
-	clean-testlog clean clean-all
+debug:
+	@echo $(TOP_MODULE)
+	@echo $(VHDR)
+	@echo $(VSRC)
+
+.PHONY: build test test1 clean-testlog clean clean-all debug local-clean port-build

@@ -22,8 +22,8 @@ module back_end_axi
     // Write-Policy
     parameter WRITE_POL = `WRITE_THROUGH, //write policy: write-through (0), write-back (1)
     //AXI specific parameters
-    parameter AXI_ADDR_W            = `ADDR_W,
-    parameter AXI_DATA_W            = `DATA_W,
+    parameter AXI_ADDR_W            = BE_ADDR_W,
+    parameter AXI_DATA_W            = BE_DATA_W,
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
     parameter [AXI_ID_W-1:0] AXI_ID = 0  //AXI ID value
     ) 
