@@ -9,7 +9,6 @@ module iob_cache_read_channel_axi
     parameter BE_ADDR_W = `BE_ADDR_W,
     parameter BE_DATA_W = `BE_DATA_W,
     parameter WORD_OFFSET_W = `WORD_OFFSET_W
-
     )
    (
     input                                    clk,
@@ -42,6 +41,10 @@ module iob_cache_read_channel_axi
     output reg                               axi_rready
     );
 
+   localparam [31:0] ARLEN  = 2**`LINE2BE_W - 1'b1;  
+   localparam [31:0] ARSIZE = `BE_NBYTES_W;
+   
+  
    generate
       if (`LINE2BE_W > 0) begin
          // Constant AXI signals
@@ -52,8 +55,8 @@ module iob_cache_read_channel_axi
          assign axi_arqos   = 4'd0;
 
          // Burst parameters
-         assign axi_arlen   = 2**`LINE2BE_W - 1; // will choose the burst lenght depending on the cache's and slave's data width
-         assign axi_arsize  = `BE_NBYTES_W;      // each word will be the width of the memory for maximum bandwidth
+	 assign axi_arlen   = ARLEN[7:0]; // will choose the burst lenght depending on the cache's and slave's data width
+	 assign axi_arsize  = ARSIZE[2:0];  // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst = 2'b01;            // incremental burst
          assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(`LINE2BE_W+`BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
@@ -103,7 +106,7 @@ module iob_cache_read_channel_axi
                          if (axi_rresp != 2'b00) // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                            slave_error <= 1;
                       end else begin
-                         read_addr <= read_addr +1;
+                         read_addr <= read_addr + 1'b1;
                          state <= load_process;
                          if (axi_rresp != 2'b00) // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                            slave_error <= 1;
