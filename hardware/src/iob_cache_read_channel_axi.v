@@ -41,6 +41,10 @@ module iob_cache_read_channel_axi
     output reg                               axi_rready
     );
 
+   localparam [31:0] ARLEN  = 2**`LINE2BE_W - 1'b1;  
+   localparam [31:0] ARSIZE = `BE_NBYTES_W;
+   
+  
    generate
       if (`LINE2BE_W > 0) begin
          // Constant AXI signals
@@ -51,13 +55,8 @@ module iob_cache_read_channel_axi
          assign axi_arqos   = 4'd0;
 
          // Burst parameters
-         wire[31:0] axi_arlen_t;
-	 assign axi_arlen_t = 2**`LINE2BE_W - 1'b1;
-	 assign axi_arlen = axi_arlen_t[7:0]; // will choose the burst lenght depending on the cache's and slave's data width
-         wire [31:0] axi_arsize_t;
-	 assign axi_arsize_t = `BE_NBYTES_W;
-	 assign axi_arsize  = axi_arsize_t[2:0];  // each word will be the width of the memory for maximum bandwidth
-
+	 assign axi_arlen   = ARLEN[7:0]; // will choose the burst lenght depending on the cache's and slave's data width
+	 assign axi_arsize  = ARSIZE[2:0];  // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst = 2'b01;            // incremental burst
          assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(`LINE2BE_W+`BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 

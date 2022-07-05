@@ -45,6 +45,8 @@ module iob_cache_write_channel_axi
     output reg                                                                  axi_bready
     );
 
+   localparam [31:0]  AWSIZE  = `BE_NBYTES_W;
+   
    genvar                                                                       i;
    generate
       if (WRITE_POL == `WRITE_THROUGH) begin
@@ -52,10 +54,7 @@ module iob_cache_write_channel_axi
          assign axi_awid    = `AXI_ID;
          assign axi_awlen   = 8'd0;
 
-	 wire[31:0]  axi_awsize_t;
-	 assign axi_awsize_t  = `BE_NBYTES_W; // verify - Writes data of the size of BE_DATA_W
-	 assign axi_awsize  = axi_awsize_t[2:0];
-	 
+	 assign axi_awsize  = AWSIZE[2:0];    // verify - Writes data of the size of BE_DATA_W	 
 	 assign axi_awburst = 2'd0;
          assign axi_awlock  = 1'b0; // 00 - Normal Access
          assign axi_awcache = 4'b0011;
