@@ -20,7 +20,7 @@ module iob_cache_onehot_to_bin
    always @ (onehot) begin: onehot_to_binary_encoder
       bin_cnt = 0;
       for (i=1; i < 2**BIN_W; i=i+1)
-        if (onehot[i]) bin_cnt = bin_cnt | i;
+        if (onehot[i]) bin_cnt = bin_cnt | i[BIN_W-1:0];
       bin = bin_cnt;
    end
 
