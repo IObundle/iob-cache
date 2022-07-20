@@ -32,7 +32,7 @@ module iob_cache_control
       if (USE_CTRL_CNT) begin
          reg [DATA_W-1:0]             read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
          wire [DATA_W-1:0]            hit_cnt, miss_cnt;
-         reg                             counter_reset;
+         reg                             reset_counters;
 
          assign hit_cnt  = read_hit_cnt  + write_hit_cnt;
          assign miss_cnt = read_miss_cnt + write_miss_cnt;
@@ -44,7 +44,7 @@ module iob_cache_control
                write_hit_cnt  <= {DATA_W{1'b0}};
                write_miss_cnt <= {DATA_W{1'b0}};
             end else begin
-               if (counter_reset) begin
+               if (reset_counters) begin
                   read_hit_cnt   <= {DATA_W{1'b0}};
                   read_miss_cnt  <= {DATA_W{1'b0}};
                   write_hit_cnt  <= {DATA_W{1'b0}};
@@ -70,31 +70,31 @@ module iob_cache_control
          always @(posedge clk) begin
             rdata <= {DATA_W{1'b0}};
             invalidate <= 1'b0;
-            counter_reset <= 1'b0;
+            reset_counters <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
 
             if (valid)
-              if (addr == `ADDR_CACHE_HIT)
+              if (addr == `ADDR_RW_HIT)
                 rdata <= hit_cnt;
-              else if (addr == `ADDR_CACHE_MISS)
+              else if (addr == `ADDR_RW_MISS)
                 rdata <= miss_cnt;
-              else if (addr == `ADDR_CACHE_READ_HIT)
+              else if (addr == `ADDR_READ_HIT)
                 rdata <= read_hit_cnt;
-              else if (addr == `ADDR_CACHE_READ_MISS)
+              else if (addr == `ADDR_READ_MISS)
                 rdata <= read_miss_cnt;
-              else if (addr == `ADDR_CACHE_WRITE_HIT)
+              else if (addr == `ADDR_WRITE_HIT)
                 rdata <= write_hit_cnt;
-              else if (addr == `ADDR_CACHE_WRITE_MISS)
+              else if (addr == `ADDR_WRITE_MISS)
                 rdata <= write_miss_cnt;
-              else if (addr == `ADDR_RESET_COUNTER)
-                counter_reset <= 1'b1;
-              else if (addr == `ADDR_CACHE_INVALIDATE)
+              else if (addr == `ADDR_RST_CNTRS)   
+                reset_counters <= 1'b1;
+              else if (addr == `ADDR_INVALIDATE)
                 invalidate <= 1'b1;
-              else if (addr == `ADDR_BUFFER_EMPTY)
+              else if (addr == `ADDR_WTB_EMPTY)
                 rdata <= wtbuf_empty;
-              else if (addr == `ADDR_BUFFER_FULL)
+              else if (addr == `ADDR_WTB_FULL)
                 rdata <= wtbuf_full;
-              else if (addr == `ADDR_CACHE_VERSION)
+              else if (addr == `ADDR_VERSION)
 		rdata <= `VERSION;
          end
       end else begin
@@ -103,11 +103,11 @@ module iob_cache_control
             invalidate <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
             if (valid)
-              if (addr == `ADDR_CACHE_INVALIDATE)
+              if (addr == `ADDR_INVALIDATE)
                 invalidate <= 1'b1;
-              else if (addr == `ADDR_BUFFER_EMPTY)
+              else if (addr == `ADDR_WTB_EMPTY)
                 rdata <= wtbuf_empty;
-              else if (addr == `ADDR_BUFFER_FULL)
+              else if (addr == `ADDR_WTB_FULL)
                 rdata <= wtbuf_full;
          end
       end
