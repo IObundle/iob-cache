@@ -1,5 +1,3 @@
-include $(CACHE_DIR)/config.mk
-
 MODULES+=CACHE
 
 #SUBMODULES
@@ -7,12 +5,17 @@ ifneq (LIB,$(filter LIB, $(MODULES)))
 include $(LIB_DIR)/software/software.mk
 endif
 
-#INCLUDE
-INCLUDE+=-I$(CACHE_DIR)/software
-
 #HEADERS
-HDR+=$(CACHE_SW_DIR)/iob-cache.h
+HDR+=iob_cache_swreg.h
 
 #SOURCES
-SRC+=$(CACHE_SW_DIR)/iob-cache.c
+SRC+=iob_cache_swreg_emb.c
+
+ifneq $($(MKREGS),)
+	MKREGS:=$(shell find $(LIB_DIR) -name mkregs.py)
+endif
+
+iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
+	$(MKREGS) iob_cache $(CACHE_DIR) SW
+
 

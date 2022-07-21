@@ -37,6 +37,14 @@ VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh:
 	$(AXI_GEN) axi_portmap iob_cache_ && mv iob_cache_axi_portmap.vh $(BUILD_VSRC_DIR)
 
+#cache software accessible register defines
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh
+$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh: iob_cache_swreg_def.vh
+	cp $< $@
+
+iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
+	$(MKREGS) iob_cache $(CACHE_DIR) HW
+
 #SOURCES
 VSRC1=$(wildcard $(CACHE_DIR)/hardware/src/*.v)
 VSRC2=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(VSRC1))
