@@ -43,9 +43,9 @@ module iob_cache_iob
     `IOB_OUTPUT(invalidate_out,1), //This output is asserted high whenever the cache is invalidated.
     `IOB_INPUT(wtb_empty_in,1), //This input may be driven the next-level cache, when its write-through buffer is empty. It should be tied to high if there no next-level cache.
     `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and the {\tt wtb_empty_in} signal is high.
+    
     //General Interface Signals
-    `IOB_INPUT(clk,          1), //System clock input
-    `IOB_INPUT(rst,          1)  //System reset, asynchronous and active high
+    `include "iob_gen_if.vh"
     );
 
    //BLOCK Front-end & Front-end interface.
