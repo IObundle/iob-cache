@@ -8,6 +8,7 @@
 
 `include "iob_lib.vh"
 `include "iob_cache.vh"
+`include "iob_cache_swreg_def.vh"
 
 module iob_cache_axi
   #(
@@ -59,7 +60,7 @@ module iob_cache_axi
    wire                                         data_req_reg;
 
    wire                                         ctrl_req, ctrl_ack;
-   wire [`CTRL_ADDR_W-1:0]                      ctrl_addr;
+   wire [`iob_cache_swreg_ADDR_W-1:0]                      ctrl_addr;
    wire [USE_CTRL*(DATA_W-1):0]                 ctrl_rdata;
    wire                                         ctrl_invalidate;
 

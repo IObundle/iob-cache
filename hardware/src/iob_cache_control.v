@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache.vh"
+`include "iob_cache_swreg_def.vh"
 
 /*------------------*/
 /* Cache Control    */
@@ -16,7 +17,7 @@ module iob_cache_control
     input                      clk,
     input                      reset,
     input                      valid,
-    input [`CTRL_ADDR_W-1:0]   addr,
+    input [`iob_cache_swreg_ADDR_W-1:0]   addr,
     input                      wtbuf_full,
     input                      wtbuf_empty,
     input                      write_hit,
@@ -74,28 +75,27 @@ module iob_cache_control
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
 
             if (valid)
-              if (addr == `ADDR_RW_HIT)
+              if (addr == `CACHE_RW_HIT_ADDR)
                 rdata <= hit_cnt;
-              else if (addr == `ADDR_RW_MISS)
+              else if (addr == `CACHE_RW_MISS_ADDR)
                 rdata <= miss_cnt;
-              else if (addr == `ADDR_READ_HIT)
+              else if (addr == `CACHE_READ_HIT_ADDR)
                 rdata <= read_hit_cnt;
-              else if (addr == `ADDR_READ_MISS)
+              else if (addr == `CACHE_READ_MISS_ADDR)
                 rdata <= read_miss_cnt;
-              else if (addr == `ADDR_WRITE_HIT)
+              else if (addr == `CACHE_WRITE_HIT_ADDR)
                 rdata <= write_hit_cnt;
-              else if (addr == `ADDR_WRITE_MISS)
+              else if (addr == `CACHE_WRITE_MISS_ADDR)
                 rdata <= write_miss_cnt;
-              else if (addr == `ADDR_RST_CNTRS)   
+              else if (addr == `CACHE_RST_CNTRS_ADDR)   
                 reset_counters <= 1'b1;
-              else if (addr == `ADDR_INVALIDATE)
+              else if (addr == `CACHE_INVALIDATE_ADDR)
                 invalidate <= 1'b1;
-              else if (addr == `ADDR_WTB_EMPTY)
-                rdata <= wtbuf_empty;
-              else if (addr == `ADDR_WTB_FULL)
-                rdata <= wtbuf_full;
-              else if (addr == `ADDR_VERSION)
-		rdata <= `VERSION;
+              else if (addr == `CACHE_WTB_EMPTY_ADDR)
+              // WTB EMPTY and FULL have same 32 bit address
+                rdata <= {{16'b0}, {{7'b0}, wtbuf_full}, {{7'b0}, wtbuf_empty}};
+              else if (addr == `CACHE_VERSION_ADDR)
+                rdata <= `VERSION;
          end
       end else begin
          always @(posedge clk) begin
@@ -103,11 +103,11 @@ module iob_cache_control
             invalidate <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
             if (valid)
-              if (addr == `ADDR_INVALIDATE)
+              if (addr == `CACHE_INVALIDATE_ADDR)
                 invalidate <= 1'b1;
-              else if (addr == `ADDR_WTB_EMPTY)
+              else if (addr == `CACHE_WTB_EMPTY_ADDR)
                 rdata <= wtbuf_empty;
-              else if (addr == `ADDR_WTB_FULL)
+              else if (addr == `CACHE_WTB_FULL_ADDR)
                 rdata <= wtbuf_full;
          end
       end
