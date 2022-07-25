@@ -75,42 +75,38 @@ module iob_cache_control
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
 
             if (valid)
-              if (addr == `CACHE_RW_HIT_ADDR)
+              if (addr == `IOB_CACHE_RW_HIT_ADDR)
                 rdata <= hit_cnt;
-              else if (addr == `CACHE_RW_MISS_ADDR)
+              else if (addr == `IOB_CACHE_RW_MISS_ADDR)
                 rdata <= miss_cnt;
-              else if (addr == `CACHE_READ_HIT_ADDR)
+              else if (addr == `IOB_CACHE_READ_HIT_ADDR)
                 rdata <= read_hit_cnt;
-              else if (addr == `CACHE_READ_MISS_ADDR)
+              else if (addr == `IOB_CACHE_READ_MISS_ADDR)
                 rdata <= read_miss_cnt;
-              else if (addr == `CACHE_WRITE_HIT_ADDR)
+              else if (addr == `IOB_CACHE_WRITE_HIT_ADDR)
                 rdata <= write_hit_cnt;
-              else if (addr == `CACHE_WRITE_MISS_ADDR)
+              else if (addr == `IOB_CACHE_WRITE_MISS_ADDR)
                 rdata <= write_miss_cnt;
-              else if (addr == `CACHE_RST_CNTRS_ADDR)   
+              else if (addr == `IOB_CACHE_RST_CNTRS_ADDR)   
                 reset_counters <= 1'b1;
-              else if (addr == `CACHE_INVALIDATE_ADDR)
-                invalidate <= 1'b1;
-              else if (addr == `CACHE_WTB_EMPTY_ADDR)
-              // WTB EMPTY and FULL have same 32 bit address
-                rdata <= {{16'b0}, {{7'b0}, wtbuf_full}, {{7'b0}, wtbuf_empty}};
-              else if (addr == `CACHE_VERSION_ADDR)
-                rdata <= `VERSION;
          end
-      end else begin
+      end
+      
          always @(posedge clk) begin
             rdata <= {DATA_W{1'b0}};
             invalidate <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)
             if (valid)
-              if (addr == `CACHE_INVALIDATE_ADDR)
+              if (addr == `IOB_CACHE_INVALIDATE_ADDR)
                 invalidate <= 1'b1;
-              else if (addr == `CACHE_WTB_EMPTY_ADDR)
+              else if (addr == `IOB_CACHE_WTB_EMPTY_ADDR)
                 rdata <= wtbuf_empty;
-              else if (addr == `CACHE_WTB_FULL_ADDR)
+              else if (addr == `IOB_CACHE_WTB_FULL_ADDR)
                 rdata <= wtbuf_full;
+	      else if (addr == `IOB_CACHE_VERSION_ADDR)
+                rdata <= `VERSION;
          end
-      end
+
    endgenerate
 
 endmodule
