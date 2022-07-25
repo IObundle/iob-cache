@@ -10,7 +10,7 @@ module iob_cache_iob
     parameter DATA_W = `DATA_W, //PARAM & 32 & 64 & Front-end data width
     parameter BE_ADDR_W = `BE_ADDR_W, //PARAM & NS  & NS & Back-end address width. This width can be set higher than ADDR_W to match the width of the back-end interface but the address space is still dictated by ADDR_W.
     parameter BE_DATA_W = `BE_DATA_W, //PARAM & 32 & 256 & Back-end data width
-    parameter NWAYS_W = `NWAYS_W, //PARAM & ? 0 3 & Number of ways (log2)
+    parameter NWAYS_W = `NWAYS_W, //PARAM & 0 & 8 & Number of ways (log2)
     parameter NLINES_W = `NLINES_W, //PARAM & NS & NS & Line offset width: 2**NLINES_W is the number of cache lines
     parameter WORD_OFFSET_W = `WORD_OFFSET_W, //PARAM & 0 & NS & Word offset width: 2**OFFSET_W is the number of words per line
     parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2)
