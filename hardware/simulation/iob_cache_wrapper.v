@@ -5,15 +5,15 @@
 
 module iob_cache_wrapper
       (
-       input                              clk,
-       input                              reset,
+       input                               clk,
+       input                               reset,
        
-       input                              req, 
-       input  [`ADDR_W:$clog2(`DATA_W/8)] addr,
-       input  [`DATA_W-1:0]               wdata,
-       input  [`DATA_W/8-1:0]             wstrb,
-       output [`DATA_W-1:0]               rdata,
-       output                             ack      
+       input                               req,
+       input [`ADDR_W-1:$clog2(`DATA_W/8)] addr,
+       input [`DATA_W-1:0]                 wdata,
+       input [`DATA_W/8-1:0]               wstrb,
+       output [`DATA_W-1:0]                rdata,
+       output                              ack
        );	
 
 `ifdef AXI
