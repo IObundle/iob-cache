@@ -258,7 +258,7 @@ module iob_cache_memory
                   .clk (clk),
                   .en  (req),
                   .we ({`NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/DATA_W)+i)*`NBYTES +: `NBYTES]),
-                  .addr((write_access & way_hit[k] & ((j*(BE_DATA_W/DATA_W)+i) == offset))? index_reg : index),
+                  .addr((write_access & way_hit[k] & ((j*(BE_DATA_W/DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
                   .data_in ((replace)? read_rdata[i*DATA_W +: DATA_W] : wdata_reg),
                   .data_out(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
                   );
@@ -315,7 +315,7 @@ module iob_cache_memory
                .clk (clk                         ),
                .en  (req                         ),
                .we  (way_select[k] & replace_req ),
-               .addr(index                       ),
+               .addr(index[NLINES_W-1:0]         ),
                .din (tag                         ),
                .dout(line_tag[TAG_W*k +: TAG_W]  )
                );
@@ -340,7 +340,7 @@ module iob_cache_memory
             .reset     (reset|invalidate),
             .write_en  (ack           ),
             .way_hit   (way_hit         ),
-            .line_addr (index_reg       ),
+            .line_addr (index_reg[NLINES_W-1:0]),
             .way_select(way_select      ),
             .way_select_bin(way_select_bin)
             );
