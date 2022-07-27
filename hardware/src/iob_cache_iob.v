@@ -14,7 +14,7 @@ module iob_cache_iob
     parameter NLINES_W = `NLINES_W, //PARAM & NS & NS & Line offset width: 2**NLINES_W is the number of cache lines
     parameter WORD_OFFSET_W = `WORD_OFFSET_W, //PARAM & 0 & NS & Word offset width: 2**OFFSET_W is the number of words per line
     parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2)
-    parameter REP_POLICY = `PLRU_MRU, //PARAM & 0 & 3 & Line replacement policy. Set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-base Pseudo LRU (PLRU_TREE)
+    parameter REP_POLICY = `REP_POLICY, //PARAM & 0 & 3 & Line replacement policy. Set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-base Pseudo LRU (PLRU_TREE)
     parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back
     parameter USE_CTRL = `USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated and the write through buffer empty status can be read
     parameter USE_CTRL_CNT = `USE_CTRL_CNT //PARAM & 0 & 1 & If USE_CTRL=1 and USE_CTRL_CNT=1 , the cache will include software accessible hit/miss counters
