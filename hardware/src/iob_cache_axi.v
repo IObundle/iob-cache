@@ -49,7 +49,7 @@ module iob_cache_axi
     `IOB_INPUT(rst,          1)  //System reset, asynchronous and active high
     );
    
-   //BLOCK Front-end & Front-end interface.
+   //Front-end & Front-end interface.
    wire                                         data_req, data_ack;
    wire [ADDR_W -1 : `NBYTES_W]                 data_addr;
    wire [DATA_W-1 : 0]                          data_wdata, data_rdata;
@@ -109,7 +109,7 @@ module iob_cache_axi
       .ctrl_ack (ctrl_ack)
       );
 
-   //BLOCK Cache memory & This block implements the cache memory.
+   //Cache memory & This block implements the cache memory.
    wire                                         write_hit, write_miss, read_hit, read_miss;
 
    // back-end write-channel
@@ -181,7 +181,7 @@ module iob_cache_axi
       .invalidate (invalidate_out)
       );
 
-   //BLOCK Back-end interface & This block interfaces with the system level or next-level cache.
+   //Back-end interface & This block interfaces with the system level or next-level cache.
    iob_cache_back_end_axi
      #(
        .ADDR_W (ADDR_W),
@@ -214,7 +214,7 @@ module iob_cache_axi
       .rst(rst)  
       );
 
-   //BLOCK Cache control & Cache control block.
+   //Cache control & Cache control block.
    generate
       if (USE_CTRL)
         iob_cache_control
