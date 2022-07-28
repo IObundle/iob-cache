@@ -18,7 +18,6 @@ DOC_DIR ?=$(CACHE_DIR)/document/$(DOC)
 # submodule paths
 LIB_DIR ?=$(CACHE_DIR)/submodules/LIB
 MEM_DIR ?=$(CACHE_DIR)/submodules/MEM
-AXI_DIR ?=$(CACHE_DIR)/submodules/AXI
 
 #DEFAULT SIMULATOR
 SIMULATOR ?=icarus

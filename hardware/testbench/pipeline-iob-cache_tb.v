@@ -6,6 +6,7 @@ module iob_cache_tb;
 
    parameter cc = 2; //clock-cycle
    parameter AXI_ID_W = 4;
+   parameter AXI_LEN_W = 4;
    parameter AXI_ADDR_W=`MEM_ADDR_W;
    parameter AXI_DATA_W=`MEM_DATA_W;
    
@@ -265,8 +266,9 @@ module iob_cache_tb;
    iob_cache_axi 
      #(
        .AXI_ID_W(4),
-       .AXI_ADDR_W(`MEM_ADDR_W),
-       .AXI_DATA_W(`MEM_DATA_W),
+       .AXI_LEN_W(AXI_LEN_W),
+       .AXI_ADDR_W(AXI_ADDR_W),
+       .AXI_DATA_W(AXI_DATA_W),
        .FE_ADDR_W(`ADDR_W),
        .FE_DATA_W(`DATA_W),
        .N_WAYS(`N_WAYS),

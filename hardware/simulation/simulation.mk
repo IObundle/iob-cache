@@ -30,7 +30,7 @@ m_axi_wire.vh:
 VSRC+=$(TB)
 
 #axi memory
-include $(AXI_DIR)/hardware/axiram/hardware.mk
+include $(LIB_DIR)/hardware/axiram/hardware.mk
 
 waves:
 	gtkwave uut.vcd

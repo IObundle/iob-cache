@@ -98,7 +98,7 @@ test-doc-clean:
 	make doc-clean DOC=pb
 	make doc-clean DOC=ug
 
-test: test-clean test-sim test-fpga test-doc
+test: test-clean test-sim test-fpga #test-doc
 
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 

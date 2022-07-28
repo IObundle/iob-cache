@@ -13,6 +13,7 @@ module write_channel_axi
     parameter BE_BYTE_W = $clog2(BE_NBYTES),
     parameter AXI_ADDR_W = BE_ADDR_W,
     parameter AXI_DATA_W = BE_DATA_W,
+    parameter AXI_LEN_W             = 8, //AXI ID burst length (log2)
     parameter AXI_ID_W  = 1,
     parameter [AXI_ID_W-1:0] AXI_ID = 0,
     // Write-Policy

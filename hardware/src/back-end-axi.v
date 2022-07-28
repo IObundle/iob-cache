@@ -25,6 +25,7 @@ module back_end_axi
     parameter AXI_ADDR_W            = BE_ADDR_W,
     parameter AXI_DATA_W            = BE_DATA_W,
     parameter AXI_ID_W              = 1, //AXI ID (identification) width
+    parameter AXI_LEN_W             = 8, //AXI ID burst length (log2)
     parameter [AXI_ID_W-1:0] AXI_ID = 0  //AXI ID value
     ) 
    (
@@ -60,6 +61,7 @@ module back_end_axi
        .AXI_ADDR_W(AXI_ADDR_W),
        .AXI_DATA_W(AXI_DATA_W),
        .AXI_ID_W(AXI_ID_W),
+       .AXI_LEN_W(AXI_LEN_W),
        .AXI_ID  (AXI_ID)
        )
    read_fsm
@@ -86,6 +88,7 @@ module back_end_axi
        .WORD_OFF_W(WORD_OFF_W),
        .AXI_ADDR_W(AXI_ADDR_W),
        .AXI_DATA_W(AXI_DATA_W),
+       .AXI_LEN_W(AXI_LEN_W),
        .AXI_ID_W(AXI_ID_W),
        .AXI_ID(AXI_ID)
        )

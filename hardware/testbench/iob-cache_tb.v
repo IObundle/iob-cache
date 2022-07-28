@@ -175,10 +175,10 @@ module iob_cache_tb;
    wire [`MEM_DATA_W-1:0]          axi_rdata;
    wire 			   axi_rlast;
    wire [1:0]                      axi_bresp;
-   wire [7:0]                      axi_arlen;
+   wire [3:0]                      axi_arlen;
    wire [2:0]                      axi_arsize;
    wire [1:0]                      axi_arburst;
-   wire [7:0]                      axi_awlen;
+   wire [3:0]                      axi_awlen;
    wire [2:0]                      axi_awsize;
    wire [1:0]                      axi_awburst;
 `else
