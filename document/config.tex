@@ -1,6 +1,6 @@
-\subsubsection{Macros}
-
 \ifdefined\SM
+
+\subsubsection{Macros}
 
 The configuration macros apply to all instances of the core, and are listed in
 Table~\ref{tab:sm}.
@@ -21,14 +21,12 @@ Table~\ref{tab:sm}.
 
 \noindent
 
-\else
-The IP core has no user-definable macros other than the default configuration parameter values, described in Section~\ref{sec:cp} if available.
 \fi
 
+\ifdefined\SP
 
 \subsubsection{Parameters}
 \label{sec:cp}
-\ifdefined\SP
 
 The configuration parameters of the core are presented in
 Table~\ref{tab:sp}. Configuration parameters can vary from instance to instance.
@@ -47,9 +45,5 @@ Table~\ref{tab:sp}. Configuration parameters can vary from instance to instance.
 \caption{Synthesis Parameters.}
   \label{tab:sp}
 \end{table}
-
-\else
-
-This IP core has no synthesis parameters.
 
 \fi
