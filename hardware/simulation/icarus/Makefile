@@ -14,7 +14,7 @@ VLOG = 	iverilog -W all -g2005-sv
 
 .PHONY: run clean
 
-run:
+run:  $(VSRC) $(VHDR)
 	$(VLOG) $(INCLUDE) $(DEFINE) $(VSRC)
 	./a.out $(TEST_LOG)
 ifeq ($(VCD),1)

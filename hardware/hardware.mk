@@ -24,6 +24,32 @@ INCLUDE+=$(incdir)$(CACHE_INC_DIR) $(incdir)$(LIB_DIR)/hardware/include
 #headers
 VHDR+=$(wildcard $(CACHE_INC_DIR)/*.vh)
 
+VHDR+=m_axi_m_port.vh
+m_axi_m_port.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_m_port 'm_' 'm_'
+
+VHDR+=m_axi_portmap.vh
+m_axi_portmap.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_portmap 'm_' 'm_' 'm_'
+
+
+VHDR+=m_axi_m_write_port.vh
+m_axi_m_write_port.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_m_write_port 'm_' 'm_'
+
+VHDR+=m_axi_write_portmap.vh
+m_axi_write_portmap.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_write_portmap 'm_' 'm_' 'm_'
+
+VHDR+=m_axi_m_read_port.vh
+m_axi_m_read_port.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_m_read_port 'm_' 'm_'
+
+VHDR+=m_axi_read_portmap.vh
+m_axi_read_portmap.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_read_portmap 'm_' 'm_' 'm_'
+
+
 #sources
 VSRC+=$(wildcard $(CACHE_SRC_DIR)/*.v)
 endif

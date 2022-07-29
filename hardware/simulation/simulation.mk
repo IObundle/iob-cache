@@ -15,12 +15,22 @@ INCLUDE+=$(incdir)$(CACHE_TB_DIR)
 #headers
 VHDR+=$(CACHE_TB_DIR)/iob-cache_tb.vh
 
+#axi portmap for axi ram
+VHDR+=s_axi_portmap.vh
+s_axi_portmap.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_portmap 's_' 's_' 'm_'
+
+#axi wires to connect cache to axi ram in testbench
+VHDR+=m_axi_wire.vh
+m_axi_wire.vh:
+	$(LIB_DIR)/software/python/axi_gen.py axi_wire 'm_' 'm_'
+
 #sources
 #testbench
 VSRC+=$(TB)
 
 #axi memory
-include $(AXI_DIR)/hardware/axiram/hardware.mk
+include $(LIB_DIR)/hardware/axiram/hardware.mk
 
 waves:
 	gtkwave uut.vcd
@@ -36,7 +46,7 @@ clean-testlog:
 	@rm -f test.log
 
 clean-all: clean-testlog clean
-	@rm -rf *.vcd
+	@rm -rf *.vcd *.vh
 
 .PHONY: waves \
 	test test1 \

@@ -8,6 +8,11 @@ FPGA_USER=$(QUARTUS_USER)
 
 include ../../fpga.mk
 
+
+local-clean:
+	find . -type d -not \( -name '.' -o -name '..' \) -exec rm -rf {} \;
+
+
 post-build:
 	mv output_files/*.fit.summary $(FPGA_LOG)
 

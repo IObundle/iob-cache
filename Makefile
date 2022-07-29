@@ -45,6 +45,10 @@ fpga-clean:
 fpga-clean-all:
 	$(foreach s, $(FPGA_FAMILY_LIST), make fpga-clean FPGA_FAMILY=$s;)
 
+fpga-debug:
+	make -C $(FPGA_DIR) debug
+
+
 
 #
 # DOCUMENT
@@ -94,7 +98,7 @@ test-doc-clean:
 	make doc-clean DOC=pb
 	make doc-clean DOC=ug
 
-test: test-clean test-sim test-fpga test-doc
+test: test-clean test-sim test-fpga #test-doc
 
 test-clean: test-sim-clean test-fpga-clean test-doc-clean
 
