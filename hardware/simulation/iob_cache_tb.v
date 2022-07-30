@@ -36,9 +36,11 @@ module iob_cache_tb;
          repeat (5) @(posedge clk);
          reset = 0;
          #10;
-        
-        $display("\nStart of Cache Testing");
-	
+      `ifdef AXI
+        $display("\nTesting Cache with AXI4 Backend");
+      `else
+        $display("\nTesting Cache with IOB Backend");
+      `endif
         $display("Test 1: Writing Test");
         for(i=0; i<5; i=i+1) begin
 	   @(posedge clk) #1 req=1;
