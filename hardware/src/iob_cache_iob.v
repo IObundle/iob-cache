@@ -6,18 +6,18 @@
 
 module iob_cache_iob
   #(
-    parameter ADDR_W = `ADDR_W, //PARAM &  NS & 64 & The front-end address width defines the memory space accessible via the cache.
-    parameter DATA_W = `DATA_W, //PARAM & 32 & 64 & Front-end data width
-    parameter BE_ADDR_W = `BE_ADDR_W, //PARAM & NS  & NS & Back-end address width. This width can be set higher than ADDR_W to match the width of the back-end interface but the address space is still dictated by ADDR_W.
-    parameter BE_DATA_W = `BE_DATA_W, //PARAM & 32 & 256 & Back-end data width
-    parameter NWAYS_W = `NWAYS_W, //PARAM & 0 & 8 & Number of ways (log2)
-    parameter NLINES_W = `NLINES_W, //PARAM & NS & NS & Line offset width: 2**NLINES_W is the number of cache lines
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W, //PARAM & 0 & NS & Word offset width: 2**OFFSET_W is the number of words per line
-    parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2)
-    parameter REP_POLICY = `REP_POLICY, //PARAM & 0 & 3 & Line replacement policy. Set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-base Pseudo LRU (PLRU_TREE)
-    parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back
-    parameter USE_CTRL = `USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated and the write through buffer empty status can be read
-    parameter USE_CTRL_CNT = `USE_CTRL_CNT //PARAM & 0 & 1 & If USE_CTRL=1 and USE_CTRL_CNT=1 , the cache will include software accessible hit/miss counters
+    parameter ADDR_W = `ADDR_W, //PARAM &  NS & 64 & Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.
+    parameter DATA_W = `DATA_W, //PARAM & 32 & 64 & Front-end data width (log2): this parameter allows supporting processing elements with various data widths.
+    parameter BE_ADDR_W = `BE_ADDR_W, //PARAM & NS  & NS & Back-end address width (log2): the value of this parameter must be equal or greater than ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.
+    parameter BE_DATA_W = `BE_DATA_W, //PARAM & 32 & 256 & Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. 
+    parameter NWAYS_W = `NWAYS_W, //PARAM & 0 & 8 & Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. 
+    parameter NLINES_W = `NLINES_W, //PARAM & NS & NS & Line offset width (log2): the value of this parameter equals the number of cache lines, which is 2**NLINES_W.
+    parameter WORD_OFFSET_W = `WORD_OFFSET_W, //PARAM & 0 & NS & Word offset width (log2):  the value of this parameter equals the number of words per line, which is 2**OFFSET_W. 
+    parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2). A shallow buffer increases the likelyhood of filling up the buffer and getting write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty much faster. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty its contents to the back-end interface.
+    parameter REP_POLICY = `REP_POLICY, //PARAM & 0 & 3 & Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-based Pseudo LRU (PLRU_TREE).
+    parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back.
+    parameter USE_CTRL = `USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated, and the write through buffer status can be read.
+    parameter USE_CTRL_CNT = `USE_CTRL_CNT //PARAM & 0 & 1 & If the cache controller is present (USE_CTRL=1) and this parameter is set to 1, the cache includes hit/miss counters for reads, writes or both, available through the front-end interface.
     )
    (
     // Front-end interface (IOb native slave)
@@ -31,7 +31,7 @@ module iob_cache_iob
 
     // Back-end interface
     //START_IO_TABLE be
-    `IOB_OUTPUT(be_req, 1),         //Read or write request to next-level cache or memory. If {\tt be_ack} becomes high in the next cyle the request has been served; otherwise {\tt be_req} should remain high until {\tt be_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt be_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt be_ack} is high in reponse to the previous request.
+    `IOB_OUTPUT(be_req, 1), //Read or write request to next-level cache or memory. If {\tt be_ack} becomes high in the next cyle the request has been served; otherwise {\tt be_req} should remain high until {\tt be_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt be_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt be_ack} is high in reponse to the previous request.
     `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory
     `IOB_OUTPUT(be_wdata, BE_DATA_W), //Write data to next-level cache or memory
     `IOB_OUTPUT(be_wstrb, `BE_NBYTES), //Write strobe to next-level cache or memory
@@ -40,7 +40,7 @@ module iob_cache_iob
 
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
-    `IOB_INPUT(invalidate_in,1),  //Invalidates all cache lines if high.
+    `IOB_INPUT(invalidate_in,1), //Invalidates all cache lines if high.
     `IOB_OUTPUT(invalidate_out,1), //This output is asserted high whenever the cache is invalidated.
     `IOB_INPUT(wtb_empty_in,1), //This input may be driven the next-level cache, when its write-through buffer is empty. It should be tied to high if there no next-level cache.
     `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and the {\tt wtb_empty_in} signal is high.
@@ -49,7 +49,7 @@ module iob_cache_iob
     `include "iob_gen_if.vh"
     );
 
-   //BLOCK Front-end & Front-end interface.
+   //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but bigger memory.
    wire                              data_req, data_ack;
    wire [ADDR_W -1:`NBYTES_W]        data_addr;
    wire [DATA_W-1 : 0]               data_wdata, data_rdata;
@@ -109,7 +109,7 @@ module iob_cache_iob
       .ctrl_ack   (ctrl_ack)
       );
 
-   //BLOCK Cache memory & This block implements the cache memory.
+   //BLOCK Cache memory & Cache tag and data storage memories; these memories are implemented either with RAM if large enough, or with registers if small enough.
    wire                              write_hit, write_miss, read_hit, read_miss;
 
    // back-end write-channel
@@ -180,7 +180,7 @@ module iob_cache_iob
       .invalidate  (invalidate_out)
       );
 
-   //BLOCK Back-end interface & This block interfaces with the system level or next-level cache.
+   //BLOCK Back-end interface & Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This interface can be of type NPI or AXI4 as per configuration. If it is connected to the next-level IOb-Cache, the NPI type must be selected; if it is connected to a third party cache or memory controlller featuring an AXI4 interface, then the AXI4 type must be selected.
    iob_cache_back_end
      #(
        .ADDR_W (ADDR_W),
@@ -218,7 +218,7 @@ module iob_cache_iob
       .be_ready (be_ack)
       );
 
-   //BLOCK Cache control & Cache control block.
+   //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, accessing hit/miss counters, etc.
    generate
       if (USE_CTRL)
         iob_cache_control
