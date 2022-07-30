@@ -1,9 +1,13 @@
 \begin{itemize}
   \itemsep-0.5em
-\item Pipelined-memory (1 request/clock-cycle)  
-\item AXI4 interface with configurable data width
-\item Simple front-end native interface
-\item Direct-Mapped or K-Way Set-Associative
-\item Fixed write-through not-allocate policy
-\item Write-back policy
+\item Pipelined operation allowing consecutive one-cycle reads and writes
+\item IObundle's Native Pipelined Interface (NPI) Simple front-end native interface on the processor side (front-end)
+\item NPI or AXI4 interface on the memory side (back-end)
+\item Configurable address and data widths on the front-end and back-end interfaces for supporting a variety of different systems
+\item Configurable number of lines and words per line
+\item Configurable K-Way Set-Associativity
+\item Configurable line replacement policy: LRU, MRU-based PLRU, and tree-based PLRU.
+\item Configurable Write-Through Not-Allocate Write-Back Allocate policies
+\item Configurable Write-Through buffer depth
+\item Optional control interface (NPI type) for cache invalidation, write through buffer status, read/miss counters, etc
 \end{itemize}

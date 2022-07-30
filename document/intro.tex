@@ -1,1 +1,9 @@
-The IObundle CACHE is an open-source pipelined-memory cache. It is a performance-wise and highly configurable IP core. The cache core is isolated from the processor and memory interfaces in order to make it easy to adopt new processors or memory controllers while keeping the core functionality intact. It implements a simple front-end native interface. It also implements an AXI4 interface with configurable data width which allows maximum use of the available memory bandwidth. The IObundle CACHE can be implemented as a Direct-Mapped cache or K-Way Set-Associative cache. It supports both fixed write-through not-allocate policy and write-back policy.
+IOb-Cache is an open-source configurable pipelined memory cache. The
+processor-side interface (front-end) uses IObundle's Native Pipelined Interface
+(NPI). The memory-side interface (back-end) can also be configured to use NPI or
+the widely used AXI4 interface. The address and data widths of the front-end and
+back-end are configurable to support multiple user cores and memories. IOb-Cache
+is a K-Way Set-Associative cache, where K can vary from 1 (directly mapped) to 8
+or more ways, provided the operating frequency after synthesis is
+acceptable. IOb-Cache supports the two most common write policies: Write-Through
+Not-Allocate and Write-Back Allocate.
