@@ -5,8 +5,9 @@
 # include core basic info
 include ../../info.mk
 
-#include implementation results
-RESULTS=1
+#include implementation results; requires FPGA tools
+#default is 0 as FPGA tools may not be installed
+RESULTS?=0
 
 INT_FAMILY ?=CYCLONEV-GT
 XIL_FAMILY ?=XCKU
