@@ -49,12 +49,12 @@ The design compiles for Intel and AMD FPGAs. To run it, please use the the [IOb-
 The IOb-Cache documents can be generated using Latex; tested with TeX Live version 2019/Debian.
 
 
-### Running FPGA tools remotely
+### Running the FPGA tools remotely
 
-If your local machine does not have FPGA tools installed, the Makefile will
+If your local machine does not have the FPGA tools installed, the Makefile will
 automatically ``rsync`` the files to a remote machine, run the tools on the
 remote machine, and copy the results back. For this purpose, set the following
-enviromnet variables.
+enviromnet variables:
 
 * Vivado 
 ```Bash
@@ -72,7 +72,7 @@ export QUARTUSPATH=/path/to/quartus
 
 * LICENSE FILES
 
-For the proprietary FPGA tools make sure you have suitable licenses installed and provide the license information with:
+For the proprietary FPGA tools, make sure you have suitable licenses installed, and provide the license information as below:
 
 ```Bash
 export LM_LICENSE_FILE=port@licenseserver.myorg.com;lic_or_dat_file
@@ -83,7 +83,7 @@ export LM_LICENSE_FILE=port@licenseserver.myorg.com;lic_or_dat_file
 git clone --recursive git@github.com:IObundle/iob-cache.git
 ```
 
-## Create and remove and debug the build directory
+## Create, remove and debug the build directory
 
 To create a build directory, run:
 ```
@@ -140,14 +140,14 @@ make sim-clean SIMULATOR=[icarus|verilator]
 
 ## FPGA
 
-To build for a target FPGA, run
+To build the design for a target FPGA, run
 ```
 make fpga-build FPGA_FAMILY=[CYCLONEV-GT|XCKU]
 ```
 The ``FPGA_FAMILY`` variable may be assigned to ``CYCLONEV-GT`` (Intel Cyclone V GT family) or ``XCKU`` (AMD Kintex Ultrascale family) to 
 select one of the two supported FPGA families. If omitted the default FPGA family is ``CYCLONEV-GT`.
 
-To execute an FPGA build test, run
+To execute the FPGA build test, run
 ```
 make fpga-test FPGA_FAMILY=[CYCLONEV-GT|XCKU]
 ```
@@ -168,7 +168,7 @@ To build a given document type, run
 ```
 make doc-build DOC=[pb|ug]
 ```
-The DOC variable may be assigned to ``pb`` (product brief)  or ``ug`` (user guide) to select one of the two document types. If omitted the
+The DOC variable may be assigned to ``pb`` (product brief)  or ``ug`` (user guide) to select one of the two supported document types. If omitted the
 default document type is ``pb``.
 
 To test the generated document, run
@@ -185,7 +185,6 @@ To clean generated files for a specific document type, run
 ```
 make doc-clean DOC=[pb|ug]
 ```
-DOC is set as explained above.
 
 ## Testing
 To execute all tests, run:
