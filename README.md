@@ -2,137 +2,199 @@
 
 IOb-cache is a high-performance configurable open-source Verilog cache. If you use or like this repository, please cite the following article:
 
-Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218. https://doi.org/10.3390/a14080218 
+Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: [A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218.] (https://doi.org/10.3390/a14080218)
 
-IOb-cache supports pipeline architectures, allowing 1 request per clock cycle (read and write). 
-IOb-cache has both Native (pipelined) and AXI4 back-end interfaces.
-The write policy is configurable: either write-through/not-allocate or write-back/allocate.
-Configuration supports the number of ways, address-width, cache's word-size (front-end data width), the memory's word-size (back-end data width), the number of lines and words per line, replacement policy (if set associative), and cache-control module (allows performance measurement, cache invalidation and write-through buffer status).
+IOb-Cache is an open-source configurable pipelined memory cache. The
+processor-side interface (front-end) uses IObundle's Native Pipelined Interface
+(NPI). The memory-side interface (back-end) can also be configured to use NPI or
+the widely used AXI4 interface. The address and data widths of the front-end and
+back-end are configurable to support multiple user cores and memories. IOb-Cache
+is a K-Way Set-Associative cache, where K can vary from 1 (directly mapped) to 8
+or more ways, provided the operating frequency after synthesis is
+acceptable. IOb-Cache supports the two most common write policies: Write-Through
+Not-Allocate and Write-Back Allocate.
 
-## Environment setup
-IOb-SoC provides helpful information to set up your environment, please refer to [IOb-SoC](https://github.com/IObundle/iob-soc) in order to
-* prepare your environment to connect to Github with ssh.
-* install required tools and set your environment variables.
+IOb-Cache was developed in the scope of João Roque's master's thesis in
+Electrical and Computer Engineering at the Instituto Superior Técnico of the
+University of Lisbon. The Verilog code works well in IObundle's [IOb-SoC]
+(https://github.com/IObundle/iob-soc) system-on-chip both in simulation and
+FPGA. To be used in an ASIC, it would need to be lint-cleaned and verified more
+thoroughly by RTL simulation to achieve 100\% code coverage desirably.
+
+## Environment setup and requirements
+
+### Operating system
+
+IOb-Cache has been tested on Ubuntu 20.04.4 LTS
+
+### Scripting
+
+* Install Python 3; tested with version 3.8.10
+
+### Simulation
+
+* Install a stable version of the [Icarus Verilog simulator] (http://iverilog.icarus.com); tested with version 10.3.
+* Install a stable version of the [Verilator simulator] (https://www.veripool.org/verilator); tested with version 4.216.
+
+### FPGA compilation
+
+The design compiles for Intel and AMD FPGAs. To run it, please use the the [IOb-SoC] (https://github.com/IObundle/iob-soc) system.
+
+* Install the [Vivado] (https://www.xilinx.com/support/download.html) FPGA development tools; tested with version v2020.2
+* Install the [Quartus] (https://www.veripool.org/verilator) FPGA development tools; tested with version 20.1.0
+
+
+### Documentation
+
+The IOb-Cache documents can be generated using Latex; tested with TeX Live version 2019/Debian.
+
+
+### Running FPGA tools remotely
+
+If your local machine does not have FPGA tools installed, the Makefile will
+automatically ``rsync`` the files to a remote machine, run the tools on the
+remote machine, and copy the results back. For this purpose, set the following
+enviromnet variables.
+
+* Vivado 
+```Bash
+export VIVADO_SERVER=quartusserver.myorg.com
+export VIVADO_USER=quartususer
+export VIVADOPATH=/path/to/vivado
+```
+
+* Quartus
+```Bash
+export QUARTUS_SERVER=quartusserver.myorg.com
+export QUARTUS_USER=quartususer
+export QUARTUSPATH=/path/to/quartus
+```
+
+* LICENSE FILES
+
+For the proprietary FPGA tools make sure you have suitable licenses installed and provide the license information with:
+
+```Bash
+export LM_LICENSE_FILE=port@licenseserver.myorg.com;lic_or_dat_file
+```
 
 ## Cloning the repository
 ```
 git clone --recursive git@github.com:IObundle/iob-cache.git
 ```
 
-## Configuration
-Edit config.mk file and update its variables according to your needs. This file is located at the root repository. 
+## Create and remove and debug the build directory
+
+To create a build directory, run:
+```
+make setup
+```
+This command will create a build directory with the name iob\_cache\_Vxx.yy, where Vxx.yy is the current version of the IP core. 
+
+To remove the build directory, run:
+```
+make clean
+```
+
+To debug the build directory, by printing some Makefile variables, run:
+```
+make debug
+```
+
+Create the build directory and enter it:
+```
+cd iob\_cache\_Vxx.yy
+```
+
 
 ## Simulation
-To simulate, run:
-```
-make sim SIMULATOR=<simulator directory name>  
-```
-SIMULATOR is a parameter used to select a specific simulator. Its value is the name of the simulator's run directory.
-For example:
-```
-make sim SIMULATOR=icarus
-```
 
-To simulate with Icarus Verilog and to generate a VCD file for waveform visualization with the Gtkwave open-source program, run:
+
+To compile the Verilog files without running the simulation, run:
 ```
-make sim SIMULATOR=icarus VCD=1 
+make sim-build SIMULATOR=[icarus|verilator]
 ```
-To execute a simple test suite by simulation, run 
+The ``SIMULATOR`` variable may be assigned to ``icarus`` or ``verilator`` to select one of the two supported simulators. If omitted the
+default simulator is Icarus Verilog.
+
+To simulate using the IP core, run:
+```
+make sim-run SIMULATOR=[icarus|verilator] [VCD=1]
+```
+To generate a VCD file for waveform visualization with the Gtkwave open-source program, optionally add VCD=1 to the command as shown above.
+
+To execute the simulation test, run 
 ``` 
-make sim-test SIMULATOR=<simulator directory name>
+make sim-test SIMULATOR=[icarus|verilator]
 ```
-SIMULATOR parameter is used to select a given simulator, as explained above. 
 
-To execute the test suite for all simulators listed in SIMULATOR\_LIST, run 
+To debug the simulation environment, by printing some Makefile variables, run:
 ```
-make test-sim
+make sim-debug
 ```
-It is to note that SIMULATOR\_LIST is a variable set in config.mk file. 
 
-To clean simulation generated files, run
+To clean the simulation generated files, run
 ```
-make sim-clean SIMULATOR=<simulator directory name>
-```
-SIMULATOR parameter is used as explained above. 
-
-To clean simulation generated files for all simulators, run
-```
-make sim-clean-all
+make sim-clean SIMULATOR=[icarus|verilator]
 ```
 
 ## FPGA
 
 To build for a target FPGA, run
 ```
-make fpga-build FPGA_FAMILY=<board directory name>
+make fpga-build FPGA_FAMILY=[CYCLONEV-GT|XCKU]
 ```
-FPGA_FAMILY is a parameter set to the name of the board's run directory.
-For example:
-```
-make fpga-build FPGA_FAMILY=CYCLONEV-GT
-```
-To build for all target FPGAs listed in FPGA\_FAMILY\_LIST, run
-```
-make fpga-build-all
-```
-FPGA\_FAMILY\_LIST is a variable set in config.mk file
+The ``FPGA_FAMILY`` variable may be assigned to ``CYCLONEV-GT`` (Intel Cyclone V GT family) or ``XCKU`` (AMD Kintex Ultrascale family) to 
+select one of the two supported FPGA families. If omitted the default FPGA family is ``CYCLONEV-GT`.
 
-To build and execute a simple board test suite, run
+To execute an FPGA build test, run
 ```
-make fpga-test FPGA_FAMILY=<board directory name>
+make fpga-test FPGA_FAMILY=[CYCLONEV-GT|XCKU]
 ```
-FPGA_FAMILY parameter is set a explained above.
 
+To debug the FPGA build environment, by printing some Makefile variables, run:
+```
+make fpga-debug
+```
 
 To clean the FPGA build generated files, run
-
 ```
-make fpga-clean FPGA_FAMILY=<board directory name>
-```
-FPGA_FAMILY parameter is used as indicated above.
-
-To clean the FPGA build generated files for all boards, run
-```
-make fpga-clean-all
+make fpga-clean FPGA_FAMILY=[CYCLONEV-GT|XCKU]
 ```
 
 ## Documentation
-Two document types are generated: the Product Brief refered to as pb and the User Guide refered to as ug. 
 
-To build a given ducument type, run
+To build a given document type, run
 ```
-make doc-build DOC=<document directory name>
+make doc-build DOC=[pb|ug]
 ```
-DOC is a parameter whose value can be pb or ug.
-For example:
-```
-make doc-build DOC=pb
-```
-To build all ducument types listed in DOC\_LIST, run
-```
-make doc-build-all
-```
-DOC\_LIST is a variable set in config.mk
+The DOC variable may be assigned to ``pb`` (product brief)  or ``ug`` (user guide) to select one of the two document types. If omitted the
+default document type is ``pb``.
 
 To test the generated document, run
 ```
-make doc-test DOC=<document directory name>
+make doc-test DOC=[pb|ug]
 ```
-DOC is set as explained above.
+
+To debug the document build environment, by printing some Makefile variables, run:
+```
+make doc-debug
+```
 
 To clean generated files for a specific document type, run
 ```
-make doc-clean DOC=<document directory name>
+make doc-clean DOC=[pb|ug]
 ```
 DOC is set as explained above.
 
-To clean generated files for all document types, run
+## Testing
+To execute all tests, run:
 ```
-make doc-clean-all
+make test
 ```
 
-## Cleaning all directories
+## Cleaning
 To clean all generated files, run
 ```
-make clean-all
+make clean
 ```
