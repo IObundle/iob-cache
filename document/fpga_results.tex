@@ -1,0 +1,36 @@
+\ifdefined\FPGA
+
+\ifdefined\XILINX
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|r|}
+\hline
+\rowcolor{iob-green}
+\textbf{Resource}  & \textbf{Used} \\
+\hline
+\hline
+\input vivado.tex 
+\end{tabular}
+\caption{AMD Kintex Ultrascale FPGAs}
+\label{tab:fpga_amd}
+\end{table}
+\fi
+
+
+\ifdefined\INTEL
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|r|}
+\hline
+\rowcolor{iob-green}
+\textbf{Resource}  & \textbf{Used} \\
+\hline
+\hline
+\input quartus.tex 
+\end{tabular}
+\caption{Intel Cyclone V GT FPGAs}
+\label{tab:fpga_intel}
+\end{table}
+\fi
+
+\fi
