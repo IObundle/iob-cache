@@ -7,3 +7,10 @@ is a K-Way Set-Associative cache, where K can vary from 1 (directly mapped) to 8
 or more ways, provided the operating frequency after synthesis is
 acceptable. IOb-Cache supports the two most common write policies: Write-Through
 Not-Allocate and Write-Back Allocate.
+
+IOb-Cache was developed in the scope of João Roque's master's thesis in
+Electrical and Computer Engineering at the Instituto Superior Técnico of the
+University of Lisbon. The Verilog code works well in IObundle's IOb-SoC system
+(https://github.com/IObundle/iob-soc) both in simulation and FPGA. To be used in
+an ASIC, it would need to be lint-cleaned and verified more thoroughly by RTL
+simulation to achieve 100\% code coverage desirably.

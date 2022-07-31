@@ -10,46 +10,46 @@ module iob_cache_iob
     parameter DATA_W = `DATA_W, //PARAM & 32 & 64 & Front-end data width (log2): this parameter allows supporting processing elements with various data widths.
     parameter BE_ADDR_W = `BE_ADDR_W, //PARAM & NS  & NS & Back-end address width (log2): the value of this parameter must be equal or greater than ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.
     parameter BE_DATA_W = `BE_DATA_W, //PARAM & 32 & 256 & Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. 
-    parameter NWAYS_W = `NWAYS_W, //PARAM & 0 & 8 & Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. 
-    parameter NLINES_W = `NLINES_W, //PARAM & NS & NS & Line offset width (log2): the value of this parameter equals the number of cache lines, which is 2**NLINES_W.
+    parameter NWAYS_W = `NWAYS_W, //PARAM & 0 & 8 & Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is 1 for a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. 
+    parameter NLINES_W = `NLINES_W, //PARAM & NS & NS & Line offset width (log2): the value of this parameter equals the number of cache lines, given by 2**NLINES_W.
     parameter WORD_OFFSET_W = `WORD_OFFSET_W, //PARAM & 0 & NS & Word offset width (log2):  the value of this parameter equals the number of words per line, which is 2**OFFSET_W. 
-    parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2). A shallow buffer increases the likelyhood of filling up the buffer and getting write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty much faster. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty its contents to the back-end interface.
-    parameter REP_POLICY = `REP_POLICY, //PARAM & 0 & 3 & Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for Tree-based Pseudo LRU (PLRU_TREE).
+    parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W, //PARAM & NS & NS & Write-through buffer depth (log2). A shallow buffer will fill up more frequently and cause write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty faster, decreasing the duration of the read stall. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty and cause long read stalls.
+    parameter REP_POLICY = `REP_POLICY, //PARAM & 0 & 3 & Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for tree-based Pseudo LRU (PLRU_TREE).
     parameter WRITE_POL = `WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back.
-    parameter USE_CTRL = `USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). If the controller is present, all cache lines can be invalidated, and the write through buffer status can be read.
-    parameter USE_CTRL_CNT = `USE_CTRL_CNT //PARAM & 0 & 1 & If the cache controller is present (USE_CTRL=1) and this parameter is set to 1, the cache includes hit/miss counters for reads, writes or both, available through the front-end interface.
+    parameter USE_CTRL = `USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.
+    parameter USE_CTRL_CNT = `USE_CTRL_CNT //PARAM & 0 & 1 & Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.
     )
    (
     // Front-end interface (IOb native slave)
     //START_IO_TABLE fe
-    `IOB_INPUT(req, 1), //Read or write request from CPU or other user core. If {\tt ack} becomes high in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt ack} is high in reponse to the previous request
+    `IOB_INPUT(req, 1), //Read or write request from host. If signal {\tt ack} raises in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} raises. When {\tt ack} raises in response to a previous request, {\tt req} may keep high, or combinatorially lowered in the same cycle. If {\tt req} keeps high, a new request is being made to the current address {\tt addr}; if {\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.
     `IOB_INPUT(addr, USE_CTRL+ADDR_W-`NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
     `IOB_INPUT(wdata, DATA_W), //Write data fom host.
-    `IOB_INPUT(wstrb, `NBYTES), //Byte write strobe.
+    `IOB_INPUT(wstrb, `NBYTES), //Byte write strobe from host.
     `IOB_OUTPUT(rdata, DATA_W), //Read data to host.
-    `IOB_OUTPUT(ack,1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signla is low but has already pulsed high in response to the last request.
+    `IOB_OUTPUT(ack,1), //Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.
 
     // Back-end interface
     //START_IO_TABLE be
-    `IOB_OUTPUT(be_req, 1), //Read or write request to next-level cache or memory. If {\tt be_ack} becomes high in the next cyle the request has been served; otherwise {\tt be_req} should remain high until {\tt be_ack} returns to high. When {\tt ack} becomes high in reponse to a previous request, {\tt be_req} may be lowered in the same cycle ack becomes high if there are no more requests to make. The next request can be made while {\tt be_ack} is high in reponse to the previous request.
-    `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory
-    `IOB_OUTPUT(be_wdata, BE_DATA_W), //Write data to next-level cache or memory
-    `IOB_OUTPUT(be_wstrb, `BE_NBYTES), //Write strobe to next-level cache or memory
-    `IOB_INPUT(be_rdata, BE_DATA_W),  //Read data to host.
-    `IOB_INPUT(be_ack, 1), //Acknowledges that the last request has been served; the next request can be issued when this signal is high or when this signal is low but has already pulsed high in reponse to the last request.
+    `IOB_OUTPUT(be_req, 1), //Read or write request to next-level cache or memory.
+    `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory.
+    `IOB_OUTPUT(be_wdata, BE_DATA_W), //Write data to next-level cache or memory.
+    `IOB_OUTPUT(be_wstrb, `BE_NBYTES), //Write strobe to next-level cache or memory.
+    `IOB_INPUT(be_rdata, BE_DATA_W),  //Read data from next-level cache or memory.
+    `IOB_INPUT(be_ack, 1), //Acknowledge signal from next-level cache or memory.
 
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
-    `IOB_INPUT(invalidate_in,1), //Invalidates all cache lines if high.
-    `IOB_OUTPUT(invalidate_out,1), //This output is asserted high whenever the cache is invalidated.
-    `IOB_INPUT(wtb_empty_in,1), //This input may be driven the next-level cache, when its write-through buffer is empty. It should be tied to high if there no next-level cache.
-    `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and the {\tt wtb_empty_in} signal is high.
+    `IOB_INPUT(invalidate_in,1), //Invalidates all cache lines instantaneously if high.
+    `IOB_OUTPUT(invalidate_out,1), //This output is asserted high when the cache is invalidated via the cache controller or the direct {\tt invalidate_in} signal. The present {\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.
+    `IOB_INPUT(wtb_empty_in,1), //This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\tt wtb_empty_out}.
+    `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.
     
     //General Interface Signals
     `include "iob_gen_if.vh"
     );
 
-   //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but bigger memory.
+   //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
    wire                              data_req, data_ack;
    wire [ADDR_W -1:`NBYTES_W]        data_addr;
    wire [DATA_W-1 : 0]               data_wdata, data_rdata;
@@ -109,7 +109,7 @@ module iob_cache_iob
       .ctrl_ack   (ctrl_ack)
       );
 
-   //BLOCK Cache memory & Cache tag and data storage memories; these memories are implemented either with RAM if large enough, or with registers if small enough.
+   //BLOCK Cache memory & This block contains the tag, data storage memories and the Write Through Buffer if the correspeonding write policy is selected; these memories are implemented either with RAM if large enough, or with registers if small enough.
    wire                              write_hit, write_miss, read_hit, read_miss;
 
    // back-end write-channel
@@ -218,7 +218,7 @@ module iob_cache_iob
       .be_ready (be_ack)
       );
 
-   //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, accessing hit/miss counters, etc.
+   //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
    generate
       if (USE_CTRL)
         iob_cache_control
