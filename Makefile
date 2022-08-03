@@ -1,4 +1,7 @@
+CORE_DIR=../..
 LIB_DIR=submodules/LIB
+
+export
 
 setup:
 	make -C $(LIB_DIR) $@
