@@ -19,6 +19,8 @@ module iob_cache_wrapper
 `ifdef AXI
    localparam AXI_ADDR_W = `BE_ADDR_W;
    localparam AXI_DATA_W = `BE_DATA_W;
+   localparam AXI_ID_W = `AXI_ID_W;
+   localparam AXI_LEN_W = `AXI_LEN_W;
  `include "iob_cache_axi_wire.vh"
 `else
    //Native connections
@@ -89,6 +91,7 @@ module iob_cache_wrapper
    axi_ram 
      #(
        .ID_WIDTH(`AXI_ID_W),
+       .LEN_WIDTH(`AXI_LEN_W),
        .DATA_WIDTH (`BE_DATA_W),
        .ADDR_WIDTH (`BE_ADDR_W)
        )
@@ -105,6 +108,7 @@ module iob_cache_wrapper
       .s_axi_awlock   (axi_awlock),
       .s_axi_awprot   (axi_awprot),
       .s_axi_awcache  (axi_awcache),
+      .s_axi_awqos    (axi_awqos),
       .s_axi_awvalid  (axi_awvalid),
       .s_axi_awready  (axi_awready),
       
@@ -130,6 +134,7 @@ module iob_cache_wrapper
       .s_axi_arlock   (axi_arlock),
       .s_axi_arcache  (axi_arcache),
       .s_axi_arprot   (axi_arprot),
+      .s_axi_arqos    (axi_arqos),
       .s_axi_arvalid  (axi_arvalid),
       .s_axi_arready  (axi_arready),
       

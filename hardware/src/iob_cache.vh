@@ -31,6 +31,8 @@
 `define WRITE_BACK 1
 
 //AXI4
+`define AXI_ID_W 1
+`define AXI_LEN_W 4
 `define AXI_ID 0
 `define AXI_ID_W 1
 

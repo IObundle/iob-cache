@@ -9,44 +9,32 @@ module iob_cache_write_channel_axi
     parameter BE_ADDR_W = `BE_ADDR_W,
     parameter BE_DATA_W = `BE_DATA_W,
     parameter WRITE_POL  = `WRITE_THROUGH,
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W
+    parameter WORD_OFFSET_W = `WORD_OFFSET_W,
+    parameter AXI_ID_W = `AXI_ID_W,
+    parameter AXI_LEN_W = `AXI_LEN_W,
+    parameter AXI_ADDR_W = BE_ADDR_W,
+    parameter AXI_DATA_W = BE_DATA_W,
+    parameter [AXI_ID_W-1:0] AXI_ID = `AXI_ID
     )
    (
-    input                                                                       clk,
-    input                                                                       reset,
-
-    input                                                                       valid,
-    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]                     addr,
+    input                                                              valid,
+    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]             addr,
     input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] wdata,
-    input [`NBYTES-1:0]                                                       wstrb,
-    output reg                                                                  ready,
-
-    // Address Write
-    output reg                                                                  axi_awvalid,
-    output [BE_ADDR_W-1:0]                                                      axi_awaddr,
-    output [7:0]                                                                axi_awlen,
-    output [2:0]                                                                axi_awsize,
-    output [1:0]                                                                axi_awburst,
-    output [0:0]                                                                axi_awlock,
-    output [3:0]                                                                axi_awcache,
-    output [2:0]                                                                axi_awprot,
-    output [3:0]                                                                axi_awqos,
-    output [`AXI_ID_W-1:0]                                                       axi_awid,
-    input                                                                       axi_awready,
-
-    // Write
-    output reg                                                                  axi_wvalid,
-    output [BE_DATA_W-1:0]                                                      axi_wdata,
-    output [`BE_NBYTES-1:0]                                                      axi_wstrb,
-    output                                                                      axi_wlast,
-    input                                                                       axi_wready,
-    input                                                                       axi_bvalid,
-    input [1:0]                                                                 axi_bresp,
-    output reg                                                                  axi_bready
+    input [`NBYTES-1:0]                                                wstrb,
+    output reg                                                         ready,
+`include "iob_cache_m_axi_m_write_port.vh"
+    input                                                              clk,
+    input                                                              reset 
     );
 
-   localparam [31:0]  AWSIZE  = `BE_NBYTES_W;
-   
+   reg                                                                 axi_awvalid_int;
+   reg                                                                 axi_wvalid_int;
+   reg                                                                 axi_bready_int;
+
+   assign axi_awvalid = axi_awvalid_int;
+   assign axi_wvalid = axi_wvalid_int;
+   assign axi_bready = axi_bready_int;
+
    genvar                                                                       i;
    generate
       if (WRITE_POL == `WRITE_THROUGH) begin
@@ -54,7 +42,7 @@ module iob_cache_write_channel_axi
          assign axi_awid    = `AXI_ID;
          assign axi_awlen   = 8'd0;
 
-	 assign axi_awsize  = AWSIZE[2:0];    // verify - Writes data of the size of BE_DATA_W	 
+	 assign axi_awsize  = `BE_NBYTES_W;    // verify - Writes data of the size of BE_DATA_W	 
 	 assign axi_awburst = 2'd0;
          assign axi_awlock  = 1'b0; // 00 - Normal Access
          assign axi_awcache = 4'b0011;
@@ -125,19 +113,19 @@ module iob_cache_write_channel_axi
 
          always @* begin
             ready       = 1'b0;
-            axi_awvalid = 1'b0;
-            axi_wvalid  = 1'b0;
-            axi_bready  = 1'b0;
+            axi_awvalid_int = 1'b0;
+            axi_wvalid_int  = 1'b0;
+            axi_bready_int  = 1'b0;
 
             case (state)
               idle:
                 ready = 1'b1;
               address:
-                axi_awvalid = 1'b1;
+                axi_awvalid_int = 1'b1;
               write:
-                axi_wvalid  = 1'b1;
+                axi_wvalid_int  = 1'b1;
               default: begin // verif
-                 axi_bready = 1'b1;
+                 axi_bready_int = 1'b1;
                  ready      = axi_bvalid & ~(|axi_bresp);
               end
             endcase
@@ -217,19 +205,19 @@ module iob_cache_write_channel_axi
 
             always @* begin
                ready       = 1'b0;
-               axi_awvalid = 1'b0;
-               axi_wvalid  = 1'b0;
-               axi_bready  = 1'b0;
+               axi_awvalid_int = 1'b0;
+               axi_wvalid_int  = 1'b0;
+               axi_bready_int  = 1'b0;
 
                case (state)
                  idle:
                    ready = ~valid;
                  address:
-                   axi_awvalid = 1'b1;
+                   axi_awvalid_int = 1'b1;
                  write:
-                   axi_wvalid  = 1'b1;
+                   axi_wvalid_int  = 1'b1;
                  default: begin // verif
-                    axi_bready = 1'b1;
+                    axi_bready_int = 1'b1;
                     ready      = axi_bvalid & ~(|axi_bresp);
                  end
                endcase
@@ -296,19 +284,19 @@ module iob_cache_write_channel_axi
 
             always @* begin
                ready       = 1'b0;
-               axi_awvalid = 1'b0;
-               axi_wvalid  = 1'b0;
-               axi_bready  = 1'b0;
+               axi_awvalid_int = 1'b0;
+               axi_wvalid_int  = 1'b0;
+               axi_bready_int  = 1'b0;
 
                case (state)
                  idle:
                    ready = ~valid;
                  address:
-                   axi_awvalid = 1'b1;
+                   axi_awvalid_int = 1'b1;
                  write:
-                   axi_wvalid  = 1'b1;
+                   axi_wvalid_int  = 1'b1;
                  default: begin // verif
-                    axi_bready = 1'b1;
+                    axi_bready_int = 1'b1;
                     ready      = axi_bvalid & ~(|axi_bresp);
                  end
                endcase

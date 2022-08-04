@@ -24,9 +24,12 @@ module iob_cache_axi
     parameter WRITE_POL = `WRITE_THROUGH,
     parameter USE_CTRL = `USE_CTRL,
     parameter USE_CTRL_CNT = `USE_CTRL_CNT,
+    parameter AXI_ID_W = `AXI_ID_W,
+    parameter AXI_LEN_W = `AXI_LEN_W,
     parameter AXI_ADDR_W = BE_ADDR_W,
-    parameter AXI_DATA_W = BE_DATA_W
-    )
+    parameter AXI_DATA_W = BE_DATA_W,
+    parameter [AXI_ID_W-1:0] AXI_ID = `AXI_ID
+   )
    (
     // Front-end interface (IOb native slave)
     `IOB_INPUT(req, 1),
@@ -189,8 +192,13 @@ module iob_cache_axi
        .BE_ADDR_W (BE_ADDR_W),
        .BE_DATA_W (BE_DATA_W),
        .WORD_OFFSET_W(WORD_OFFSET_W),
-       .WRITE_POL (WRITE_POL)
-       )
+       .WRITE_POL (WRITE_POL),
+       .AXI_ADDR_W(AXI_ADDR_W),
+       .AXI_DATA_W(AXI_DATA_W),
+       .AXI_ID_W(AXI_ID_W),
+       .AXI_LEN_W(AXI_LEN_W),
+       .AXI_ID(AXI_ID)
+      )
    back_end_axi
      (
       // write-through-buffer (write-channel)

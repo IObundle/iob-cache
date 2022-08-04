@@ -2,7 +2,7 @@
 #
 # This makefile segment lists all hardware header and source files 
 #
-# It is always included in submodules/LIB/Makefile for populating the
+# It is included in submodules/LIB/Makefile for populating the
 # build directory
 #
 
@@ -21,21 +21,35 @@ VHDR+=$(BUILD_VSRC_DIR)/iob_cache.vh
 $(BUILD_VSRC_DIR)/iob_cache.vh: $(CACHE_DIR)/hardware/src/iob_cache.vh
 	cp $< $(BUILD_VSRC_DIR)
 
-#clk/rst interface
 VHDR+=$(BUILD_VSRC_DIR)/iob_gen_if.vh
 $(BUILD_VSRC_DIR)/iob_gen_if.vh: hardware/include/iob_gen_if.vh
 	cp $< $(BUILD_VSRC_DIR)
 
-#back-end AXI4 interface verilog header file 
 AXI_GEN:=software/python/axi_gen.py
 VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
 	$(AXI_GEN) axi_m_port iob_cache_ && mv iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
 
-#back-end AXI4 portmap verilog header file 
 VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh:
 	$(AXI_GEN) axi_portmap iob_cache_ && mv iob_cache_axi_portmap.vh $(BUILD_VSRC_DIR)
+
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_m_axi_m_write_port.vh
+$(BUILD_VSRC_DIR)/iob_cache_m_axi_m_write_port.vh:
+	$(AXI_GEN) axi_m_write_port iob_cache_m_ && mv iob_cache_m_axi_m_write_port.vh $(BUILD_VSRC_DIR)
+
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_m_axi_write_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_m_axi_write_portmap.vh:
+	$(AXI_GEN) axi_write_portmap iob_cache_m_ && mv iob_cache_m_axi_write_portmap.vh $(BUILD_VSRC_DIR)
+
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_m_axi_m_read_port.vh
+$(BUILD_VSRC_DIR)/iob_cache_m_axi_m_read_port.vh:
+	$(AXI_GEN) axi_m_read_port iob_cache_m_ && mv iob_cache_m_axi_m_read_port.vh $(BUILD_VSRC_DIR)
+
+VHDR+=$(BUILD_VSRC_DIR)/iob_cache_m_axi_read_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_m_axi_read_portmap.vh:
+	$(AXI_GEN) axi_read_portmap iob_cache_m_ && mv iob_cache_m_axi_read_portmap.vh $(BUILD_VSRC_DIR)
+
 
 #cache software accessible register defines
 VHDR+=$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh
