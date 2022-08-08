@@ -25,6 +25,8 @@ VHDR+=$(BUILD_VSRC_DIR)/iob_gen_if.vh
 $(BUILD_VSRC_DIR)/iob_gen_if.vh: hardware/include/iob_gen_if.vh
 	cp $< $(BUILD_VSRC_DIR)
 
+VHDR+=$(BUILD_VSRC_DIR)/iob_lib.vh
+
 AXI_GEN:=software/python/axi_gen.py
 VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
@@ -57,7 +59,7 @@ $(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh: iob_cache_swreg_def.vh
 	cp $< $@
 
 iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
-	$(MKREGS) iob_cache $(CACHE_DIR) HW
+	$(MKREGS) $(NAME) $(CACHE_DIR) HW
 
 #SOURCES
 VSRC1=$(wildcard $(CACHE_DIR)/hardware/src/*.v)
@@ -66,3 +68,7 @@ VSRC+=$(VSRC2)
 
 $(BUILD_VSRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
 	cp $< $@
+
+#HW SOURCES AND HEADERS
+HW_VHDR=$(VHDR)
+HW_VSRC=$(VSRC)
