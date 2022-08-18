@@ -4,13 +4,13 @@ LIB_DIR=submodules/LIB
 export
 
 setup:
-	make -C $(LIB_DIR) $@
+	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
 
 clean:
-	make -C $(LIB_DIR) $@
+	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
 
 debug:
-	make -C $(LIB_DIR) $@
+	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
 
 
 .PHONY: setup clean debug
