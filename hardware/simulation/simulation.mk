@@ -2,11 +2,8 @@
 # This file is included in BUILD_DIR/sim/Makefile
 #
 
-# include core basic info
-include ../../info.mk
-
 ifeq ($(TOP_MODULE),iob_cache_axi)
-VFLAGS+=-DAXI
+DEFINE=-DAXI
 endif
 
 #verilator top module
