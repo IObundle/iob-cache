@@ -62,10 +62,7 @@ iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
 	$(MKREGS) $(NAME) $(CACHE_DIR) HW
 
 #SOURCES
-VSRC1=$(wildcard $(CACHE_DIR)/hardware/src/*.v)
-VSRC2=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(VSRC1))
-VSRC+=$(VSRC2)
-
+VSRC+=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(wildcard $(CACHE_DIR)/hardware/src/*.v))
 $(BUILD_VSRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
 	cp $< $@
 
