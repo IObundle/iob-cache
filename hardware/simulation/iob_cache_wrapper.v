@@ -2,6 +2,8 @@
 
 `include "iob_lib.vh"
 `include "iob_cache.vh"
+`include "iob_cache_conf.vh"
+`include "iob_cache_tb_conf.vh"
 
 module iob_cache_wrapper
       (
@@ -169,6 +171,14 @@ module iob_cache_wrapper
    
 `endif
 
+   initial begin
+`ifdef AXI
+   $display("\nTesting Cache with AXI4 Backend");
+`else
+   $display("\nTesting Cache with IOB Backend");
+`endif
+   end
+  
 endmodule   //iob_cache_wrapper
 
 

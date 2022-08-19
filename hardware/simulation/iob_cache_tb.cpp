@@ -17,7 +17,7 @@ double sc_time_stamp () {   //Called by $time in Verilog
 }
 
 int main(int argc, char** argv) {
-    std::cout << std::endl << "Iob_cache simulation start" << std::endl;
+
     Verilated::commandArgs(argc, argv);   //Init verilator context
     Viob_cache_wrapper* dut = new Viob_cache_wrapper; //Create DUT object
 
@@ -84,8 +84,6 @@ int main(int argc, char** argv) {
 #endif
     
     delete dut;
-
-    std::cout << "Iob_cache simulation end" << std::endl << std::endl;
 
     exit(EXIT_SUCCESS);
 }
