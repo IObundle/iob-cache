@@ -1,0 +1,59 @@
+name: CI
+
+# Set default shell as interactive (source ~/.bashrc)
+defaults:
+  run:
+    shell: bash -ieo pipefail {0}
+
+on:
+  push:
+    branches: [ master ]
+  # Don't forget to require approval for all outside collaborators
+  pull_request:
+    branches: '*'
+  # Allow manual workflow runs
+  workflow_dispatch:
+
+# Run only one instance of this workflow at a time
+# cancel-in-progress: stop running workflow and run latest instead
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sim:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: test-clean
+        run: make setup
+      - name: test-sim
+        run: make -C iob_uart_V0.10/ sim-test
+  fpga:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: test-clean
+        run: make setup
+      - name: test-fpga
+        run: make -C iob_uart_V0.10/ fpga-test
+  doc:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: test-clean
+        run: make setup
+      - name: test-doc
+        run: make -C iob_uart_V0.10/ doc-test

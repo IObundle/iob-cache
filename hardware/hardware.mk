@@ -16,10 +16,10 @@ include hardware/ram/iob_ram_sp/hardware.mk
 
 #HEADERS
 
-#core header
-VHDR+=$(BUILD_VSRC_DIR)/iob_cache.vh
-$(BUILD_VSRC_DIR)/iob_cache.vh: $(CACHE_DIR)/hardware/src/iob_cache.vh
-	cp $< $(BUILD_VSRC_DIR)
+#core headers
+VHDR+=$(subst $(CACHE_DIR)/hardware/src, $(BUILD_VSRC_DIR), $(wildcard $(CACHE_DIR)/hardware/src/*.vh) )
+$(BUILD_VSRC_DIR)/%.vh: $(CACHE_DIR)/hardware/src/%.vh
+	cp $< $@
 
 VHDR+=$(BUILD_VSRC_DIR)/iob_gen_if.vh
 $(BUILD_VSRC_DIR)/iob_gen_if.vh: hardware/include/iob_gen_if.vh
@@ -62,10 +62,7 @@ iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
 	$(MKREGS) $(NAME) $(CACHE_DIR) HW
 
 #SOURCES
-VSRC1=$(wildcard $(CACHE_DIR)/hardware/src/*.v)
-VSRC2=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(VSRC1))
-VSRC+=$(VSRC2)
-
+VSRC+=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(wildcard $(CACHE_DIR)/hardware/src/*.v))
 $(BUILD_VSRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
 	cp $< $@
 
