@@ -5,7 +5,7 @@
 # include core basic info
 include ../../info.mk
 
-#Set ASICSYTH to 1 to include an ASIC synthesis section
+#Set ASICSYNTH to 1 to include an ASIC synthesis section
 ASICSYNTH?=0
 
 #include implementation results; requires FPGA tools
