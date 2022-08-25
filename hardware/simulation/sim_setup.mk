@@ -3,9 +3,9 @@
 #
 
 # copy simulation wrapper
-VSRC+=$(BUILD_VSRC_DIR)/iob_cache_wrapper.v
-$(BUILD_VSRC_DIR)/iob_cache_wrapper.v: $(CORE_SIM_DIR)/iob_cache_wrapper.v
-	cp $< $(BUILD_VSRC_DIR)
+VSRC+=$(BUILD_SIM_DIR)/iob_cache_wrapper.v
+$(BUILD_SIM_DIR)/iob_cache_wrapper.v: $(CORE_SIM_DIR)/iob_cache_wrapper.v
+	cp $< $@
 
 # copy external memory for iob interface
 include hardware/ram/iob_ram_sp_be/hardware.mk
