@@ -1,7 +1,8 @@
-CORE_DIR=../..
+#iob-lib repo location
 LIB_DIR=submodules/LIB
 
-export
+#iob-cache repo location as seen from iob-lib
+CORE_DIR=../..
 
 setup:
 	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
