@@ -40,6 +40,14 @@ SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg_pc_emul.c
 $(BUILD_SW_SRC_DIR)/iob_cache_swreg_pc_emul.c: $(CACHE_DIR)/software/pc-emul/iob_cache_swreg_pc_emul.c
 	cp $< $@
 
+#
+# Scripts
+#
+SRC+=$(BUILD_SW_PYTHON_DIR)/mkregs.py
+$(BUILD_SW_PYTHON_DIR)/mkregs.py: $(LIB_PYTHON_DIR)/mkregs.py
+	cp $< $@
+
+
 #MKREGS
 iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
 	./software/python/mkregs.py $(NAME) $(CACHE_DIR) SW
