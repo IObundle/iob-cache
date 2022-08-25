@@ -12,6 +12,9 @@ else
 	touch $@
 endif
 
+# Add simulation specific sources
+VSRC+=iob_cache_wrapper.v
+
 #verilator top module
 VTOP:=iob_cache_wrapper
 
@@ -31,3 +34,6 @@ test3: test.log
 TEST_LIST+=test4
 test4: test.log
 	make clean SIMULATOR=verilator && make run SIMULATOR=verilator TOP_MODULE=iob_cache_axi
+
+NOCLEAN+=-o -name "iob_cache_wrapper.v"
+NOCLEAN+=-o -name "iob_cache_axi_wire.vh"

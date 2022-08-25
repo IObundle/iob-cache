@@ -14,7 +14,7 @@ include hardware/ram/iob_ram_sp_be/hardware.mk
 include hardware/axiram/hardware.mk
 
 # generate and copy AXI4 wires to connect cache to axi memory
-VHDR+=$(BUILD_VSRC_DIR)/iob_cache_axi_wire.vh
-$(BUILD_VSRC_DIR)/iob_cache_axi_wire.vh:
+VHDR+=$(BUILD_SIM_DIR)/iob_cache_axi_wire.vh
+$(BUILD_SIM_DIR)/iob_cache_axi_wire.vh:
 	./software/python/axi_gen.py axi_wire iob_cache_
-	mv $(subst $(BUILD_VSRC_DIR)/, , $@) $(BUILD_VSRC_DIR)
+	mv $(subst $(BUILD_SIM_DIR)/, , $@) $(BUILD_SIM_DIR)
