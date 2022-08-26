@@ -4,12 +4,12 @@
 
 module iob_cache_back_end
   #(
-    parameter ADDR_W   = `ADDR_W,
-    parameter DATA_W   = `DATA_W,
-    parameter BE_ADDR_W = `BE_ADDR_W,
-    parameter BE_DATA_W = `BE_DATA_W,
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W,
-    parameter WRITE_POL = `WRITE_THROUGH
+    parameter ADDR_W   = `IOB_CACHE_ADDR_W,
+    parameter DATA_W   = `IOB_CACHE_DATA_W,
+    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
+    parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
+    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+    parameter WRITE_POL = `IOB_CACHE_WRITE_THROUGH
     )
    (
     input                                                              clk,
@@ -17,24 +17,24 @@ module iob_cache_back_end
 
     // write-through-buffer
     input                                                              write_valid,
-    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]             write_addr,
+    input [ADDR_W-1 : `IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W]             write_addr,
     input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] write_wdata,
-    input [`NBYTES-1:0]                                                write_wstrb,
+    input [`IOB_CACHE_NBYTES-1:0]                                                write_wstrb,
     output                                                             write_ready,
 
     // cache-line replacement
     input                                                              replace_valid,
-    input [ADDR_W-1:`BE_NBYTES_W + `LINE2BE_W]                         replace_addr,
+    input [ADDR_W-1:`IOB_CACHE_BE_NBYTES_W + `IOB_CACHE_LINE2BE_W]                         replace_addr,
     output                                                             replace,
     output                                                             read_valid,
-    output [`LINE2BE_W -1:0]                                           read_addr,
+    output [`IOB_CACHE_LINE2BE_W -1:0]                                           read_addr,
     output [BE_DATA_W -1:0]                                            read_rdata,
 
     // back-end memory interface
     output                                                             be_valid,
     output [BE_ADDR_W -1:0]                                            be_addr,
     output [BE_DATA_W-1:0]                                             be_wdata,
-    output [`BE_NBYTES-1:0]                                            be_wstrb,
+    output [`IOB_CACHE_BE_NBYTES-1:0]                                            be_wstrb,
     input [BE_DATA_W-1:0]                                              be_rdata,
     input                                                              be_ready
     );
