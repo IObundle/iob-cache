@@ -5,20 +5,20 @@
 
 module iob_cache_write_channel
   #(
-    parameter ADDR_W = `ADDR_W,
-    parameter DATA_W = `DATA_W,
-    parameter BE_ADDR_W = `BE_ADDR_W,
-    parameter BE_DATA_W = `BE_DATA_W,
-    parameter WRITE_POL  = `WRITE_THROUGH,
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W
+    parameter ADDR_W = `IOB_CACHE_ADDR_W,
+    parameter DATA_W = `IOB_CACHE_DATA_W,
+    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
+    parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
+    parameter WRITE_POL  = `IOB_CACHE_WRITE_THROUGH,
+    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W
     )
    (
     input                                                                      clk,
     input                                                                      reset,
 
     input                                                                      valid,
-    input [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W]                    addr,
-    input [`NBYTES-1:0]                                                      wstrb,
+    input [ADDR_W-1 : `IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W]                    addr,
+    input [`IOB_CACHE_NBYTES-1:0]                                                      wstrb,
     input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1:0] wdata, // try [DATA_W*((2**WORD_OFFSET_W)**WRITE_POL)-1:0] (f(x)=a*b^x)
     output reg                                                                 ready,
 
@@ -27,14 +27,14 @@ module iob_cache_write_channel
     output reg                                                                 be_valid,
     input                                                                      be_ready,
     output [BE_DATA_W-1:0]                                                     be_wdata,
-    output reg [`BE_NBYTES-1:0]                                                 be_wstrb
+    output reg [`IOB_CACHE_BE_NBYTES-1:0]                                                 be_wstrb
     );
 
    genvar                                                                      i;
 
    generate
-      if (WRITE_POL == `WRITE_THROUGH) begin
-        assign be_addr = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : `BE_NBYTES_W], {`BE_NBYTES_W{1'b0}}};
+      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin
+        assign be_addr = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W], {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
 
          localparam
            idle  = 1'd0,
@@ -53,7 +53,7 @@ module iob_cache_write_channel
                endcase
             end
          end else begin
-            wire [`BE_NBYTES_W-`NBYTES_W -1 :0] word_align = addr[`NBYTES_W +: (`BE_NBYTES_W - `NBYTES_W)];
+            wire [`IOB_CACHE_BE_NBYTES_W-`IOB_CACHE_NBYTES_W -1 :0] word_align = addr[`IOB_CACHE_NBYTES_W +: (`IOB_CACHE_BE_NBYTES_W - `IOB_CACHE_NBYTES_W)];
 
             for (i=0; i < BE_DATA_W/DATA_W; i=i+1) begin : wdata_block
                assign be_wdata[(i+1)*DATA_W-1:i*DATA_W] = wdata;
@@ -63,7 +63,7 @@ module iob_cache_write_channel
                be_wstrb = 0;
 
                case (state)
-                 write: be_wstrb = wstrb << word_align * `NBYTES;
+                 write: be_wstrb = wstrb << word_align * `IOB_CACHE_NBYTES;
                  default:;
                endcase
             end
@@ -106,13 +106,13 @@ module iob_cache_write_channel
             endcase
          end
       end else begin // if (WRITE_POL == WRITE_BACK)
-         if (`LINE2BE_W > 0) begin
-            reg [`LINE2BE_W-1:0] word_counter, word_counter_reg;
+         if (`IOB_CACHE_LINE2BE_W > 0) begin
+            reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter, word_counter_reg;
             always @(posedge clk)
               word_counter_reg <= word_counter;
 
             // memory address
-            assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: `BE_NBYTES_W + `LINE2BE_W], word_counter, {`BE_NBYTES_W{1'b0}}};
+            assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: `IOB_CACHE_BE_NBYTES_W + `IOB_CACHE_LINE2BE_W], word_counter, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
 
             // memory write-data
             assign be_wdata = wdata >> (BE_DATA_W * word_counter);
@@ -152,20 +152,20 @@ module iob_cache_write_channel
                case (state)
                  idle: begin
                     ready = ~valid;
-                    if (valid) be_wstrb = {`BE_NBYTES{1'b1}};
+                    if (valid) be_wstrb = {`IOB_CACHE_BE_NBYTES{1'b1}};
                     else be_wstrb =0;
                  end
                  default: begin // write
                     ready = be_ready & (&word_counter); // last word transfered
                     be_valid = ~(be_ready & (&word_counter));
-                    be_wstrb = {`BE_NBYTES{1'b1}};
+                    be_wstrb = {`IOB_CACHE_BE_NBYTES{1'b1}};
                     word_counter = word_counter_reg + be_ready;
                  end
                endcase
             end
          end else begin
             // memory address
-            assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: `BE_NBYTES_W], {`BE_NBYTES_W{1'b0}}};
+            assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: `IOB_CACHE_BE_NBYTES_W], {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
 
             // memory write-data
             assign be_wdata = wdata;
@@ -204,13 +204,13 @@ module iob_cache_write_channel
                case (state)
                  idle: begin
                     ready = ~valid;
-                    if (valid) be_wstrb = {`BE_NBYTES{1'b1}};
+                    if (valid) be_wstrb = {`IOB_CACHE_BE_NBYTES{1'b1}};
                     else be_wstrb = 0;
                  end
                  default: begin // write
                     ready = be_ready;
                     be_valid = ~be_ready;
-                    be_wstrb = {`BE_NBYTES{1'b1}};
+                    be_wstrb = {`IOB_CACHE_BE_NBYTES{1'b1}};
                  end
                endcase
             end

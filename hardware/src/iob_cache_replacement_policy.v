@@ -7,7 +7,7 @@ module iob_cache_replacement_policy
     parameter N_WAYS = 8,
     parameter NLINES_W = 0,
     parameter NWAYS_W = $clog2(N_WAYS),
-    parameter REP_POLICY = `PLRU_TREE
+    parameter REP_POLICY = `IOB_CACHE_PLRU_TREE
     )
    (
     input                clk,
@@ -22,7 +22,7 @@ module iob_cache_replacement_policy
    genvar                i, j, k;
 
    generate
-      if (REP_POLICY == `LRU) begin
+      if (REP_POLICY == `IOB_CACHE_LRU) begin
          wire [N_WAYS*NWAYS_W-1:0] mru_out, mru_in;
          wire [N_WAYS*NWAYS_W-1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
          wire [N_WAYS*NWAYS_W-1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
@@ -73,7 +73,7 @@ module iob_cache_replacement_policy
             .onehot(way_select[N_WAYS-1:1]),
             .bin(way_select_bin)
             );
-      end else if (REP_POLICY == `PLRU_MRU) begin
+      end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin
          wire [N_WAYS -1:0]      mru_in, mru_out;
 
          // pseudo LRU MRU based Encoder (More Recenty-Used bits):

@@ -13,30 +13,30 @@
 
 module iob_cache_axi
   #(
-    parameter ADDR_W = `ADDR_W,
-    parameter DATA_W = `DATA_W,
-    parameter BE_ADDR_W = `BE_ADDR_W,
-    parameter BE_DATA_W = `BE_DATA_W,
-    parameter NWAYS_W = `NWAYS_W,
-    parameter NLINES_W = `NLINES_W,
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W,
-    parameter WTBUF_DEPTH_W = `WTBUF_DEPTH_W,
-    parameter REP_POLICY = `PLRU_MRU,
-    parameter WRITE_POL = `WRITE_THROUGH,
-    parameter USE_CTRL = `USE_CTRL,
-    parameter USE_CTRL_CNT = `USE_CTRL_CNT,
-    parameter AXI_ID_W = `AXI_ID_W,
-    parameter AXI_LEN_W = `AXI_LEN_W,
+    parameter ADDR_W = `IOB_CACHE_ADDR_W,
+    parameter DATA_W = `IOB_CACHE_DATA_W,
+    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
+    parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
+    parameter NWAYS_W = `IOB_CACHE_NWAYS_W,
+    parameter NLINES_W = `IOB_CACHE_NLINES_W,
+    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+    parameter WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
+    parameter REP_POLICY = `IOB_CACHE_PLRU_MRU,
+    parameter WRITE_POL = `IOB_CACHE_WRITE_THROUGH,
+    parameter USE_CTRL = `IOB_CACHE_USE_CTRL,
+    parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT,
+    parameter AXI_ID_W = `IOB_CACHE_AXI_ID_W,
+    parameter AXI_LEN_W = `IOB_CACHE_AXI_LEN_W,
     parameter AXI_ADDR_W = BE_ADDR_W,
     parameter AXI_DATA_W = BE_DATA_W,
-    parameter [AXI_ID_W-1:0] AXI_ID = `AXI_ID
+    parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID
    )
    (
     // Front-end interface (IOb native slave)
     `IOB_INPUT(req, 1),
-    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`NBYTES_W),
+    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`IOB_CACHE_NBYTES_W),
     `IOB_INPUT(wdata, DATA_W),
-    `IOB_INPUT(wstrb, `NBYTES),
+    `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES),
     `IOB_OUTPUT(rdata, DATA_W),
     `IOB_OUTPUT(ack, 1),
 
@@ -55,12 +55,12 @@ module iob_cache_axi
    
    //Front-end & Front-end interface.
    wire                                         data_req, data_ack;
-   wire [ADDR_W -1 : `NBYTES_W]                 data_addr;
+   wire [ADDR_W -1 : `IOB_CACHE_NBYTES_W]                 data_addr;
    wire [DATA_W-1 : 0]                          data_wdata, data_rdata;
-   wire [`NBYTES-1: 0]                          data_wstrb;
-   wire [ADDR_W -1 : `NBYTES_W]                 data_addr_reg;
+   wire [`IOB_CACHE_NBYTES-1: 0]                          data_wstrb;
+   wire [ADDR_W -1 : `IOB_CACHE_NBYTES_W]                 data_addr_reg;
    wire [DATA_W-1 : 0]                          data_wdata_reg;
-   wire [`NBYTES-1: 0]                          data_wstrb_reg;
+   wire [`IOB_CACHE_NBYTES-1: 0]                          data_wstrb_reg;
    wire                                         data_req_reg;
 
    wire                                         ctrl_req, ctrl_ack;
@@ -75,7 +75,7 @@ module iob_cache_axi
 
    iob_cache_front_end
      #(
-       .ADDR_W (ADDR_W-`NBYTES_W),
+       .ADDR_W (ADDR_W-`IOB_CACHE_NBYTES_W),
        .DATA_W (DATA_W),
        .USE_CTRL(USE_CTRL)
        )
@@ -118,15 +118,15 @@ module iob_cache_axi
 
    // back-end write-channel
    wire                                         write_req, write_ack;
-   wire [ADDR_W-1 : `NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
+   wire [ADDR_W-1 : `IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
    wire [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] write_wdata;
-   wire [`NBYTES-1:0]                                                write_wstrb;
+   wire [`IOB_CACHE_NBYTES-1:0]                                                write_wstrb;
 
    // back-end read-channel
    wire                                                              replace_req, replace;
-   wire [ADDR_W -1 : `BE_NBYTES_W+`LINE2BE_W]                         replace_addr;
+   wire [ADDR_W -1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]                         replace_addr;
    wire                                                              read_req;
-   wire [`LINE2BE_W-1:0]                                             read_addr;
+   wire [`IOB_CACHE_LINE2BE_W-1:0]                                             read_addr;
    wire [BE_DATA_W-1:0]                                              read_rdata;
 
    iob_cache_memory
@@ -151,7 +151,7 @@ module iob_cache_axi
 
       // front-end
       .req (data_req),
-      .addr (data_addr[ADDR_W-1 : `BE_NBYTES_W+`LINE2BE_W]),
+      .addr (data_addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]),
       .rdata (data_rdata),
       .ack (data_ack),
       .req_reg (data_req_reg),
