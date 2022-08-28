@@ -14,16 +14,13 @@ endif
 #tests
 TEST_LIST+=test1
 test1:
-	make build FPGA_FAMILY=CYCLONEV-GT TOP_MODULE=iob_cache_iob
+	make build FPGA_FAMILY=CYCLONEV-GT TOP_MODULE=iob_cache_iob && \
+	cat quartus.tex >> test.log
 
 TEST_LIST+=test2
-test2: test.log
-	make build FPGA_FAMILY=CYCLONEV-GT TOP_MODULE=iob_cache_axi
+test2:
+	make build FPGA_FAMILY=XCKU TOP_MODULE=iob_cache_axi && \
+	cat vivado.tex >> test.log
 
-#TEST_LIST+=test3
-test3: test.log
-	make build FPGA_FAMILY=XCKU TOP_MODULE=iob_cache_iob
 
-#TEST_LIST+=test4
-test4: test.log
-	make build FPGA_FAMILY=XCKU TOP_MODULE=iob_cache_axi
+.PHONY: $(TEST_LIST)
