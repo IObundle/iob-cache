@@ -16,10 +16,10 @@ module iob_cache_tb;
    //iob-native bus signals
    reg req=0;
    wire ack;
-   reg [`ADDR_W-2:$clog2(`DATA_W/8)] addr =0;
-   reg [`DATA_W-1:0]                 wdata=0;
-   reg [`DATA_W/8-1:0]               wstrb=0;
-   wire [`DATA_W-1:0]                rdata;
+   reg [`IOB_CACHE_ADDR_W-2:$clog2(`IOB_CACHE_DATA_W/8)] addr =0;
+   reg [`IOB_CACHE_DATA_W-1:0]                 wdata=0;
+   reg [`IOB_CACHE_DATA_W/8-1:0]               wstrb=0;
+   wire [`IOB_CACHE_DATA_W-1:0]                rdata;
    reg                               ctrl =0;
 
    reg [31:0]                        test = 0;
@@ -40,7 +40,7 @@ module iob_cache_tb;
       $display("Test 1: Writing Test");
       for(i=0; i<5; i=i+1) begin
 	 @(posedge clk) #1 req=1;
-	 wstrb={`DATA_W/8{1'b1}};
+	 wstrb={`IOB_CACHE_DATA_W/8{1'b1}};
 	 addr=i;
          wdata=i*3;
 	 wait(ack); #1 req=0;
@@ -51,7 +51,7 @@ module iob_cache_tb;
       $display("Test 2: Reading Test");
       for(i=0; i<5; i=i+1) begin
          @(posedge clk) #1 req=1;
-         wstrb={`DATA_W/8{1'b0}};
+         wstrb={`IOB_CACHE_DATA_W/8{1'b0}};
          addr=i;
          wait(ack); #1 req=0;
 	 if(rdata == i*3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
@@ -67,18 +67,18 @@ module iob_cache_tb;
     req = 1;
     addr = 0;
     wdata = 0;
-    wstrb = {`DATA_W/8{1'b1}};
+    wstrb = {`IOB_CACHE_DATA_W/8{1'b1}};
     #2;
     
     for (i = 1; i < 10; i = i + 1)
     begin
-    //wstrb = {`DATA_W/8{1'b1}};
+    //wstrb = {`IOB_CACHE_DATA_W/8{1'b1}};
     addr = i;
     wdata =  i;
     #2
     while (!ack)#2;
     
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+          end // for (i = 0; i < 2**(`IOB_CACHE_ADDR_W-$clog2(`IOB_CACHE_DATA_W/8)); i = i + 1)
     req = 0;
     #80;
     
@@ -94,7 +94,7 @@ module iob_cache_tb;
     addr = j;
     #2
     while (!ack) #2;  
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+          end // for (i = 0; i < 2**(`IOB_CACHE_ADDR_W-$clog2(`IOB_CACHE_DATA_W/8)); i = i + 1)
     req =0;
     addr = 0;
     #20;
@@ -105,7 +105,7 @@ module iob_cache_tb;
     test = 3;
     addr = 0;
     wdata = 10;
-    wstrb = {`DATA_W/8{1'b1}};
+    wstrb = {`IOB_CACHE_DATA_W/8{1'b1}};
     req = 1;
     // #2;
     // req = 0;
@@ -118,7 +118,7 @@ module iob_cache_tb;
     #2;
     
     while (!ack) #2;
-          end // for (i = 0; i < 2**(`ADDR_W-$clog2(`DATA_W/8)); i = i + 1)
+          end // for (i = 0; i < 2**(`IOB_CACHE_ADDR_W-$clog2(`IOB_CACHE_DATA_W/8)); i = i + 1)
     req = 0;
     addr =0;
     #80;
@@ -130,7 +130,7 @@ module iob_cache_tb;
     wstrb =0;
     #2;
     while (!ack) #2;
-    wstrb = {`DATA_W/8{1'b1}};
+    wstrb = {`IOB_CACHE_DATA_W/8{1'b1}};
     wdata = 57005;
     #2;
     wstrb = 0;
@@ -141,9 +141,9 @@ module iob_cache_tb;
     
     $display("Test 5 - Test Line Replacement with read the last written position\n");
     test = 5;
-    addr = (2**`WORD_OFFSET_W)*5-1;
+    addr = (2**`IOB_CACHE_WORD_OFFSET_W)*5-1;
     req = 1;
-    wstrb = {`DATA_W/8{1'b1}};
+    wstrb = {`IOB_CACHE_DATA_W/8{1'b1}};
     wdata = 3735928559;
     #2;
     while (!ack) #2;
@@ -161,7 +161,7 @@ module iob_cache_tb;
     req =1;
     wstrb =0;
     #20
-    wstrb = {`DATA_W/8{1'b1}};
+    wstrb = {`IOB_CACHE_DATA_W/8{1'b1}};
     wdata = 3434332205;
     #2;
     addr = 1; //change of addr
@@ -296,7 +296,7 @@ endmodule
  #(
  .N_WAYS (`N_WAYS),
  .NLINES_W (0),
- .REP_POLICY (`REP_POLICY)
+ .REP_POLICY (`IOB_CACHE_REP_POLICY)
  )
  replacement_policy0
  (

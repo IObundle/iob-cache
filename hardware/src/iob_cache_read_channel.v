@@ -5,20 +5,20 @@
 
 module iob_cache_read_channel
   #(
-    parameter ADDR_W = `ADDR_W,
-    parameter DATA_W = `DATA_W,
-    parameter BE_ADDR_W = `BE_ADDR_W,
-    parameter BE_DATA_W = `BE_DATA_W,
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W
+    parameter ADDR_W = `IOB_CACHE_ADDR_W,
+    parameter DATA_W = `IOB_CACHE_DATA_W,
+    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
+    parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
+    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W
     )
    (
     input                                    clk,
     input                                    reset,
     input                                    replace_valid,
-    input [ADDR_W-1:`BE_NBYTES_W+`LINE2BE_W] replace_addr,
+    input [ADDR_W-1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W] replace_addr,
     output reg                               replace,
     output reg                               read_valid,
-    output reg [`LINE2BE_W-1:0]              read_addr,
+    output reg [`IOB_CACHE_LINE2BE_W-1:0]              read_addr,
     output [BE_DATA_W-1:0]                   read_rdata,
 
     // Native memory interface
@@ -29,10 +29,10 @@ module iob_cache_read_channel
     );
 
    generate
-      if (`LINE2BE_W > 0) begin
-         reg [`LINE2BE_W-1:0] word_counter;
+      if (`IOB_CACHE_LINE2BE_W > 0) begin
+         reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter;
 
-         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[ADDR_W-1 : `BE_NBYTES_W+`LINE2BE_W], word_counter, {`BE_NBYTES_W{1'b0}}};
+         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W], word_counter, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
          assign read_rdata = be_rdata;
 
          localparam
@@ -58,7 +58,7 @@ module iob_cache_read_channel
                  end
                  handshake: begin
                     if (be_ready)
-                      if (read_addr == {`LINE2BE_W{1'b1}}) begin
+                      if (read_addr == {`IOB_CACHE_LINE2BE_W{1'b1}}) begin
                          state <= end_handshake;
                       end else begin
                          state <= handshake;
@@ -94,7 +94,7 @@ module iob_cache_read_channel
             endcase
          end
       end else begin
-         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr, {`BE_NBYTES_W{1'b0}}};
+         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
          assign read_rdata = be_rdata;
 
          localparam

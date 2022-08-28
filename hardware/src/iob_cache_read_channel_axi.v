@@ -4,23 +4,23 @@
 
 module iob_cache_read_channel_axi
   #(
-    parameter ADDR_W = `ADDR_W,
-    parameter DATA_W = `DATA_W,
-    parameter BE_ADDR_W = `BE_ADDR_W,
-    parameter BE_DATA_W = `BE_DATA_W,
-    parameter WORD_OFFSET_W = `WORD_OFFSET_W,
-    parameter AXI_ID_W = `AXI_ID_W,
-    parameter AXI_LEN_W = `AXI_LEN_W,
+    parameter ADDR_W = `IOB_CACHE_ADDR_W,
+    parameter DATA_W = `IOB_CACHE_DATA_W,
+    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
+    parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
+    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+    parameter AXI_ID_W = `IOB_CACHE_AXI_ID_W,
+    parameter AXI_LEN_W = `IOB_CACHE_AXI_LEN_W,
     parameter AXI_ADDR_W = BE_ADDR_W,
     parameter AXI_DATA_W = BE_DATA_W,
-    parameter [AXI_ID_W-1:0] AXI_ID = `AXI_ID
+    parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID
     )
    (
     input                                    replace_valid,
-    input [ADDR_W-1:`BE_NBYTES_W+`LINE2BE_W] replace_addr,
+    input [ADDR_W-1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W] replace_addr,
     output reg                               replace,
     output                                   read_valid,
-    output reg [`LINE2BE_W-1:0]              read_addr,
+    output reg [`IOB_CACHE_LINE2BE_W-1:0]              read_addr,
     output [BE_DATA_W-1:0]                   read_rdata,
 `include "iob_cache_m_axi_m_read_port.vh"
     input                                    clk,
@@ -35,19 +35,19 @@ module iob_cache_read_channel_axi
    
    
    generate
-      if (`LINE2BE_W > 0) begin
+      if (`IOB_CACHE_LINE2BE_W > 0) begin
          // Constant AXI signals
-         assign axi_arid    = `AXI_ID;
+         assign axi_arid    = `IOB_CACHE_AXI_ID;
          assign axi_arlock  = 1'b0;
          assign axi_arcache = 4'b0011;
          assign axi_arprot  = 3'd0;
          assign axi_arqos   = 4'd0;
 
          // Burst parameters
-	 assign axi_arlen   = 2**`LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
-	 assign axi_arsize  = `BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
+	 assign axi_arlen   = 2**`IOB_CACHE_LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
+	 assign axi_arsize  = `IOB_CACHE_BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst = 2'b01;                // incremental burst
-         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(`LINE2BE_W+`BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(`IOB_CACHE_LINE2BE_W+`IOB_CACHE_BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
          assign read_rdata = axi_rdata;
@@ -130,7 +130,7 @@ module iob_cache_read_channel_axi
          
       end else begin
          // Constant AXI signals
-         assign axi_arid    = `AXI_ID;
+         assign axi_arid    = `IOB_CACHE_AXI_ID;
          assign axi_arlock  = 1'b0;
          assign axi_arcache = 4'b0011;
          assign axi_arprot  = 3'd0;
@@ -138,9 +138,9 @@ module iob_cache_read_channel_axi
 
          // Burst parameters - single
          assign axi_arlen   = 8'd0;        // A single burst of Memory data width word
-         assign axi_arsize  = `BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
+         assign axi_arsize  = `IOB_CACHE_BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst = 2'b00;
-         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {`BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
          assign read_valid = axi_rvalid;

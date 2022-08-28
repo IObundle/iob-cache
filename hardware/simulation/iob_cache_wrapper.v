@@ -11,24 +11,24 @@ module iob_cache_wrapper
        input                               reset,
        
        input                               req,
-       input [`ADDR_W-1:$clog2(`DATA_W/8)] addr,
-       input [`DATA_W-1:0]                 wdata,
-       input [`DATA_W/8-1:0]               wstrb,
-       output [`DATA_W-1:0]                rdata,
+       input [`IOB_CACHE_ADDR_W-1:$clog2(`IOB_CACHE_DATA_W/8)] addr,
+       input [`IOB_CACHE_DATA_W-1:0]                 wdata,
+       input [`IOB_CACHE_DATA_W/8-1:0]               wstrb,
+       output [`IOB_CACHE_DATA_W-1:0]                rdata,
        output                              ack
        );	
 
 `ifdef AXI
-   localparam AXI_ADDR_W = `BE_ADDR_W;
-   localparam AXI_DATA_W = `BE_DATA_W;
-   localparam AXI_ID_W = `AXI_ID_W;
-   localparam AXI_LEN_W = `AXI_LEN_W;
+   localparam AXI_ADDR_W = `IOB_CACHE_BE_ADDR_W;
+   localparam AXI_DATA_W = `IOB_CACHE_BE_DATA_W;
+   localparam AXI_ID_W = `IOB_CACHE_AXI_ID_W;
+   localparam AXI_LEN_W = `IOB_CACHE_AXI_LEN_W;
  `include "iob_cache_axi_wire.vh"
 `else
    //Native connections
-   wire [`BE_ADDR_W-1:0]           be_addr;
-   wire [`BE_DATA_W-1:0]           be_wdata, be_rdata;
-   wire [`BE_DATA_W/8-1:0]         be_wstrb;
+   wire [`IOB_CACHE_BE_ADDR_W-1:0]           be_addr;
+   wire [`IOB_CACHE_BE_DATA_W-1:0]           be_wdata, be_rdata;
+   wire [`IOB_CACHE_BE_DATA_W/8-1:0]         be_wstrb;
    wire                            be_req;
    reg                             be_ack;
    
@@ -41,17 +41,17 @@ module iob_cache_wrapper
    iob_cache_iob
 `endif     
      #(
-       .ADDR_W(`ADDR_W),
-       .DATA_W(`DATA_W),
-       .BE_ADDR_W(`BE_ADDR_W),
-       .BE_DATA_W(`BE_DATA_W),
-       .NWAYS_W(`NWAYS_W),
-       .NLINES_W(`NLINES_W),
-       .WORD_OFFSET_W(`WORD_OFFSET_W),
-       .WTBUF_DEPTH_W(`WTBUF_DEPTH_W),
-       .WRITE_POL(`WRITE_POL),
-       .REP_POLICY(`REP_POLICY),
-       .USE_CTRL(`USE_CTRL)
+       .ADDR_W(`IOB_CACHE_ADDR_W),
+       .DATA_W(`IOB_CACHE_DATA_W),
+       .BE_ADDR_W(`IOB_CACHE_BE_ADDR_W),
+       .BE_DATA_W(`IOB_CACHE_BE_DATA_W),
+       .NWAYS_W(`IOB_CACHE_NWAYS_W),
+       .NLINES_W(`IOB_CACHE_NLINES_W),
+       .WORD_OFFSET_W(`IOB_CACHE_WORD_OFFSET_W),
+       .WTBUF_DEPTH_W(`IOB_CACHE_WTBUF_DEPTH_W),
+       .WRITE_POL(`IOB_CACHE_WRITE_POL),
+       .REP_POLICY(`IOB_CACHE_REP_POLICY),
+       .USE_CTRL(`IOB_CACHE_USE_CTRL)
        )
 `ifdef AXI   
    cache_axi
@@ -92,10 +92,10 @@ module iob_cache_wrapper
 `ifdef AXI  
    axi_ram 
      #(
-       .ID_WIDTH(`AXI_ID_W),
-       .LEN_WIDTH(`AXI_LEN_W),
-       .DATA_WIDTH (`BE_DATA_W),
-       .ADDR_WIDTH (`BE_ADDR_W)
+       .ID_WIDTH(`IOB_CACHE_AXI_ID_W),
+       .LEN_WIDTH(`IOB_CACHE_AXI_LEN_W),
+       .DATA_WIDTH (`IOB_CACHE_BE_DATA_W),
+       .ADDR_WIDTH (`IOB_CACHE_BE_ADDR_W)
        )
    axi_ram
      (
@@ -153,8 +153,8 @@ module iob_cache_wrapper
 
    iob_ram_sp_be 
      #(
-       .DATA_W(`BE_DATA_W),
-       .ADDR_W(`BE_ADDR_W)
+       .DATA_W(`IOB_CACHE_BE_DATA_W),
+       .ADDR_W(`IOB_CACHE_BE_ADDR_W)
        )
    native_ram
      (
