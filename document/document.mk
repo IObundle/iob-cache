@@ -8,13 +8,15 @@ include ../../info.mk
 #Set ASICSYNTH to 1 to include an ASIC synthesis section
 ASICSYNTH?=0
 
-#include implementation results; requires FPGA tools
-#default is 0 as FPGA tools may not be installed
-RESULTS?=0
-
+#include implementation results; requires EDA tools
+#default is 0 as EDA tools may not be accessible
+RESULTS?=1
+#default Intel FPGA family
 INT_FAMILY ?=CYCLONEV-GT
+#default Intel FPGA family
 XIL_FAMILY ?=XCKU
-
+#default ASIC node
+#ASIC_NODE ?=UMC130
 
 test: clean test1 test2
 
