@@ -7,7 +7,7 @@ defaults:
 
 on:
   push:
-    branches: [ master buil-lib ]
+    branches: [ master build-lib ]
   # Don't forget to require approval for all outside collaborators
   pull_request:
     branches: '*'
