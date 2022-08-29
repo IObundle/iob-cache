@@ -1,5 +1,5 @@
 #
-# This file is included in BUILD_DIR/fpga/Makefile
+# This file is included by BUILD_DIR/fpga/Makefile
 #
 
 # include core basic info
