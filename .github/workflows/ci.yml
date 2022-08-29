@@ -7,7 +7,9 @@ defaults:
 
 on:
   push:
-    branches: [ master build-lib ]
+    branches: 
+      - master
+      - build-lib
   # Don't forget to require approval for all outside collaborators
   pull_request:
     branches: '*'
@@ -24,36 +26,46 @@ jobs:
   sim:
     runs-on: self-hosted
     timeout-minutes: 10
-    if: ${{ !cancelled() }}
+
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup
-        run: make setup
+      - name: test-clean
+        run: make test-clean
       - name: test-sim
-        run: make -C iob_cache_V0.10/ sim-test
+        run: make test-sim
+
   fpga:
     runs-on: self-hosted
-    timeout-minutes: 10
+    timeout-minutes: 30
+    # always run, except when previous job was cancelled
     if: ${{ !cancelled() }}
+    # run after indicated job
+    needs: sim
+
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup
-        run: make setup
+      - name: test-clean
+        run: make test-clean
       - name: test-fpga
-        run: make -C iob_cache_V0.10/ fpga-test
+        run: make test-fpga
+
   doc:
     runs-on: self-hosted
-    timeout-minutes: 10
+    timeout-minutes: 30
+    # always run, except when previous job was cancelled
     if: ${{ !cancelled() }}
+    # run after indicated job
+    needs: fpga
+
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup
-        run: make setup
+      - name: test-clean
+        run: make test-clean
       - name: test-doc
-        run: make -C iob_cache_V0.10/ doc-test
+        run: make test-doc
