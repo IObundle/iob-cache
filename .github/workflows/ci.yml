@@ -9,7 +9,7 @@ on:
   push:
     branches: 
       - master
-      - doc
+      - build-lib
   # Don't forget to require approval for all outside collaborators
   pull_request:
     branches: '*'
