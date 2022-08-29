@@ -1,0 +1,13 @@
+ALM & 802  \\ \hline
+\rowcolor{iob-blue}
+FF & 600  \\  \hline
+DSP & 0  \\ \hline
+\rowcolor{iob-blue}
+BRAM blocks & 68  \\ \hline
+\rowcolor{iob-blue}
+LUTs                   & 2114 \\ \hline
+\rowcolor{iob-blue}
+Registers              & 1196  \\  \hline
+DSPs      &    0 \\ \hline
+\rowcolor{iob-blue}
+BRAM  &    0 \\ \hline
