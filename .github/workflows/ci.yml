@@ -34,7 +34,7 @@ jobs:
       - name: setup
         run: make setup
       - name: test-sim
-        run: make sim-test
+        run: make -C iob_cache_* sim-test
 
   fpga:
     runs-on: self-hosted
@@ -49,7 +49,7 @@ jobs:
         with:
           submodules: 'recursive'
       - name: test-fpga
-        run: make fpga-test
+        run: make -C iob_cache_* fpga-test
 
   doc:
     runs-on: self-hosted
@@ -64,4 +64,4 @@ jobs:
         with:
           submodules: 'recursive'
       - name: test-doc
-        run: make doc-test
+        run: make  -C iob_cache_* doc-test
