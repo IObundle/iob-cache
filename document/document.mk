@@ -2,9 +2,6 @@
 # This file is included in BUILD_DIR/fpga/Makefile
 #
 
-# include core basic info
-include ../../info.mk
-
 #Set ASICSYNTH to 1 to include an ASIC synthesis section
 ASICSYNTH?=0
 
