@@ -7,7 +7,7 @@ ASICSYNTH?=0
 
 #include implementation results; requires EDA tools
 #default is 0 as EDA tools may not be accessible
-RESULTS = 1
+RESULTS ?= 1
 #default Intel FPGA family
 INT_FAMILY = CYCLONEV-GT
 #default Intel FPGA family

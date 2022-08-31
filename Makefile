@@ -5,13 +5,13 @@ LIB_DIR=submodules/LIB
 CORE_DIR=../..
 
 setup:
-	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
+	make -C $(LIB_DIR) $@
 
 clean:
-	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
+	make -C $(LIB_DIR) $@
 
 debug:
-	cd $(LIB_DIR); ./iob-lib.sh $(CORE_DIR) $@
+	make -C $(LIB_DIR) $@
 
 
 .PHONY: setup clean debug
