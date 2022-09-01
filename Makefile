@@ -1,8 +1,8 @@
 #iob-lib repo location
-LIB_DIR=submodules/LIB
+LIB_DIR?=submodules/LIB
 
 #iob-cache repo location as seen from iob-lib
-CORE_DIR=../..
+CORE_DIR?=../..
 
 setup:
 	make -C $(LIB_DIR) $@

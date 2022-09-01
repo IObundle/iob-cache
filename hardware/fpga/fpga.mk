@@ -1,6 +1,8 @@
+# (c) 2022-Present IObundle, Lda, all rights reserved
 #
-# This file is included by BUILD_DIR/fpga/Makefile
+# This makefile segment is used at build-time in $(BUILD_DIR)/hw/fpga/Makefile
 #
+
 
 ifeq ($(TOP_MODULE),iob_cache_axi)
 DEFINE=AXI

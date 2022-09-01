@@ -1,5 +1,6 @@
+# (c) 2022-Present IObundle, Lda, all rights reserved
 #
-# This file is included in BUILD_DIR/fpga/Makefile
+# This makefile segment is used at build-time in $(BUILD_DIR)/doc/Makefile
 #
 
 #Set ASICSYNTH to 1 to include an ASIC synthesis section
