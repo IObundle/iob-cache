@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: ./setup.sh
-        run: make setup
+      - name: setup
+        run: ./setup.sh
       - name: test-doc
         run: make  -C iob_cache_* doc-test
