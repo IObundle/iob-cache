@@ -32,7 +32,7 @@ jobs:
         with:
           submodules: 'recursive'
       - name: setup
-        run: make setup
+        run: ./setup.sh
       - name: test-sim
         run: make -C iob_cache_* sim-test
 
