@@ -39,8 +39,8 @@ $(BUILD_SW_SRC_DIR)/%.c: $(CACHE_DIR)/software/%.c
 #
 # PC Emul Sources
 #
-SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg_pc_emul.c
-$(BUILD_SW_SRC_DIR)/iob_cache_swreg_pc_emul.c: $(CACHE_DIR)/software/pc-emul/iob_cache_swreg_pc_emul.c
+SRC+=$(BUILD_SW_PCSRC_DIR)/iob_cache_swreg_pc_emul.c
+$(BUILD_SW_PCSRC_DIR)/iob_cache_swreg_pc_emul.c: $(CACHE_DIR)/software/pc-emul/iob_cache_swreg_pc_emul.c
 	cp $< $@
 
 
