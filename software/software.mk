@@ -21,7 +21,7 @@ $(BUILD_SW_SRC_DIR)/iob_cache_swreg_emb.c: iob_cache_swreg_emb.c
 	mv $< $@
 
 iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
-	$(LIB_DIR)/software/python/mkregs.py $(NAME) $(CACHE_DIR) SW
+	$(LIB_DIR)/software/python/mkregs.py iob_cache $(CACHE_DIR) SW
 
 # C header files
 HDR1=$(wildcard $(CACHE_DIR)/software/*.h)
