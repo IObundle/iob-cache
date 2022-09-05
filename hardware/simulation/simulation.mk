@@ -12,9 +12,6 @@ else
 	touch $@
 endif
 
-# Add simulation specific sources
-VSRC+=iob_cache_wrapper.v
-
 #verilator top module
 VTOP:=iob_cache_wrapper
 

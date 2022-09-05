@@ -2,11 +2,6 @@
 # SIMULATION HARDWARE
 #
 
-# copy simulation wrapper
-SRC+=$(BUILD_SIM_DIR)/iob_cache_wrapper.v
-$(BUILD_SIM_DIR)/iob_cache_wrapper.v: $(CORE_SIM_DIR)/iob_cache_wrapper.v
-	cp $< $@
-
 # copy external memory for iob interface
 include $(LIB_DIR)/hardware/ram/iob_ram_sp_be/hardware.mk
 

@@ -8,6 +8,7 @@
 
 
 #import lib hardware
+include $(LIB_DIR)/hardware/include/hardware.mk
 include $(LIB_DIR)/hardware/regfile/iob_regfile_sp/hardware.mk
 include $(LIB_DIR)/hardware/fifo/iob_fifo_sync/hardware.mk
 include $(LIB_DIR)/hardware/ram/iob_ram_2p/hardware.mk
@@ -18,20 +19,14 @@ include $(LIB_DIR)/hardware/ram/iob_ram_sp/hardware.mk
 
 #core headers
 
-SRC+=$(BUILD_VSRC_DIR)/iob_cache_version.vh
-$(BUILD_VSRC_DIR)/iob_cache_version.vh:
-	$(LIB_DIR)/software/python/version.py -v $(CACHE_DIR)
-	mv iob_cache_version.vh $(BUILD_VSRC_DIR)
-
 SRC+=$(subst $(CACHE_DIR)/hardware/src, $(BUILD_VSRC_DIR), $(wildcard $(CACHE_DIR)/hardware/src/*.vh) )
 $(BUILD_VSRC_DIR)/%.vh: $(CACHE_DIR)/hardware/src/%.vh
 	cp $< $@
 
-SRC+=$(BUILD_VSRC_DIR)/iob_gen_if.vh
-$(BUILD_VSRC_DIR)/iob_gen_if.vh: $(LIB_DIR)/hardware/include/iob_gen_if.vh
-	cp $< $(BUILD_VSRC_DIR)
-
-SRC+=$(BUILD_VSRC_DIR)/iob_lib.vh
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_version.vh
+$(BUILD_VSRC_DIR)/iob_cache_version.vh:
+	$(LIB_DIR)/software/python/version.py -v $(CACHE_DIR)
+	mv iob_cache_version.vh $(BUILD_VSRC_DIR)
 
 AXI_GEN:= $(LIB_DIR)/software/python/axi_gen.py
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
@@ -59,11 +54,11 @@ $(BUILD_VSRC_DIR)/iob_cache_m_axi_read_portmap.vh:
 	$(AXI_GEN) axi_read_portmap iob_cache_m_ && mv iob_cache_m_axi_read_portmap.vh $(BUILD_VSRC_DIR)
 
 
-#cache software accessible register defines
+#software accessible register defines
+#note that this IP does not use the generated iob_cache_swreg_gen.vh as it provides this functionality itself
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh
 $(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh: iob_cache_swreg_def.vh
 	mv $< $@ && rm iob_cache_swreg_gen.vh
-
 iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
 	$(LIB_DIR)/software/python/mkregs.py iob_cache $(CACHE_DIR) HW
 
