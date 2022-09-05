@@ -9,7 +9,7 @@
 
 # VERSION FILE
 # create and copy core version header files
-SRC+=$(BUILD_DOC_DIR)/tsrc/$(NAME)_version.tex
-$(BUILD_DOC_DIR)/tsrc/$(NAME)_version.tex:
-	$(LIB_DIR)/software/python/version.py -t $(CORE_DIR)
-	mv $(NAME)_version.tex $(BUILD_DOC_DIR)/tsrc
+SRC+=$(BUILD_DOC_DIR)/tsrc/iob_cache_version.tex
+$(BUILD_DOC_DIR)/tsrc/iob_cache_version.tex:
+	$(LIB_DIR)/software/python/version.py -t $(CACHE_DIR)
+	mv iob_cache_version.tex $(BUILD_DOC_DIR)/tsrc
