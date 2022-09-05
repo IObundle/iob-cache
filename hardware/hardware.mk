@@ -17,6 +17,12 @@ include $(LIB_DIR)/hardware/ram/iob_ram_sp/hardware.mk
 #HEADERS
 
 #core headers
+
+SRC+=$(BUILD_VSRC_DIR)/$(NAME)_version.vh
+$(BUILD_VSRC_DIR)/$(NAME)_version.vh:
+	$(LIB_DIR)/software/python/version.py -v $(CORE_DIR)
+	mv $(NAME)_version.vh $(BUILD_VSRC_DIR)
+
 SRC+=$(subst $(CACHE_DIR)/hardware/src, $(BUILD_VSRC_DIR), $(wildcard $(CACHE_DIR)/hardware/src/*.vh) )
 $(BUILD_VSRC_DIR)/%.vh: $(CACHE_DIR)/hardware/src/%.vh
 	cp $< $@
