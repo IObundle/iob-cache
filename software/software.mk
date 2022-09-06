@@ -13,7 +13,6 @@
 # sw accessible registers C header and source files
 SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg.h
 $(BUILD_SW_SRC_DIR)/iob_cache_swreg.h: iob_cache_swreg.h
-	pwd
 	mv $< $@
 
 SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg_emb.c
