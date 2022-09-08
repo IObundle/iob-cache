@@ -1,5 +1,5 @@
 # core path
 CACHE_DIR ?= .
-SIMULATOR=icarus
-BOARD=CYCLONEV-GT-DK
+SIMULATOR ?= icarus
+BOARD ?= CYCLONEV-GT-DK
 
