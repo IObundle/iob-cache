@@ -12,13 +12,13 @@ endif
 
 #tests
 TEST_LIST+=test1
-test1: clean
-	make build TOP_MODULE=iob_cache_iob
+test1:
+	make clean && make build TOP_MODULE=iob_cache_iob
 	cat *.tex > test.log
 
 TEST_LIST+=test2
-test2: clean
-	make build TOP_MODULE=iob_cache_axi
+test2:
+	make clean && make build TOP_MODULE=iob_cache_axi
 	cat *.tex >> test.log
 
 

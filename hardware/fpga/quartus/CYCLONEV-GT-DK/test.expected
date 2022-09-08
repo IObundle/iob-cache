@@ -5,9 +5,9 @@ DSP & 0  \\ \hline
 \rowcolor{iob-blue}
 BRAM blocks & 68  \\ \hline
 \rowcolor{iob-blue}
-ALM & 812  \\ \hline
+ALM & 800  \\ \hline
 \rowcolor{iob-blue}
-FF & 600  \\  \hline
+FF & 607  \\  \hline
 DSP & 0  \\ \hline
 \rowcolor{iob-blue}
 BRAM blocks & 68  \\ \hline

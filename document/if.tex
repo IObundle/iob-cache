@@ -1,54 +1,39 @@
 \begin{longtable}{|l|c|c|p{10.5cm}|}
-    \hline
-    \rowcolor{iob-green}
+  \caption{General Interface Signals}\\ \hline
+  %\label{gen_tab:is}
+  \rowcolor{iob-green}
     \multicolumn{1}{|c}{\bf Name} & \multicolumn{1}{|c|}{\bf Direction} & \multicolumn{1}{c|}{\bf Width} & \multicolumn{1}{c|}{\bf Description}  \\ \hline \hline
-
     \input{gen_if_tab}
-
-  \caption{General Interface Signals}
-  \label{gen_tab:is}
 \end{longtable}
 
 \begin{longtable}{|l|c|c|p{6.4cm}|}
-    \hline
+    \caption{Front-End Interface Signals}\\ \hline
     \rowcolor{iob-green}
     \multicolumn{1}{|c|}{\bf Name} & \multicolumn{1}{c|}{\bf Direction} & \multicolumn{1}{c|}{\bf Width} & \multicolumn{1}{c|}{\bf Description}  \\ \hline \hline
-
     \input{fe_if_tab}
-
-  \caption{Front-End Interface Signals}
-  \label{tab:if_fe}
+    \label{tab:if_fe}
 \end{longtable}
 
 \begin{longtable}{|l|c|c|p{10.5cm}|}
-    \hline
+    \caption{Invalidate and Write-Through Buffer Empty Chain Interface Signals}\\ \hline
     \rowcolor{iob-green}
     \multicolumn{1}{|c}{\bf Name} & \multicolumn{1}{c|}{\bf Direction} & \multicolumn{1}{c|}{\bf Width} & \multicolumn{1}{c|}{\bf Description}  \\ \hline \hline
-
     \input{ie_if_tab}
- 
-  \caption{Invalidate and Write-Through Buffer Empty Chain Interface Signals}
-  \label{tab:if_ie}
+    \label{tab:if_ie}
 \end{longtable}
 
 \begin{longtable}{|l|c|c|p{9.7cm}|}
-    \hline
+    \caption{Native Back-End Interface Signals}\\ \hline
     \rowcolor{iob-green}
     \multicolumn{1}{|c|}{\bf Name} & \multicolumn{1}{c|}{\bf Direction} & \multicolumn{1}{c|}{\bf Width} & \multicolumn{1}{c|}{\bf Description}  \\ \hline \hline
-
    \input{be_if_tab}
-
-  \caption{Native Back-End Interface Signals}
-  \label{tab:if_be_native}
+   \label{tab:if_be_native}
 \end{longtable}
 
 \begin{longtable}{|l|c|c|p{9.7cm}|}
-    \hline
+    \caption{Back-End Interface Signals}\\ \hline
     \rowcolor{iob-green}
     \multicolumn{1}{|c|}{\bf Name} & \multicolumn{1}{c|}{\bf Direction} & \multicolumn{1}{c|}{\bf Width} & \multicolumn{1}{c|}{\bf Description}  \\ \hline \hline
-
-   \input{axi_m_port_if_tab}
-
-  \caption{Back-End Interface Signals}
-  \label{tab:if_be}
+    \input{axi_m_port_if_tab}
+    \label{tab:if_be}
 \end{longtable}

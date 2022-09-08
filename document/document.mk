@@ -9,10 +9,17 @@ ASICSYNTH?=0
 #include implementation results; requires EDA tools
 #default is 0 as EDA tools may not be accessible
 RESULTS ?= 1
+
 #default Intel FPGA family
-INT_FAMILY = CYCLONEV-GT
-#default Intel FPGA family
-XIL_FAMILY = XCKU
+ifeq ($(BOARD),CYCLONEV-GT-DK)
+INT_FAMILY = 1
+endif
+
+#default AMD FPGA family
+ifeq ($(BOARD),AES-KU040-DB-G)
+XIL_FAMILY = 1
+endif
+
 #default ASIC node
 #ASIC_NODE ?=UMC130
 
