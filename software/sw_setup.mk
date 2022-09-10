@@ -11,12 +11,12 @@
 #
 
 # sw accessible registers C header and source files
-SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg.h
-$(BUILD_SW_SRC_DIR)/iob_cache_swreg.h: iob_cache_swreg.h
+SRC+=$(BUILD_DIR)/sw/src/iob_cache_swreg.h
+$(BUILD_DIR)/sw/src/iob_cache_swreg.h: iob_cache_swreg.h
 	mv $< $@
 
-SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg_emb.c
-$(BUILD_SW_SRC_DIR)/iob_cache_swreg_emb.c: iob_cache_swreg_emb.c
+SRC+=$(BUILD_DIR)/sw/src/iob_cache_swreg_emb.c
+$(BUILD_DIR)/sw/src/iob_cache_swreg_emb.c: iob_cache_swreg_emb.c
 	mv $< $@
 
 iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
@@ -24,22 +24,22 @@ iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
 
 # C header files
 HDR1=$(wildcard $(CACHE_DIR)/software/*.h)
-SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_SW_SRC_DIR)/%,$(HDR1))
-$(BUILD_SW_SRC_DIR)/%.h: $(CACHE_DIR)/software/%.h
+SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_DIR)/sw/src/%,$(HDR1))
+$(BUILD_DIR)/sw/src/%.h: $(CACHE_DIR)/software/%.h
 	cp $< $@
 
 # C source files
 SRC1=$(wildcard $(CACHE_DIR)/software/*.c)
-SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_SW_SRC_DIR)/%,$(SRC1))
-$(BUILD_SW_SRC_DIR)/%.c: $(CACHE_DIR)/software/%.c
+SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_DIR)/sw/src/%,$(SRC1))
+$(BUILD_DIR)/sw/src/%.c: $(CACHE_DIR)/software/%.c
 	cp $< $@
 
 
 #
 # PC Emul Sources
 #
-SRC+=$(BUILD_SW_PCSRC_DIR)/iob_cache_swreg_pc_emul.c
-$(BUILD_SW_PCSRC_DIR)/iob_cache_swreg_pc_emul.c: $(CACHE_DIR)/software/pc-emul/iob_cache_swreg_pc_emul.c
+SRC+=$(BUILD_DIR)/sw/pcsrc/iob_cache_swreg_pc_emul.c
+$(BUILD_DIR)/sw/pcsrc/iob_cache_swreg_pc_emul.c: $(CACHE_DIR)/software/pc-emul/iob_cache_swreg_pc_emul.c
 	cp $< $@
 
 

@@ -12,12 +12,12 @@ RESULTS ?= 1
 
 #default Intel FPGA family
 ifeq ($(BOARD),CYCLONEV-GT-DK)
-INT_FAMILY = 1
+INTEL_FPGA = 1
 endif
 
 #default AMD FPGA family
 ifeq ($(BOARD),AES-KU040-DB-G)
-XIL_FAMILY = 1
+AMD_FPGA = 1
 endif
 
 #default ASIC node
