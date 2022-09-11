@@ -24,12 +24,6 @@ endif
 #ASIC_NODE ?=UMC130
 
 #tests
-TEST_LIST+=test1
-test1: pb.pdf
-	cat pb.aux > test.log
-
-TEST_LIST+=test2
-test2: ug.pdf
-	cat ug.aux >> test.log
+TEST_LIST:=pb.pdf ug.pdf
 
 .PHONY: $(TEST_LIST)
