@@ -12,15 +12,9 @@
 
 # sw accessible registers C header and source files
 SRC+=$(BUILD_DIR)/sw/src/iob_cache_swreg.h
-$(BUILD_DIR)/sw/src/iob_cache_swreg.h: iob_cache_swreg.h
-	mv $< $@
-
-SRC+=$(BUILD_DIR)/sw/src/iob_cache_swreg_emb.c
-$(BUILD_DIR)/sw/src/iob_cache_swreg_emb.c: iob_cache_swreg_emb.c
-	mv $< $@
-
-iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
+$(BUILD_DIR)/sw/src/iob_cache_swreg.h: $(CACHE_DIR)/mkregs.conf
 	$(LIB_DIR)/software/python/mkregs.py iob_cache $(CACHE_DIR) SW
+	mv `basename $@` $@ && mv iob_cache_swreg_emb.c $(BUILD_DIR)/sw/src/iob_cache_swreg_emb.c
 
 # C header files
 HDR1=$(wildcard $(CACHE_DIR)/software/*.h)
@@ -41,5 +35,4 @@ $(BUILD_DIR)/sw/src/%.c: $(CACHE_DIR)/software/%.c
 SRC+=$(BUILD_DIR)/sw/pcsrc/iob_cache_swreg_pc_emul.c
 $(BUILD_DIR)/sw/pcsrc/iob_cache_swreg_pc_emul.c: $(CACHE_DIR)/software/pc-emul/iob_cache_swreg_pc_emul.c
 	cp $< $@
-
 

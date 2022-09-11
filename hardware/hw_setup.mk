@@ -57,10 +57,9 @@ $(BUILD_VSRC_DIR)/iob_cache_m_axi_read_portmap.vh:
 #software accessible register defines
 #note that this IP does not use the generated iob_cache_swreg_gen.vh as it provides this functionality itself
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh
-$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh: iob_cache_swreg_def.vh
-	mv $< $@ && rm iob_cache_swreg_gen.vh
-iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
+$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
 	$(LIB_DIR)/software/python/mkregs.py iob_cache $(CACHE_DIR) HW
+	mv `basename $@` $@ && rm iob_cache_swreg_gen.vh
 
 #SOURCES
 SRC+=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(wildcard $(CACHE_DIR)/hardware/src/*.v))

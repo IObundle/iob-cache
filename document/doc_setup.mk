@@ -6,10 +6,13 @@
 #
 #
 
-
-# VERSION FILE
 # create and copy core version header files
 SRC+=$(BUILD_DOC_DIR)/tsrc/iob_cache_version.tex
 $(BUILD_DOC_DIR)/tsrc/iob_cache_version.tex:
 	$(LIB_DIR)/software/python/version.py -t $(CACHE_DIR)
 	mv iob_cache_version.tex $(BUILD_DOC_DIR)/tsrc
+
+# copy sw registers configuration file used by verilog2tex.py
+SRC+=$(BUILD_DIR)/doc/tsrc/mkregs.conf
+$(BUILD_DIR)/doc/tsrc/mkregs.conf: mkregs.conf
+	cp $< $@

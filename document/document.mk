@@ -26,7 +26,7 @@ endif
 #tests
 TEST_LIST+=test1
 test1: pb.pdf
-	cat pb.aux >> test.log
+	cat pb.aux > test.log
 
 TEST_LIST+=test2
 test2: ug.pdf
