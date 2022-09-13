@@ -18,11 +18,3 @@ TOP_MODULE?=iob_cache_iob
 
 # root directory
 CACHE_DIR ?= .
-
-# supported simulator 
-SIMULATOR ?= icarus
-
-# supported FPGA board (compiles for the device therein)
-# this component needs to be integrated in a system to actually run
-BOARD ?= CYCLONEV-GT-DK
-

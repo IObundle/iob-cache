@@ -14,7 +14,3 @@ $(BUILD_SIM_DIR)/iob_cache_axi_wire.vh:
 	$(LIB_DIR)/software/python/axi_gen.py axi_wire iob_cache_
 	mv iob_cache_axi_wire.vh $(BUILD_SIM_DIR)
 
-# copy python script
-SRC+=$(BUILD_DIR)/sw/python/hw_defines.py
-$(BUILD_DIR)/sw/python/hw_defines.py: $(LIB_DIR)/software/python/hw_defines.py
-	cp $< $@

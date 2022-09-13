@@ -60,8 +60,3 @@ SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh
 $(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh: $(CACHE_DIR)/mkregs.conf
 	$(LIB_DIR)/software/python/mkregs.py iob_cache $(CACHE_DIR) HW
 	mv `basename $@` $@ && rm iob_cache_swreg_gen.vh
-
-#SOURCES
-SRC+=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(wildcard $(CACHE_DIR)/hardware/src/*.v))
-$(BUILD_VSRC_DIR)/%.v: $(CACHE_DIR)/hardware/src/%.v
-	cp $< $@
