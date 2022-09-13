@@ -17,14 +17,12 @@ $(BUILD_DIR)/sw/src/iob_cache_swreg.h: $(CACHE_DIR)/mkregs.conf
 	mv `basename $@` $@ && mv iob_cache_swreg_emb.c $(BUILD_DIR)/sw/src/iob_cache_swreg_emb.c
 
 # C header files
-HDR1=$(wildcard $(CACHE_DIR)/software/*.h)
-SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_DIR)/sw/src/%,$(HDR1))
+SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_DIR)/sw/src/%, $(wildcard $(CACHE_DIR)/software/*.h))
 $(BUILD_DIR)/sw/src/%.h: $(CACHE_DIR)/software/%.h
 	cp $< $@
 
 # C source files
-SRC1=$(wildcard $(CACHE_DIR)/software/*.c)
-SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_DIR)/sw/src/%,$(SRC1))
+SRC+=$(patsubst $(CACHE_DIR)/software/%,$(BUILD_DIR)/sw/src/%, $(wildcard $(CACHE_DIR)/software/*.c))
 $(BUILD_DIR)/sw/src/%.c: $(CACHE_DIR)/software/%.c
 	cp $< $@
 
