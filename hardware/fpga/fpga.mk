@@ -20,7 +20,7 @@ test1:
 
 #TEST_LIST+=test3
 #test3:
-#	make clean && make build TOP_MODULE=iob_cache_iob BOARD=AES-KU040-DB-
+#	make clean && make build TOP_MODULE=iob_cache_iob BOARD=AES-KU040-DB-G
 
 TEST_LIST+=test4
 test4:

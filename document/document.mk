@@ -6,22 +6,21 @@
 #Set ASICSYNTH to 1 to include an ASIC synthesis section
 ASICSYNTH?=0
 
-#include implementation results; requires EDA tools
-#default is 0 as EDA tools may not be accessible
-RESULTS ?= 1
+#include implementation results if available
+RESULTS = $(INTEL_FPGA)$(AMD_FPGA)$(UMC130_ASIC)
 
-#default Intel FPGA family
-ifeq ($(BOARD),CYCLONEV-GT-DK)
+ifneq ($(wildcard quartus.tex),)
 INTEL_FPGA = 1
 endif
 
-#default AMD FPGA family
-ifeq ($(BOARD),AES-KU040-DB-G)
+ifneq ($(wildcard vivado.tex),)
 AMD_FPGA = 1
 endif
 
-#default ASIC node
-#ASIC_NODE ?=UMC130
+ifneq ($(wildcard umc130.tex),)
+UMC130_ASIC = 1
+endif
+
 
 #tests
 TEST_LIST:=pb.pdf ug.pdf
