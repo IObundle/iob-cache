@@ -10,11 +10,11 @@ NAME=iob_cache
 # core version 
 VERSION=0010
 
-# top-level module for IOB backend interface
-TOP_MODULE?=iob_cache_iob
+# include implementation in document (disabled by default)
+DOC_RESULTS=
 
-# top-level module for AXI4 backend interface
-#TOP_MODULE?=iob_cache_axi
-
-# root directory
+# root directory when building locally
 CACHE_DIR ?= .
+
+# default configuration
+CACHE_CONFIG ?= iob

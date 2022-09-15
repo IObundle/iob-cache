@@ -20,9 +20,14 @@ include $(LIB_DIR)/hardware/ram/iob_ram_sp/hardware.mk
 #core headers
 
 AXI_GEN:= $(LIB_DIR)/software/python/axi_gen.py
+
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
 	$(AXI_GEN) axi_m_port iob_cache_ && mv iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
+
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_ram_axi_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_ram_axi_portmap.vh:
+	$(AXI_GEN) axi_portmap iob_cache_ram_ && mv iob_cache_ram_axi_portmap.vh $(BUILD_VSRC_DIR)
 
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh:
