@@ -8,5 +8,5 @@
 # sw accessible registers C header and source files
 SRC+=$(BUILD_ESRC_DIR)/iob_cache_swreg.h
 $(BUILD_ESRC_DIR)/iob_cache_swreg.h: $(CACHE_DIR)/mkregs.conf
-	$(LIB_DIR)/software/python/mkregs.py iob_cache $(CACHE_DIR) SW
+	$(LIB_DIR)/scripts/mkregs.py iob_cache $(CACHE_DIR) SW
 	mv `basename $@` $@ && mv iob_cache_swreg_emb.c $(BUILD_ESRC_DIR)/iob_cache_swreg_emb.c
