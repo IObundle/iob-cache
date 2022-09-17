@@ -134,7 +134,14 @@ module iob_cache_tb;
       .addr(be_addr),
       .dout(be_rdata),
       .din (be_wdata)
-      );   
+      );
+
+   always @(posedge clk, posedge reset)
+     if(reset) 
+       be_ack <= 1'b0;
+     else
+       be_ack <= be_req;
+   
 `endif
 
    initial begin
