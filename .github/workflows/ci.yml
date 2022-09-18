@@ -36,7 +36,7 @@ jobs:
       - name: sim-test iob
         run: make -C ../iob_cache_* sim-test
       - name: sim-clean
-        run: make -C ../iob_cache_*sim-clean
+        run: make -C ../iob_cache_* sim-clean
       - name: test-fpga
         run: make -C ../iob_cache_* fpga-test
       - name: fpga-clean
