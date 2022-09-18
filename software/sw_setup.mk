@@ -6,7 +6,11 @@
 #
 
 # sw accessible registers C header and source files
-SRC+=$(BUILD_SW_SRC_DIR)/iob_cache_swreg.h
-$(BUILD_SW_SRC_DIR)/iob_cache_swreg.h: $(CACHE_DIR)/mkregs.conf
+SRC+=$(BUILD_ESRC_DIR)/iob_cache_swreg.h $(BUILD_ESRC_DIR)/iob_cache_swreg_emb.c
+
+$(BUILD_ESRC_DIR)/iob_cache_swreg%: iob_cache_swreg%
+	mv $< $@
+
+iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
 	$(LIB_DIR)/scripts/mkregs.py iob_cache $(CACHE_DIR) SW
-	mv `basename $@` $@ && mv iob_cache_swreg_emb.c $(BUILD_ESRC_DIR)/iob_cache_swreg_emb.c
+
