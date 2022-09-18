@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sim:
+  iob:
     runs-on: self-hosted
     timeout-minutes: 10
 
@@ -32,46 +32,38 @@ jobs:
         with:
           submodules: 'recursive'
       - name: setup iob
-        run: make setup CACHE_CONFIG=iob
+        run: make clean && make setup CACHE_CONFIG=iob
       - name: sim-test iob
         run: make -C iob_cache_* sim-test
-      - name: clean
-        run: make clean
-      - name: setup axi
-        run: make setup CACHE_CONFIG=axi
-      - name: sim-test axi
-        run: make -C iob_cache_* sim-test
-
-  fpga:
-    runs-on: self-hosted
-    timeout-minutes: 30
-    # always run, except when previous job was cancelled
-    if: ${{ !cancelled() }}
-    # run after indicated job
-    needs: sim
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-      - name: setup
-        run: make setup
+      - name: sim-clean
+        run: make sim-clean
       - name: test-fpga
         run: make -C iob_cache_* fpga-test
-
-  doc:
+      - name: fpga-clean
+        run: make fpga-clean
+      - name: test-doc
+        run: make -C iob_cache_* doc-test
+      - name: doc-clean
+        run: make -C iob_cache_* doc-clean
+  axi:
     runs-on: self-hosted
-    timeout-minutes: 30
-    # always run, except when previous job was cancelled
-    if: ${{ !cancelled() }}
-    # run after indicated job
-    needs: fpga
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup
-        run: make setup
+      - name: setup axi
+        run: make clean && make setup CACHE_CONFIG=axi
+      - name: sim-test iob
+        run: make -C iob_cache_* sim-test
+      - name: sim-clean
+        run: make sim-clean
+      - name: test-fpga
+        run: make -C iob_cache_* fpga-test
+      - name: fpga-clean
+        run: make fpga-clean
       - name: test-doc
-        run: make  -C iob_cache_* doc-test
+        run: make -C iob_cache_* doc-test
+      - name: doc-clean
+        run: make -C iob_cache_* doc-clean
