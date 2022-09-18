@@ -49,6 +49,11 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 10
 
+    # always run, except when previous job was cancelled
+    if: ${{ !cancelled() }}
+    # run after indicated job
+    needs: iob
+
     steps:
       - uses: actions/checkout@v3
         with:
