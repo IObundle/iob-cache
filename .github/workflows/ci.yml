@@ -31,9 +31,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup
-        run: make setup
-      - name: test-sim
+      - name: setup iob
+        run: make setup CACHE_CONFIG=iob
+      - name: sim-test iob
+        run: make -C iob_cache_* sim-test
+      - name: clean
+        run: make clean
+      - name: setup axi
+        run: make setup CACHE_CONFIG=axi
+      - name: sim-test axi
         run: make -C iob_cache_* sim-test
 
   fpga:

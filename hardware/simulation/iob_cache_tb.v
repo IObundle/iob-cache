@@ -25,12 +25,6 @@ module iob_cache_tb;
 
    //test process
    initial begin
-`ifdef AXI
-      $display("\nTesting Cache with AXI4 Backend");
-`else
-      $display("\nTesting Cache with IOB Backend");
-`endif
-     
 `ifdef VCD
       $dumpfile("uut.vcd");
       $dumpvars();

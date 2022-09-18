@@ -11,8 +11,8 @@ module iob_cache_sim_wrapper
     parameter AXI_LEN_W = `IOB_CACHE_AXI_LEN_W,
     parameter AXI_ADDR_W = BE_ADDR_W,
     parameter AXI_DATA_W = BE_DATA_W,
-    parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID
-`else 
+    parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID,
+`endif
     parameter ADDR_W = `IOB_CACHE_ADDR_W,
     parameter DATA_W = `IOB_CACHE_DATA_W,
     parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
@@ -25,7 +25,6 @@ module iob_cache_sim_wrapper
     parameter WRITE_POL = `IOB_CACHE_WRITE_THROUGH,
     parameter USE_CTRL = `IOB_CACHE_USE_CTRL,
     parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT
-`endif
     )
    (
     // Front-end interface (IOb native slave)

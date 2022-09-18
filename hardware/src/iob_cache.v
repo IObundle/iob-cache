@@ -11,8 +11,8 @@ module iob_cache
     parameter AXI_LEN_W = `IOB_CACHE_AXI_LEN_W,
     parameter AXI_ADDR_W = BE_ADDR_W,
     parameter AXI_DATA_W = BE_DATA_W,
-    parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID
-`else 
+    parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID,
+`endif
     parameter ADDR_W = `IOB_CACHE_ADDR_W, //PARAM &  NS & 64 & Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.
     parameter DATA_W = `IOB_CACHE_DATA_W, //PARAM & 32 & 64 & Front-end data width (log2): this parameter allows supporting processing elements with various data widths.
     parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W, //PARAM & NS  & NS & Back-end address width (log2): the value of this parameter must be equal or greater than ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.
@@ -25,12 +25,8 @@ module iob_cache
     parameter WRITE_POL = `IOB_CACHE_WRITE_THROUGH, //PARAM & 0 & 1 & Write policy: set to 0 for write-through or set to 1 for write-back.
     parameter USE_CTRL = `IOB_CACHE_USE_CTRL, //PARAM & 0 & 1 & Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.
     parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT //PARAM & 0 & 1 & Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.
-`endif
     )
    (
-`ifdef AXI
- `include "iob_cache_axi_m_port.vh"
-`else
     // Front-end interface (IOb native slave)
     //START_IO_TABLE fe
     `IOB_INPUT(req, 1), //Read or write request from host. If signal {\tt ack} raises in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} raises. When {\tt ack} raises in response to a previous request, {\tt req} may keep high, or combinatorially lowered in the same cycle. If {\tt req} keeps high, a new request is being made to the current address {\tt addr}; if {\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.
@@ -41,6 +37,9 @@ module iob_cache
     `IOB_OUTPUT(ack,1), //Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.
 
     // Back-end interface
+`ifdef AXI
+ `include "iob_cache_axi_m_port.vh"
+`else
     //START_IO_TABLE be
     `IOB_OUTPUT(be_req, 1), //Read or write request to next-level cache or memory.
     `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory.
@@ -48,14 +47,13 @@ module iob_cache
     `IOB_OUTPUT(be_wstrb, `IOB_CACHE_BE_NBYTES), //Write strobe to next-level cache or memory.
     `IOB_INPUT(be_rdata, BE_DATA_W),  //Read data from next-level cache or memory.
     `IOB_INPUT(be_ack, 1), //Acknowledge signal from next-level cache or memory.
-
+`endif
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
     `IOB_INPUT(invalidate_in,1), //Invalidates all cache lines instantaneously if high.
     `IOB_OUTPUT(invalidate_out,1), //This output is asserted high when the cache is invalidated via the cache controller or the direct {\tt invalidate_in} signal. The present {\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.
     `IOB_INPUT(wtb_empty_in,1), //This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\tt wtb_empty_out}.
     `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.
-`endif   
    //General Interface Signals
 `include "iob_gen_if.vh" 
    );	

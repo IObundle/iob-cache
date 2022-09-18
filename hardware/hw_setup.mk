@@ -27,7 +27,7 @@ $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
 
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_ram_axi_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_ram_axi_portmap.vh:
-	$(AXI_GEN) axi_portmap iob_cache_ram_ && mv iob_cache_ram_axi_portmap.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_portmap iob_cache_ram_ s_ && mv iob_cache_ram_axi_portmap.vh $(BUILD_VSRC_DIR)
 
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_portmap.vh:

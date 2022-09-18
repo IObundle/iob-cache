@@ -1,5 +1,3 @@
-
-Testing Cache with IOB Backend
 Test 1: Writing Test
 Test 2: Reading Test
 	Reading rdata=0x0 at addr=0x0: PASSED
@@ -9,28 +7,6 @@ Test 2: Reading Test
 	Reading rdata=0xc at addr=0x4: PASSED
 End of Cache Testing
 
-
-Testing Cache with AXI4 Backend
-Test 1: Writing Test
-Test 2: Reading Test
-	Reading rdata=0x0 at addr=0x0: PASSED
-	Reading rdata=0x3 at addr=0x1: PASSED
-	Reading rdata=0x6 at addr=0x2: PASSED
-	Reading rdata=0x9 at addr=0x3: PASSED
-	Reading rdata=0xc at addr=0x4: PASSED
-End of Cache Testing
-
-
-Testing Cache with IOB Backend
-Test 1: Writing Test
-Test 2: Reading Test
-	Reading rdata=0x0 at addr=0x0: PASSED
-	Reading rdata=0x3 at addr=0x1: PASSED
-	Reading rdata=0x6 at addr=0x2: PASSED
-	Reading rdata=0x9 at addr=0x3: PASSED
-	Reading rdata=0xc at addr=0x4: PASSED
-
-Testing Cache with AXI4 Backend
 Test 1: Writing Test
 Test 2: Reading Test
 	Reading rdata=0x0 at addr=0x0: PASSED
