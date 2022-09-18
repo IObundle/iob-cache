@@ -1,6 +1,6 @@
 #include <verilated.h>
 #include <iostream>
-#include "Viob_cache_wrapper.h"
+#include "Viob_cache_sim_wrapper.h"
 
 #if (VM_TRACE == 1)    //If verilator was invoked with --trace
 #include <verilated_vcd_c.h>
@@ -19,7 +19,7 @@ double sc_time_stamp () {   //Called by $time in Verilog
 int main(int argc, char** argv) {
 
     Verilated::commandArgs(argc, argv);   //Init verilator context
-    Viob_cache_wrapper* dut = new Viob_cache_wrapper; //Create DUT object
+    Viob_cache_sim_wrapper* dut = new Viob_cache_sim_wrapper; //Create DUT object
 
 #if (VM_TRACE == 1)
     Verilated::traceEverOn(true);   //Enable tracing
@@ -28,10 +28,10 @@ int main(int argc, char** argv) {
     tfp->open("uut.vcd");  //Open tracing file
 #endif
 
-    dut->clk=1; dut->reset=0;    
+    dut->clk=1; dut->rst=0;    
     while (main_time < MAX_SIM_TIME) {
         dut->clk=!dut->clk;  
-        dut->reset=(main_time >=1 && main_time <= 8) ? 1 : 0; 	
+        dut->rst=(main_time >=1 && main_time <= 8) ? 1 : 0; 	
         dut->eval();
 
         if(dut->clk == 1) {

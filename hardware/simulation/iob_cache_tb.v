@@ -9,7 +9,7 @@ module iob_cache_tb;
    always #clk_per clk = ~clk;
 
 
-   reg reset = 1;
+   reg rst = 1;
    
    //frontend signals
    reg req=0;
@@ -20,30 +20,23 @@ module iob_cache_tb;
    wire [`IOB_CACHE_DATA_W-1:0]                          rdata;
    reg                                                   ctrl =0;
 
-   //backend signals
-`ifdef AXI
- `include "iob_cache_axi_wire.vh"
-`else
-   //Native connections
-   wire [`IOB_CACHE_BE_ADDR_W-1:0]                       be_addr;
-   wire [`IOB_CACHE_BE_DATA_W-1:0]                       be_wdata, be_rdata;
-   wire [`IOB_CACHE_BE_DATA_W/8-1:0]                     be_wstrb;
-   wire                                                  be_req;
-   reg                                                   be_ack;
-`endif  
-   
-   reg [31:0]                                            test = 0;
-   integer                                               i,j;
+   //iterator 
+   integer                                               i;
 
-   
+   //test process
    initial begin
-      
+`ifdef AXI
+      $display("\nTesting Cache with AXI4 Backend");
+`else
+      $display("\nTesting Cache with IOB Backend");
+`endif
+     
 `ifdef VCD
       $dumpfile("uut.vcd");
       $dumpvars();
 `endif  
       repeat (5) @(posedge clk);
-      reset = 0;
+      rst = 0;
       #10;
 
       $display("Test 1: Writing Test");
@@ -71,8 +64,9 @@ module iob_cache_tb;
       $display("End of Cache Testing\n");
       $finish;
    end
-   
-   iob_cache iob_cache0 
+
+   //Unit Under Test (simulation wrapper)
+   iob_cache_sim_wrapper uut
      (
       //frontend 
       .req   (req),
@@ -89,69 +83,9 @@ module iob_cache_tb;
       .wtb_empty_in(1'b1),
       .wtb_empty_out(),
 
-      //backend 
-`ifdef AXI
- `include "iob_cache_axi_portmap.vh"
-`else
-      .be_req   (be_req),
-      .be_addr  (be_addr),
-      .be_wdata (be_wdata),
-      .be_wstrb (be_wstrb),
-      .be_rdata (be_rdata),
-      .be_ack   (be_ack),
-`endif
       .clk(clk),
-      .rst(reset)
+      .rst(rst)
       );
-
-
-`ifdef AXI  
-   axi_ram 
-     #(
-       .ID_WIDTH(`IOB_CACHE_AXI_ID_W),
-       .LEN_WIDTH(`IOB_CACHE_AXI_LEN_W),
-       .DATA_WIDTH (`IOB_CACHE_BE_DATA_W),
-       .ADDR_WIDTH (`IOB_CACHE_BE_ADDR_W)
-       )
-   axi_ram
-     (
- `include "iob_cache_ram_axi_portmap.vh"
-      .clk            (clk),
-      .rst            (reset)
-      ); 
-   
-`else
-   iob_ram_sp_be 
-     #(
-       .DATA_W(`IOB_CACHE_BE_DATA_W),
-       .ADDR_W(`IOB_CACHE_BE_ADDR_W)
-       )
-   native_ram
-     (
-      .clk(clk),
-      .en  (be_req),
-      .we  (be_wstrb),
-      .addr(be_addr),
-      .dout(be_rdata),
-      .din (be_wdata)
-      );
-
-   always @(posedge clk, posedge reset)
-     if(reset) 
-       be_ack <= 1'b0;
-     else
-       be_ack <= be_req;
-   
-`endif
-
-   initial begin
-`ifdef AXI
-      $display("\nTesting Cache with AXI4 Backend");
-`else
-      $display("\nTesting Cache with IOB Backend");
-`endif
-   end
-
    
 endmodule
 
