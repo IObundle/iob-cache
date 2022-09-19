@@ -17,4 +17,4 @@ DOC_RESULTS=
 CACHE_DIR ?= .
 
 # default configuration
-CACHE_CONFIG ?= iob
+CONFIG ?= iob
