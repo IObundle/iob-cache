@@ -8,11 +8,11 @@
 
 
 #import lib hardware
-include $(LIB_DIR)/hardware/include/hardware.mk
-include $(LIB_DIR)/hardware/regfile/iob_regfile_sp/hardware.mk
-include $(LIB_DIR)/hardware/fifo/iob_fifo_sync/hardware.mk
-include $(LIB_DIR)/hardware/ram/iob_ram_2p/hardware.mk
-include $(LIB_DIR)/hardware/ram/iob_ram_sp/hardware.mk
+include $(LIB_DIR)/hardware/include/hw_setup.mk
+include $(LIB_DIR)/hardware/regfile/iob_regfile_sp/hw_setup.mk
+include $(LIB_DIR)/hardware/fifo/iob_fifo_sync/hw_setup.mk
+include $(LIB_DIR)/hardware/ram/iob_ram_2p/hw_setup.mk
+include $(LIB_DIR)/hardware/ram/iob_ram_sp/hw_setup.mk
 
 
 #HEADERS
