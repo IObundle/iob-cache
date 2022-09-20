@@ -14,11 +14,10 @@ include $(LIB_DIR)/hardware/fifo/iob_fifo_sync/hw_setup.mk
 include $(LIB_DIR)/hardware/ram/iob_ram_2p/hw_setup.mk
 include $(LIB_DIR)/hardware/ram/iob_ram_sp/hw_setup.mk
 
+# copy verilog sources
+$(call copy_verilog_sources, $(CACHE_DIR))
 
-#HEADERS
-
-#core headers
-
+#generate axi headers
 AXI_GEN:= $(LIB_DIR)/scripts/axi_gen.py
 
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
@@ -50,7 +49,7 @@ $(BUILD_VSRC_DIR)/iob_cache_m_axi_read_portmap.vh:
 	$(AXI_GEN) axi_read_portmap iob_cache_m_ && mv iob_cache_m_axi_read_portmap.vh $(BUILD_VSRC_DIR)
 
 
-#software accessible register defines
+#generate software accessible register
 #note that this IP does not use the generated iob_cache_swreg_gen.vh as it provides this functionality itself
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_def.vh $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
 $(BUILD_VSRC_DIR)/iob_cache_swreg_%.vh: iob_cache_swreg_%.vh
