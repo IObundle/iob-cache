@@ -60,7 +60,7 @@ jobs:
           submodules: 'recursive'
       - name: setup axi
         run: make clean && make setup CONFIG=axi
-      - name: sim-test iob
+      - name: sim-test axi
         run: make -C ../iob_cache_* sim-test
       - name: sim-clean
         run: make -C ../iob_cache_* sim-clean
