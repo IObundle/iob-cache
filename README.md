@@ -21,6 +21,8 @@ University of Lisbon. The Verilog code works well in IObundle's [IOb-SoC]
 FPGA. To be used in an ASIC, it would need to be lint-cleaned and verified more
 thoroughly by RTL simulation to achieve 100\% code coverage desirably.
 
+
+(update below)
 ## Environment setup and requirements
 
 ### Operating system
