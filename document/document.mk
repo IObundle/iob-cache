@@ -22,6 +22,5 @@ export DEFINE
 include $(LIB_DIR)/document/document.mk
 
 test: clean $(DOC).pdf
-	diff -q $(DOC).aux test.expected
 
 .PHONY: test
