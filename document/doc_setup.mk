@@ -6,18 +6,12 @@
 #
 #
 
-ifeq ($(DOC_RESULTS),1)
-SRC+=$(BUILD_DIR)/doc/quartus.tex $(BUILD_DIR)/doc/vivado.tex
-endif
+# include Intel FPGA results
+INTEL_FPGA=1
 
-# generate quartus fitting results 
-$(BUILD_DIR)/doc/quartus.tex:
-	make -C $(BUILD_DIR) fpga-build BOARD=CYCLONEV-GT-DK
-	LOG=$(BUILD_FPGA_DIR)/quartus.log $(LIB_DIR)/scripts/quartus2tex.sh
-	mv `basename $@` $(BUILD_DOC_DIR)
+# include Intel FPGA results
+AMD_FPGA=
 
-# generate vivado fitting results 
-$(BUILD_DIR)/doc/vivado.tex:
-	make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G
-	LOG=$(BUILD_FPGA_DIR)/vivado.log $(LIB_DIR)/scripts/vivado2tex.sh
-	mv `basename $@` $(BUILD_DOC_DIR)
+# include UMAC130 FPGA results
+UMC130_ASIC=
+

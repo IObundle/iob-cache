@@ -10,11 +10,11 @@ NAME=iob_cache
 # core version 
 VERSION=0010
 
-# include implementation in document (disabled by default)
-DOC_RESULTS=
-
 # root directory when building locally
 CACHE_DIR ?= .
 
 # default configuration
 CONFIG ?= iob
+
+# supported flows
+FLOWS := sim fpga doc
