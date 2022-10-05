@@ -15,7 +15,9 @@ include $(LIB_DIR)/hardware/ram/iob_ram_2p/hw_setup.mk
 include $(LIB_DIR)/hardware/ram/iob_ram_sp/hw_setup.mk
 
 # copy verilog sources
-$(call copy_verilog_sources, $(CACHE_DIR))
+SRC+=$(patsubst $(CACHE_DIR)/hardware/src, $(BUILD_VSRC_DIR), $(wildcard $(CACHE_DIR)/hardware/src/*))
+$(BUILD_VSRC_DIR)/%: $(CACHE_DIR)/hardware/src/%
+	cp $< $@
 
 #generate axi headers
 AXI_GEN:= $(LIB_DIR)/scripts/axi_gen.py
