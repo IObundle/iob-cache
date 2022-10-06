@@ -6,6 +6,13 @@
 #
 
 # sw accessible registers C header and source files
+# pc-emul sources
+SRC+=$(BUILD_PSRC_DIR)/iob_cache_swreg.h
+
+$(BUILD_PSRC_DIR)/iob_cache_swreg.h: iob_cache_swreg.h
+	cp $< $@
+
+# embedded sources
 SRC+=$(BUILD_ESRC_DIR)/iob_cache_swreg.h $(BUILD_ESRC_DIR)/iob_cache_swreg_emb.c
 
 $(BUILD_ESRC_DIR)/iob_cache_swreg%: iob_cache_swreg%
