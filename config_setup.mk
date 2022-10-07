@@ -14,7 +14,7 @@ VERSION=0010
 CACHE_DIR ?= .
 
 # default configuration
-CONFIG ?= iob
+CACHE_CONFIG ?= iob
 
 # supported flows
 FLOWS := sim fpga doc
