@@ -15,8 +15,13 @@ include $(LIB_DIR)/hardware/ram/iob_ram_2p/hw_setup.mk
 include $(LIB_DIR)/hardware/ram/iob_ram_sp/hw_setup.mk
 
 # copy verilog sources
-SRC+=$(patsubst $(CACHE_DIR)/hardware/src, $(BUILD_VSRC_DIR), $(wildcard $(CACHE_DIR)/hardware/src/*))
+SRC+=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(wildcard $(CACHE_DIR)/hardware/src/*))
 $(BUILD_VSRC_DIR)/%: $(CACHE_DIR)/hardware/src/%
+	cp $< $@
+
+#select core configuration
+SRC+=$(BUILD_VSRC_DIR)/$(NAME)_conf.vh
+$(BUILD_VSRC_DIR)/$(NAME)_conf.vh: hardware/src/$(NAME)_conf_$(CACHE_CONFIG).vh
 	cp $< $@
 
 #generate axi headers
