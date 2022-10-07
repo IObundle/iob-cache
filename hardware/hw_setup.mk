@@ -20,8 +20,8 @@ $(BUILD_VSRC_DIR)/%: $(CACHE_DIR)/hardware/src/%
 	cp $< $@
 
 #select core configuration
-SRC+=$(BUILD_VSRC_DIR)/$(NAME)_conf.vh
-$(BUILD_VSRC_DIR)/$(NAME)_conf.vh: hardware/src/$(NAME)_conf_$(CACHE_CONFIG).vh
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_conf.vh
+$(BUILD_VSRC_DIR)/iob_cache_conf.vh: $(CACHE_DIR)/hardware/src/iob_cache_conf_$(CACHE_CONFIG).vh
 	cp $< $@
 
 #generate axi headers
