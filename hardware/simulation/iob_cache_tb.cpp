@@ -28,13 +28,13 @@ int main(int argc, char** argv) {
     tfp->open("uut.vcd");  //Open tracing file
 #endif
 
-    dut->clk=1; dut->rst=0;    
+    dut->clk_i=1; dut->rst_i=0;    
     while (main_time < MAX_SIM_TIME) {
-        dut->clk=!dut->clk;  
-        dut->rst=(main_time >=1 && main_time <= 8) ? 1 : 0; 	
+        dut->clk_i=!dut->clk_i;  
+        dut->rst_i=(main_time >=1 && main_time <= 8) ? 1 : 0; 	
         dut->eval();
 
-        if(dut->clk == 1) {
+        if(dut->clk_i == 1) {
 	  posedge_cnt++; 
 
 	  //if(posedge_cnt == 7) VL_PRINTF("IOb-Cache Version: %d\n", cache_version());

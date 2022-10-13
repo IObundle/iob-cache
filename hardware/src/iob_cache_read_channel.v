@@ -12,7 +12,7 @@ module iob_cache_read_channel
     parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W
     )
    (
-    input                                    clk,
+    input                                    clk_i,
     input                                    reset,
     input                                    replace_valid,
     input [ADDR_W-1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W] replace_addr,
@@ -40,12 +40,12 @@ module iob_cache_read_channel
            handshake        = 2'd1, // the process was divided in 2 handshake steps to cause a delay in the
            end_handshake    = 2'd2; // (always 1 or a delayed valid signal), otherwise it will fail
 
-         always @(posedge clk)
+         always @(posedge clk_i)
            read_addr <= word_counter;
 
          reg [1:0]            state;
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset) begin
                state <= idle;
             end else begin
@@ -104,7 +104,7 @@ module iob_cache_read_channel
 
          reg [1:0]                                  state;
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset)
               state <= idle;
             else begin

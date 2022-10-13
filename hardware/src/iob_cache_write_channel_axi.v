@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 
+`include "iob_cache_conf.vh"
 `include "iob_cache.vh"
 
 module iob_cache_write_channel_axi
@@ -23,7 +24,7 @@ module iob_cache_write_channel_axi
     input [`IOB_CACHE_NBYTES-1:0]                                                wstrb,
     output reg                                                         ready,
 `include "iob_cache_m_axi_m_write_port.vh"
-    input                                                              clk,
+    input                                                              clk_i,
     input                                                              reset 
     );
 
@@ -73,7 +74,7 @@ module iob_cache_write_channel_axi
 
          reg [1:0]                               state;
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset)
               state <= idle;
             else
@@ -161,7 +162,7 @@ module iob_cache_write_channel_axi
 
             reg [1:0]            state;
 
-            always @(posedge clk, posedge reset) begin
+            always @(posedge clk_i, posedge reset) begin
                if (reset) begin
                   state <= idle;
                   word_counter <= 0;
@@ -251,7 +252,7 @@ module iob_cache_write_channel_axi
 
             reg [1:0]                           state;
 
-            always @(posedge clk, posedge reset) begin
+            always @(posedge clk_i, posedge reset) begin
                if (reset)
                  state <= idle;
                else

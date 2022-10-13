@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 
+`include "iob_cache_conf.vh"
 `include "iob_cache.vh"
 
 module iob_cache_replacement_policy
@@ -10,7 +11,7 @@ module iob_cache_replacement_policy
     parameter REP_POLICY = `IOB_CACHE_PLRU_TREE
     )
    (
-    input                clk,
+    input                clk_i,
     input                reset,
     input                write_en,
     input [N_WAYS-1:0]   way_hit,
@@ -57,7 +58,7 @@ module iob_cache_replacement_policy
              )
          mru_memory // simply uses the same format as valid memory
            (
-            .clk    (clk      ),
+            .clk    (clk_i      ),
             .rst    (reset    ),
 
             .we     (write_en ),
@@ -93,7 +94,7 @@ module iob_cache_replacement_policy
              )
          mru_memory // simply uses the same format as valid memory
            (
-            .clk    (clk      ),
+            .clk    (clk_i      ),
             .rst    (reset    ),
 
             .we     (write_en ),
@@ -162,7 +163,7 @@ module iob_cache_replacement_policy
                )
            mru_memory // simply uses the same format as valid memory
              (
-              .clk    (clk      ),
+              .clk    (clk_i      ),
               .rst    (reset    ),
 
               .we     (write_en ),

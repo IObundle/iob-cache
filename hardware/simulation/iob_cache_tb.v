@@ -77,8 +77,8 @@ module iob_cache_tb;
       .wtb_empty_in(1'b1),
       .wtb_empty_out(),
 
-      .clk(clk),
-      .rst(rst)
+      .clk_i(clk),
+      .rst_i(rst)
       );
    
 endmodule

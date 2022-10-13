@@ -49,8 +49,8 @@ module iob_cache_axi
     // AXI4 back-end interface
 `include "iob_cache_axi_m_port.vh"
     //General Interface Signals
-    `IOB_INPUT(clk,          1), //System clock input
-    `IOB_INPUT(rst,          1)  //System reset, asynchronous and active high
+    `IOB_INPUT(clk_i,          1), //System clock input
+    `IOB_INPUT(rst_i,          1)  //System reset, asynchronous and active high
     );
    
    //Front-end & Front-end interface.
@@ -81,8 +81,8 @@ module iob_cache_axi
        )
    front_end
      (
-      .clk   (clk),
-      .reset (rst),
+      .clk_i   (clk_i),
+      .reset (rst_i),
 
       // front-end port
       .req (req),
@@ -146,8 +146,8 @@ module iob_cache_axi
        )
    cache_memory
      (
-      .clk   (clk),
-      .reset (rst),
+      .clk_i   (clk_i),
+      .reset (rst_i),
 
       // front-end
       .req (data_req),
@@ -219,8 +219,8 @@ module iob_cache_axi
 
       //back-end AXI4 interface
 `include "iob_cache_axi_portmap.vh"
-      .clk(clk),
-      .rst(rst)  
+      .clk_i(clk_i),
+      .rst_i(rst_i)  
       );
 
    //Cache control & Cache control block.
@@ -233,8 +233,8 @@ module iob_cache_axi
             )
       cache_control
         (
-         .clk   (clk),
-         .reset (rst),
+         .clk_i   (clk_i),
+         .reset (rst_i),
 
          // control's signals
          .valid (ctrl_req),

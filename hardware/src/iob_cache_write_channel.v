@@ -13,7 +13,7 @@ module iob_cache_write_channel
     parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W
     )
    (
-    input                                                                      clk,
+    input                                                                      clk_i,
     input                                                                      reset,
 
     input                                                                      valid,
@@ -69,7 +69,7 @@ module iob_cache_write_channel
             end
          end
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset)
               state <= idle;
             else
@@ -108,7 +108,7 @@ module iob_cache_write_channel
       end else begin // if (WRITE_POL == WRITE_BACK)
          if (`IOB_CACHE_LINE2BE_W > 0) begin
             reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter, word_counter_reg;
-            always @(posedge clk)
+            always @(posedge clk_i)
               word_counter_reg <= word_counter;
 
             // memory address
@@ -123,7 +123,7 @@ module iob_cache_write_channel
 
             reg [0:0]            state;
 
-            always @(posedge clk, posedge reset) begin
+            always @(posedge clk_i, posedge reset) begin
                if (reset)
                  state <= idle;
                else
@@ -176,7 +176,7 @@ module iob_cache_write_channel
 
             reg [0:0]            state;
 
-            always @(posedge clk, posedge reset) begin
+            always @(posedge clk_i, posedge reset) begin
                if (reset)
                  state <= idle;
                else
