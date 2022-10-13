@@ -12,7 +12,7 @@ module iob_cache_back_end
     parameter WRITE_POL = `IOB_CACHE_WRITE_THROUGH
     )
    (
-    input                                                              clk,
+    input                                                              clk_i,
     input                                                              reset,
 
     // write-through-buffer
@@ -55,7 +55,7 @@ module iob_cache_back_end
        )
    read_fsm
      (
-      .clk(clk),
+      .clk_i(clk_i),
       .reset(reset),
       .replace_valid (replace_valid),
       .replace_addr (replace_addr),
@@ -80,7 +80,7 @@ module iob_cache_back_end
        )
    write_fsm
      (
-      .clk(clk),
+      .clk_i(clk_i),
       .reset(reset),
       
       .valid (write_valid),

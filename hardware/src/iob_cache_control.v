@@ -14,7 +14,7 @@ module iob_cache_control
     parameter USE_CTRL_CNT = 1
     )
    (
-    input                      clk,
+    input                      clk_i,
     input                      reset,
     input                      valid,
     input [`iob_cache_swreg_ADDR_W-1:0]   addr,
@@ -38,7 +38,7 @@ module iob_cache_control
          assign hit_cnt  = read_hit_cnt  + write_hit_cnt;
          assign miss_cnt = read_miss_cnt + write_miss_cnt;
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset) begin
                read_hit_cnt   <= {DATA_W{1'b0}};
                read_miss_cnt  <= {DATA_W{1'b0}};
@@ -68,7 +68,7 @@ module iob_cache_control
             end
          end
 
-         always @(posedge clk) begin
+         always @(posedge clk_i) begin
             rdata <= {DATA_W{1'b0}};
             invalidate <= 1'b0;
             reset_counters <= 1'b0;
@@ -92,7 +92,7 @@ module iob_cache_control
          end
       end
       
-         always @(posedge clk) begin
+         always @(posedge clk_i) begin
             rdata <= {DATA_W{1'b0}};
             invalidate <= 1'b0;
             ready <= valid; // Sends acknowlege the next clock cycle after request (handshake)

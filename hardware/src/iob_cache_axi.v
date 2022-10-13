@@ -81,7 +81,7 @@ module iob_cache_axi
        )
    front_end
      (
-      .clk   (clk_i),
+      .clk_i   (clk_i),
       .reset (rst_i),
 
       // front-end port
@@ -146,7 +146,7 @@ module iob_cache_axi
        )
    cache_memory
      (
-      .clk   (clk_i),
+      .clk_i   (clk_i),
       .reset (rst_i),
 
       // front-end
@@ -233,7 +233,7 @@ module iob_cache_axi
             )
       cache_control
         (
-         .clk   (clk_i),
+         .clk_i   (clk_i),
          .reset (rst_i),
 
          // control's signals

@@ -23,7 +23,7 @@ module iob_cache_read_channel_axi
     output reg [`IOB_CACHE_LINE2BE_W-1:0]              read_addr,
     output [BE_DATA_W-1:0]                   read_rdata,
 `include "iob_cache_m_axi_m_read_port.vh"
-    input                                    clk,
+    input                                    clk_i,
     input                                    reset
     );
 
@@ -62,7 +62,7 @@ module iob_cache_read_channel_axi
          reg [1:0]                           state;
          reg                                 slave_error; // axi slave_error during reply (axi_rresp[1] == 1) - burst can't be interrupted, so a flag needs to be active
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset) begin
                state <= idle;
                read_addr <= 0;
@@ -154,7 +154,7 @@ module iob_cache_read_channel_axi
 
          reg [1:0]                           state;
 
-         always @(posedge clk, posedge reset) begin
+         always @(posedge clk_i, posedge reset) begin
             if (reset)
               state <= idle;
             else

@@ -15,7 +15,7 @@ module iob_cache_front_end
     )
    (
     // front-end port
-    input                            clk,
+    input                            clk_i,
     input                            reset,
     input [USE_CTRL + ADDR_W -1:0] addr,
     input [DATA_W-1:0]               wdata,
@@ -68,7 +68,7 @@ module iob_cache_front_end
    endgenerate
 
    // register inputs
-   always @(posedge clk, posedge reset) begin
+   always @(posedge clk_i, posedge reset) begin
       if (reset) begin
          data_req_reg   <= 0;
          data_addr_reg  <= 0;
