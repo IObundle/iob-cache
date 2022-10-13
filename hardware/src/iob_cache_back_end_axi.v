@@ -35,7 +35,7 @@ module iob_cache_back_end_axi
                                                                     
     // Back-end interface (AXI4 master)
 `include "iob_cache_axi_m_port.vh"
-`include "iob_gen_if.vh"
+`include "iob_clkrst_port.vh"
     );
 
    iob_cache_read_channel_axi
@@ -60,8 +60,8 @@ module iob_cache_back_end_axi
       .read_addr (read_addr),
       .read_rdata (read_rdata),
       `include "iob_cache_m_axi_read_portmap.vh"
-      .clk(clk),
-      .reset(rst)
+      .clk(clk_i),
+      .reset(rst_i)
       );
 
    iob_cache_write_channel_axi
@@ -86,8 +86,8 @@ module iob_cache_back_end_axi
       .wdata (write_wdata),
       .ready (write_ready),
       `include "iob_cache_m_axi_write_portmap.vh"
-      .clk(clk),
-      .reset(rst)
+      .clk(clk_i),
+      .reset(rst_i)
       );
 
 endmodule

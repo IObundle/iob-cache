@@ -42,7 +42,7 @@ module iob_cache_sim_wrapper
     `IOB_OUTPUT(wtb_empty_out,1),
 
    //General Interface Signals
-`include "iob_gen_if.vh" 
+`include "iob_clkrst_port.vh" 
    );	
 
 `ifdef AXI
@@ -97,8 +97,8 @@ module iob_cache_sim_wrapper
       .be_req(be_req),
       .be_ack(be_ack),
 `endif
-      .clk (clk),
-      .rst (rst)
+      .clk_i (clk_i),
+      .rst_i (rst_i)
         );
 
 `ifdef AXI  
@@ -112,8 +112,8 @@ module iob_cache_sim_wrapper
    axi_ram
      (
  `include "iob_cache_ram_axi_portmap.vh"
-      .clk            (clk),
-      .rst            (rst)
+      .clk            (clk_i),
+      .rst            (rst_i)
       );
 `else
    iob_ram_sp_be 
@@ -123,7 +123,7 @@ module iob_cache_sim_wrapper
        )
    native_ram
      (
-      .clk(clk),
+      .clk(clk_i),
       .en  (be_req),
       .we  (be_wstrb),
       .addr(be_addr),
@@ -131,8 +131,8 @@ module iob_cache_sim_wrapper
       .din (be_wdata)
       );
 
-   always @(posedge clk, posedge rst)
-     if(rst) 
+   always @(posedge clk_i, posedge rst_i)
+     if(rst_i) 
        be_ack <= 1'b0;
      else
        be_ack <= be_req;

@@ -44,7 +44,7 @@ module iob_cache_iob
     `IOB_OUTPUT(wtb_empty_out,1),
     
     //General Interface Signals
-    `include "iob_gen_if.vh"
+    `include "iob_clkrst_port.vh"
     );
 
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
@@ -75,8 +75,8 @@ module iob_cache_iob
        )
    front_end
      (
-      .clk(clk),
-      .reset(rst),
+      .clk(clk_i),
+      .reset(rst_i),
       
       // front-end port
       .req   (req),
@@ -139,8 +139,8 @@ module iob_cache_iob
        )
    cache_memory
      (
-      .clk   (clk),
-      .reset (rst),
+      .clk   (clk_i),
+      .reset (rst_i),
 
       // front-end
       .req       (data_req),
@@ -189,8 +189,8 @@ module iob_cache_iob
        )
    back_end
      (
-      .clk   (clk),
-      .reset (rst),
+      .clk   (clk_i),
+      .reset (rst_i),
 
       // write-through-buffer (write-channel)
       .write_valid (write_req),
@@ -226,8 +226,8 @@ module iob_cache_iob
             )
       cache_control
         (
-         .clk   (clk),
-         .reset (rst),
+         .clk   (clk_i),
+         .reset (rst_i),
 
          // control's signals
          .valid (ctrl_req),

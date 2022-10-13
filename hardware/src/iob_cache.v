@@ -55,7 +55,7 @@ module iob_cache
     `IOB_INPUT(wtb_empty_in,1), //This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\tt wtb_empty_out}.
     `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.
    //General Interface Signals
-`include "iob_gen_if.vh" 
+`include "iob_clkrst_port.vh" 
    );	
 
 `ifdef AXI   
@@ -107,8 +107,8 @@ module iob_cache
         .be_req(be_req),
         .be_ack(be_ack),
 `endif
-        .clk (clk),
-        .rst (rst)
+        .clk_i (clk_i),
+        .rst_i (rst_i)
         );
 
 endmodule
