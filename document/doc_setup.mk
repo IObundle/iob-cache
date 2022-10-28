@@ -7,7 +7,7 @@
 #
 
 # include Intel FPGA results
-INTEL_FPGA=1
+INTEL_FPGA=
 
 # include Intel FPGA results
 AMD_FPGA=
