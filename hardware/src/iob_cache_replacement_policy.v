@@ -163,13 +163,13 @@ module iob_cache_replacement_policy
                )
            mru_memory // simply uses the same format as valid memory
              (
-              .clk    (clk_i      ),
-              .rst    (reset    ),
+              .clk_i(clk_i),
+              .rst_i(reset),
 
-              .we     (write_en ),
-              .addr   (line_addr),
-              .w_data (tree_in  ),
-              .r_data (tree_out )
+              .we_i(write_en),
+              .addr_i(line_addr),
+              .w_data_i(tree_in),
+              .r_data_o(tree_out)
               );
         end
    endgenerate
