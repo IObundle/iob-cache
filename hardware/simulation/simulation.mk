@@ -17,4 +17,5 @@ test2: test.log
 	make clean SIMULATOR=icarus && make run SIMULATOR=verilator
 
 NOCLEAN+=-o -name "iob_cache_sim_wrapper.v"
+NOCLEAN+=-o -name "axi_ram.v"
 NOCLEAN+=-o -name "iob_cache_axi_wire.vh"
