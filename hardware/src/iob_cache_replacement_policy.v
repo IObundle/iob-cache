@@ -58,13 +58,13 @@ module iob_cache_replacement_policy
              )
          mru_memory // simply uses the same format as valid memory
            (
-            .clk    (clk_i      ),
-            .rst    (reset    ),
+            .clk_i    (clk_i      ),
+            .rst_i    (reset    ),
 
-            .we     (write_en ),
-            .addr   (line_addr),
-            .w_data (mru_in   ),
-            .r_data (mru_out  )
+            .we_i     (write_en ),
+            .addr_i   (line_addr),
+            .w_data_i (mru_in   ),
+            .r_data_o (mru_out  )
             );
 
          iob_cache_onehot_to_bin
@@ -94,13 +94,13 @@ module iob_cache_replacement_policy
              )
          mru_memory // simply uses the same format as valid memory
            (
-            .clk    (clk_i      ),
-            .rst    (reset    ),
+            .clk_i    (clk_i      ),
+            .rst_i    (reset    ),
 
-            .we     (write_en ),
-            .addr   (line_addr),
-            .w_data (mru_in   ),
-            .r_data (mru_out  )
+            .we_i     (write_en ),
+            .addr_i   (line_addr),
+            .w_data_i (mru_in   ),
+            .r_data_o (mru_out  )
             );
 
          iob_cache_onehot_to_bin

@@ -123,12 +123,12 @@ module iob_cache_sim_wrapper
        )
    native_ram
      (
-      .clk(clk_i),
-      .en  (be_req),
-      .we  (be_wstrb),
-      .addr(be_addr),
-      .dout(be_rdata),
-      .din (be_wdata)
+      .clk_i  (clk_i),
+      .en_i   (be_req),
+      .we_i   (be_wstrb),
+      .addr_i (be_addr),
+      .d_o    (be_rdata),
+      .d_i    (be_wdata)
       );
 
    always @(posedge clk_i, posedge rst_i)

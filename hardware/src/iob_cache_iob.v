@@ -58,7 +58,7 @@ module iob_cache_iob
    wire                              data_req_reg;
 
    wire                              ctrl_req, ctrl_ack;
-   wire [`iob_cache_swreg_ADDR_W-1:0]           ctrl_addr;
+   wire [`IOB_CACHE_SWREG_ADDR_W-1:0]           ctrl_addr;
    wire [USE_CTRL*(DATA_W-1):0]      ctrl_rdata;
    wire                              ctrl_invalidate;
 

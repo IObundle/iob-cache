@@ -22,7 +22,7 @@ module iob_cache_read_channel_axi
     output                                   read_valid,
     output reg [`IOB_CACHE_LINE2BE_W-1:0]              read_addr,
     output [BE_DATA_W-1:0]                   read_rdata,
-`include "iob_cache_m_axi_m_read_port.vh"
+`include "iob_cache_axi_m_read_port.vh"
     input                                    clk_i,
     input                                    reset
     );
@@ -30,28 +30,28 @@ module iob_cache_read_channel_axi
    reg                                       axi_arvalid_int;
    reg                                       axi_rready_int;
 
-   assign axi_arvalid = axi_arvalid_int;
-   assign axi_rready = axi_rready_int;
+   assign axi_arvalid_o = axi_arvalid_int;
+   assign axi_rready_o = axi_rready_int;
    
    
    generate
       if (`IOB_CACHE_LINE2BE_W > 0) begin
          // Constant AXI signals
-         assign axi_arid    = `IOB_CACHE_AXI_ID;
-         assign axi_arlock  = 1'b0;
-         assign axi_arcache = 4'b0011;
-         assign axi_arprot  = 3'd0;
-         assign axi_arqos   = 4'd0;
+         assign axi_arid_o    = `IOB_CACHE_AXI_ID;
+         assign axi_arlock_o  = 1'b0;
+         assign axi_arcache_o = 4'b0011;
+         assign axi_arprot_o  = 3'd0;
+         assign axi_arqos_o   = 4'd0;
 
          // Burst parameters
-	 assign axi_arlen   = 2**`IOB_CACHE_LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
-	 assign axi_arsize  = `IOB_CACHE_BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
-         assign axi_arburst = 2'b01;                // incremental burst
-         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {(`IOB_CACHE_LINE2BE_W+`IOB_CACHE_BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
+	 assign axi_arlen_o   = 2**`IOB_CACHE_LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
+	 assign axi_arsize_o  = `IOB_CACHE_BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
+         assign axi_arburst_o = 2'b01;                // incremental burst
+         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr, {(`IOB_CACHE_LINE2BE_W+`IOB_CACHE_BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
-         assign read_rdata = axi_rdata;
-         assign read_valid = axi_rvalid;
+         assign read_rdata = axi_rdata_i;
+         assign read_valid = axi_rvalid_i;
 
          localparam
            idle          = 2'd0,
@@ -82,22 +82,22 @@ module iob_cache_read_channel_axi
                  init_process: begin
                     slave_error <= 0;
                     read_addr <= 0;
-                    if (axi_arready)
+                    if (axi_arready_i)
                       state <= load_process;
                     else
                       state <= init_process;
                  end
                  load_process: begin
-                    if (axi_rvalid)
-                      if (axi_rlast) begin
+                    if (axi_rvalid_i)
+                      if (axi_rlast_i) begin
                          state <= end_process;
                          read_addr <= read_addr; // to avoid writting last data in first line word
-                         if (axi_rresp != 2'b00) // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                         if (axi_rresp_i != 2'b00) // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                            slave_error <= 1;
                       end else begin
                          read_addr <= read_addr + 1'b1;
                          state <= load_process;
-                         if (axi_rresp != 2'b00) // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
+                         if (axi_rresp_i != 2'b00) // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                            slave_error <= 1;
                       end else begin
                          read_addr <= read_addr;
@@ -130,21 +130,21 @@ module iob_cache_read_channel_axi
          
       end else begin
          // Constant AXI signals
-         assign axi_arid    = `IOB_CACHE_AXI_ID;
-         assign axi_arlock  = 1'b0;
-         assign axi_arcache = 4'b0011;
-         assign axi_arprot  = 3'd0;
-         assign axi_arqos   = 4'd0;
+         assign axi_arid_o    = `IOB_CACHE_AXI_ID;
+         assign axi_arlock_o  = 1'b0;
+         assign axi_arcache_o = 4'b0011;
+         assign axi_arprot_o  = 3'd0;
+         assign axi_arqos_o   = 4'd0;
 
          // Burst parameters - single
-         assign axi_arlen   = 8'd0;        // A single burst of Memory data width word
-         assign axi_arsize  = `IOB_CACHE_BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
-         assign axi_arburst = 2'b00;
-         assign axi_araddr  = {BE_ADDR_W{1'b0}} + {replace_addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+         assign axi_arlen_o   = 8'd0;        // A single burst of Memory data width word
+         assign axi_arsize_o  = `IOB_CACHE_BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
+         assign axi_arburst_o = 2'b00;
+         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
-         assign read_valid = axi_rvalid;
-         assign read_rdata  = axi_rdata;
+         assign read_valid = axi_rvalid_i;
+         assign read_rdata  = axi_rdata_i;
 
          localparam
            idle          = 2'd0,
@@ -166,14 +166,14 @@ module iob_cache_read_channel_axi
                      state <= idle;
                 end
                 init_process: begin
-                   if (axi_arready)
+                   if (axi_arready_i)
                      state <= load_process;
                    else
                      state <= init_process;
                 end
                 load_process: begin
-                   if (axi_rvalid)
-                     if (axi_rresp != 2'b00) // slave_error - received at the same time as valid
+                   if (axi_rvalid_i)
+                     if (axi_rresp_i != 2'b00) // slave_error - received at the same time as valid
                        state <= init_process;
                      else
                        state <= end_process;

@@ -35,22 +35,27 @@ SRC+=$(BUILD_VSRC_DIR)/iob_cache_ram_axi_s_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_ram_axi_s_portmap.vh:
 	$(AXI_GEN) axi_s_portmap iob_cache_ram_ s_ && cp iob_cache_ram_axi_s_portmap.vh $(BUILD_VSRC_DIR)
 
-SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_portmap.vh
-$(BUILD_VSRC_DIR)/iob_cache_axi_m_portmap.vh:
-	$(AXI_GEN) axi_m_portmap iob_cache_ && cp iob_cache_axi_m_portmap.vh $(BUILD_VSRC_DIR)
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh:
+	$(AXI_GEN) axi_m_m_portmap iob_cache_ && cp iob_cache_axi_m_m_portmap.vh $(BUILD_VSRC_DIR)
 
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_write_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_write_port.vh:
 	$(AXI_GEN) axi_m_write_port iob_cache_ && cp iob_cache_axi_m_write_port.vh $(BUILD_VSRC_DIR)
 
-SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_write_portmap.vh
-$(BUILD_VSRC_DIR)/iob_cache_axi_m_write_portmap.vh:
-	$(AXI_GEN) axi_m_write_portmap iob_cache_ && cp iob_cache_axi_m_write_portmap.vh $(BUILD_VSRC_DIR)
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_write_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_write_portmap.vh:
+	$(AXI_GEN) axi_m_m_write_portmap iob_cache_ && cp iob_cache_axi_m_m_write_portmap.vh $(BUILD_VSRC_DIR)
 
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_read_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_read_port.vh:
 	$(AXI_GEN) axi_m_read_port iob_cache_ && cp iob_cache_axi_m_read_port.vh $(BUILD_VSRC_DIR)
 
-SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_read_portmap.vh
-$(BUILD_VSRC_DIR)/iob_cache_axi_m_read_portmap.vh:
-	$(AXI_GEN) axi_m_read_portmap iob_cache_ && cp iob_cache_axi_m_read_portmap.vh $(BUILD_VSRC_DIR)
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh
+$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh:
+	$(AXI_GEN) axi_m_m_read_portmap iob_cache_ && cp iob_cache_axi_m_m_read_portmap.vh $(BUILD_VSRC_DIR)
+
+#turn iob_cache_swreg_gen.v into unused header since not needed in this core
+SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
+$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh: $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v
+	mv $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh

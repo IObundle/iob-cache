@@ -17,7 +17,7 @@ module iob_cache_control
     input                      clk_i,
     input                      reset,
     input                      valid,
-    input [`iob_cache_swreg_ADDR_W-1:0]   addr,
+    input [`IOB_CACHE_SWREG_ADDR_W-1:0]   addr,
     input                      wtbuf_full,
     input                      wtbuf_empty,
     input                      write_hit,

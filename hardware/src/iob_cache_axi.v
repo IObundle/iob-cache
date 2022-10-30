@@ -55,20 +55,20 @@ module iob_cache_axi
    
    //Front-end & Front-end interface.
    wire                                         data_req, data_ack;
-   wire [ADDR_W -1 : `IOB_CACHE_NBYTES_W]                 data_addr;
+   wire [ADDR_W -1 : `IOB_CACHE_NBYTES_W]       data_addr;
    wire [DATA_W-1 : 0]                          data_wdata, data_rdata;
-   wire [`IOB_CACHE_NBYTES-1: 0]                          data_wstrb;
+   wire [`IOB_CACHE_NBYTES-1: 0]                data_wstrb;
    wire [ADDR_W -1 : `IOB_CACHE_NBYTES_W]                 data_addr_reg;
-   wire [DATA_W-1 : 0]                          data_wdata_reg;
+   wire [DATA_W-1 : 0]                                    data_wdata_reg;
    wire [`IOB_CACHE_NBYTES-1: 0]                          data_wstrb_reg;
-   wire                                         data_req_reg;
-
-   wire                                         ctrl_req, ctrl_ack;
-   wire [`iob_cache_swreg_ADDR_W-1:0]                      ctrl_addr;
-   wire [USE_CTRL*(DATA_W-1):0]                 ctrl_rdata;
-   wire                                         ctrl_invalidate;
-
-   wire                                         wtbuf_full, wtbuf_empty;
+   wire                                                   data_req_reg;
+   
+   wire                                                   ctrl_req, ctrl_ack;
+   wire [`IOB_CACHE_SWREG_ADDR_W-1:0]                     ctrl_addr;
+   wire [USE_CTRL*(DATA_W-1):0]                           ctrl_rdata;
+   wire                                                   ctrl_invalidate;
+   
+   wire                                                   wtbuf_full, wtbuf_empty;
 
    assign invalidate_out = ctrl_invalidate | invalidate_in;
    assign wtb_empty_out = wtbuf_empty & wtb_empty_in;
@@ -218,7 +218,7 @@ module iob_cache_axi
       .read_rdata (read_rdata),
 
       //back-end AXI4 interface
-`include "iob_cache_axi_portmap.vh"
+`include "iob_cache_axi_m_m_portmap.vh"
       .clk_i(clk_i),
       .rst_i(rst_i)  
       );

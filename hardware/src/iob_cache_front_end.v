@@ -38,7 +38,7 @@ module iob_cache_front_end
 
     // cache-control
     output                           ctrl_req,
-    output [`iob_cache_swreg_ADDR_W-1:0]        ctrl_addr,
+    output [`IOB_CACHE_SWREG_ADDR_W-1:0]        ctrl_addr,
     input [USE_CTRL*(DATA_W-1):0]  ctrl_rdata,
     input                            ctrl_ack
     );
@@ -55,7 +55,7 @@ module iob_cache_front_end
          assign data_req_int = ~addr[USE_CTRL + ADDR_W -1] & req;
 
          assign ctrl_req  = addr[USE_CTRL + ADDR_W -1] & req;
-         assign ctrl_addr = addr[`iob_cache_swreg_ADDR_W-1:0];
+         assign ctrl_addr = addr[`IOB_CACHE_SWREG_ADDR_W-1:0];
 
       end else begin
          // Front-end output signals
@@ -63,7 +63,7 @@ module iob_cache_front_end
          assign rdata = data_rdata;
          assign data_req_int = req;
          assign ctrl_req = 1'bx;
-         assign ctrl_addr = `iob_cache_swreg_ADDR_W'dx;
+         assign ctrl_addr = `IOB_CACHE_SWREG_ADDR_W'dx;
       end
    endgenerate
 

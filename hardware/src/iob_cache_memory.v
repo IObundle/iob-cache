@@ -115,15 +115,15 @@ module iob_cache_memory
              )
          iob_ram_2p0
            (
-            .clk    (clk_i),
+            .clk_i    (clk_i),
 
-            .w_en   (mem_w_en),
-            .w_addr (mem_w_addr),
-            .w_data (mem_w_data),
+            .w_en_i   (mem_w_en),
+            .w_addr_i (mem_w_addr),
+            .w_data_i (mem_w_data),
 
-            .r_en   (mem_r_en),
-            .r_addr (mem_r_addr),
-            .r_data (mem_r_data)
+            .r_en_i   (mem_r_en),
+            .r_addr_i (mem_r_addr),
+            .r_data_o (mem_r_data)
             );
 
          iob_fifo_sync
@@ -134,27 +134,27 @@ module iob_cache_memory
              )
          write_throught_buffer
            (
-            .clk     (clk_i),
-            .rst     (reset),
-            .arst    (reset),
+            .clk_i     (clk_i),
+            .rst_i     (reset),
+            .arst_i    (reset),
 
-            .ext_mem_w_en   (mem_w_en),
-            .ext_mem_w_addr (mem_w_addr),
-            .ext_mem_w_data (mem_w_data),
+            .ext_mem_w_en_o   (mem_w_en),
+            .ext_mem_w_addr_o (mem_w_addr),
+            .ext_mem_w_data_o (mem_w_data),
 
-            .ext_mem_r_en   (mem_r_en),
-            .ext_mem_r_addr (mem_r_addr),
-            .ext_mem_r_data (mem_r_data),
+            .ext_mem_r_en_o   (mem_r_en),
+            .ext_mem_r_addr_o (mem_r_addr),
+            .ext_mem_r_data_i (mem_r_data),
 
-            .level   (),
+            .level_o   (),
 
-            .r_data  (buffer_dout),
-            .r_empty (buffer_empty),
-            .r_en    (write_ack),
+            .r_data_o  (buffer_dout),
+            .r_empty_o (buffer_empty),
+            .r_en_i    (write_ack),
 
-            .w_data  ({addr_reg,wdata_reg,wstrb_reg}),
-            .w_full  (buffer_full),
-            .w_en    (write_access & ack)
+            .w_data_i  ({addr_reg,wdata_reg,wstrb_reg}),
+            .w_full_o  (buffer_full),
+            .w_en_i    (write_access & ack)
             );
 
          // buffer status
@@ -313,12 +313,12 @@ module iob_cache_memory
                 )
             tag_memory
               (
-               .clk (clk_i                         ),
-               .en  (req                         ),
-               .we  (way_select[k] & replace_req ),
-               .addr(index[NLINES_W-1:0]         ),
-               .din (tag                         ),
-               .dout(line_tag[TAG_W*k +: TAG_W]  )
+               .clk_i(clk_i),
+               .en_i(req),
+               .we_i(way_select[k] & replace_req),
+               .addr_i(index[NLINES_W-1:0]),
+               .d_i(tag),
+               .d_o(line_tag[TAG_W*k +: TAG_W])
                );
 
               // Way hit signal - hit or replacement
@@ -481,12 +481,12 @@ module iob_gen_sp_ram
              )
          iob_cache_mem
             (
-             .clk (clk_i),
-             .en  (en),
-             .we  (we[i]),
-             .addr(addr),
-             .dout(data_out[8*i +: 8]),
-             .din (data_in [8*i +: 8])
+             .clk_i (clk_i),
+             .en_i  (en),
+             .we_i  (we[i]),
+             .addr_i(addr),
+             .d_o(data_out[8*i +: 8]),
+             .d_i (data_in [8*i +: 8])
              );
         end
    endgenerate
