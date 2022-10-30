@@ -98,7 +98,7 @@ module iob_cache
 
         //back-end
 `ifdef AXI
- `include "iob_cache_axi_portmap.vh"
+ `include "iob_cache_axi_m_m_portmap.vh"
 `else
         .be_addr(be_addr),
         .be_wdata(be_wdata),

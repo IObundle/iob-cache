@@ -36,10 +36,10 @@ module iob_cache_sim_wrapper
     `IOB_OUTPUT(ack,1),
 
     // Cache invalidate and write-trough buffer IO chain
-    `IOB_INPUT(invalidate_in,1),
-    `IOB_OUTPUT(invalidate_out,1),
-    `IOB_INPUT(wtb_empty_in,1),
-    `IOB_OUTPUT(wtb_empty_out,1),
+    `IOB_INPUT(invalidate_in, 1),
+    `IOB_OUTPUT(invalidate_out, 1),
+    `IOB_INPUT(wtb_empty_in, 1),
+    `IOB_OUTPUT(wtb_empty_out, 1),
 
    //General Interface Signals
 `include "iob_clkrst_port.vh" 
@@ -88,7 +88,7 @@ module iob_cache_sim_wrapper
 
       //back-end
 `ifdef AXI
- `include "iob_cache_axi_portmap.vh"
+ `include "iob_cache_axi_m_portmap.vh"
 `else
       .be_addr(be_addr),
       .be_wdata(be_wdata),

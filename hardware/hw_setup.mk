@@ -27,35 +27,37 @@ $(BUILD_VSRC_DIR)/iob_cache_conf.vh: $(CACHE_DIR)/hardware/src/iob_cache_conf_$(
 #generate axi headers
 AXI_GEN:= $(LIB_DIR)/scripts/axi_gen.py
 
+# generate axi ports
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
 	$(AXI_GEN) axi_m_port iob_cache_ && cp iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
 
-SRC+=$(BUILD_VSRC_DIR)/iob_cache_ram_axi_s_portmap.vh
-$(BUILD_VSRC_DIR)/iob_cache_ram_axi_s_portmap.vh:
-	$(AXI_GEN) axi_s_portmap iob_cache_ram_ s_ && cp iob_cache_ram_axi_s_portmap.vh $(BUILD_VSRC_DIR)
-
+# generate portmap for axi instance
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh:
 	$(AXI_GEN) axi_m_m_portmap iob_cache_ && cp iob_cache_axi_m_m_portmap.vh $(BUILD_VSRC_DIR)
 
+# generate axi write port for axi write module
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_write_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_write_port.vh:
 	$(AXI_GEN) axi_m_write_port iob_cache_ && cp iob_cache_axi_m_write_port.vh $(BUILD_VSRC_DIR)
 
+# generate axi write portmap for axi write instance
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_write_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_write_portmap.vh:
 	$(AXI_GEN) axi_m_m_write_portmap iob_cache_ && cp iob_cache_axi_m_m_write_portmap.vh $(BUILD_VSRC_DIR)
 
+# generate axi write port for axi read module
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_read_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_read_port.vh:
 	$(AXI_GEN) axi_m_read_port iob_cache_ && cp iob_cache_axi_m_read_port.vh $(BUILD_VSRC_DIR)
 
+# generate axi write portmap for axi read module
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh:
 	$(AXI_GEN) axi_m_m_read_portmap iob_cache_ && cp iob_cache_axi_m_m_read_portmap.vh $(BUILD_VSRC_DIR)
 
-#turn iob_cache_swreg_gen.v into unused header since not needed in this core
+# turn iob_cache_swreg_gen.v into an unused header as this core does not use it
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
 $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh: $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v
 	mv $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
