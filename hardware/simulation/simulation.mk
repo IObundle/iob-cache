@@ -19,3 +19,4 @@ test2: test.log
 NOCLEAN+=-o -name "iob_cache_sim_wrapper.v"
 NOCLEAN+=-o -name "axi_ram.v"
 NOCLEAN+=-o -name "iob_cache_axi_wire.vh"
+NOCLEAN+=-o -name "iob_cache_tb.cpp"

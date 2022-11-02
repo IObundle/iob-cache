@@ -25,7 +25,7 @@ $(BUILD_VSRC_DIR)/iob_cache_conf.vh: $(CACHE_DIR)/hardware/src/iob_cache_conf_$(
 	cp $< $@
 
 #generate axi headers
-AXI_GEN:= $(LIB_DIR)/scripts/axi_gen.py
+AXI_GEN:= $(LIB_DIR)/scripts/if_gen.py
 
 # generate axi ports
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
