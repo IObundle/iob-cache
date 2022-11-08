@@ -1,4 +1,4 @@
-[[cache]]
+[['']]
 WTB_EMPTY = {rw_type="R", nbits=1, rst_val=0, addr=0, addr_w=0, autologic=false, description="Write-through buffer empty (1) or non-empty (0)."} 
 WTB_FULL = {rw_type="R", nbits=1, rst_val=0, addr=1, addr_w=0, autologic=false, description="Write-through buffer full (1) or non-full (0)."} 
 RW_HIT = {rw_type="R", nbits=32, rst_val=0, addr=4, addr_w=0, autologic=false, description="Read and write hit counter."}
