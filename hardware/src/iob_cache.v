@@ -29,31 +29,31 @@ module iob_cache
    (
     // Front-end interface (IOb native slave)
     //START_IO_TABLE fe
-    `IOB_INPUT(req, 1), //Read or write request from host. If signal {\tt ack} raises in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} raises. When {\tt ack} raises in response to a previous request, {\tt req} may keep high, or combinatorially lowered in the same cycle. If {\tt req} keeps high, a new request is being made to the current address {\tt addr}; if {\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.
-    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`IOB_CACHE_NBYTES_W), //Address from CPU or other user core, excluding the byte selection LSBs.
-    `IOB_INPUT(wdata, DATA_W), //Write data fom host.
-    `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES), //Byte write strobe from host.
-    `IOB_OUTPUT(rdata, DATA_W), //Read data to host.
-    `IOB_OUTPUT(ack,1), //Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.
+    `IOB_INPUT(req, 1), //V2TEX_IO Read or write request from host. If signal {\tt ack} raises in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} raises. When {\tt ack} raises in response to a previous request, {\tt req} may keep high, or combinatorially lowered in the same cycle. If {\tt req} keeps high, a new request is being made to the current address {\tt addr}; if {\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.
+    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`IOB_CACHE_NBYTES_W), //V2TEX_IO Address from CPU or other user core, excluding the byte selection LSBs.
+    `IOB_INPUT(wdata, DATA_W), //V2TEX_IO Write data fom host.
+    `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES), //V2TEX_IO Byte write strobe from host.
+    `IOB_OUTPUT(rdata, DATA_W), //V2TEX_IO Read data to host.
+    `IOB_OUTPUT(ack,1), //V2TEX_IO Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.
 
     // Back-end interface
 `ifdef AXI
  `include "iob_cache_axi_m_port.vh"
 `else
     //START_IO_TABLE be
-    `IOB_OUTPUT(be_req, 1), //Read or write request to next-level cache or memory.
-    `IOB_OUTPUT(be_addr, BE_ADDR_W),  //Address to next-level cache or memory.
-    `IOB_OUTPUT(be_wdata, BE_DATA_W), //Write data to next-level cache or memory.
-    `IOB_OUTPUT(be_wstrb, `IOB_CACHE_BE_NBYTES), //Write strobe to next-level cache or memory.
-    `IOB_INPUT(be_rdata, BE_DATA_W),  //Read data from next-level cache or memory.
-    `IOB_INPUT(be_ack, 1), //Acknowledge signal from next-level cache or memory.
+    `IOB_OUTPUT(be_req, 1), //V2TEX_IO Read or write request to next-level cache or memory.
+    `IOB_OUTPUT(be_addr, BE_ADDR_W),  //V2TEX_IO Address to next-level cache or memory.
+    `IOB_OUTPUT(be_wdata, BE_DATA_W), //V2TEX_IO Write data to next-level cache or memory.
+    `IOB_OUTPUT(be_wstrb, `IOB_CACHE_BE_NBYTES), //V2TEX_IO Write strobe to next-level cache or memory.
+    `IOB_INPUT(be_rdata, BE_DATA_W),  //V2TEX_IO Read data from next-level cache or memory.
+    `IOB_INPUT(be_ack, 1), //V2TEX_IO Acknowledge signal from next-level cache or memory.
 `endif
     // Cache invalidate and write-trough buffer IO chain
     //START_IO_TABLE ie
-    `IOB_INPUT(invalidate_in,1), //Invalidates all cache lines instantaneously if high.
-    `IOB_OUTPUT(invalidate_out,1), //This output is asserted high when the cache is invalidated via the cache controller or the direct {\tt invalidate_in} signal. The present {\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.
-    `IOB_INPUT(wtb_empty_in,1), //This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\tt wtb_empty_out}.
-    `IOB_OUTPUT(wtb_empty_out,1), //This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.
+    `IOB_INPUT(invalidate_in,1), //V2TEX_IO Invalidates all cache lines instantaneously if high.
+    `IOB_OUTPUT(invalidate_out,1), //V2TEX_IO This output is asserted high when the cache is invalidated via the cache controller or the direct {\tt invalidate_in} signal. The present {\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.
+    `IOB_INPUT(wtb_empty_in,1), //V2TEX_IO This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\tt wtb_empty_out}.
+    `IOB_OUTPUT(wtb_empty_out,1), //V2TEX_IO This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.
    //General Interface Signals
 `include "iob_clkrst_port.vh" 
    );	

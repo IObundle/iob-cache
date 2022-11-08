@@ -18,6 +18,6 @@ SRC+=$(BUILD_ESRC_DIR)/iob_cache_swreg.h $(BUILD_ESRC_DIR)/iob_cache_swreg_emb.c
 $(BUILD_ESRC_DIR)/iob_cache_swreg%: iob_cache_swreg%
 	mv $< $@
 
-iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.conf
+iob_cache_swreg.h iob_cache_swreg_emb.c: $(CACHE_DIR)/mkregs.toml
 	$(LIB_DIR)/scripts/mkregs.py iob_cache $(CACHE_DIR) SW
 
