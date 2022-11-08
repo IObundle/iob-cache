@@ -30,7 +30,7 @@ AXI_GEN:= $(LIB_DIR)/scripts/if_gen.py
 # generate axi ports
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
-	$(AXI_GEN) axi_m_port iob_cache_ && cp iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_port iob_cache_ --top && cp iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
 
 # generate portmap for axi instance
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh
