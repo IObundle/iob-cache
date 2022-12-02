@@ -30,32 +30,32 @@ AXI_GEN:= $(LIB_DIR)/scripts/if_gen.py
 # generate axi ports
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_port.vh:
-	$(AXI_GEN) axi_m_port iob_cache_ --top && cp iob_cache_axi_m_port.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_port $(@D)/iob_cache_ --top
 
 # generate portmap for axi instance
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_portmap.vh:
-	$(AXI_GEN) axi_m_m_portmap iob_cache_ && cp iob_cache_axi_m_m_portmap.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_m_portmap $(@D)/iob_cache_
 
 # generate axi write port for axi write module
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_write_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_write_port.vh:
-	$(AXI_GEN) axi_m_write_port iob_cache_ && cp iob_cache_axi_m_write_port.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_write_port $(@D)/iob_cache_
 
 # generate axi write portmap for axi write instance
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_write_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_write_portmap.vh:
-	$(AXI_GEN) axi_m_m_write_portmap iob_cache_ && cp iob_cache_axi_m_m_write_portmap.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_m_write_portmap $(@D)/iob_cache_
 
 # generate axi write port for axi read module
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_read_port.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_read_port.vh:
-	$(AXI_GEN) axi_m_read_port iob_cache_ && cp iob_cache_axi_m_read_port.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_read_port $(@D)/iob_cache_
 
 # generate axi write portmap for axi read module
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh
 $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh:
-	$(AXI_GEN) axi_m_m_read_portmap iob_cache_ && cp iob_cache_axi_m_m_read_portmap.vh $(BUILD_VSRC_DIR)
+	$(AXI_GEN) axi_m_m_read_portmap $(@D)/iob_cache_
 
 # turn iob_cache_swreg_gen.v into an unused header as this core does not use it
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
