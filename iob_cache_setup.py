@@ -9,13 +9,47 @@ version = 'V0.10'
 
 confs = \
 [
+    # Macros
+    {'name':'DATA_W', 'type':'M', 'val':'32', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'ADDR_W', 'type':'M', 'val':'24', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'BE_DATA_W', 'type':'M', 'val':'32', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'BE_ADDR_W', 'type':'M', 'val':'24', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'NWAYS_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'NLINES_W', 'type':'M', 'val':'7', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'WORD_OFFSET_W', 'type':'M', 'val':'3', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'WTBUF_DEPTH_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'REP_POLICY', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'WRITE_POL', 'type':'M', 'val':'0 ', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'USE_CTRL', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'USE_CTRL_CNT', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    #Replacement Policy
+    #Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters
+    {'name':'LRU', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    # bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line
+    {'name':'PLRU_MRU', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    # tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line
+    {'name':'PLRU_TREE', 'type':'M', 'val':'2', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    #Write Policy
+    #write-through not allocate: implements a write-through buffer  
+    {'name':'WRITE_THROUGH', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    #write-back allocate: implementes a dirty-memory  
+    {'name':'WRITE_BACK', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    #AXI4
+    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'AXI_LEN_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'AXI_ID', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    # Required by iob_cache_control.v
+    {'name':'VERSION', 'type':'M', 'val':'0010', 'min':'?', 'max':'?', 'descr':'TODO description'},
+
+    # Parameters
     #TODO: Need to handle ifdef AXI
     #{'name':'AXI_ID_W', 'type':'P', 'val':'`IOB_CACHE_AXI_ID_W', 'min':'1', 'max':'NA', 'descr':'AXI ID bus width'},
     #{'name':'AXI_LEN_W', 'type':'P', 'val':'`IOB_CACHE_AXI_LEN_W', 'min':'1', 'max':'NA', 'descr':'AXI LEN bus width'},
     #{'name':'AXI_ADDR_W', 'type':'P', 'val':'BE_ADDR_W', 'min':'1', 'max':'NA', 'descr':'AXI address bus width'},
     #{'name':'AXI_DATA_W', 'type':'P', 'val':'BE_DATA_W', 'min':'1', 'max':'NA', 'descr':'AXI data bus width'},
     #{'name':'[AXI_ID_W-1:0] AXI_ID', 'type':'P', 'val':'`IOB_CACHE_AXI_ID', 'min':'?', 'max':'NA', 'descr':'AXI ID bus'},
-
+    # Other params
     {'name':'ADDR_W', 'type':'P', 'val':'`IOB_CACHE_ADDR_W', 'min':'1', 'max':'64', 'descr':'Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.'},
     {'name':'DATA_W', 'type':'P', 'val':'`IOB_CACHE_DATA_W', 'min':'32', 'max':'64', 'descr':'Front-end data width (log2): this parameter allows supporting processing elements with various data widths.'},
     {'name':'BE_ADDR_W', 'type':'P', 'val':'`IOB_CACHE_BE_ADDR_W', 'min':'1', 'max':'', 'descr':'Back-end address width (log2): the value of this parameter must be equal or greater than ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.'},
@@ -60,24 +94,24 @@ ios = \
     ]},
     {'name': 'ge', 'descr':'General Interface Signals', 'ports': [
         {'name':'clk_i', 'type':'I', 'n_bits':'1', 'descr':'System clock input.'},
-        {'name':'arst_i', 'type':'I', 'n_bits':'1', 'descr':'System reset, asynchronous and active high.'}
+        {'name':'rst_i', 'type':'I', 'n_bits':'1', 'descr':'System reset, asynchronous and active high.'}
     ]}
 ]
 
 regs = \
 [
     {'name': 'cache', 'descr':'CACHE software accessible registers.', 'regs': [
-        {'name':'WTB_EMPTY', 'type':"R", 'n_bits':'1', 'rst_val':'0', 'addr':'0', 'n_items':'1', 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."} 
-        {'name':'WTB_FULL', 'type':"R", 'n_bits':'1', 'rst_val':'0', 'addr':'1', 'n_items':'1', 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
-        {'name':'RW_HIT', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'4', 'n_items':'1', 'autologic':False, 'descr':"Read and write hit counter."},
-        {'name':'RW_MISS', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'8', 'n_items':'1', 'autologic':False, 'descr':"Read and write miss counter."},
-        {'name':'READ_HIT', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'12', 'n_items':'1', 'autologic':False, 'descr':"Read hit counter."},
-        {'name':'READ_MISS', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'16', 'n_items':'1', 'autologic':False, 'descr':"Read miss counter."},
-        {'name':'WRITE_HIT', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'20', 'n_items':'1', 'autologic':False, 'descr':"Write hit counter."},
-        {'name':'WRITE_MISS', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'24', 'n_items':'1', 'autologic':False, 'descr':"Write miss counter."},
-        {'name':'RST_CNTRS', 'type':"W", 'n_bits':'1', 'rst_val':'0', 'addr':'28', 'n_items':'1', 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
-        {'name':'INVALIDATE', 'type':"W", 'n_bits':'1', 'rst_val':'0', 'addr':'32', 'n_items':'1', 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
-        {'name':'VERSION', 'type':"R", 'n_bits':'32', 'rst_val':'0', 'addr':'36', 'n_items':'1', 'autologic':False, 'descr':"Cache version."}
+        {'name':'WTB_EMPTY', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':0, 'n_items':1, 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."},
+        {'name':'WTB_FULL', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':1, 'n_items':1, 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
+        {'name':'RW_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':4, 'n_items':1, 'autologic':False, 'descr':"Read and write hit counter."},
+        {'name':'RW_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':8, 'n_items':1, 'autologic':False, 'descr':"Read and write miss counter."},
+        {'name':'READ_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':12, 'n_items':1, 'autologic':False, 'descr':"Read hit counter."},
+        {'name':'READ_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':16, 'n_items':1, 'autologic':False, 'descr':"Read miss counter."},
+        {'name':'WRITE_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':20, 'n_items':1, 'autologic':False, 'descr':"Write hit counter."},
+        {'name':'WRITE_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':24, 'n_items':1, 'autologic':False, 'descr':"Write miss counter."},
+        {'name':'RST_CNTRS', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':28, 'n_items':1, 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
+        {'name':'INVALIDATE', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':32, 'n_items':1, 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
+        {'name':'VERSION', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':36, 'n_items':1, 'autologic':False, 'descr':"Cache version."}
     ]}
 ]
 

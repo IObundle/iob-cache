@@ -44,7 +44,8 @@ module iob_cache_iob
     `IOB_OUTPUT(wtb_empty_out,1),
     
     //General Interface Signals
-    `include "iob_clkrst_port.vh"
+   `IOB_INPUT(clk_i,          1), //V2TEX_IO System clock input.
+   `IOB_INPUT(rst_i,         1)  //V2TEX_IO System reset, asynchronous and active high.
     );
 
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.

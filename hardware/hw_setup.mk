@@ -1,11 +1,13 @@
 # (c) 2022-Present IObundle, Lda, all rights reserved
 #
-# This makefile segment is used at setup-time in $(LIB_DIR)/Makefile
+# This makefile segment lists all hardware header and source files 
 #
-# It copies all hardware header and source files to $(BUILD_DIR)/hw
+# It is used for populating the build directory
 #
-#
+ifeq ($(filter CACHE, $(HW_MODULES)),)
 
+#add itself to HW_MODULES list
+HW_MODULES+=CACHE
 
 #import lib hardware
 include $(LIB_DIR)/hardware/include/hw_setup.mk
@@ -58,6 +60,8 @@ $(BUILD_VSRC_DIR)/iob_cache_axi_m_m_read_portmap.vh:
 	$(AXI_GEN) axi_m_m_read_portmap $(@D)/iob_cache_
 
 # turn iob_cache_swreg_gen.v into an unused header as this core does not use it
-SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
-$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh: $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v
-	mv $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
+#SRC+=$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
+#$(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh: $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v
+#	mv $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.v $(BUILD_VSRC_DIR)/iob_cache_swreg_gen.vh
+
+endif
