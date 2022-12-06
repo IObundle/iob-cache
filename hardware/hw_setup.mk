@@ -21,6 +21,11 @@ SRC+=$(patsubst $(CACHE_DIR)/hardware/src/%, $(BUILD_VSRC_DIR)/%, $(wildcard $(C
 $(BUILD_VSRC_DIR)/%: $(CACHE_DIR)/hardware/src/%
 	cp $< $@
 
+# iob slave port (for iob_cache_swreg_gen.v)
+SRC+=$(BUILD_VSRC_DIR)/iob_s_port.vh
+%/iob_s_port.vh:
+	$(LIB_DIR)/scripts/if_gen.py iob_s_port '$(@D)/' ''
+
 #select core configuration
 SRC+=$(BUILD_VSRC_DIR)/iob_cache_conf.vh
 $(BUILD_VSRC_DIR)/iob_cache_conf.vh: $(CACHE_DIR)/hardware/src/iob_cache_conf_$(CACHE_CONFIG).vh

@@ -13,8 +13,8 @@ module iob_cache_sim_wrapper
     parameter AXI_DATA_W = BE_DATA_W,
     parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID,
 `endif
-    parameter ADDR_W = `IOB_CACHE_ADDR_W,
-    parameter DATA_W = `IOB_CACHE_DATA_W,
+    parameter ADDR_W = `IOB_CACHE_FE_ADDR_W,
+    parameter DATA_W = `IOB_CACHE_FE_DATA_W,
     parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
     parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
     parameter NWAYS_W = `IOB_CACHE_NWAYS_W,
@@ -42,7 +42,8 @@ module iob_cache_sim_wrapper
     `IOB_OUTPUT(wtb_empty_out, 1),
 
    //General Interface Signals
-`include "iob_clkrst_port.vh" 
+   `IOB_INPUT(clk_i,          1), //V2TEX_IO System clock input.
+   `IOB_INPUT(rst_i,         1)   //V2TEX_IO System reset, active high.
    );	
 
 `ifdef AXI
@@ -58,8 +59,8 @@ module iob_cache_sim_wrapper
 
    iob_cache
        #(
-         .ADDR_W(`IOB_CACHE_ADDR_W),
-         .DATA_W(`IOB_CACHE_DATA_W),
+         .FE_ADDR_W(ADDR_W),
+         .FE_DATA_W(DATA_W),
          .BE_ADDR_W(`IOB_CACHE_BE_ADDR_W),
          .BE_DATA_W(`IOB_CACHE_BE_DATA_W),
          .NWAYS_W(`IOB_CACHE_NWAYS_W),
