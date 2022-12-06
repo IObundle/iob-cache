@@ -7,8 +7,8 @@
 
 module iob_cache_iob
   #(
-    parameter ADDR_W = `IOB_CACHE_ADDR_W,
-    parameter DATA_W = `IOB_CACHE_DATA_W,
+    parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
+    parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W,
     parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
     parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
     parameter NWAYS_W = `IOB_CACHE_NWAYS_W,
@@ -23,10 +23,10 @@ module iob_cache_iob
    (
     // Front-end interface (IOb native slave)
     `IOB_INPUT(req, 1),
-    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`IOB_CACHE_NBYTES_W),
-    `IOB_INPUT(wdata, DATA_W),
+    `IOB_INPUT(addr, USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W),
+    `IOB_INPUT(wdata, FE_DATA_W),
     `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES),
-    `IOB_OUTPUT(rdata, DATA_W),
+    `IOB_OUTPUT(rdata, FE_DATA_W),
     `IOB_OUTPUT(ack,1),
 
     // Back-end interface
@@ -50,17 +50,17 @@ module iob_cache_iob
 
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
    wire                              data_req, data_ack;
-   wire [ADDR_W -1:`IOB_CACHE_NBYTES_W]        data_addr;
-   wire [DATA_W-1 : 0]               data_wdata, data_rdata;
+   wire [FE_ADDR_W -1:`IOB_CACHE_NBYTES_W]        data_addr;
+   wire [FE_DATA_W-1 : 0]               data_wdata, data_rdata;
    wire [`IOB_CACHE_NBYTES-1: 0]               data_wstrb;
-   wire [ADDR_W -1:`IOB_CACHE_NBYTES_W]        data_addr_reg;
-   wire [DATA_W-1 : 0]               data_wdata_reg;
+   wire [FE_ADDR_W -1:`IOB_CACHE_NBYTES_W]        data_addr_reg;
+   wire [FE_DATA_W-1 : 0]               data_wdata_reg;
    wire [`IOB_CACHE_NBYTES-1: 0]               data_wstrb_reg;
    wire                              data_req_reg;
 
    wire                              ctrl_req, ctrl_ack;
    wire [`IOB_CACHE_SWREG_ADDR_W-1:0]           ctrl_addr;
-   wire [USE_CTRL*(DATA_W-1):0]      ctrl_rdata;
+   wire [USE_CTRL*(FE_DATA_W-1):0]      ctrl_rdata;
    wire                              ctrl_invalidate;
 
    wire                              wtbuf_full, wtbuf_empty;
@@ -70,8 +70,8 @@ module iob_cache_iob
 
    iob_cache_front_end
      #(
-       .ADDR_W (ADDR_W-`IOB_CACHE_NBYTES_W),
-       .DATA_W (DATA_W),
+       .ADDR_W (FE_ADDR_W-`IOB_CACHE_NBYTES_W),
+       .DATA_W (FE_DATA_W),
        .USE_CTRL(USE_CTRL)
        )
    front_end
@@ -113,21 +113,21 @@ module iob_cache_iob
 
    // back-end write-channel
    wire                              write_req, write_ack;
-   wire [ADDR_W-1:`IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
-   wire [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 :0] write_wdata;
+   wire [FE_ADDR_W-1:`IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
+   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 :0] write_wdata;
    wire [`IOB_CACHE_NBYTES-1:0]                                                write_wstrb;
 
    // back-end read-channel
    wire                                                              replace_req, replace;
-   wire [ADDR_W -1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]                          replace_addr;
+   wire [FE_ADDR_W -1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]                          replace_addr;
    wire                                                              read_req;
    wire [`IOB_CACHE_LINE2BE_W-1:0]                                             read_addr;
    wire [BE_DATA_W-1:0]                                              read_rdata;
 
    iob_cache_memory
      #(
-       .ADDR_W (ADDR_W),
-       .DATA_W (DATA_W),
+       .ADDR_W (FE_ADDR_W),
+       .DATA_W (FE_DATA_W),
        .BE_DATA_W (BE_DATA_W),
        .NWAYS_W (NWAYS_W),
        .NLINES_W (NLINES_W),
@@ -145,7 +145,7 @@ module iob_cache_iob
 
       // front-end
       .req       (data_req),
-      .addr      (data_addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]),
+      .addr      (data_addr[FE_ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]),
       .rdata     (data_rdata),
       .ack       (data_ack),
       .req_reg   (data_req_reg),
@@ -182,8 +182,8 @@ module iob_cache_iob
    //BLOCK Back-end interface & Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This interface can be of type NPI or AXI4 as per configuration. If it is connected to the next-level IOb-Cache, the NPI type must be selected; if it is connected to a third party cache or memory controlller featuring an AXI4 interface, then the AXI4 type must be selected.
    iob_cache_back_end
      #(
-       .ADDR_W (ADDR_W),
-       .DATA_W (DATA_W),
+       .ADDR_W (FE_ADDR_W),
+       .DATA_W (FE_DATA_W),
        .BE_DATA_W (BE_DATA_W),
        .WORD_OFFSET_W (WORD_OFFSET_W),
        .WRITE_POL (WRITE_POL)
@@ -222,7 +222,7 @@ module iob_cache_iob
       if (USE_CTRL)
         iob_cache_control
           #(
-            .DATA_W (DATA_W),
+            .DATA_W (FE_DATA_W),
             .USE_CTRL_CNT  (USE_CTRL_CNT)
             )
       cache_control

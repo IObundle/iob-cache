@@ -13,8 +13,8 @@ module iob_cache
     parameter AXI_DATA_W = BE_DATA_W,
     parameter [AXI_ID_W-1:0] AXI_ID = `IOB_CACHE_AXI_ID,
 `endif
-    parameter ADDR_W = `IOB_CACHE_ADDR_W, //PARAM &   & 64 & Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.
-    parameter DATA_W = `IOB_CACHE_DATA_W, //PARAM & 32 & 64 & Front-end data width (log2): this parameter allows supporting processing elements with various data widths.
+    parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W, //PARAM &   & 64 & Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.
+    parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W, //PARAM & 32 & 64 & Front-end data width (log2): this parameter allows supporting processing elements with various data widths.
     parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W, //PARAM &   &  & Back-end address width (log2): the value of this parameter must be equal or greater than ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.
     parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W, //PARAM & 32 & 256 & Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. 
     parameter NWAYS_W = `IOB_CACHE_NWAYS_W, //PARAM & 0 & 8 & Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is 1 for a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. 
@@ -30,10 +30,10 @@ module iob_cache
     // Front-end interface (IOb native slave)
     //START_IO_TABLE fe
     `IOB_INPUT(req, 1), //V2TEX_IO Read or write request from host. If signal {\tt ack} raises in the next cyle the request has been served; otherwise {\tt req} should remain high until {\tt ack} raises. When {\tt ack} raises in response to a previous request, {\tt req} may keep high, or combinatorially lowered in the same cycle. If {\tt req} keeps high, a new request is being made to the current address {\tt addr}; if {\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.
-    `IOB_INPUT(addr, USE_CTRL+ADDR_W-`IOB_CACHE_NBYTES_W), //V2TEX_IO Address from CPU or other user core, excluding the byte selection LSBs.
-    `IOB_INPUT(wdata, DATA_W), //V2TEX_IO Write data fom host.
+    `IOB_INPUT(addr, USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W), //V2TEX_IO Address from CPU or other user core, excluding the byte selection LSBs.
+    `IOB_INPUT(wdata, FE_DATA_W), //V2TEX_IO Write data fom host.
     `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES), //V2TEX_IO Byte write strobe from host.
-    `IOB_OUTPUT(rdata, DATA_W), //V2TEX_IO Read data to host.
+    `IOB_OUTPUT(rdata, FE_DATA_W), //V2TEX_IO Read data to host.
     `IOB_OUTPUT(ack,1), //V2TEX_IO Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.
 
     // Back-end interface
@@ -65,17 +65,17 @@ module iob_cache
      iob_cache_iob
 `endif     
        #(
-         .ADDR_W(`IOB_CACHE_ADDR_W),
-         .DATA_W(`IOB_CACHE_DATA_W),
-         .BE_ADDR_W(`IOB_CACHE_BE_ADDR_W),
-         .BE_DATA_W(`IOB_CACHE_BE_DATA_W),
-         .NWAYS_W(`IOB_CACHE_NWAYS_W),
-         .NLINES_W(`IOB_CACHE_NLINES_W),
-         .WORD_OFFSET_W(`IOB_CACHE_WORD_OFFSET_W),
-         .WTBUF_DEPTH_W(`IOB_CACHE_WTBUF_DEPTH_W),
-         .WRITE_POL(`IOB_CACHE_WRITE_POL),
-         .REP_POLICY(`IOB_CACHE_REP_POLICY),
-         .USE_CTRL(`IOB_CACHE_USE_CTRL)
+         .FE_ADDR_W(FE_ADDR_W),
+         .FE_DATA_W(FE_DATA_W),
+         .BE_ADDR_W(BE_ADDR_W),
+         .BE_DATA_W(BE_DATA_W),
+         .NWAYS_W(NWAYS_W),
+         .NLINES_W(NLINES_W),
+         .WORD_OFFSET_W(WORD_OFFSET_W),
+         .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+         .WRITE_POL(WRITE_POL),
+         .REP_POLICY(REP_POLICY),
+         .USE_CTRL(USE_CTRL)
          )
 `ifdef AXI   
    cache_axi
