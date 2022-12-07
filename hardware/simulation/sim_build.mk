@@ -9,8 +9,6 @@ endif
 iob_cache_tb.cpp: ./src/iob_cache_tb.cpp
 	cp $< $@
 
-VSRC+=./src/iob_cache_sim_wrapper.v
-
 #verilator top module
 VTOP:=iob_cache_sim_wrapper
 

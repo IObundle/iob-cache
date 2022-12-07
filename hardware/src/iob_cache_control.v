@@ -104,7 +104,7 @@ module iob_cache_control
               else if (addr == `IOB_CACHE_WTB_FULL_ADDR)
                 rdata <= wtbuf_full;
 	      else if (addr == `IOB_CACHE_VERSION_ADDR)
-                rdata <= `VERSION;
+                rdata <= `IOB_CACHE_VERSION;
          end
 
    endgenerate
