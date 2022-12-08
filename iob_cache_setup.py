@@ -18,12 +18,12 @@ confs = \
     {'name':'WRITE_THROUGH', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'write-through not allocate: implements a write-through buffer'},
     {'name':'WRITE_BACK', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'write-back allocate: implementes a dirty-memory'},
     #AXI4
-    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
-    {'name':'AXI_LEN_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'TODO description'},
-    {'name':'AXI_ID', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
-    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'description'},
+    {'name':'AXI_LEN_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'description'},
+    {'name':'AXI_ID', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'description'},
+    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'description'},
     # Required by iob_cache_control.v
-    {'name':'VERSION', 'type':'M', 'val':'0010', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'VERSION', 'type':'M', 'val':'0010', 'min':'?', 'max':'?', 'descr':'description'},
 
     # Swreg_gen parameters
     {'name':'ADDR_W', 'type':'P', 'val':'`IOB_CACHE_SWREG_ADDR_W', 'min':'NA', 'max':'NA', 'descr':'Cache address width used by swreg_gen'},
