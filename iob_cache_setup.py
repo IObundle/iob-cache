@@ -13,22 +13,7 @@ meta = \
 
 confs = \
 [
-    # Swreg_gen macros
-    {'name':'ADDR_W', 'type':'M', 'val':'`IOB_CACHE_SWREG_ADDR_W', 'min':'NA', 'max':'NA', 'descr':'Cache address width used by swreg_gen'},
-    {'name':'DATA_W', 'type':'M', 'val':'`IOB_CACHE_FE_DATA_W', 'min':'NA', 'max':'NA', 'descr':'Cache data width used by swreg_gen'},
-    # Other macros
-    {'name':'FE_DATA_W', 'type':'M', 'val':'32', 'min':'32', 'max':'64', 'descr':'Front-end data width (log2): this parameter allows supporting processing elements with various data widths.'},
-    {'name':'FE_ADDR_W', 'type':'M', 'val':'24', 'min':'1', 'max':'64', 'descr':'Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.'},
-    {'name':'BE_DATA_W', 'type':'M', 'val':'32', 'min':'32', 'max':'256', 'descr':'Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache\'s frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache\'s back-end interface. '},
-    {'name':'BE_ADDR_W', 'type':'M', 'val':'24', 'min':'1', 'max':'', 'descr':'Back-end address width (log2): the value of this parameter must be equal or greater than FE_ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.'},
-    {'name':'NWAYS_W', 'type':'M', 'val':'1', 'min':'0', 'max':'8', 'descr':'Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is 1 for a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. '},
-    {'name':'NLINES_W', 'type':'M', 'val':'7', 'min':'', 'max':'', 'descr':'Line offset width (log2): the value of this parameter equals the number of cache lines, given by 2**NLINES_W.'},
-    {'name':'WORD_OFFSET_W', 'type':'M', 'val':'3', 'min':'0', 'max':'', 'descr':'Word offset width (log2):  the value of this parameter equals the number of words per line, which is 2**OFFSET_W. '},
-    {'name':'WTBUF_DEPTH_W', 'type':'M', 'val':'4', 'min':'', 'max':'', 'descr':'Write-through buffer depth (log2). A shallow buffer will fill up more frequently and cause write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty faster, decreasing the duration of the read stall. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty and cause long read stalls.'},
-    {'name':'REP_POLICY', 'type':'M', 'val':'0', 'min':'0', 'max':'3', 'descr':'Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for tree-based Pseudo LRU (PLRU_TREE).'},
-    {'name':'WRITE_POL', 'type':'M', 'val':'0 ', 'min':'0', 'max':'1', 'descr':'Write policy: set to 0 for write-through or set to 1 for write-back.'},
-    {'name':'USE_CTRL', 'type':'M', 'val':'0', 'min':'0', 'max':'1', 'descr':'Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.'},
-    {'name':'USE_CTRL_CNT', 'type':'M', 'val':'0', 'min':'0', 'max':'1', 'descr':'Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.'},
+    # Macros
     #Replacement Policy
     {'name':'LRU', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters'},
     {'name':'PLRU_MRU', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line'},
@@ -37,16 +22,16 @@ confs = \
     {'name':'WRITE_THROUGH', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'write-through not allocate: implements a write-through buffer'},
     {'name':'WRITE_BACK', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'write-back allocate: implementes a dirty-memory'},
     #AXI4
-    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
-    {'name':'AXI_LEN_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'TODO description'},
-    {'name':'AXI_ID', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'TODO description'},
-    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'description'},
+    {'name':'AXI_LEN_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'description'},
+    {'name':'AXI_ID', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'description'},
+    {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'description'},
     # Required by iob_cache_control.v
-    {'name':'VERSION', 'type':'M', 'val':'0010', 'min':'?', 'max':'?', 'descr':'TODO description'},
+    {'name':'VERSION', 'type':'M', 'val':'0010', 'min':'?', 'max':'?', 'descr':'description'},
 
     # Swreg_gen parameters
-    {'name':'ADDR_W', 'type':'P', 'descr':'Cache address width used by swreg_gen'},
-    {'name':'DATA_W', 'type':'P', 'descr':'Cache data width used by swreg_gen'},
+    {'name':'ADDR_W', 'type':'P', 'val':'`IOB_CACHE_SWREG_ADDR_W', 'min':'NA', 'max':'NA', 'descr':'Cache address width used by swreg_gen'},
+    {'name':'DATA_W', 'type':'P', 'val':'`IOB_CACHE_FE_DATA_W', 'min':'NA', 'max':'NA', 'descr':'Cache data width used by swreg_gen'},
     #TODO: Need to handle ifdef AXI
     #{'name':'AXI_ID_W', 'type':'P', 'val':'`IOB_CACHE_AXI_ID_W', 'min':'1', 'max':'NA', 'descr':'AXI ID bus width'},
     #{'name':'AXI_LEN_W', 'type':'P', 'val':'`IOB_CACHE_AXI_LEN_W', 'min':'1', 'max':'NA', 'descr':'AXI LEN bus width'},
@@ -54,18 +39,18 @@ confs = \
     #{'name':'AXI_DATA_W', 'type':'P', 'val':'BE_DATA_W', 'min':'1', 'max':'NA', 'descr':'AXI data bus width'},
     #{'name':'[AXI_ID_W-1:0] AXI_ID', 'type':'P', 'val':'`IOB_CACHE_AXI_ID', 'min':'?', 'max':'NA', 'descr':'AXI ID bus'},
     # Other parameters
-    {'name':'FE_ADDR_W', 'type':'P', 'descr':'Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.'},
-    {'name':'FE_DATA_W', 'type':'P', 'descr':'Front-end data width (log2): this parameter allows supporting processing elements with various data widths.'},
-    {'name':'BE_ADDR_W', 'type':'P', 'descr':'Back-end address width (log2): the value of this parameter must be equal or greater than ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.'},
-    {'name':'BE_DATA_W', 'type':'P', 'descr':'Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache\'s frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache\'s back-end interface. '},
-    {'name':'NWAYS_W', 'type':'P', 'descr':'Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is 1 for a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. '},
-    {'name':'NLINES_W', 'type':'P', 'descr':'Line offset width (log2): the value of this parameter equals the number of cache lines, given by 2**NLINES_W.'},
-    {'name':'WORD_OFFSET_W', 'type':'P', 'descr':'Word offset width (log2):  the value of this parameter equals the number of words per line, which is 2**OFFSET_W. '},
-    {'name':'WTBUF_DEPTH_W', 'type':'P', 'descr':'Write-through buffer depth (log2). A shallow buffer will fill up more frequently and cause write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty faster, decreasing the duration of the read stall. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty and cause long read stalls.'},
-    {'name':'REP_POLICY', 'type':'P', 'descr':'Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for tree-based Pseudo LRU (PLRU_TREE).'},
-    {'name':'WRITE_POL', 'type':'P', 'descr':'Write policy: set to 0 for write-through or set to 1 for write-back.'},
-    {'name':'USE_CTRL', 'type':'P', 'descr':'Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.'},
-    {'name':'USE_CTRL_CNT', 'type':'P', 'descr':'Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.'}
+    {'name':'FE_ADDR_W', 'type':'P', 'val':'24', 'min':'1', 'max':'64', 'descr':'Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.'},
+    {'name':'FE_DATA_W', 'type':'P', 'val':'32', 'min':'32', 'max':'64', 'descr':'Front-end data width (log2): this parameter allows supporting processing elements with various data widths.'},
+    {'name':'BE_ADDR_W', 'type':'P', 'val':'24', 'min':'1', 'max':'', 'descr':'Back-end address width (log2): the value of this parameter must be equal or greater than FE_ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.'},
+    {'name':'BE_DATA_W', 'type':'P', 'val':'32', 'min':'32', 'max':'256', 'descr':'Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache\'s frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache\'s back-end interface. '},
+    {'name':'NWAYS_W', 'type':'P', 'val':'1', 'min':'0', 'max':'8', 'descr':'Number of cache ways (log2): the miminum is 0 for a directly mapped cache; the default is 1 for a two-way cache; the maximum is limited by the desired maximum operating frequency, which degrades with the number of ways. '},
+    {'name':'NLINES_W', 'type':'P', 'val':'7', 'min':'', 'max':'', 'descr':'Line offset width (log2): the value of this parameter equals the number of cache lines, given by 2**NLINES_W.'},
+    {'name':'WORD_OFFSET_W', 'type':'P', 'val':'3', 'min':'0', 'max':'', 'descr':'Word offset width (log2):  the value of this parameter equals the number of words per line, which is 2**OFFSET_W. '},
+    {'name':'WTBUF_DEPTH_W', 'type':'P', 'val':'4', 'min':'', 'max':'', 'descr':'Write-through buffer depth (log2). A shallow buffer will fill up more frequently and cause write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty faster, decreasing the duration of the read stall. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty and cause long read stalls.'},
+    {'name':'REP_POLICY', 'type':'P', 'val':'0', 'min':'0', 'max':'3', 'descr':'Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for tree-based Pseudo LRU (PLRU_TREE).'},
+    {'name':'WRITE_POL', 'type':'P', 'val':'0 ', 'min':'0', 'max':'1', 'descr':'Write policy: set to 0 for write-through or set to 1 for write-back.'},
+    {'name':'USE_CTRL', 'type':'P', 'val':'0', 'min':'0', 'max':'1', 'descr':'Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.'},
+    {'name':'USE_CTRL_CNT', 'type':'P', 'val':'0', 'min':'0', 'max':'1', 'descr':'Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.'},
 ]
 
 ios = \
