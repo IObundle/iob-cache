@@ -4,8 +4,12 @@ import os, sys
 sys.path.insert(0, os.getcwd()+'/submodules/LIB/scripts')
 from setup import setup
 
-top = 'iob_cache'
-version = 'V0.10'
+meta = \
+{
+'name':'iob_cache',
+'version':'V0.10',
+'flows':''
+}
 
 confs = \
 [
@@ -118,4 +122,4 @@ regs = \
 blocks = []
 
 if __name__ == "__main__":
-    setup(top, version, confs, ios, regs, blocks)
+    setup(meta, confs, ios, regs, blocks)
