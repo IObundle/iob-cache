@@ -106,5 +106,10 @@ regs = \
 
 blocks = []
 
+# Main function to setup this core and its components
+# build_dir and gen_tex may be modified if this core is to be generated as a submodule of another
+def main(build_dir=None, gen_tex=True):
+    setup(meta, confs, ios, regs, blocks, build_dir=build_dir, gen_tex=gen_tex)
+
 if __name__ == "__main__":
-    setup(meta, confs, ios, regs, blocks)
+    main()
