@@ -90,17 +90,17 @@ ios = \
 regs = \
 [
     {'name': 'cache', 'descr':'CACHE software accessible registers.', 'regs': [
-        {'name':'WTB_EMPTY', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':0, 'n_items':1, 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."},
-        {'name':'WTB_FULL', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':1, 'n_items':1, 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
-        {'name':'RW_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':4, 'n_items':1, 'autologic':False, 'descr':"Read and write hit counter."},
-        {'name':'RW_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':8, 'n_items':1, 'autologic':False, 'descr':"Read and write miss counter."},
-        {'name':'READ_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':12, 'n_items':1, 'autologic':False, 'descr':"Read hit counter."},
-        {'name':'READ_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':16, 'n_items':1, 'autologic':False, 'descr':"Read miss counter."},
-        {'name':'WRITE_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':20, 'n_items':1, 'autologic':False, 'descr':"Write hit counter."},
-        {'name':'WRITE_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':24, 'n_items':1, 'autologic':False, 'descr':"Write miss counter."},
-        {'name':'RST_CNTRS', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':28, 'n_items':1, 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
-        {'name':'INVALIDATE', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':32, 'n_items':1, 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
-        {'name':'VERSION', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':36, 'n_items':1, 'autologic':False, 'descr':"Cache version."}
+        {'name':'WTB_EMPTY', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':0, 'log2n_items':0, 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."},
+        {'name':'WTB_FULL', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':1, 'log2n_items':0, 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
+        {'name':'RW_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':4, 'log2n_items':0, 'autologic':False, 'descr':"Read and write hit counter."},
+        {'name':'RW_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':8, 'log2n_items':0, 'autologic':False, 'descr':"Read and write miss counter."},
+        {'name':'READ_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':12, 'log2n_items':0, 'autologic':False, 'descr':"Read hit counter."},
+        {'name':'READ_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':16, 'log2n_items':0, 'autologic':False, 'descr':"Read miss counter."},
+        {'name':'WRITE_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':20, 'log2n_items':0, 'autologic':False, 'descr':"Write hit counter."},
+        {'name':'WRITE_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':24, 'log2n_items':0, 'autologic':False, 'descr':"Write miss counter."},
+        {'name':'RST_CNTRS', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':28, 'log2n_items':0, 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
+        {'name':'INVALIDATE', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':32, 'log2n_items':0, 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
+        {'name':'VERSION', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':36, 'log2n_items':0, 'autologic':False, 'descr':"Cache version."}
     ]}
 ]
 
