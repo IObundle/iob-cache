@@ -38,7 +38,7 @@ module iob_cache
 
     // Back-end interface
 `ifdef AXI
- `include "axi_m_port.vh"
+ `include "iob_axi_m_port.vh"
 `else
     //START_IO_TABLE be
     `IOB_OUTPUT(be_req, 1), //V2TEX_IO Read or write request to next-level cache or memory.
@@ -99,7 +99,7 @@ module iob_cache
 
         //back-end
 `ifdef AXI
- `include "axi_m_m_portmap.vh"
+ `include "iob_axi_m_m_portmap.vh"
 `else
         .be_addr(be_addr),
         .be_wdata(be_wdata),
