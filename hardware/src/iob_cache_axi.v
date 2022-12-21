@@ -47,7 +47,7 @@ module iob_cache_axi
     `IOB_OUTPUT(wtb_empty_out, 1),
 
     // AXI4 back-end interface
-`include "iob_cache_axi_m_port.vh"
+`include "axi_m_port.vh"
     //General Interface Signals
     `IOB_INPUT(clk_i,          1), //System clock input
     `IOB_INPUT(rst_i,          1)  //System reset, asynchronous and active high
@@ -218,7 +218,7 @@ module iob_cache_axi
       .read_rdata (read_rdata),
 
       //back-end AXI4 interface
-`include "iob_cache_axi_m_m_portmap.vh"
+`include "axi_m_m_portmap.vh"
       .clk_i(clk_i),
       .rst_i(rst_i)  
       );
