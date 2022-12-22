@@ -8,8 +8,9 @@ meta = \
 {
 'name':'iob_cache',
 'version':'V0.10',
-'flows':'sim'
-}
+'flows':'sim',
+'core_dir':'.'}
+meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
 
 confs = \
 [
