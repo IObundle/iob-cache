@@ -23,7 +23,7 @@ module iob_cache_read_channel_axi
     output                                   read_valid,
     output reg [`IOB_CACHE_LINE2BE_W-1:0]              read_addr,
     output [BE_DATA_W-1:0]                   read_rdata,
-`include "iob_cache_axi_m_read_port.vh"
+`include "iob_axi_m_read_port.vh"
     input                                    clk_i,
     input                                    reset
     );
