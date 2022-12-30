@@ -8,7 +8,22 @@ meta = \
 {
 'name':'iob_cache',
 'version':'V0.10',
-'flows':''
+'flows':'sim',
+'core_dir':'.'}
+meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
+meta['submodules'] = {
+    'hw_setup': {
+        'v_headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
+        'hw_modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v', 'iob_reg_a.v' ]
+    },
+    'sim_setup': {
+        'v_headers' : [ 'axi_portmap', 'axi_wire', 'axi_m_portmap' ],
+        'hw_modules': [ 'iob_ram_sp_be.v', 'axi_ram.v' ]
+    },
+    'sw_setup': {
+        'sw_headers': [  ],
+        'sw_modules': [  ]
+    },
 }
 
 confs = \
@@ -90,17 +105,17 @@ ios = \
 regs = \
 [
     {'name': 'cache', 'descr':'CACHE software accessible registers.', 'regs': [
-        {'name':'WTB_EMPTY', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':0, 'n_items':1, 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."},
-        {'name':'WTB_FULL', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':1, 'n_items':1, 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
-        {'name':'RW_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':4, 'n_items':1, 'autologic':False, 'descr':"Read and write hit counter."},
-        {'name':'RW_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':8, 'n_items':1, 'autologic':False, 'descr':"Read and write miss counter."},
-        {'name':'READ_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':12, 'n_items':1, 'autologic':False, 'descr':"Read hit counter."},
-        {'name':'READ_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':16, 'n_items':1, 'autologic':False, 'descr':"Read miss counter."},
-        {'name':'WRITE_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':20, 'n_items':1, 'autologic':False, 'descr':"Write hit counter."},
-        {'name':'WRITE_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':24, 'n_items':1, 'autologic':False, 'descr':"Write miss counter."},
-        {'name':'RST_CNTRS', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':28, 'n_items':1, 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
-        {'name':'INVALIDATE', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':32, 'n_items':1, 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
-        {'name':'VERSION', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':36, 'n_items':1, 'autologic':False, 'descr':"Cache version."}
+        {'name':'WTB_EMPTY', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':0, 'log2n_items':0, 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."},
+        {'name':'WTB_FULL', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':1, 'log2n_items':0, 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
+        {'name':'RW_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':4, 'log2n_items':0, 'autologic':False, 'descr':"Read and write hit counter."},
+        {'name':'RW_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':8, 'log2n_items':0, 'autologic':False, 'descr':"Read and write miss counter."},
+        {'name':'READ_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':12, 'log2n_items':0, 'autologic':False, 'descr':"Read hit counter."},
+        {'name':'READ_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':16, 'log2n_items':0, 'autologic':False, 'descr':"Read miss counter."},
+        {'name':'WRITE_HIT', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':20, 'log2n_items':0, 'autologic':False, 'descr':"Write hit counter."},
+        {'name':'WRITE_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':24, 'log2n_items':0, 'autologic':False, 'descr':"Write miss counter."},
+        {'name':'RST_CNTRS', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':28, 'log2n_items':0, 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
+        {'name':'INVALIDATE', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':32, 'log2n_items':0, 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
+        {'name':'VERSION', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':36, 'log2n_items':0, 'autologic':False, 'descr':"Cache version."}
     ]}
 ]
 
@@ -108,8 +123,8 @@ blocks = []
 
 # Main function to setup this core and its components
 # build_dir and gen_tex may be modified if this core is to be generated as a submodule of another
-def main(build_dir=None, gen_tex=True):
-    setup(meta, confs, ios, regs, blocks, build_dir=build_dir, gen_tex=gen_tex)
+def main(gen_tex=True):
+    setup(meta, confs, ios, regs, blocks, gen_tex=gen_tex)
 
 if __name__ == "__main__":
     main()
