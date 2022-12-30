@@ -8,7 +8,22 @@ meta = \
 {
 'name':'iob_cache',
 'version':'V0.10',
-'flows':'sim'
+'flows':'sim',
+'core_dir':'.'}
+meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
+meta['submodules'] = {
+    'hw_setup': {
+        'v_headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
+        'hw_modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v', 'iob_reg_a.v' ]
+    },
+    'sim_setup': {
+        'v_headers' : [ 'axi_portmap', 'axi_wire', 'axi_m_portmap' ],
+        'hw_modules': [ 'iob_ram_sp_be.v', 'axi_ram.v' ]
+    },
+    'sw_setup': {
+        'sw_headers': [  ],
+        'sw_modules': [  ]
+    },
 }
 
 dirs = {
@@ -110,21 +125,6 @@ regs = \
 ]
 
 blocks = []
-
-lib_srcs = {
-    'hw_setup': {
-        'v_headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
-        'hw_modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync.v', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v' ]
-    },
-    'sim_setup': {
-        'v_headers' : [ 'axi_portmap', 'axi_wire', 'axi_m_portmap' ],
-        'hw_modules': [ 'iob_ram_sp_be.v', 'axi_ram.v' ]
-    },
-    'sw_setup': {
-        'sw_headers': [  ],
-        'sw_modules': [  ]
-    },
-}
 
 # Main function to setup this core and its components
 # Gen_tex and gen_makefile are created by default. However, when this system is a submodule of another, we don't want these files of this system.
