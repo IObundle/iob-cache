@@ -9,7 +9,7 @@ meta = \
 'name':'iob_cache',
 'version':'V0.10',
 'flows':'sim',
-'core_dir':'.'}
+'setup_dir':os.path.dirname(__file__)}
 meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
 meta['submodules'] = {
     'hw_setup': {
@@ -24,11 +24,9 @@ meta['submodules'] = {
         'sw_headers': [  ],
         'sw_modules': [  ]
     },
-}
-
-dirs = {
-'setup':os.path.dirname(__file__),
-'build':f"../{meta['name']+'_'+meta['version']}",
+    'dirs': {
+        'LIB':f"{meta['setup_dir']}/submodules/LIB",
+    }
 }
 
 confs = \
@@ -127,13 +125,9 @@ regs = \
 blocks = []
 
 # Main function to setup this core and its components
-# Gen_tex and gen_makefile are created by default. However, when this system is a submodule of another, we don't want these files of this system.
-# dirs_override: allows overriding some directories. This is useful when a top system wants to override the default build directory of this system.
-def main(dirs_override={}, gen_tex=True, gen_makefile=True):
-    #Override dirs
-    dirs.update(dirs_override)
+def main():
     # Setup this system
-    setup(meta, confs, ios, regs, blocks, lib_srcs, dirs=dirs, gen_tex=gen_tex, gen_makefile=gen_makefile)
+    setup(meta, confs, ios, regs, blocks)
 
 if __name__ == "__main__":
     main()
