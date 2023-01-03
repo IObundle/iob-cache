@@ -9,7 +9,7 @@ meta = \
 'name':'iob_cache',
 'version':'V0.10',
 'flows':'sim',
-'core_dir':'.'}
+'setup_dir':os.path.dirname(__file__)}
 meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
 meta['submodules'] = {
     'hw_setup': {
@@ -24,6 +24,9 @@ meta['submodules'] = {
         'sw_headers': [  ],
         'sw_modules': [  ]
     },
+    'dirs': {
+        'LIB':f"{meta['setup_dir']}/submodules/LIB",
+    }
 }
 
 confs = \
@@ -122,9 +125,9 @@ regs = \
 blocks = []
 
 # Main function to setup this core and its components
-# build_dir and gen_tex may be modified if this core is to be generated as a submodule of another
-def main(gen_tex=True):
-    setup(meta, confs, ios, regs, blocks, gen_tex=gen_tex)
+def main():
+    # Setup this system
+    setup(meta, confs, ios, regs, blocks)
 
 if __name__ == "__main__":
     main()
