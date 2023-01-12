@@ -2,7 +2,7 @@
 
 import os, sys
 sys.path.insert(0, os.getcwd()+'/submodules/LIB/scripts')
-from setup import setup
+import setup
 
 meta = \
 {
@@ -13,15 +13,15 @@ meta = \
 meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
 meta['submodules'] = {
     'hw_setup': {
-        'v_headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
+        'headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
         'modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v', 'iob_reg.v' ]
     },
     'sim_setup': {
-        'v_headers' : [ 'axi_portmap', 'axi_wire', 'axi_m_portmap' ],
+        'headers' : [ 'axi_portmap', 'axi_wire', 'axi_m_portmap' ],
         'modules': [ 'iob_ram_sp_be.v', 'axi_ram.v' ]
     },
     'sw_setup': {
-        'sw_headers': [  ],
+        'headers': [  ],
         'modules': [  ]
     },
     'dirs': {
@@ -127,7 +127,7 @@ blocks = []
 # Main function to setup this core and its components
 def main():
     # Setup this system
-    setup(meta, confs, ios, regs, blocks)
+    setup.setup(meta, confs, ios, regs, blocks)
 
 if __name__ == "__main__":
     main()
