@@ -21,8 +21,8 @@ module iob_cache_front_end
     input [DATA_W-1:0]               wdata,
     input [NBYTES-1:0]               wstrb,
     input                            req,
-    output                           ack,
     output [DATA_W-1:0]              rdata,
+    output                           ack,
 
     // internal input signals
     output                           data_req,
