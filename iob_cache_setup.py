@@ -8,13 +8,13 @@ meta = \
 {
 'name':'iob_cache',
 'version':'V0.10',
-'flows':'sim',
+'flows':'sim doc fpga',
 'setup_dir':os.path.dirname(__file__)}
 meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
 meta['submodules'] = {
     'hw_setup': {
         'v_headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
-        'hw_modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v', 'iob_reg_a.v' ]
+        'hw_modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v', 'iob_reg.v' ]
     },
     'sim_setup': {
         'v_headers' : [ 'axi_portmap', 'axi_wire', 'axi_m_portmap' ],

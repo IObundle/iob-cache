@@ -134,10 +134,10 @@ module iob_cache_memory
              )
          write_throught_buffer
            (
-            .clk_i     (clk_i),
-            .rst_i     (reset),
-            .arst_i    (reset),
-            .clk_en_i  (1'b1),
+            .clk_i  (clk_i),
+            .rst_i  (reset),
+            .arst_i (reset),
+            .cke_i  (1'b1),
 
             .ext_mem_w_en_o   (mem_w_en),
             .ext_mem_w_addr_o (mem_w_addr),

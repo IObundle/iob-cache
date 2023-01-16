@@ -54,33 +54,31 @@ module iob_cache_axi
     );
    
    //Front-end & Front-end interface.
-   wire                                         data_req, data_ack;
-   wire [FE_ADDR_W -1 : `IOB_CACHE_NBYTES_W]       data_addr;
-   wire [FE_DATA_W-1 : 0]                          data_wdata, data_rdata;
-   wire [`IOB_CACHE_NBYTES-1: 0]                data_wstrb;
-   wire [FE_ADDR_W -1 : `IOB_CACHE_NBYTES_W]                 data_addr_reg;
-   wire [FE_DATA_W-1 : 0]                                    data_wdata_reg;
-   wire [`IOB_CACHE_NBYTES-1: 0]                          data_wstrb_reg;
-   wire                                                   data_req_reg;
+   wire                                      data_req, data_ack;
+   wire [FE_ADDR_W -1 : `IOB_CACHE_NBYTES_W] data_addr;
+   wire [FE_DATA_W-1 : 0]                    data_wdata, data_rdata;
+   wire [`IOB_CACHE_NBYTES-1: 0]             data_wstrb;
+   wire [FE_ADDR_W -1 : `IOB_CACHE_NBYTES_W] data_addr_reg;
+   wire [FE_DATA_W-1 : 0]                    data_wdata_reg;
+   wire [`IOB_CACHE_NBYTES-1: 0]             data_wstrb_reg;
+   wire                                      data_req_reg;
    
-   wire                                                   ctrl_req, ctrl_ack;
-   wire [`IOB_CACHE_SWREG_ADDR_W-1:0]                     ctrl_addr;
-   wire [USE_CTRL*(FE_DATA_W-1):0]                           ctrl_rdata;
-   wire                                                   ctrl_invalidate;
+   wire                                      ctrl_req, ctrl_ack;
+   wire [`IOB_CACHE_SWREG_ADDR_W-1:0]        ctrl_addr;
+   wire [USE_CTRL*(FE_DATA_W-1):0]           ctrl_rdata;
+   wire                                      ctrl_invalidate;
    
-   wire                                                   wtbuf_full, wtbuf_empty;
+   wire                                      wtbuf_full, wtbuf_empty;
 
    assign invalidate_out = ctrl_invalidate | invalidate_in;
    assign wtb_empty_out = wtbuf_empty & wtb_empty_in;
 
-   iob_cache_front_end
-     #(
+   iob_cache_front_end #(
        .ADDR_W (FE_ADDR_W-`IOB_CACHE_NBYTES_W),
        .DATA_W (FE_DATA_W),
        .USE_CTRL(USE_CTRL)
        )
-   front_end
-     (
+   front_end (
       .clk_i   (clk_i),
       .reset (rst_i),
 
@@ -129,8 +127,7 @@ module iob_cache_axi
    wire [`IOB_CACHE_LINE2BE_W-1:0]                                             read_addr;
    wire [BE_DATA_W-1:0]                                              read_rdata;
 
-   iob_cache_memory
-     #(
+   iob_cache_memory #(
        .ADDR_W (FE_ADDR_W),
        .DATA_W (FE_DATA_W),
        .BE_ADDR_W (BE_ADDR_W),
@@ -144,8 +141,7 @@ module iob_cache_axi
        .USE_CTRL(USE_CTRL),
        .USE_CTRL_CNT (USE_CTRL_CNT)
        )
-   cache_memory
-     (
+   cache_memory (
       .clk_i   (clk_i),
       .reset (rst_i),
 
@@ -186,8 +182,7 @@ module iob_cache_axi
       );
 
    //Back-end interface & This block interfaces with the system level or next-level cache.
-   iob_cache_back_end_axi
-     #(
+   iob_cache_back_end_axi #(
        .ADDR_W (FE_ADDR_W),
        .DATA_W (FE_DATA_W),
        .BE_ADDR_W (BE_ADDR_W),
@@ -200,8 +195,7 @@ module iob_cache_axi
        .AXI_LEN_W(AXI_LEN_W),
        .AXI_ID(AXI_ID)
       )
-   back_end_axi
-     (
+   back_end_axi (
       // write-through-buffer (write-channel)
       .write_valid (write_req),
       .write_addr (write_addr),
@@ -226,13 +220,11 @@ module iob_cache_axi
    //Cache control & Cache control block.
    generate
       if (USE_CTRL)
-        iob_cache_control
-          #(
+        iob_cache_control #(
             .DATA_W  (FE_DATA_W),
             .USE_CTRL_CNT   (USE_CTRL_CNT)
             )
-      cache_control
-        (
+        cache_control (
          .clk_i   (clk_i),
          .reset (rst_i),
 
