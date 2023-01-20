@@ -1,3 +1,2 @@
-setup clean debug:
-	make -f submodules/LIB/setup.mk $@
+include submodules/LIB/setup.mk
 
