@@ -44,8 +44,6 @@ confs = \
     {'name':'AXI_LEN_W', 'type':'M', 'val':'4', 'min':'?', 'max':'?', 'descr':'description'},
     {'name':'AXI_ID', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'description'},
     {'name':'AXI_ID_W', 'type':'M', 'val':'1', 'min':'?', 'max':'?', 'descr':'description'},
-    # Required by iob_cache_control.v
-    {'name':'VERSION', 'type':'M', 'val':'0010', 'min':'?', 'max':'?', 'descr':'description'},
 
     # Swreg_gen parameters
     {'name':'ADDR_W', 'type':'P', 'val':'`IOB_CACHE_SWREG_ADDR_W', 'min':'NA', 'max':'NA', 'descr':'Cache address width used by swreg_gen'},
@@ -118,7 +116,6 @@ regs = \
         {'name':'WRITE_MISS', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':24, 'log2n_items':0, 'autologic':False, 'descr':"Write miss counter."},
         {'name':'RST_CNTRS', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':28, 'log2n_items':0, 'autologic':False, 'descr':"Reset read/write hit/miss counters by writing any value to this register."},
         {'name':'INVALIDATE', 'type':"W", 'n_bits':1, 'rst_val':0, 'addr':32, 'log2n_items':0, 'autologic':False, 'descr':"Invalidate the cache data contents by writing any value to this register."},
-        {'name':'VERSION', 'type':"R", 'n_bits':32, 'rst_val':0, 'addr':36, 'log2n_items':0, 'autologic':False, 'descr':"Cache version."}
     ]}
 ]
 
