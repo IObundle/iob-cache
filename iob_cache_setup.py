@@ -4,14 +4,12 @@ import os, sys
 sys.path.insert(0, os.getcwd()+'/submodules/LIB/scripts')
 import setup
 
-meta = \
-{
-'name':'iob_cache',
-'version':'V0.10',
-'flows':'sim doc fpga',
-'setup_dir':os.path.dirname(__file__)}
-meta['build_dir']=f"../{meta['name']+'_'+meta['version']}"
-meta['submodules'] = {
+name='iob_cache'
+version='V0.10'
+flows='sim doc fpga'
+setup_dir=os.path.dirname(__file__)
+build_dir=f"../{name}_{version}"
+submodules = {
     'hw_setup': {
         'headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
         'modules': [ 'iob_regfile_sp.v', 'iob_fifo_sync', 'iob_ram_2p.v', 'iob_ram_sp.v', 'iob_wstrb2byte_offset.v', 'iob_reg.v' ]
@@ -25,7 +23,7 @@ meta['submodules'] = {
         'modules': [  ]
     },
     'dirs': {
-        'LIB':f"{meta['setup_dir']}/submodules/LIB",
+        'LIB':f"{setup_dir}/submodules/LIB",
     }
 }
 
