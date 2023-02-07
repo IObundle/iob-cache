@@ -9,7 +9,7 @@ on:
   push:
     branches: 
       - master
-      - build-lib
+      - python-setup
   # Don't forget to require approval for all outside collaborators
   pull_request:
     branches: '*'
