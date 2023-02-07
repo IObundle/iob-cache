@@ -9,7 +9,7 @@ on:
   push:
     branches: 
       - master
-      - build-lib
+      - python-setup
   # Don't forget to require approval for all outside collaborators
   pull_request:
     branches: '*'
@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  iob:
+  sim:
     runs-on: self-hosted
     timeout-minutes: 10
 
@@ -31,44 +31,41 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup iob
-        run: make clean && make setup CACHE_CONFIG=iob
-      - name: sim-test iob
-        run: nix-shell -p verilator --run 'make -C ../iob_cache_* sim-test'
-      - name: sim-clean
-        run: make -C ../iob_cache_* sim-clean
-      - name: test-fpga
-        run: make -C ../iob_cache_* fpga-test
-      - name: fpga-clean
-        run: make -C ../iob_cache_* fpga-clean
-      - name: test-doc
-        run: make -C ../iob_cache_* doc-test
-      - name: doc-clean
-        run: make -C ../iob_cache_* doc-clean
+      - name: test-clean
+        run: make test-clean
+      - name: test-sim
+        run: make test-sim
 
-  axi:
+  fpga:
     runs-on: self-hosted
-    timeout-minutes: 10
+    timeout-minutes: 30
     # always run, except when previous job was cancelled
     if: ${{ !cancelled() }}
     # run after indicated job
-    needs: iob
+    needs: sim
 
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: setup axi
-        run: make clean && make setup CACHE_CONFIG=axi
-      - name: sim-test axi
-        run: nix-shell -p verilator --run 'make -C ../iob_cache_* sim-test'
-      - name: sim-clean
-        run: make -C ../iob_cache_* sim-clean
+      - name: test-clean
+        run: make test-clean
       - name: test-fpga
-        run: make -C ../iob_cache_* fpga-test
-      - name: fpga-clean
-        run: make -C ../iob_cache_* fpga-clean
+        run: make test-fpga
+
+  doc:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    # always run, except when previous job was cancelled
+    if: ${{ !cancelled() }}
+    # run after indicated job
+    needs: fpga
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: test-clean
+        run: make test-clean
       - name: test-doc
-        run: make -C ../iob_cache_* doc-test
-      - name: doc-clean
-        run: make -C ../iob_cache_* doc-clean
+        run: make test-doc
