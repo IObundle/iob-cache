@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sim:
+  iob:
     runs-on: self-hosted
     timeout-minutes: 10
 
@@ -31,41 +31,44 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: test-clean
-        run: make test-clean
-      - name: test-sim
-        run: make test-sim
-
-  fpga:
-    runs-on: self-hosted
-    timeout-minutes: 30
-    # always run, except when previous job was cancelled
-    if: ${{ !cancelled() }}
-    # run after indicated job
-    needs: sim
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-      - name: test-clean
-        run: make test-clean
+      - name: setup iob
+        run: make clean && make setup CACHE_CONFIG=iob
+      - name: sim-test iob
+        run: nix-shell -p verilator --run 'make -C ../iob_cache_* sim-test'
+      - name: sim-clean
+        run: make -C ../iob_cache_* sim-clean
       - name: test-fpga
-        run: make test-fpga
+        run: make -C ../iob_cache_* fpga-test
+      - name: fpga-clean
+        run: make -C ../iob_cache_* fpga-clean
+      - name: test-doc
+        run: make -C ../iob_cache_* doc-test
+      - name: doc-clean
+        run: make -C ../iob_cache_* doc-clean
 
-  doc:
+  axi:
     runs-on: self-hosted
-    timeout-minutes: 30
+    timeout-minutes: 10
     # always run, except when previous job was cancelled
     if: ${{ !cancelled() }}
     # run after indicated job
-    needs: fpga
+    needs: iob
 
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      - name: test-clean
-        run: make test-clean
+      - name: setup axi
+        run: make clean && make setup CACHE_CONFIG=axi
+      - name: sim-test axi
+        run: nix-shell -p verilator --run 'make -C ../iob_cache_* sim-test'
+      - name: sim-clean
+        run: make -C ../iob_cache_* sim-clean
+      - name: test-fpga
+        run: make -C ../iob_cache_* fpga-test
+      - name: fpga-clean
+        run: make -C ../iob_cache_* fpga-clean
       - name: test-doc
-        run: make test-doc
+        run: make -C ../iob_cache_* doc-test
+      - name: doc-clean
+        run: make -C ../iob_cache_* doc-clean
