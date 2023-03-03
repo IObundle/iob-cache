@@ -7,8 +7,9 @@ import setup
 name='iob_cache'
 version='V0.10'
 flows='sim doc fpga'
-setup_dir=os.path.dirname(__file__)
-build_dir=f"../{name}_{version}"
+if setup.is_top_module(sys.modules[__name__]):
+    setup_dir=os.path.dirname(__file__)
+    build_dir=f"../{name}_{version}"
 submodules = {
     'hw_setup': {
         'headers' : [ 'iob_s_port', 'axi_m_port', 'axi_m_m_portmap', 'axi_m_write_port', 'axi_m_m_write_portmap', 'axi_m_read_port', 'axi_m_m_read_portmap'  ],
