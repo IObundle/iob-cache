@@ -487,7 +487,8 @@ module cache_memory
                   dirty <= dirty_reg [index];
 
                 //flush line
-                assign write_valid = write_access & ~(way_hit) & dirty; //flush if there is not a hit, and is dirty
+                assign write_valid = valid_reg & ~(way_hit) & dirty;
+                //assign write_valid = write_access & ~(way_hit) & dirty; //flush if there is not a hit, and is dirty
                 assign write_addr  = {line_tag, index};                 //the position of the current block in cache (not of the access)
                 assign write_wdata = line_rdata;
 
