@@ -2,6 +2,7 @@
 
 `include "iob_lib.vh"
 `include "iob_cache.vh"
+`include "iob_cache_conf.vh"
 
 module iob_cache_back_end_axi
   #(
