@@ -34,7 +34,7 @@ jobs:
       - name: setup iob
         run: make clean && make setup CACHE_CONFIG=iob
       - name: sim-test iob
-        run: nix-shell -p verilator --run 'make -C ../iob_cache_* sim-test'
+        run: make -C ../iob_cache_* sim-test
       - name: sim-clean
         run: make -C ../iob_cache_* sim-clean
       - name: test-fpga
@@ -61,7 +61,7 @@ jobs:
       - name: setup axi
         run: make clean && make setup CACHE_CONFIG=axi
       - name: sim-test axi
-        run: nix-shell -p verilator --run 'make -C ../iob_cache_* sim-test'
+        run: make -C ../iob_cache_* sim-test
       - name: sim-clean
         run: make -C ../iob_cache_* sim-clean
       - name: test-fpga

@@ -50,12 +50,18 @@ module iob_cache_tb;
          wstrb={`IOB_CACHE_DATA_W/8{1'b0}};
          addr=i;
          wait(ack); #1 req=0;
-	 if(rdata == i*3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
-         else $display("\tReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);  
+         //Write "Test passed!" to a file named "test.log"
+         if(rdata == i*3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
+         else begin
+            $display("\tReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);  
+            f=$fopen("test.log","w"); $fwrite(f,"Test failed!");$fclose(f);
+            $finish;
+         end
       end
       
       #100;
       $display("End of Cache Testing\n");
+      f=$fopen("test.log","w"); $fwrite(f,"Test passed!");$fclose(f);
       $finish;
    end
 
