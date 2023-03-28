@@ -1,5 +1,6 @@
 #include <verilated.h>
 #include <iostream>
+#include <fstream>
 #include "Viob_cache_sim_wrapper.h"
 
 #if (VM_TRACE == 1)    //If verilator was invoked with --trace
@@ -63,7 +64,16 @@ int main(int argc, char** argv) {
           }
 	
 	  if((RW==1) && dut->ack && (itest < 5)){
-	    (dut->rdata == itest*3) ? VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n",dut->rdata,itest) : VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n",dut->rdata,itest);
+	    if (dut->rdata == itest*3) {
+		VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n",dut->rdata,itest);
+	    }else{
+		VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n",dut->rdata,itest);
+		std::ofstream log_file;
+		log_file.open("test.log");
+		log_file << "Test failed!" << std::endl;
+		log_file.close();
+		exit(EXIT_FAILURE);
+	    }
 	     itest++;				      
 	  }
 	}
@@ -85,5 +95,9 @@ int main(int argc, char** argv) {
     
     delete dut;
 
+    std::ofstream log_file;
+    log_file.open("test.log");
+    log_file << "Test passed!" << std::endl;
+    log_file.close();
     exit(EXIT_SUCCESS);
 }
