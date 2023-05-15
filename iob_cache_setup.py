@@ -6,7 +6,7 @@ import setup
 
 name='iob_cache'
 version='V0.10'
-flows='sim doc fpga'
+flows='emb sim doc fpga'
 if setup.is_top_module(sys.modules[__name__]):
     setup_dir=os.path.dirname(__file__)
     build_dir=f"../{name}_{version}"
