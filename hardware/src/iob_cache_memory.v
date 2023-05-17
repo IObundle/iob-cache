@@ -2,6 +2,7 @@
 
 `include "iob_cache.vh"
 `include "iob_cache_conf.vh"
+`include "iob_cache_swreg_def.vh"
 
 module iob_cache_memory
   #(
