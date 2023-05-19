@@ -21,6 +21,10 @@ submodules = {
             "axi_m_m_write_portmap",
             "axi_m_read_port",
             "axi_m_m_read_portmap",
+            "iob_lib.vh",
+            "iob_utils.vh",
+            "iob_clkenrst_portmap.vh",
+            "iob_clkenrst_port.vh",
         ],
         "modules": [
             "iob_regfile_sp.v",
