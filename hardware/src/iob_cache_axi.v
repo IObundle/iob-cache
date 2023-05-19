@@ -33,24 +33,24 @@ module iob_cache_axi
    )
    (
     // Front-end interface (IOb native slave)
-    `IOB_INPUT(req, 1),
-    `IOB_INPUT(addr, USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W),
-    `IOB_INPUT(wdata, FE_DATA_W),
-    `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES),
-    `IOB_OUTPUT(rdata, FE_DATA_W),
-    `IOB_OUTPUT(ack, 1),
+    input [1-1:0] req,
+    input [USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W-1:0] addr,
+    input [FE_DATA_W-1:0] wdata,
+    input [`IOB_CACHE_NBYTES-1:0] wstrb,
+    output [FE_DATA_W-1:0] rdata,
+    output [1-1:0] ack,
 
     // Cache invalidate and write-trough buffer IO chain
-    `IOB_INPUT(invalidate_in, 1),    
-    `IOB_OUTPUT(invalidate_out, 1), 
-    `IOB_INPUT(wtb_empty_in, 1),
-    `IOB_OUTPUT(wtb_empty_out, 1),
+    input [1-1:0] invalidate_in,    
+    output [1-1:0] invalidate_out, 
+    input [1-1:0] wtb_empty_in,
+    output [1-1:0] wtb_empty_out,
 
     // AXI4 back-end interface
 `include "iob_axi_m_port.vh"
     //General Interface Signals
-    `IOB_INPUT(clk_i,          1), //System clock input
-    `IOB_INPUT(rst_i,          1)  //System reset, asynchronous and active high
+    input [1-1:0] clk_i, //System clock input
+    input [1-1:0] rst_i  //System reset, asynchronous and active high
     );
    
    //Front-end & Front-end interface.

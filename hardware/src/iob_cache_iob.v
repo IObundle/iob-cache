@@ -22,30 +22,30 @@ module iob_cache_iob
     )
    (
     // Front-end interface (IOb native slave)
-    `IOB_INPUT(req, 1),
-    `IOB_INPUT(addr, USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W),
-    `IOB_INPUT(wdata, FE_DATA_W),
-    `IOB_INPUT(wstrb, `IOB_CACHE_NBYTES),
-    `IOB_OUTPUT(rdata, FE_DATA_W),
-    `IOB_OUTPUT(ack,1),
+    input [1-1:0] req,
+    input [USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W-1:0] addr,
+    input [FE_DATA_W-1:0] wdata,
+    input [`IOB_CACHE_NBYTES-1:0] wstrb,
+    output [FE_DATA_W-1:0] rdata,
+    output [1-1:0] ack,
 
     // Back-end interface
-    `IOB_OUTPUT(be_req, 1),
-    `IOB_OUTPUT(be_addr, BE_ADDR_W),
-    `IOB_OUTPUT(be_wdata, BE_DATA_W),
-    `IOB_OUTPUT(be_wstrb, `IOB_CACHE_BE_NBYTES),
-    `IOB_INPUT(be_rdata, BE_DATA_W),
-    `IOB_INPUT(be_ack, 1),
+    output [1-1:0] be_req,
+    output [BE_ADDR_W-1:0] be_addr,
+    output [BE_DATA_W-1:0] be_wdata,
+    output [`IOB_CACHE_BE_NBYTES-1:0] be_wstrb,
+    input [BE_DATA_W-1:0] be_rdata,
+    input [1-1:0] be_ack,
 
     // Cache invalidate and write-trough buffer IO chain
-    `IOB_INPUT(invalidate_in,1),
-    `IOB_OUTPUT(invalidate_out,1),
-    `IOB_INPUT(wtb_empty_in,1),
-    `IOB_OUTPUT(wtb_empty_out,1),
+    input [1-1:0] invalidate_in,
+    output [1-1:0] invalidate_out,
+    input [1-1:0] wtb_empty_in,
+    output [1-1:0] wtb_empty_out,
     
     //General Interface Signals
-   `IOB_INPUT(clk_i,          1), //V2TEX_IO System clock input.
-   `IOB_INPUT(rst_i,         1)  //V2TEX_IO System reset, asynchronous and active high.
+   input [1-1:0] clk_i, //V2TEX_IO System clock input.
+   input [1-1:0] rst_i  //V2TEX_IO System reset, asynchronous and active high.
     );
 
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.

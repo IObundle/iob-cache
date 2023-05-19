@@ -37,8 +37,8 @@ module iob_cache_back_end_axi
                                                                     
     // Back-end interface (AXI4 master)
 `include "iob_axi_m_port.vh"
-   `IOB_INPUT(clk_i,          1), //V2TEX_IO System clock input.
-   `IOB_INPUT(rst_i,         1)  //V2TEX_IO System reset, asynchronous and active high.
+   input [1-1:0] clk_i, //V2TEX_IO System clock input.
+   input [1-1:0] rst_i  //V2TEX_IO System reset, asynchronous and active high.
     );
 
    iob_cache_read_channel_axi
