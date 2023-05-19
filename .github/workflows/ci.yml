@@ -32,19 +32,19 @@ jobs:
         with:
           submodules: 'recursive'
       - name: setup iob
-        run: make clean && make setup CACHE_CONFIG=iob
+        run: nix-shell --run "make clean && make setup CACHE_CONFIG=iob"
       - name: sim-test iob
-        run: make -C ../iob_cache_* sim-test
+        run: nix-shell --run "make -C ../iob_cache_* sim-test"
       - name: sim-clean
-        run: make -C ../iob_cache_* sim-clean
+        run: nix-shell --run "make -C ../iob_cache_* sim-clean"
       - name: test-fpga
-        run: make -C ../iob_cache_* fpga-test
+        run: nix-shell --run "make -C ../iob_cache_* fpga-test"
       - name: fpga-clean
-        run: make -C ../iob_cache_* fpga-clean
+        run: nix-shell --run "make -C ../iob_cache_* fpga-clean"
       - name: test-doc
-        run: make -C ../iob_cache_* doc-test
+        run: nix-shell --run "make -C ../iob_cache_* doc-test"
       - name: doc-clean
-        run: make -C ../iob_cache_* doc-clean
+        run: nix-shell --run "make -C ../iob_cache_* doc-clean"
 
   axi:
     runs-on: self-hosted
@@ -59,16 +59,16 @@ jobs:
         with:
           submodules: 'recursive'
       - name: setup axi
-        run: make clean && make setup CACHE_CONFIG=axi
-      - name: sim-test axi
-        run: make -C ../iob_cache_* sim-test
+        run: nix-shell --run "make clean && make setup CACHE_CONFIG=axi"
+      - name: sim-test iob
+        run: nix-shell --run "make -C ../iob_cache_* sim-test"
       - name: sim-clean
-        run: make -C ../iob_cache_* sim-clean
+        run: nix-shell --run "make -C ../iob_cache_* sim-clean"
       - name: test-fpga
-        run: make -C ../iob_cache_* fpga-test
+        run: nix-shell --run "make -C ../iob_cache_* fpga-test"
       - name: fpga-clean
-        run: make -C ../iob_cache_* fpga-clean
+        run: nix-shell --run "make -C ../iob_cache_* fpga-clean"
       - name: test-doc
-        run: make -C ../iob_cache_* doc-test
+        run: nix-shell --run "make -C ../iob_cache_* doc-test"
       - name: doc-clean
-        run: make -C ../iob_cache_* doc-clean
+        run: nix-shell --run "make -C ../iob_cache_* doc-clean"
