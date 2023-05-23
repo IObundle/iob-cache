@@ -34,7 +34,7 @@ module iob_cache_read_channel_axi #(
 
 
    generate
-      if (`IOB_CACHE_LINE2BE_W > 0) begin
+      if (`IOB_CACHE_LINE2BE_W > 0) begin: g_line2be_w
          // Constant AXI signals
          assign axi_arid_o = `IOB_CACHE_AXI_ID;
          assign axi_arlock_o = 1'b0;
@@ -118,7 +118,7 @@ module iob_cache_read_channel_axi #(
             endcase
          end
 
-      end else begin
+      end else begin: g_no_line2be_w
          // Constant AXI signals
          assign axi_arid_o = `IOB_CACHE_AXI_ID;
          assign axi_arlock_o = 1'b0;

@@ -1,1 +1,1 @@
-submodules/LIB/scripts/shell.nix
+submodules/LIB/scripts/default.nix

@@ -28,7 +28,7 @@ module iob_cache_control #(
 );
 
    generate
-      if (USE_CTRL_CNT) begin
+      if (USE_CTRL_CNT) begin: g_ctrl_cnt
          reg [DATA_W-1:0] read_hit_cnt, read_miss_cnt, write_hit_cnt, write_miss_cnt;
          wire [DATA_W-1:0] hit_cnt, miss_cnt;
          reg reset_counters;
@@ -81,7 +81,7 @@ module iob_cache_control #(
                else if (addr == `IOB_CACHE_WRITE_MISS_ADDR) rdata <= write_miss_cnt;
                else if (addr == `IOB_CACHE_RST_CNTRS_ADDR) reset_counters <= 1'b1;
          end
-      end else begin
+      end else begin: g_no_ctrl_cnt
          always @(posedge clk_i) begin
             rdata      <= {DATA_W{1'b0}};
             invalidate <= 1'b0;

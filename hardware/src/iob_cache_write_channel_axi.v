@@ -36,12 +36,12 @@ module iob_cache_write_channel_axi #(
 
    genvar i;
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin
+      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin: g_write_through
          // Constant AXI signals
          assign axi_awid_o = `IOB_CACHE_AXI_ID;
          assign axi_awlen_o = 8'd0;
 
-         assign axi_awsize_o  = `IOB_CACHE_BE_NBYTES_W;    // verify - Writes data of the size of BE_DATA_W	 
+         assign axi_awsize_o  = `IOB_CACHE_BE_NBYTES_W;    // verify - Writes data of the size of BE_DATA_W
          assign axi_awburst_o = 2'd0;
          assign axi_awlock_o = 1'b0;  // 00 - Normal Access
          assign axi_awcache_o = 4'b0011;
@@ -52,14 +52,14 @@ module iob_cache_write_channel_axi #(
          // AXI Buffer Output signals
          assign axi_awaddr_o = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W], {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
 
-         if (BE_DATA_W == DATA_W) begin
+         if (BE_DATA_W == DATA_W) begin: g_same_data_w
             assign axi_wstrb_o = wstrb;
             assign axi_wdata_o = wdata;
-         end else begin
+         end else begin: g_not_same_data_w
             wire [`IOB_CACHE_BE_NBYTES_W - `IOB_CACHE_NBYTES_W -1 :0] word_align = addr[`IOB_CACHE_NBYTES_W +: (`IOB_CACHE_BE_NBYTES_W - `IOB_CACHE_NBYTES_W)];
             assign axi_wstrb_o = wstrb << (word_align * `IOB_CACHE_NBYTES);
 
-            for (i = 0; i < BE_DATA_W / DATA_W; i = i + 1) begin : wdata_block
+            for (i = 0; i < BE_DATA_W / DATA_W; i = i + 1) begin : g_wdata_block
                assign axi_wdata_o[(i+1)*DATA_W-1:i*DATA_W] = wdata;
             end
          end
@@ -112,8 +112,8 @@ module iob_cache_write_channel_axi #(
                end
             endcase
          end
-      end else begin  // if (WRITE_POL == `IOB_CACHE_WRITE_BACK)
-         if (`IOB_CACHE_LINE2BE_W > 0) begin
+      end else begin: g_write_back  // if (WRITE_POL == `IOB_CACHE_WRITE_BACK)
+         if (`IOB_CACHE_LINE2BE_W > 0) begin: g_line2be_w
             // Constant AXI signals
             assign axi_awid_o = `IOB_CACHE_AXI_ID;
             assign axi_awlock_o = 1'b0;
@@ -190,7 +190,7 @@ module iob_cache_write_channel_axi #(
                   end
                endcase
             end
-         end else begin
+         end else begin: g_no_line2be_w
             // Constant AXI signals
             assign axi_awid_o = `IOB_CACHE_AXI_ID;
             assign axi_awlock_o = 1'b0;

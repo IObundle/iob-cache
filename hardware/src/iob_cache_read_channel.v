@@ -28,7 +28,7 @@ module iob_cache_read_channel #(
 );
 
    generate
-      if (`IOB_CACHE_LINE2BE_W > 0) begin
+      if (`IOB_CACHE_LINE2BE_W > 0) begin: g_line2be_w
          reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter;
 
          assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W], word_counter, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
@@ -90,7 +90,7 @@ module iob_cache_read_channel #(
                default: ;
             endcase
          end
-      end else begin
+      end else begin: g_no_line2be_w
          assign be_addr    = {BE_ADDR_W{1'b0}} + {replace_addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
          assign read_rdata = be_rdata;
 
