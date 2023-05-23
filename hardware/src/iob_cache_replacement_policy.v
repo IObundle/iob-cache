@@ -21,7 +21,7 @@ module iob_cache_replacement_policy #(
    genvar i, j, k;
 
    generate
-      if (REP_POLICY == `IOB_CACHE_LRU) begin
+      if (REP_POLICY == `IOB_CACHE_LRU) begin : g_LRU
          wire [N_WAYS*NWAYS_W-1:0] mru_out, mru_in;
          wire [N_WAYS*NWAYS_W-1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
          wire [N_WAYS*NWAYS_W-1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
@@ -64,15 +64,15 @@ module iob_cache_replacement_policy #(
             .onehot(way_select[N_WAYS-1:1]),
             .bin   (way_select_bin)
          );
-      end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin
+      end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin : g_PLRU_MRU
          wire [N_WAYS -1:0] mru_in, mru_out;
 
          // pseudo LRU MRU based Encoder (More Recenty-Used bits):
          assign mru_in = (&(mru_out | way_hit))? way_hit : mru_out | way_hit; // When the cache access results in a hi, it will update the MRU signal, if all ways were used, it resets and only updated the Most Recent
 
          // pseudo LRU MRU based Decoder:
-         for (i = 1; i < N_WAYS; i = i + 1) begin : way_select_block
-            assign way_select [i] = ~mru_out[i] & (&mru_out[i-1:0]); // verifies priority (lower index)
+         for (i = 1; i < N_WAYS; i = i + 1) begin : g_way_select_block
+            assign way_select[i] = ~mru_out[i] & (&mru_out[i-1:0]);  // verifies priority (lower index)
          end
          assign way_select[0] = ~mru_out[0];
 
@@ -95,7 +95,8 @@ module iob_cache_replacement_policy #(
             .onehot(way_select[N_WAYS-1:1]),
             .bin   (way_select_bin)
          );
-      end else begin  // (REP_POLICY == PLRU_TREE)
+      end else begin : g_PLRU_TREE
+         // (REP_POLICY == PLRU_TREE)
          /*
             i: tree level, start from 1, i <= NWAYS_W
             j: tree node id @ i level, start from 0, j < (1<<(i-1))
@@ -124,7 +125,7 @@ module iob_cache_replacement_policy #(
          wire [N_WAYS -1:1] tree_in, tree_out;
          wire [NWAYS_W:0] node_id[NWAYS_W:1];
          assign node_id[1] = tree_out[1] ? 3 : 2;  // next node id @ level2 to traverse
-         for (i = 2; i <= NWAYS_W; i = i + 1) begin : traverse_tree_level
+         for (i = 2; i <= NWAYS_W; i = i + 1) begin : g_traverse_tree_level
             // next node id @ level3, level4, ..., to traverse
             assign node_id[i] = tree_out[node_id[i-1]] ? ((node_id[i-1]<<1)+1) : (node_id[i-1]<<1);
          end
