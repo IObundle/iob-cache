@@ -232,7 +232,7 @@ module iob_cache_iob #(
             .ready     (ctrl_ack),
             .invalidate(ctrl_invalidate)
          );
-      else begin: g_no_ctrl
+      else begin : g_no_ctrl
          assign ctrl_rdata      = 1'bx;
          assign ctrl_ack        = 1'bx;
          assign ctrl_invalidate = 1'b0;

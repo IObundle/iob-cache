@@ -21,7 +21,7 @@ module iob_cache_replacement_policy #(
    genvar i, j, k;
 
    generate
-      if (REP_POLICY == `IOB_CACHE_LRU) begin: g_LRU
+      if (REP_POLICY == `IOB_CACHE_LRU) begin : g_LRU
          wire [N_WAYS*NWAYS_W-1:0] mru_out, mru_in;
          wire [N_WAYS*NWAYS_W-1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
          wire [N_WAYS*NWAYS_W-1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
@@ -64,7 +64,7 @@ module iob_cache_replacement_policy #(
             .onehot(way_select[N_WAYS-1:1]),
             .bin   (way_select_bin)
          );
-      end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin: g_PLRU_MRU
+      end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin : g_PLRU_MRU
          wire [N_WAYS -1:0] mru_in, mru_out;
 
          // pseudo LRU MRU based Encoder (More Recenty-Used bits):
@@ -72,7 +72,7 @@ module iob_cache_replacement_policy #(
 
          // pseudo LRU MRU based Decoder:
          for (i = 1; i < N_WAYS; i = i + 1) begin : g_way_select_block
-            assign way_select [i] = ~mru_out[i] & (&mru_out[i-1:0]); // verifies priority (lower index)
+            assign way_select[i] = ~mru_out[i] & (&mru_out[i-1:0]);  // verifies priority (lower index)
          end
          assign way_select[0] = ~mru_out[0];
 
@@ -95,7 +95,7 @@ module iob_cache_replacement_policy #(
             .onehot(way_select[N_WAYS-1:1]),
             .bin   (way_select_bin)
          );
-      end else begin: g_PLRU_TREE
+      end else begin : g_PLRU_TREE
          // (REP_POLICY == PLRU_TREE)
          /*
             i: tree level, start from 1, i <= NWAYS_W

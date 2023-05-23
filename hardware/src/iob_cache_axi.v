@@ -238,7 +238,7 @@ module iob_cache_axi #(
             .ready     (ctrl_ack),
             .invalidate(ctrl_invalidate)
          );
-      else begin: g_no_cache_ctrl
+      else begin : g_no_cache_ctrl
          assign ctrl_rdata      = 1'bx;
          assign ctrl_ack        = 1'bx;
          assign ctrl_invalidate = 1'b0;

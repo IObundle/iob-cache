@@ -3,25 +3,25 @@
 
 module iob_cache_tb;
 
-   //clock                        
+   //clock
    parameter clk_per = 10;
    reg clk = 1;
    always #clk_per clk = ~clk;
 
 
-   reg                                                       rst = 1;
+   reg                                                    rst = 1;
 
    //frontend signals
-   reg                                                       req = 0;
-   wire                                                      ack;
-   reg     [`IOB_CACHE_ADDR_W-2:$clog2(`IOB_CACHE_DATA_W/8)] addr = 0;
-   reg     [                          `IOB_CACHE_DATA_W-1:0] wdata = 0;
-   reg     [                        `IOB_CACHE_DATA_W/8-1:0] wstrb = 0;
-   wire    [                          `IOB_CACHE_DATA_W-1:0] rdata;
-   reg                                                       ctrl = 0;
+   reg                                                    req = 0;
+   wire                                                   ack;
+   reg  [`IOB_CACHE_ADDR_W-2:$clog2(`IOB_CACHE_DATA_W/8)] addr = 0;
+   reg  [                          `IOB_CACHE_DATA_W-1:0] wdata = 0;
+   reg  [                        `IOB_CACHE_DATA_W/8-1:0] wstrb = 0;
+   wire [                          `IOB_CACHE_DATA_W-1:0] rdata;
+   reg                                                    ctrl = 0;
 
-   //iterator 
-   integer                                                   i;
+   //iterator
+   integer i, fd;
 
    //test process
    initial begin
@@ -56,19 +56,19 @@ module iob_cache_tb;
          if (rdata == i * 3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
          else begin
             $display("\tReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);
-            i = $fopen("test.log", "w");
-            $fwrite(i, "Test failed!");
-            $fclose(i);
-            $finish;
+            fd = $fopen("test.log", "w");
+            $fdisplay(fd, "Test failed!\nReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);
+            $fclose(fd);
+            $finish();
          end
       end
 
       #100;
       $display("End of Cache Testing\n");
-      i = $fopen("test.log", "w");
-      $fwrite(i, "Test passed!");
-      $fclose(i);
-      $finish;
+      fd = $fopen("test.log", "w");
+      $fwrite(fd, "Test passed!");
+      $fclose(fd);
+      $finish();
    end
 
    //Unit Under Test (simulation wrapper)

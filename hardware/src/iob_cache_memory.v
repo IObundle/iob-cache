@@ -71,10 +71,10 @@ module iob_cache_memory #(
    // cache-memory internal signals
    wire [NWAYS-1:0] way_hit, way_select;
 
-   wire [TAG_W-1:0]                                                     tag = addr_reg[ADDR_W-1 -: TAG_W];                // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [NWAYS_W+NLINES_W-1:0]                                          index = addr[ADDR_W-TAG_W-1 -: NLINES_W];        // cant wait, doesnt update during a write-access
-   wire [NWAYS_W+NLINES_W-1:0]                                          index_reg = addr_reg[ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
-   wire [WORD_OFFSET_W-1:0]                                             offset = addr_reg[`IOB_CACHE_NBYTES_W +: WORD_OFFSET_W];      // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
+   wire [TAG_W-1:0]            tag = addr_reg[ADDR_W-1 -: TAG_W]; // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
+   wire [NWAYS_W+NLINES_W-1:0] index = addr[ADDR_W-TAG_W-1 -: NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [NWAYS_W+NLINES_W-1:0] index_reg = addr_reg[ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [WORD_OFFSET_W-1:0]    offset = addr_reg[`IOB_CACHE_NBYTES_W +: WORD_OFFSET_W]; // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
    wire [NWAYS*(2**WORD_OFFSET_W)*DATA_W-1:0] line_rdata;
    wire [NWAYS*TAG_W-1:0] line_tag;
    reg [NWAYS*(2**NLINES_W)-1:0] v_reg;
@@ -83,7 +83,8 @@ module iob_cache_memory #(
    reg [(2**WORD_OFFSET_W)*`IOB_CACHE_NBYTES-1:0] line_wstrb;
 
    wire write_access = |wstrb_reg & req_reg;
-   wire                                                                 read_access = ~|wstrb_reg & req_reg;//signal mantains the access 1 addition clock-cycle after ack is asserted
+   wire read_access = ~|wstrb_reg & req_reg;
+   //signal mantains the access 1 addition clock-cycle after ack is asserted
 
    // back-end write channel
    wire buffer_empty, buffer_full;
@@ -94,7 +95,7 @@ module iob_cache_memory #(
    reg  [                                    NWAYS*(2**NLINES_W)-1:0] dirty_reg;
 
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin: g_write_through
+      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
          localparam FIFO_DATA_W = ADDR_W - `IOB_CACHE_NBYTES_W + DATA_W + `IOB_CACHE_NBYTES;
          localparam FIFO_ADDR_W = WTBUF_DEPTH_W;
 
@@ -164,7 +165,7 @@ module iob_cache_memory #(
          // back-end read channel
          assign replace_req  = (~hit & read_access & ~replace) & (buffer_empty & write_ack);
          assign replace_addr = addr[ADDR_W-1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W];
-      end else begin: g_write_back
+      end else begin : g_write_back
          // if (WRITE_POL == WRITE_BACK)
          // back-end write channel
          assign write_wstrb  = {`IOB_CACHE_NBYTES{1'bx}};
@@ -185,7 +186,7 @@ module iob_cache_memory #(
    reg  [        NWAYS-1:0] way_hit_prev;
 
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin: g_write_through
+      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through_on_RAW
          always @(posedge clk_i) begin
             write_hit_prev <= write_access & (|way_hit);
             // previous write position
@@ -193,7 +194,7 @@ module iob_cache_memory #(
             way_hit_prev   <= way_hit;
          end
          assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset);
-      end else begin: g_write_back
+      end else begin : g_write_back_on_RAW
          // if (WRITE_POL == WRITE_BACK)
          always @(posedge clk_i) begin
             // all writes will have the data in cache in the end
@@ -202,7 +203,7 @@ module iob_cache_memory #(
             offset_prev    <= offset;
             way_hit_prev   <= way_hit;
          end
-         assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset) & read_access; 
+         assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset) & read_access;
          // without read_access it is an infinite replacement loop
       end
    endgenerate
@@ -224,13 +225,13 @@ module iob_cache_memory #(
 
    // cache-control hit-miss counters enables
    generate
-      if (USE_CTRL & USE_CTRL_CNT) begin: g_ctrl_cnt
+      if (USE_CTRL & USE_CTRL_CNT) begin : g_ctrl_cnt
          // cache-control hit-miss counters enables
          assign write_hit  = ack & (hit & write_access);
          assign write_miss = ack & (~hit & write_access);
          assign read_hit   = ack & (hit & read_access);
          assign read_miss  = replace_req;  //will also subtract read_hit
-      end else begin: g_no_ctrl_cnt
+      end else begin : g_no_ctrl_cnt
          assign write_hit  = 1'bx;
          assign write_miss = 1'bx;
          assign read_hit   = 1'bx;
@@ -256,31 +257,35 @@ module iob_cache_memory #(
                   .we ({`IOB_CACHE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/DATA_W)+i)*`IOB_CACHE_NBYTES +: `IOB_CACHE_NBYTES]),
                   .addr((write_access & way_hit[k] & ((j*(BE_DATA_W/DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
                   .data_in((replace) ? read_rdata[i*DATA_W+:DATA_W] : wdata_reg),
-                  .data_out(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/DATA_W)+i)*DATA_W +: DATA_W])
+                  .data_out(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/DATA_W)+i)*DATA_W+:DATA_W])
                );
             end
          end
       end
 
       // Cache Line Write Strobe
-      if (`IOB_CACHE_LINE2BE_W > 0) begin: g_line2be_w
-         always @*
-            if (replace)
-            // line-replacement: read_addr indexes the words in cache-line
-               line_wstrb = {`IOB_CACHE_BE_NBYTES{read_req}} << (read_addr*`IOB_CACHE_BE_NBYTES);
-            else
+      if (`IOB_CACHE_LINE2BE_W > 0) begin : g_line2be_w
+         always @* begin
+            if (replace) begin
+               // line-replacement: read_addr indexes the words in cache-line
+               line_wstrb = {`IOB_CACHE_BE_NBYTES{read_req}} << (read_addr * `IOB_CACHE_BE_NBYTES);
+            end else begin
                line_wstrb = (wstrb_reg & {`IOB_CACHE_NBYTES{write_access}}) << (offset*`IOB_CACHE_NBYTES);
-      end else begin: g_no_line2be_w
-         always @*
-            if (replace)
-            // line-replacement: mem's word replaces entire line
+            end
+         end
+      end else begin : g_no_line2be_w
+         always @* begin
+            if (replace) begin
+               // line-replacement: mem's word replaces entire line
                line_wstrb = {`IOB_CACHE_BE_NBYTES{read_req}};
-            else
+            end else begin
                line_wstrb = (wstrb_reg & {`IOB_CACHE_NBYTES{write_access}}) << (offset*`IOB_CACHE_NBYTES);
+            end
+         end
       end
 
       // Valid-Tag memories & replacement-policy
-      if (NWAYS > 1) begin: g_nways
+      if (NWAYS > 1) begin : g_nways
          // reason for the 2 generates for single vs multiple ways
          wire [NWAYS_W-1:0] way_hit_bin, way_select_bin;
          // valid-memory
@@ -335,14 +340,14 @@ module iob_cache_memory #(
 
          // onehot-to-binary for way-hit
          iob_cache_onehot_to_bin #(
-            .N_WAYS    (NWAYS)
+            .N_WAYS(NWAYS)
          ) way_hit_encoder (
             .onehot(way_hit[NWAYS-1:1]),
             .bin   (way_hit_bin)
          );
 
          // dirty-memory
-         if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin: g_write_back
+         if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
             always @(posedge clk_i, posedge reset) begin
                if (reset) dirty_reg <= 0;
                else if (write_req)
@@ -366,7 +371,7 @@ module iob_cache_memory #(
             assign write_wdata = line_rdata >> (way_select_bin * DATA_W * (2 ** WORD_OFFSET_W));
 
          end
-      end else begin: g_one_way  // (NWAYS = 1)
+      end else begin : g_one_way  // (NWAYS = 1)
          // valid-memory
          always @(posedge clk_i, posedge reset) begin
             if (reset) v_reg <= 0;
@@ -376,9 +381,10 @@ module iob_cache_memory #(
          end
 
          // valid-memory output stage register - 1 c.c. read-latency (cleaner simulation during rep.)
-         always @(posedge clk_i)
+         always @(posedge clk_i) begin
             if (invalidate) v <= 0;
             else v <= v_reg[index];
+         end
 
          // tag-memory
          iob_ram_sp #(
@@ -400,16 +406,20 @@ module iob_cache_memory #(
          assign rdata[DATA_W-1:0] = line_rdata >> DATA_W * offset;
 
          // dirty-memory
-         if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin: g_write_back
+         if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
             // dirty-memory
             always @(posedge clk_i, posedge reset) begin
-               if (reset) dirty_reg <= 0;
-               else if (write_req)
-                  dirty_reg <= dirty_reg & ~(1 << (index_reg));  // updates postion with 0
-               else if (write_access & hit)
-               // updates position with 1 (needs to be index_reg otherwise updates the new index if the previous access was a write)
-                  dirty_reg <= dirty_reg | (1<<(index_reg));
-               else dirty_reg <= dirty_reg;
+               if (reset) begin
+                  dirty_reg <= 0;
+               end else if (write_req) begin
+                  // updates postion with 0
+                  dirty_reg <= dirty_reg & ~(1 << (index_reg));
+               end else if (write_access & hit) begin
+                  // updates position with 1 (needs to be index_reg otherwise updates the new index if the previous access was a write)
+                  dirty_reg <= dirty_reg | (1 << (index_reg));
+               end else begin
+                  dirty_reg <= dirty_reg;
+               end
             end
 
             always @(posedge clk_i) dirty <= dirty_reg[index];

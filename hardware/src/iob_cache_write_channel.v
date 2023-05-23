@@ -31,13 +31,13 @@ module iob_cache_write_channel #(
    genvar i;
 
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin: g_write_through
+      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
          assign be_addr = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W], {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
 
          localparam idle = 1'd0, write = 1'd1;
 
          reg [0:0] state;
-         if (BE_DATA_W == DATA_W) begin: g_same_data_w
+         if (BE_DATA_W == DATA_W) begin : g_same_data_w
             assign be_wdata = wdata;
 
             always @* begin
@@ -48,7 +48,7 @@ module iob_cache_write_channel #(
                   default: ;
                endcase
             end
-         end else begin: g_not_same_data_w
+         end else begin : g_not_same_data_w
             wire [`IOB_CACHE_BE_NBYTES_W-`IOB_CACHE_NBYTES_W -1 :0] word_align = addr[`IOB_CACHE_NBYTES_W +: (`IOB_CACHE_BE_NBYTES_W - `IOB_CACHE_NBYTES_W)];
 
             for (i = 0; i < BE_DATA_W / DATA_W; i = i + 1) begin : g_wdata_block
@@ -94,9 +94,9 @@ module iob_cache_write_channel #(
                end
             endcase
          end
-      end else begin: g_write_back
+      end else begin : g_write_back
          // if (WRITE_POL == WRITE_BACK)
-         if (`IOB_CACHE_LINE2BE_W > 0) begin: g_line2be_w
+         if (`IOB_CACHE_LINE2BE_W > 0) begin : g_line2be_w
             reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter, word_counter_reg;
             always @(posedge clk_i) word_counter_reg <= word_counter;
 
@@ -145,7 +145,7 @@ module iob_cache_write_channel #(
                   end
                endcase
             end
-         end else begin: g_no_line2be_w
+         end else begin : g_no_line2be_w
             // memory address
             assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: `IOB_CACHE_BE_NBYTES_W], {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
 
