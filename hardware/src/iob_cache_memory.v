@@ -340,7 +340,7 @@ module iob_cache_memory #(
 
          // onehot-to-binary for way-hit
          iob_cache_onehot_to_bin #(
-            .N_WAYS(NWAYS)
+            .BIN_W(NWAYS_W)
          ) way_hit_encoder (
             .onehot(way_hit[NWAYS-1:1]),
             .bin   (way_hit_bin)
