@@ -495,25 +495,10 @@ regs = [
 blocks = []
 
 
-def pos_build_remove_unused_files():
-    unused_files = [
-        "../iob_cache_V0.10/hardware/src/iob_s_portmap.vs",
-        "../iob_cache_V0.10/hardware/src/iob_clkenrst_portmap.vs",
-        "../iob_cache_V0.10/hardware/src/iob_cache_swreg_inst.vs",
-        "../iob_cache_V0.10/hardware/src/iob_cache_inst_params.vs",
-        "../iob_cache_V0.10/hardware/src/iob_cache_io.vs",
-        "../iob_cache_V0.10/hardware/simulation/src/iob_axi_m_portmap.vs",
-        "../iob_cache_V0.10/hardware/simulation/src/iob_axi_portmap.vs",
-    ]
-    for file in unused_files:
-        os.remove(file)
-
-
 # Main function to setup this core and its components
 def main():
     # Setup this system
     setup.setup(sys.modules[__name__])
-    pos_build_remove_unused_files()
 
 
 if __name__ == "__main__":
