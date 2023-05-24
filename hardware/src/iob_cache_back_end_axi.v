@@ -34,7 +34,7 @@ module iob_cache_back_end_axi #(
    output [                                       AXI_DATA_W -1:0] read_rdata,
 
    // Back-end interface (AXI4 master)
-   `include "iob_axi_m_port.vh"
+   `include "iob_axi_m_port.vs"
    input [1-1:0] clk_i,  //V2TEX_IO System clock input.
    input [1-1:0] rst_i   //V2TEX_IO System reset, asynchronous and active high.
 );
@@ -57,7 +57,7 @@ module iob_cache_back_end_axi #(
       .read_valid   (read_valid),
       .read_addr    (read_addr),
       .read_rdata   (read_rdata),
-      `include "iob_axi_m_m_read_portmap.vh"
+      `include "iob_axi_m_m_read_portmap.vs"
       .clk_i        (clk_i),
       .reset        (rst_i)
    );
@@ -80,7 +80,7 @@ module iob_cache_back_end_axi #(
       .wstrb(write_wstrb),
       .wdata(write_wdata),
       .ready(write_ready),
-      `include "iob_axi_m_m_write_portmap.vh"
+      `include "iob_axi_m_m_write_portmap.vs"
       .clk_i(clk_i),
       .reset(rst_i)
    );
