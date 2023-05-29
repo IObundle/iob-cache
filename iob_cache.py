@@ -18,18 +18,13 @@ from iob_ram_sp_be import iob_ram_sp_be
 from iob_ram import iob_ram
 
 class iob_cache(iob_module):
-    def __init__(self, **kwargs):
-        super().__init__(
-                name='iob_cache',
-                version='V0.10',
-                flows='emb sim doc fpga',
-                setup_dir=os.path.dirname(__file__),
-                **kwargs
-                )
+    name='iob_cache'
+    version='V0.10'
+    flows='emb sim doc fpga'
+    setup_dir=os.path.dirname(__file__)
 
-    def setup(self, **kwargs):
-        super().setup(**kwargs)
-
+    @classmethod
+    def _run_setup(cls):
         # Hardware headers & modules
         iob_submodule_utils.generate("iob_s_port")
         iob_submodule_utils.generate("axi_m_port")
@@ -55,16 +50,17 @@ class iob_cache(iob_module):
         # Verilog modules instances
         # TODO
 
-        self.setup_confs()
-        self.setup_ios()
-        self.setup_regs()
-        self.setup_block_groups()
+        cls._setup_confs()
+        cls._setup_ios()
+        cls._setup_regs()
+        cls._setup_block_groups()
 
         # Setup core using LIB function
-        setup(self)
+        setup(cls)
 
-    def setup_confs(self):
-        super().setup_confs([
+    @classmethod
+    def _setup_confs(cls):
+        super()._setup_confs([
             # Macros
             #Replacement Policy
             {'name':'LRU', 'type':'M', 'val':'0', 'min':'?', 'max':'?', 'descr':'Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters'},
@@ -103,8 +99,9 @@ class iob_cache(iob_module):
             {'name':'USE_CTRL_CNT', 'type':'P', 'val':'0', 'min':'0', 'max':'1', 'descr':'Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.'},
         ])
 
-    def setup_ios(self):
-        self.ios += [
+    @classmethod
+    def _setup_ios(cls):
+        cls.ios += [
             {'name': 'fe', 'descr':'Front-end interface (IOb native slave)', 'ports': [
                 {'name':'req', 'type':'I', 'n_bits':'1', 'descr':'Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.'},
                 {'name':'addr', 'type':'I', 'n_bits':'USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W', 'descr':'Address from CPU or other user core, excluding the byte selection LSBs.'},
@@ -137,8 +134,9 @@ class iob_cache(iob_module):
             ]}
         ]
 
-    def setup_regs(self):
-        self.regs += [
+    @classmethod
+    def _setup_regs(cls):
+        cls.regs += [
             {'name': 'cache', 'descr':'CACHE software accessible registers.', 'regs': [
                 {'name':'WTB_EMPTY', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':0, 'log2n_items':0, 'autologic':False, 'descr':"Write-through buffer empty (1) or non-empty (0)."},
                 {'name':'WTB_FULL', 'type':"R", 'n_bits':1, 'rst_val':0, 'addr':1, 'log2n_items':0, 'autologic':False, 'descr':"Write-through buffer full (1) or non-full (0)."},
@@ -154,5 +152,6 @@ class iob_cache(iob_module):
         ]
 
 
-    def setup_block_groups(self):
-        self.block_groups += []
+    @classmethod
+    def _setup_block_groups(cls):
+        cls.block_groups += []
