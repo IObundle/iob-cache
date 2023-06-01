@@ -7,15 +7,12 @@ from iob_module import iob_module
 from setup import setup
 
 # Submodules
-from iob_submodule_utils import iob_submodule_utils
 from iob_regfile_sp import iob_regfile_sp
 from iob_fifo_sync import iob_fifo_sync
 from iob_ram_2p import iob_ram_2p
 from iob_ram_sp import iob_ram_sp
-from iob_wstrb2byte_offset import iob_wstrb2byte_offset
 from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
-from iob_ram import iob_ram
 
 class iob_cache(iob_module):
     name='iob_cache'
@@ -26,26 +23,24 @@ class iob_cache(iob_module):
     @classmethod
     def _run_setup(cls):
         # Hardware headers & modules
-        iob_submodule_utils.generate("iob_s_port")
-        iob_submodule_utils.generate("axi_m_port")
-        iob_submodule_utils.generate("axi_m_m_portmap")
-        iob_submodule_utils.generate("axi_m_write_port")
-        iob_submodule_utils.generate("axi_m_m_write_portmap")
-        iob_submodule_utils.generate("axi_m_read_port")
-        iob_submodule_utils.generate("axi_m_m_read_portmap")
+        iob_module.generate("iob_s_port")
+        iob_module.generate("axi_m_port")
+        iob_module.generate("axi_m_m_portmap")
+        iob_module.generate("axi_m_write_port")
+        iob_module.generate("axi_m_m_write_portmap")
+        iob_module.generate("axi_m_read_port")
+        iob_module.generate("axi_m_m_read_portmap")
         iob_regfile_sp.setup()
         iob_fifo_sync.setup()
         iob_ram_2p.setup()
         iob_ram_sp.setup()
-        iob_wstrb2byte_offset.setup()
         iob_reg.setup()
 
         # Simulation headers & modules
-        iob_submodule_utils.generate("axi_portmap", purpose="simulation")
-        iob_submodule_utils.generate("axi_wire", purpose="simulation")
-        iob_submodule_utils.generate("axi_m_portmap", purpose="simulation")
+        iob_module.generate("axi_portmap", purpose="simulation")
+        iob_module.generate("axi_wire", purpose="simulation")
+        iob_module.generate("axi_m_portmap", purpose="simulation")
         iob_ram_sp_be.setup(purpose="simulation")
-        iob_ram.setup(purpose="simulation")
 
         # Verilog modules instances
         # TODO
