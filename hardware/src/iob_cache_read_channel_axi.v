@@ -159,8 +159,8 @@ module iob_cache_read_channel_axi #(
                         else state <= end_process;
                      else state <= load_process;
                   end
-                  end_process: // delay for the read_latency of the memories (if the rdata is the last word)
-                  state <= idle;
+                  end_process:
+                  state <= idle; // delay for the read_latency of the memories (if the rdata is the last word)
                   default: ;
                endcase
          end
