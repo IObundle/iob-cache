@@ -50,6 +50,9 @@ class iob_cache(iob_module):
         cls._setup_regs()
         cls._setup_block_groups()
 
+        # Copy sources of this module to the build directory
+        super()._run_setup()
+
         # Setup core using LIB function
         setup(cls)
 
