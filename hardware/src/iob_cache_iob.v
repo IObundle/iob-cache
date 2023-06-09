@@ -175,6 +175,7 @@ module iob_cache_iob #(
    iob_cache_back_end #(
       .ADDR_W       (FE_ADDR_W),
       .DATA_W       (FE_DATA_W),
+      .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W),
       .WRITE_POL    (WRITE_POL)
