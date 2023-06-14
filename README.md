@@ -56,20 +56,18 @@ The IOb-Cache documents can be generated using Latex; tested with TeX Live versi
 If your local machine does not have the FPGA tools installed, the Makefile will
 automatically ``rsync`` the files to a remote machine, run the tools on the
 remote machine, and copy the results back. For this purpose, set the following
-enviromnet variables:
+environment variables:
 
 * Vivado 
 ```Bash
 export VIVADO_SERVER=quartusserver.myorg.com
 export VIVADO_USER=quartususer
-export VIVADOPATH=/path/to/vivado
 ```
 
 * Quartus
 ```Bash
 export QUARTUS_SERVER=quartusserver.myorg.com
 export QUARTUS_USER=quartususer
-export QUARTUSPATH=/path/to/quartus
 ```
 
 * LICENSE FILES
