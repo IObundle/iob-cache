@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache.vh"
 `include "iob_cache_swreg_def.vh"
 
 module iob_cache_front_end #(

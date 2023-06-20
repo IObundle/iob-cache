@@ -1,24 +1,27 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache.vh"
-`include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
+`include "iob_cache_conf.vh"
 
 module iob_cache_read_channel #(
-   parameter ADDR_W        = `IOB_CACHE_ADDR_W,
-   parameter DATA_W        = `IOB_CACHE_DATA_W,
+   parameter FE_ADDR_W     = `IOB_CACHE_ADDR_W,
+   parameter FE_DATA_W     = `IOB_CACHE_DATA_W,
    parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W
+   parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+   //derived parameters
+   parameter BE_NBYTES     = BE_DATA_W / 8,
+   parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
+   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
-   input                                                             clk_i,
-   input                                                             reset,
-   input                                                             replace_valid,
-   input      [ADDR_W-1:`IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W] replace_addr,
-   output reg                                                        replace,
-   output reg                                                        read_valid,
-   output reg [                            `IOB_CACHE_LINE2BE_W-1:0] read_addr,
-   output     [                                       BE_DATA_W-1:0] read_rdata,
+   input                                          clk_i,
+   input                                          reset,
+   input                                          replace_valid,
+   input      [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr,
+   output reg                                     replace,
+   output reg                                     read_valid,
+   output reg [                    LINE2BE_W-1:0] read_addr,
+   output     [                    BE_DATA_W-1:0] read_rdata,
 
    // Native memory interface
    output     [BE_ADDR_W-1:0] be_addr,
@@ -28,10 +31,10 @@ module iob_cache_read_channel #(
 );
 
    generate
-      if (`IOB_CACHE_LINE2BE_W > 0) begin : g_line2be_w
-         reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter;
+      if (LINE2BE_W > 0) begin : g_line2be_w
+         reg [LINE2BE_W-1:0] word_counter;
 
-         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W], word_counter, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
+         assign be_addr   = {BE_ADDR_W{1'b0}} + {replace_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
          assign read_rdata = be_rdata;
 
          localparam
@@ -55,7 +58,7 @@ module iob_cache_read_channel #(
                   end
                   handshake: begin
                      if (be_ready)
-                        if (read_addr == {`IOB_CACHE_LINE2BE_W{1'b1}}) begin
+                        if (read_addr == {LINE2BE_W{1'b1}}) begin
                            state <= end_handshake;
                         end else begin
                            state <= handshake;
@@ -91,7 +94,7 @@ module iob_cache_read_channel #(
             endcase
          end
       end else begin : g_no_line2be_w
-         assign be_addr    = {BE_ADDR_W{1'b0}} + {replace_addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
+         assign be_addr    = {BE_ADDR_W{1'b0}} + {replace_addr, {BE_NBYTES_W{1'b0}}};
          assign read_rdata = be_rdata;
 
          localparam

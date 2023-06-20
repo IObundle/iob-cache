@@ -1,25 +1,32 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
-`include "iob_cache.vh"
 
 module iob_cache_write_channel_axi #(
    parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
    parameter                DATA_W        = `IOB_CACHE_DATA_W,
+   parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
+   parameter                FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
    parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter                WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
    parameter                WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
    parameter                AXI_ID_W      = `IOB_CACHE_AXI_ID_W,
+   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID,
    parameter                AXI_LEN_W     = `IOB_CACHE_AXI_LEN_W,
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
-   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID
+   //derived parameters
+   parameter                FE_NBYTES     = FE_DATA_W / 8,
+   parameter                FE_NBYTES_W   = $clog2(FE_NBYTES),
+   parameter                BE_NBYTES     = BE_DATA_W / 8,
+   parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
+   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    input                                                                    valid,
-   input      [   ADDR_W-1 : `IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr,
+   input      [           ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr,
    input      [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] wdata,
-   input      [                                      `IOB_CACHE_NBYTES-1:0] wstrb,
+   input      [                                              FE_NBYTES-1:0] wstrb,
    output reg                                                               ready,
    `include "iob_axi_m_write_port.vs"
    input                                                                    clk_i,
@@ -38,10 +45,10 @@ module iob_cache_write_channel_axi #(
    generate
       if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
          // Constant AXI signals
-         assign axi_awid_o = `IOB_CACHE_AXI_ID;
+         assign axi_awid_o = AXI_ID;
          assign axi_awlen_o = 8'd0;
 
-         assign axi_awsize_o  = `IOB_CACHE_BE_NBYTES_W;    // verify - Writes data of the size of BE_DATA_W
+         assign axi_awsize_o = BE_NBYTES_W;  // verify - Writes data of the size of BE_DATA_W
          assign axi_awburst_o = 2'd0;
          assign axi_awlock_o = 1'b0;  // 00 - Normal Access
          assign axi_awcache_o = 4'b0011;
@@ -50,14 +57,14 @@ module iob_cache_write_channel_axi #(
          assign axi_wlast_o = axi_wvalid_o;
 
          // AXI Buffer Output signals
-         assign axi_awaddr_o = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W], {`IOB_CACHE_BE_NBYTES_W{1'b0}}};
+         assign axi_awaddr_o = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
 
          if (BE_DATA_W == DATA_W) begin : g_same_data_w
             assign axi_wstrb_o = wstrb;
             assign axi_wdata_o = wdata;
          end else begin : g_not_same_data_w
-            wire [`IOB_CACHE_BE_NBYTES_W - `IOB_CACHE_NBYTES_W -1 :0] word_align = addr[`IOB_CACHE_NBYTES_W +: (`IOB_CACHE_BE_NBYTES_W - `IOB_CACHE_NBYTES_W)];
-            assign axi_wstrb_o = wstrb << (word_align * `IOB_CACHE_NBYTES);
+            wire [BE_NBYTES_W - FE_NBYTES_W -1 :0] word_align = addr[FE_NBYTES_W +: (BE_NBYTES_W - FE_NBYTES_W)];
+            assign axi_wstrb_o = wstrb << (word_align * FE_NBYTES);
 
             for (i = 0; i < BE_DATA_W / DATA_W; i = i + 1) begin : g_wdata_block
                assign axi_wdata_o[(i+1)*DATA_W-1:i*DATA_W] = wdata;
@@ -113,26 +120,26 @@ module iob_cache_write_channel_axi #(
             endcase
          end
       end else begin : g_write_back  // if (WRITE_POL == `IOB_CACHE_WRITE_BACK)
-         if (`IOB_CACHE_LINE2BE_W > 0) begin : g_line2be_w
+         if (LINE2BE_W > 0) begin : g_line2be_w
             // Constant AXI signals
-            assign axi_awid_o = `IOB_CACHE_AXI_ID;
+            assign axi_awid_o = AXI_ID;
             assign axi_awlock_o = 1'b0;
             assign axi_awcache_o = 4'b0011;
             assign axi_awprot_o = 3'd0;
             assign axi_awqos_o = 4'd0;
 
             // Burst parameters
-            assign axi_awlen_o   = 2**`IOB_CACHE_LINE2BE_W - 1; // will choose the burst lenght depending on the cache's and slave's data width
-            assign axi_awsize_o  = `IOB_CACHE_BE_NBYTES_W;      // each word will be the width of the memory for maximum bandwidth
+            assign axi_awlen_o   = 2**LINE2BE_W - 1; // will choose the burst lenght depending on the cache's and slave's data width
+            assign axi_awsize_o  = BE_NBYTES_W;      // each word will be the width of the memory for maximum bandwidth
             assign axi_awburst_o = 2'b01;  // incremental burst
 
             // memory address
-            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr, {(`IOB_CACHE_NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
+            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr, {(FE_NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
-            reg [`IOB_CACHE_LINE2BE_W-1:0] word_counter;
+            reg [LINE2BE_W-1:0] word_counter;
             assign axi_wdata_o = wdata >> (word_counter * BE_DATA_W);
-            assign axi_wstrb_o = {`IOB_CACHE_BE_NBYTES{1'b1}};
+            assign axi_wstrb_o = {BE_NBYTES{1'b1}};
             assign axi_wlast_o = &word_counter;
 
             localparam idle = 2'd0, address = 2'd1, write = 2'd2, verif = 2'd3;
@@ -192,7 +199,7 @@ module iob_cache_write_channel_axi #(
             end
          end else begin : g_no_line2be_w
             // Constant AXI signals
-            assign axi_awid_o = `IOB_CACHE_AXI_ID;
+            assign axi_awid_o = AXI_ID;
             assign axi_awlock_o = 1'b0;
             assign axi_awcache_o = 4'b0011;
             assign axi_awprot_o = 3'd0;
@@ -200,15 +207,15 @@ module iob_cache_write_channel_axi #(
 
             // Burst parameters - single
             assign axi_awlen_o = 8'd0;  // A single burst of Memory data width word
-            assign axi_awsize_o  = `IOB_CACHE_BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
+            assign axi_awsize_o  = BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
             assign axi_awburst_o = 2'b00;
 
             // memory address
-            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr, {`IOB_CACHE_BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
             assign axi_wdata_o = wdata;
-            assign axi_wstrb_o = {`IOB_CACHE_BE_NBYTES{1'b1}};  // uses entire bandwidth
+            assign axi_wstrb_o = {BE_NBYTES{1'b1}};  // uses entire bandwidth
             assign axi_wlast_o = axi_wvalid_o;
 
             localparam idle = 2'd0, address = 2'd1, write = 2'd2, verif = 2'd3;

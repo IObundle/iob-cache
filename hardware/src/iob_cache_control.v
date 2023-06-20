@@ -1,12 +1,9 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache.vh"
 `include "iob_cache_swreg_def.vh"
 
-/*------------------*/
-/* Cache Control    */
-/*------------------*/
-// Module responsible for performance measuring, information about the current cache state, and other cache functions
+// Module responsible for performance measuring, information about the current
+// cache state, and other cache functions
 
 module iob_cache_control #(
    parameter DATA_W       = 32,

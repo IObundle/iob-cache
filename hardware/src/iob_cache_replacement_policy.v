@@ -1,7 +1,6 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
-`include "iob_cache.vh"
 
 module iob_cache_replacement_policy #(
    parameter N_WAYS     = 8,
