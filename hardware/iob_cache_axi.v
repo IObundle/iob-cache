@@ -34,25 +34,18 @@ module iob_cache_axi #(
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
-   // Front-end interface (IOb native slave)
-   input [ 1-1:0]                  req,
-   input [FE_ADDR_W-1:FE_NBYTES_W] addr,
-   input [ FE_DATA_W-1:0]          wdata,
-   input [ FE_NBYTES-1:0]          wstrb,
-   output [ FE_DATA_W-1:0]         rdata,
-   output [ 1-1:0]                 ack,
+   // IOb native slave interface (control)
+   `include "ctr_iob_s_port.vs"
 
-   // Cache invalidate and write-trough buffer IO chain
-   input [1-1:0]                   invalidate_in,
-   output [1-1:0]                  invalidate_out,
-   input [1-1:0]                   wtb_empty_in,
-   output [1-1:0]                  wtb_empty_out,
 
+   // IOb native slave (data front-end)
+   `include "fe_iob_s_port.vs"
+   
    // AXI4 back-end interface
    `include "iob_axi_m_port.vs"
    //General Interface Signals
    input [1-1:0]                   clk_i, //System clock input
-   input [1-1:0]                   rst_i   //System reset, asynchronous and active high
+   input [1-1:0]                   arst_i   //System reset, asynchronous and active high
 );
 
    //Front-end & Front-end interface.
@@ -77,10 +70,10 @@ module iob_cache_axi #(
 
    iob_cache_front_end #(
       .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
-      .DATA_W  (FE_DATA_W),
+      .DATA_W  (FE_DATA_W)
    ) front_end (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .reset(arst_i),
 
       // front-end port
       .req  (req),
@@ -140,7 +133,7 @@ module iob_cache_axi #(
       .WRITE_POL    (WRITE_POL)
    ) cache_memory (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .reset(arst_i),
 
       // front-end
       .req      (data_req),
@@ -210,16 +203,16 @@ module iob_cache_axi #(
       //back-end AXI4 interface
       `include "iob_axi_m_m_portmap.vs"
       .clk_i(clk_i),
-      .rst_i(rst_i)
+      .arst_i(arst_i)
    );
 
    //Cache control & Cache control block.
          iob_cache_control #(
             .DATA_W      (DATA_W),
-            .ADDR_W      (ADDR_W),
+            .ADDR_W      (ADDR_W)
          ) cache_control (
             .clk_i(clk_i),
-            .reset(rst_i),
+            .reset(arst_i),
 
             // control's signals
             .valid(ctrl_req),

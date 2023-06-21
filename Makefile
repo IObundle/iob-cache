@@ -1,10 +1,8 @@
 CORE := iob_cache
 include submodules/LIB/setup.mk
 
-
-
-
-BE_IF ?= "AXI4"
+#BE_IF ?= "AXI4"
+BE_IF ?= "IOb"
 
 SETUP_ARGS += BE_IF=$(BE_IF)
 
@@ -19,17 +17,17 @@ SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
 
 sim-build: clean
 	rm -rf ../$(CORE)_V*
-	make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-build
+	make setup && make -C ../$(CORE)_V*/ sim-build
 
 sim-run: clean
 	rm -rf ../$(CORE)_V*
-	make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)  && make -C ../$(CORE)_V*/ sim-run
+	make setup && make -C ../$(CORE)_V*/ sim-run
 
 sim-waves:
 	make -C ../$(CORE)_V*/ sim-waves
 
 sim-test: clean
 	rm -rf ../$(CORE)_V*
-	make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-test
+	make setup && make -C ../$(CORE)_V*/ sim-test
 
 

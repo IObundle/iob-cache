@@ -17,6 +17,7 @@ from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
 from iob_tasks import iob_tasks
+from iob_clkrst_port import iob_clkrst_port
 
 
 class iob_cache(iob_module):
@@ -41,7 +42,7 @@ class iob_cache(iob_module):
                     exit(1)
 
         # Parse BE_IF argument
-        cls.BE_IF = "AXI4"
+        cls.BE_IF = "IOb"
         for arg in sys.argv[1:]:
             if "BE_IF" in arg:
                 cls.BE_IF = arg.split("=")[1]
@@ -88,15 +89,74 @@ class iob_cache(iob_module):
 
     @classmethod
     def _run_setup(cls):
-        # Hardware headers & modules
-        iob_module.generate("iob_s_port")
-        iob_module.generate("axi_m_port")
-        iob_module.generate("axi_m_m_portmap")
-        iob_module.generate("axi_m_write_port")
-        iob_module.generate("axi_m_m_write_portmap")
-        iob_module.generate("axi_m_read_port")
-        iob_module.generate("axi_m_m_read_portmap")
-        iob_lib.setup()
+        # Hardware modules and snippets
+
+        # iob control interface
+        iob_module.generate(
+            {
+                "file_prefix": "ctr_",
+                "interface": "iob_s_port",
+                "wire_prefix": "ctr_",
+                "port_prefix": "ctr_",
+                "bus_start": 0,
+                "bus_size": 1,
+            },
+            purpose="hardware",
+        )
+
+        # iob frontend interface
+        iob_module.generate(
+            {
+                "file_prefix": "fe_",
+                "interface": "iob_s_port",
+                "wire_prefix": "fe_",
+                "port_prefix": "fe_",
+                "bus_start": 0,
+                "bus_size": 1,
+            },
+            purpose="hardware",
+        )
+
+        if cls.BE_IF == "IOb":
+            # iob backend interface
+            iob_module.generate(
+                {
+                    "file_prefix": "be_",
+                    "interface": "iob_m_port",
+                    "wire_prefix": "be_",
+                    "port_prefix": "be_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                },
+                purpose="hardware",
+            )
+
+        if cls.BE_IF == "AXI4":
+            # iob backend interface
+            iob_module.generate(
+                {
+                    "file_prefix": "be_",
+                    "interface": "iob_axi4_port",
+                    "wire_prefix": "be_",
+                    "port_prefix": "be_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                    "confs": cls.AXI_CONFS,
+                },
+                purpose="hardware",
+            )
+            # axi backend interface
+            iob_module.generate("axi_m_port")
+            # axi portmap for internal backend module
+            iob_module.generate("axi_m_m_portmap")
+
+            # internal axi backend module headers
+            iob_module.generate("axi_m_write_port")
+            iob_module.generate("axi_m_read_port")
+            iob_module.generate("axi_m_m_write_portmap")
+            iob_module.generate("axi_m_m_read_portmap")
+
+        iob_clkrst_port.setup()
         iob_utils.setup()
         iob_clkenrst_port.setup()
         iob_regfile_sp.setup()
@@ -106,10 +166,10 @@ class iob_cache(iob_module):
         iob_reg.setup()
 
         # Simulation headers & modules
-        iob_tasks.setup(purpose="simulation")
-        iob_module.generate("axi_portmap", purpose="simulation")
+        iob_module.generate("iob_m_tb_wire")
+        iob_module.generate("axi_s_portmap")
         iob_module.generate("axi_wire", purpose="simulation")
-        iob_module.generate("axi_m_portmap", purpose="simulation")
+        iob_tasks.setup(purpose="simulation")
         iob_ram_sp_be.setup(purpose="simulation")
 
         # Verilog modules instances
