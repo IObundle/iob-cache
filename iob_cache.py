@@ -16,6 +16,7 @@ from iob_ram_2p import iob_ram_2p
 from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
+from iob_tasks import iob_tasks
 
 
 class iob_cache(iob_module):
@@ -105,6 +106,7 @@ class iob_cache(iob_module):
         iob_reg.setup()
 
         # Simulation headers & modules
+        iob_tasks.setup(purpose="simulation")
         iob_module.generate("axi_portmap", purpose="simulation")
         iob_module.generate("axi_wire", purpose="simulation")
         iob_module.generate("axi_m_portmap", purpose="simulation")
@@ -267,22 +269,6 @@ class iob_cache(iob_module):
                     "min": "0",
                     "max": "1",
                     "descr": "Write policy: set to 0 for write-through or set to 1 for write-back.",
-                },
-                {
-                    "name": "USE_CTRL",
-                    "type": "P",
-                    "val": "0",
-                    "min": "0",
-                    "max": "1",
-                    "descr": "Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
-                },
-                {
-                    "name": "USE_CTRL_CNT",
-                    "type": "P",
-                    "val": "0",
-                    "min": "0",
-                    "max": "1",
-                    "descr": "Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.",
                 },
             ]
             + cls.AXI_CONFS

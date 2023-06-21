@@ -6,6 +6,8 @@
 module iob_cache_sim_wrapper #(
    parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
    parameter                DATA_W        = `IOB_CACHE_DATA_W,
+   parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
+   parameter                FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
    parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter                NWAYS_W       = `IOB_CACHE_NWAYS_W,
@@ -25,34 +27,28 @@ module iob_cache_sim_wrapper #(
    parameter                BE_NBYTES     = BE_DATA_W / 8,
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
 `endif
-   parameter                USE_CTRL      = `IOB_CACHE_USE_CTRL,
-   parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT
+   //derived parameters
+   parameter                FE_NBYTES     = FE_DATA_W / 8,
+   parameter                FE_NBYTES_W   = $clog2(FE_NBYTES)
 ) (
    // Front-end interface (IOb native slave)
-   input  [                          1-1:0] req,
-   input  [USE_CTRL+ADDR_W-FE_NBYTES_W-1:0] addr,
-   input  [                     DATA_W-1:0] wdata,
-   input  [                  FE_NBYTES-1:0] wstrb,
-   output [                     DATA_W-1:0] rdata,
-   output [                          1-1:0] ack,
-
-   // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_in,
-   output [1-1:0] invalidate_out,
-   input  [1-1:0] wtb_empty_in,
-   output [1-1:0] wtb_empty_out,
+   input [ 1-1:0]                 req,
+   input [ADDR_W-FE_NBYTES_W-1:0] addr,
+   input [ DATA_W-1:0]            wdata,
+   input [ FE_NBYTES-1:0]         wstrb,
+   output [ DATA_W-1:0]           rdata,
+   output [ 1-1:0]                ack,
 
    //General Interface Signals
-   input [1-1:0] clk_i,  //V2TEX_IO System clock input.
-   input [1-1:0] rst_i   //V2TEX_IO System reset, active high.
+   input [1-1:0]                  clk_i, //V2TEX_IO System clock input.
+   input [1-1:0]                  arst_i   //V2TEX_IO System reset, active high.
 );
 
 `ifdef AXI
    `include "iob_cache_axi_wire.vh"
 
-  iob_cache_axi
-   ) cache (
-      //front-end
+   iob_cache_axi cache (
+                        //front-end
       .wdata(wdata),
       .addr (addr),
       .wstrb(wstrb),
@@ -68,14 +64,9 @@ module iob_cache_sim_wrapper #(
 
       `include "iob_cache_axi_m_portmap.vh"
 
-      .be_addr (be_addr),
-      .be_wdata(be_wdata),
-      .be_wstrb(be_wstrb),
-      .be_rdata(be_rdata),
-      .be_req  (be_req),
-      .be_ack  (be_ack),
-      .clk_i   (clk_i),
-      .rst_i   (rst_i)
+      //general
+      .clk_i(clk_i),
+      .rst_i(rst_i)
    );
 `else
    wire                   be_req;
@@ -85,7 +76,7 @@ module iob_cache_sim_wrapper #(
    wire [BE_DATA_W/8-1:0] be_wstrb;
    wire [  BE_DATA_W-1:0] be_rdata;
 
-   iob_cache_iob  cache (
+   iob_cache_iob cache (
       //front-end
       .wdata(wdata),
       .addr (addr),
@@ -107,10 +98,10 @@ module iob_cache_sim_wrapper #(
       .be_req  (be_req),
       .be_ack  (be_ack),
 
-      .clk_i   (clk_i),
-      .rst_i   (rst_i)
+      .clk_i(clk_i),
+      .rst_i(rst_i)
    );
-`endif 
+`endif
 
 `ifdef AXI
    axi_ram #(

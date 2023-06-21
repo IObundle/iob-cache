@@ -10,6 +10,8 @@
 `include "iob_cache_swreg_def.vh"
 
 module iob_cache_axi #(
+   parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
+   parameter                DATA_W        = `IOB_CACHE_DATA_W,
    parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
    parameter                FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
    parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
@@ -20,8 +22,6 @@ module iob_cache_axi #(
    parameter                WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
    parameter                REP_POLICY    = `IOB_CACHE_PLRU_MRU,
    parameter                WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
-   parameter                USE_CTRL      = `IOB_CACHE_USE_CTRL,
-   parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT,
    parameter                AXI_ID_W      = `IOB_CACHE_AXI_ID_W,
    parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID,
    parameter                AXI_LEN_W     = `IOB_CACHE_AXI_LEN_W,
@@ -35,24 +35,24 @@ module iob_cache_axi #(
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input  [                             1-1:0] req,
-   input  [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
-   input  [                     FE_DATA_W-1:0] wdata,
-   input  [                     FE_NBYTES-1:0] wstrb,
-   output [                     FE_DATA_W-1:0] rdata,
-   output [                             1-1:0] ack,
+   input [ 1-1:0]                  req,
+   input [FE_ADDR_W-1:FE_NBYTES_W] addr,
+   input [ FE_DATA_W-1:0]          wdata,
+   input [ FE_NBYTES-1:0]          wstrb,
+   output [ FE_DATA_W-1:0]         rdata,
+   output [ 1-1:0]                 ack,
 
    // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_in,
-   output [1-1:0] invalidate_out,
-   input  [1-1:0] wtb_empty_in,
-   output [1-1:0] wtb_empty_out,
+   input [1-1:0]                   invalidate_in,
+   output [1-1:0]                  invalidate_out,
+   input [1-1:0]                   wtb_empty_in,
+   output [1-1:0]                  wtb_empty_out,
 
    // AXI4 back-end interface
    `include "iob_axi_m_port.vs"
    //General Interface Signals
-   input [1-1:0] clk_i,  //System clock input
-   input [1-1:0] rst_i   //System reset, asynchronous and active high
+   input [1-1:0]                   clk_i, //System clock input
+   input [1-1:0]                   rst_i   //System reset, asynchronous and active high
 );
 
    //Front-end & Front-end interface.
@@ -67,7 +67,7 @@ module iob_cache_axi #(
 
    wire ctrl_req, ctrl_ack;
    wire [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr;
-   wire [   USE_CTRL*(FE_DATA_W-1):0] ctrl_rdata;
+   wire [FE_DATA_W-1:0] ctrl_rdata;
    wire                               ctrl_invalidate;
 
    wire wtbuf_full, wtbuf_empty;
@@ -78,7 +78,6 @@ module iob_cache_axi #(
    iob_cache_front_end #(
       .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
       .DATA_W  (FE_DATA_W),
-      .USE_CTRL(USE_CTRL)
    ) front_end (
       .clk_i(clk_i),
       .reset(rst_i),
@@ -138,9 +137,7 @@ module iob_cache_axi #(
       .WORD_OFFSET_W(WORD_OFFSET_W),
       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
       .REP_POLICY   (REP_POLICY),
-      .WRITE_POL    (WRITE_POL),
-      .USE_CTRL     (USE_CTRL),
-      .USE_CTRL_CNT (USE_CTRL_CNT)
+      .WRITE_POL    (WRITE_POL)
    ) cache_memory (
       .clk_i(clk_i),
       .reset(rst_i),
@@ -217,11 +214,9 @@ module iob_cache_axi #(
    );
 
    //Cache control & Cache control block.
-   generate
-      if (USE_CTRL)
          iob_cache_control #(
-            .DATA_W      (FE_DATA_W),
-            .USE_CTRL_CNT(USE_CTRL_CNT)
+            .DATA_W      (DATA_W),
+            .ADDR_W      (ADDR_W),
          ) cache_control (
             .clk_i(clk_i),
             .reset(rst_i),
@@ -242,11 +237,5 @@ module iob_cache_axi #(
             .ready     (ctrl_ack),
             .invalidate(ctrl_invalidate)
          );
-      else begin : g_no_cache_ctrl
-         assign ctrl_rdata      = 1'bx;
-         assign ctrl_ack        = 1'bx;
-         assign ctrl_invalidate = 1'b0;
-      end
-   endgenerate
 
 endmodule

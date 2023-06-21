@@ -8,17 +8,12 @@ module iob_cache_memory #(
    parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W,
    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
    parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
-
    parameter NWAYS_W       = `IOB_CACHE_NWAYS_W,
    parameter NLINES_W      = `IOB_CACHE_NLINES_W,
    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
    parameter WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
-
    parameter WRITE_POL  = `IOB_CACHE_WRITE_THROUGH,
    parameter REP_POLICY = `IOB_CACHE_PLRU_TREE,
-
-   parameter USE_CTRL     = `IOB_CACHE_USE_CTRL,
-   parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT,
    //derived parameters
    parameter FE_NBYTES    = FE_DATA_W / 8,
    parameter FE_NBYTES_W  = $clog2(FE_NBYTES),
@@ -229,20 +224,11 @@ module iob_cache_memory #(
    endgenerate
 
    // cache-control hit-miss counters enables
-   generate
-      if (USE_CTRL & USE_CTRL_CNT) begin : g_ctrl_cnt
-         // cache-control hit-miss counters enables
-         assign write_hit  = ack & (hit & write_access);
-         assign write_miss = ack & (~hit & write_access);
-         assign read_hit   = ack & (hit & read_access);
-         assign read_miss  = replace_req;  //will also subtract read_hit
-      end else begin : g_no_ctrl_cnt
-         assign write_hit  = 1'bx;
-         assign write_miss = 1'bx;
-         assign read_hit   = 1'bx;
-         assign read_miss  = 1'bx;
-      end
-   endgenerate
+   // cache-control hit-miss counters enables
+   assign write_hit  = ack & (hit & write_access);
+   assign write_miss = ack & (~hit & write_access);
+   assign read_hit   = ack & (hit & read_access);
+   assign read_miss  = replace_req;  //will also subtract read_hit
 
    /////////////////////////////////////////
    // Memories implementation configurations

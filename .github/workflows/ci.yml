@@ -32,7 +32,7 @@ jobs:
         with:
           submodules: 'recursive'
       - name: setup iob
-        run: nix-shell --run "make clean && make setup CACHE_CONFIG=iob"
+        run: nix-shell --run "make clean && make setup BE_IF=IOb"
       - name: sim-test iob
         run: nix-shell --run "make -C ../iob_cache_* sim-test"
       - name: sim-clean
@@ -59,7 +59,7 @@ jobs:
         with:
           submodules: 'recursive'
       - name: setup axi
-        run: nix-shell --run "make clean && make setup CACHE_CONFIG=axi"
+        run: nix-shell --run "make clean && make setup BE_IF=AXI4"
       - name: sim-test iob
         run: nix-shell --run "make -C ../iob_cache_* sim-test"
       - name: sim-clean

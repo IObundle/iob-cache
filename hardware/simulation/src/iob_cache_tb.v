@@ -1,28 +1,49 @@
 `timescale 1ns / 10ps
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
+`include "iob_utils.vh"
 
 module iob_cache_tb;
 
+   //global reset
+   reg [1-1:0] rst = 0;
+
    //clock
-   parameter clk_per = 10;
-   reg clk = 1;
-   always #clk_per clk = ~clk;
+   `IOB_CLOCK(clk, CLK_PER)
 
-
-   reg                                                    rst = 1;
+   //system async reset, sync de-assert
+   reg [1-1:0] arst = 0;
+   always @(posedge clk, posedge rst) begin
+      if (rst) begin 
+         arst = 1;
+      end else begin 
+         arst = #1 rst;
+      end
+   end
 
    //frontend signals
-   reg                                                    req = 0;
-   wire                                                   ack;
-   reg  [`IOB_CACHE_ADDR_W-2:$clog2(`IOB_CACHE_DATA_W/8)] addr = 0;
-   reg  [                          `IOB_CACHE_DATA_W-1:0] wdata = 0;
-   reg  [                        `IOB_CACHE_DATA_W/8-1:0] wstrb = 0;
-   wire [                          `IOB_CACHE_DATA_W-1:0] rdata;
-   reg                                                    ctrl = 0;
+   reg                                                    fe_req = 0;
+   wire                                                   fe_ack;
+   reg [`IOB_CACHE_FE_ADDR_W-1:0]                         addr = 0;
+   reg [                          `IOB_CACHE_FE_DATA_W-1:0] fe_wdata = 0;
+   reg [                        `IOB_CACHE_FE_DATA_W/8-1:0] wstrb = 0;
+   wire [                          `IOB_CACHE_FE_DATA_W-1:0] rdata;
 
+   //control signals
+   reg [1-1:0]                                               ctrl_req = 0;
+   reg [`IOB_CACHE_ADDR_W-1:0]                               ctrl_addr = 0;
+   reg [1-1:0]                                               ctrl_wstrb = 0;
+   reg [`IOB_CACHE_DATA_W-1:0]                               ctrl_wdata = 0;
+   wire [`IOB_CACHE_DATA_W-1:0]                              ctrl_rdata = 0;
+   wire [1-1:0]                                              ctrl_ack;
+   
+   reg                                                       `IOB_CACHE_DATA_W-1:0] data;
+
+   //file descriptor
+   integer fd;
+   
    //iterator
-   integer i, fd;
+   integer i;
 
    //test process
    initial begin
@@ -30,68 +51,53 @@ module iob_cache_tb;
       $dumpfile("uut.vcd");
       $dumpvars();
 `endif
-      repeat (5) @(posedge clk);
-      rst = 0;
-      #10;
 
-      $display("Test 1: Writing Test");
-      for (i = 0; i < 5; i = i + 1) begin
-         @(posedge clk) #1 req = 1;
-         wstrb = {`IOB_CACHE_DATA_W / 8{1'b1}};
-         addr  = i;
-         wdata = i * 3;
-         wait (ack);
-         #1 req = 0;
+      fd = $fopen("test.log", "w");
+
+      //core hard reset (loads default configuration)
+      #10 `IOB_PULSE(rst, 50, 50, 50)
+
+      for (i = 0; i < 10; i=i+1) begin
+         iob_write(i, i, `IOB_CACHE_FE_DATA_W);
       end
-
-      #80 @(posedge clk);
-
-      $display("Test 2: Reading Test");
-      for (i = 0; i < 5; i = i + 1) begin
-         @(posedge clk) #1 req = 1;
-         wstrb = {`IOB_CACHE_DATA_W / 8{1'b0}};
-         addr  = i;
-         wait (ack);
-         #1 req = 0;
-         //Write "Test passed!" to a file named "test.log"
-         if (rdata == i * 3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
-         else begin
-            $display("\tReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);
-            fd = $fopen("test.log", "w");
-            $fdisplay(fd, "Test failed!\nReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);
-            $fclose(fd);
-            $finish();
+      for (i = 0; i < 10; i=i+1) begin
+         iob_read(i, data, `IOB_CACHE_FE_DATA_W);
+         if (data != i) begin
+            $display("ERROR: read data mismatch");
+            $fwrite(fd, "Test failed!\n");
+            $fatal(1);
          end
       end
 
-      #100;
-      $display("End of Cache Testing\n");
-      fd = $fopen("test.log", "w");
-      $fwrite(fd, "Test passed!");
+      $display("Test passed!");
+      $fwrite(fd, "Test passed!\n");
       $fclose(fd);
-      $finish();
    end
 
    //Unit Under Test (simulation wrapper)
    iob_cache_sim_wrapper uut (
-      //frontend 
-      .req  (req),
-      .addr ({ctrl, addr}),
-      .wdata(wdata),
-      .wstrb(wstrb),
-      .rdata(rdata),
-      .ack  (ack),
-
-
-      //invalidate / wtb empty
-      .invalidate_in (1'b0),
-      .invalidate_out(),
-      .wtb_empty_in  (1'b1),
-      .wtb_empty_out (),
-
       .clk_i(clk),
-      .rst_i(rst)
+      .rst_i(rst),
+                              //control signals
+      .ctrl_req_i(ctrl_req),
+      .ctrl_addr_i(ctrl_addr),
+      .ctrl_wstrb_i(ctrl_wstrb),
+      .ctrl_wdata_i(ctrl_wdata),
+      .ctrl_rdata_o(ctrl_rdata),
+      .ctrl_ack_o(ctrl_ack),
+                              //frontend signals
+                              
+      .fe_req  (fe_req),
+      .fe_addr (fe_addr),
+      .fe_wdata(fe_wdata),
+      .fe_wstrb(fe_wstrb),
+      .fe_rdata(fe_rdata),
+      .fe_ack  (fe_ack),
+
+
    );
+
+   `include "iob_tasks.vs"
 
 endmodule
 
