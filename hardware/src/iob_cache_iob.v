@@ -20,32 +20,35 @@ module iob_cache_iob #(
    parameter USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT
 ) (
    // Front-end interface (IOb native slave)
-   input  [                                     1-1:0] req,
-   input  [USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W-1:0] addr,
-   input  [                             FE_DATA_W-1:0] wdata,
-   input  [                     `IOB_CACHE_NBYTES-1:0] wstrb,
-   output [                             FE_DATA_W-1:0] rdata,
-   output [                                     1-1:0] ack,
+   input [ 1-1:0]                                     req,
+   input [USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W-1:0] addr,
+   input [ FE_DATA_W-1:0]                             wdata,
+   input [ `IOB_CACHE_NBYTES-1:0]                     wstrb,
+   output [ FE_DATA_W-1:0]                            rdata,
+   output                                             rvalid,
+   output                                             ready,
 
    // Back-end interface
-   output [                   1-1:0] be_req,
-   output [           BE_ADDR_W-1:0] be_addr,
-   output [           BE_DATA_W-1:0] be_wdata,
-   output [`IOB_CACHE_BE_NBYTES-1:0] be_wstrb,
-   input  [           BE_DATA_W-1:0] be_rdata,
-   input  [                   1-1:0] be_ack,
+   output [ 1-1:0]                                    be_req,
+   output [ BE_ADDR_W-1:0]                            be_addr,
+   output [ BE_DATA_W-1:0]                            be_wdata,
+   output [`IOB_CACHE_BE_NBYTES-1:0]                  be_wstrb,
+   input [ BE_DATA_W-1:0]                             be_rdata,
+   input [ 1-1:0]                                     be_ack,
 
    // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_in,
-   output [1-1:0] invalidate_out,
-   input  [1-1:0] wtb_empty_in,
-   output [1-1:0] wtb_empty_out,
+   input [1-1:0]                                      invalidate_in,
+   output [1-1:0]                                     invalidate_out,
+   input [1-1:0]                                      wtb_empty_in,
+   output [1-1:0]                                     wtb_empty_out,
 
    //General Interface Signals
-   input [1-1:0] clk_i,  //V2TEX_IO System clock input.
-   input [1-1:0] rst_i   //V2TEX_IO System reset, asynchronous and active high.
+   input [1-1:0]                                      clk_i, //V2TEX_IO System clock input.
+   input [1-1:0]                                      rst_i   //V2TEX_IO System reset, asynchronous and active high.
 );
 
+   wire                                               ack;
+   
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
    wire data_req, data_ack;
    wire [FE_ADDR_W -1:`IOB_CACHE_NBYTES_W] data_addr;
@@ -55,17 +58,27 @@ module iob_cache_iob #(
    wire [                 FE_DATA_W-1 : 0] data_wdata_reg;
    wire [           `IOB_CACHE_NBYTES-1:0] data_wstrb_reg;
    wire                                    data_req_reg;
+   
 
-   wire ctrl_req, ctrl_ack;
-   wire [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr;
-   wire [   USE_CTRL*(FE_DATA_W-1):0] ctrl_rdata;
-   wire                               ctrl_invalidate;
+   wire                                    ctrl_req, ctrl_ack;
+   wire [`IOB_CACHE_SWREG_ADDR_W-1:0]      ctrl_addr;
+   wire [   USE_CTRL*(FE_DATA_W-1):0]      ctrl_rdata;
+   wire                                    ctrl_invalidate;
 
-   wire wtbuf_full, wtbuf_empty;
+   wire                                    wtbuf_full, wtbuf_empty;
 
    assign invalidate_out = ctrl_invalidate | invalidate_in;
    assign wtb_empty_out  = wtbuf_empty & wtb_empty_in;
 
+
+   generate 
+      if (USE_CTRL != 0)
+        assign ctrl_req = req & addr[USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W-1];
+      else
+        assign ctrl_req = 1'b0;
+   endgenerate
+   
+  
    iob_cache_front_end #(
       .ADDR_W  (FE_ADDR_W - `IOB_CACHE_NBYTES_W),
       .DATA_W  (FE_DATA_W),
@@ -80,6 +93,8 @@ module iob_cache_iob #(
       .wdata(wdata),
       .wstrb(wstrb),
       .rdata(rdata),
+      .rvalid(rvalid),
+      .ready(ready),
       .ack  (ack),
 
       // cache-memory input signals
