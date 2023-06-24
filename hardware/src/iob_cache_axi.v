@@ -35,27 +35,30 @@ module iob_cache_axi #(
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input  [                             1-1:0] req,
-   input  [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
-   input  [                     FE_DATA_W-1:0] wdata,
-   input  [                     FE_NBYTES-1:0] wstrb,
-   output [                     FE_DATA_W-1:0] rdata,
-   output [                             1-1:0] ack,
+   input [ 1-1:0]                                     req,
+   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
+   input [ FE_DATA_W-1:0]                             wdata,
+   input [FE_NBYTES-1:0]                     wstrb,
+   output [ FE_DATA_W-1:0]                            rdata,
+   output                                             rvalid,
+   output                                             ready,
 
    // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_in,
-   output [1-1:0] invalidate_out,
-   input  [1-1:0] wtb_empty_in,
-   output [1-1:0] wtb_empty_out,
+   input [1-1:0]                                      invalidate_in,
+   output [1-1:0]                                     invalidate_out,
+   input [1-1:0]                                      wtb_empty_in,
+   output [1-1:0]                                     wtb_empty_out,
 
    // AXI4 back-end interface
    `include "iob_axi_m_port.vs"
    //General Interface Signals
-   input [1-1:0] clk_i,  //System clock input
-   input [1-1:0] rst_i   //System reset, asynchronous and active high
+   input [1-1:0]                                      clk_i, //System clock input
+   input [1-1:0]                                      rst_i   //System reset, asynchronous and active high
 );
 
-   //Front-end & Front-end interface.
+   wire                                               ack;
+
+  //Front-end & Front-end interface.
    wire data_req, data_ack;
    wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr;
    wire [FE_DATA_W-1 : 0] data_wdata, data_rdata;
@@ -89,6 +92,8 @@ module iob_cache_axi #(
       .wdata(wdata),
       .wstrb(wstrb),
       .rdata(rdata),
+      .rvalid(rvalid),
+      .ready(ready),
       .ack  (ack),
 
       // cache-memory input signals

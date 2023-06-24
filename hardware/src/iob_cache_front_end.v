@@ -12,31 +12,33 @@ module iob_cache_front_end #(
    parameter USE_CTRL_CNT = 0
 ) (
    // front-end port
-   input                           clk_i,
-   input                           reset,
-   input  [USE_CTRL + ADDR_W -1:0] addr,
-   input  [            DATA_W-1:0] wdata,
-   input  [            NBYTES-1:0] wstrb,
-   input                           req,
-   output [            DATA_W-1:0] rdata,
-   output                          ack,
+   input                                clk_i,
+   input                                reset,
+   input [USE_CTRL + ADDR_W -1:0]       addr,
+   input [ DATA_W-1:0]                  wdata,
+   input [ NBYTES-1:0]                  wstrb,
+   input                                req,
+   output [ DATA_W-1:0]                 rdata,
+   output                               ack,
+   output                               rvalid,
+   output                               ready,
 
    // internal input signals
-   output              data_req,
-   output [ADDR_W-1:0] data_addr,
-   input  [DATA_W-1:0] data_rdata,
-   input               data_ack,
+   output                               data_req,
+   output [ADDR_W-1:0]                  data_addr,
+   input [DATA_W-1:0]                   data_rdata,
+   input                                data_ack,
 
    // stored input signals
-   output reg              data_req_reg,
-   output reg [ADDR_W-1:0] data_addr_reg,
-   output reg [DATA_W-1:0] data_wdata_reg,
-   output reg [NBYTES-1:0] data_wstrb_reg,
+   output reg                           data_req_reg,
+   output reg [ADDR_W-1:0]              data_addr_reg,
+   output reg [DATA_W-1:0]              data_wdata_reg,
+   output reg [NBYTES-1:0]              data_wstrb_reg,
 
    // cache-control
    output                               ctrl_req,
    output [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr,
-   input  [      USE_CTRL*(DATA_W-1):0] ctrl_rdata,
+   input [ USE_CTRL*(DATA_W-1):0]       ctrl_rdata,
    input                                ctrl_ack
 );
 
@@ -83,4 +85,48 @@ module iob_cache_front_end #(
    assign data_addr = addr[ADDR_W-1 : 0];
    assign data_req  = data_req_int | data_req_reg;
 
+
+   //ctlr rvalid and ready
+   reg ctrl_rvalid;
+   always @(posedge clk_i, posedge reset) begin
+      if (reset) begin
+         ctrl_rvalid <= 0;
+      end else begin
+         ctrl_rvalid <= ctrl_req & !wstrb;
+      end
+   end
+   wire ctrl_ready = 1'b1;
+
+
+   // data rvalid and ready
+   reg last_access_was_read;
+
+   always @(posedge clk_i, posedge reset) begin
+      if (reset) begin
+         last_access_was_read <= 0;
+      end else begin
+         last_access_was_read <= data_req & !wstrb;
+      end
+   end
+
+   wire data_rvalid = last_access_was_read & ack;
+
+   // data ready is low if there was a request and it was not acked
+  //computed by a state machine that tracks when the request was made
+   reg data_ready, data_ready_nxt;
+   always @(posedge clk_i, posedge reset) begin
+      if (reset) begin
+         data_ready <= 1'b1;
+      end else begin
+         data_ready <= data_ready_nxt;
+      end
+   end
+
+   always @(*) begin
+      data_ready_nxt = ((data_req_reg | ~data_ready) & !data_ack) ? 1'b0 : 1'b1;
+   end
+
+   assign ready = ctrl_req & ctrl_ready | data_req & data_ready;
+   assign rvalid = ctrl_rvalid | data_rvalid;
+   
 endmodule
