@@ -124,8 +124,6 @@ module iob_cache_iob
       .WORD_OFFSET_W(WORD_OFFSET_W),
       .WRITE_POL    (WRITE_POL)
   ) back_end (
-      .clk_i         (clk_i),
-      .reset         (arst_i),
       // write-through-buffer (write-channel)
       .write_valid   (write_req),
       .write_addr_i  (write_addr),
@@ -140,34 +138,32 @@ module iob_cache_iob
       .read_addr_i   (read_addr),
       .read_rdata    (read_rdata),
       // back-end native interface
-      .be_valid_o      (be_avalid_o),
-      .be_addr_o     (be_addr_o),
-      .be_wdata_o      (be_wdata_o),
-      .be_wstrb_o      (be_wstrb_o),
-      .be_rdata_i      (be_rdata_i),
-      .be_ready_i      (be_ready_i),
+   `include "be_iob_m_portmap.vs"
+   `include "iob_clkrst_portmap.vs"
+
   );
 
   //Control block
   iob_cache_control #(
       .DATA_W(DATA_W),
       .ADDR_W(ADDR_W)
-  ) cache_control (
-      .clk_i  (clk_i),
-      .arst_i(rst_i),
-
-      // control's signals
-      .req_i  (ctrl_req_i),
-      .addr_i (ctrl_addr_i),
-      .rdata_o(ctrl_rdata_o),
-      .ack_o  (ctrl_ack_o),
-
-      // write data
-      .write_hit (write_hit),
-      .write_miss(write_miss),
-      .read_hit  (read_hit),
-      .read_miss (read_miss),
-      .invalidate(invalidate)
-  );
+  ) cache_control 
+    (
+     .clk_i  (clk_i),
+     .arst_i(arst_i),
+     
+     // control's signals
+     .req_i  (ctr_avalid_i),
+     .addr_i (ctrl_addr_i),
+     .rdata_o(ctrl_rdata_o),
+     .ack_o  (ctrl_ack_o),
+     
+     // write data
+     .write_hit (write_hit),
+     .write_miss(write_miss),
+     .read_hit  (read_hit),
+     .read_miss (read_miss),
+     .invalidate(invalidate)
+     );
 
 endmodule

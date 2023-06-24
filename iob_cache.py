@@ -18,6 +18,7 @@ from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
 from iob_tasks import iob_tasks
 from iob_clkrst_port import iob_clkrst_port
+from iob_clkrst_portmap import iob_clkrst_portmap
 
 
 class iob_cache(iob_module):
@@ -122,6 +123,17 @@ class iob_cache(iob_module):
             iob_module.generate(
                 {
                     "file_prefix": "be_",
+                    "interface": "iob_m_portmap",
+                    "wire_prefix": "be_",
+                    "port_prefix": "be_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                },
+                purpose="hardware",
+            )
+            iob_module.generate(
+                {
+                    "file_prefix": "be_",
                     "interface": "iob_m_port",
                     "wire_prefix": "be_",
                     "port_prefix": "be_",
@@ -130,7 +142,6 @@ class iob_cache(iob_module):
                 },
                 purpose="hardware",
             )
-
         if cls.BE_IF == "AXI4":
             # iob backend interface
             iob_module.generate(
@@ -157,6 +168,7 @@ class iob_cache(iob_module):
             iob_module.generate("axi_m_m_read_portmap")
 
         iob_clkrst_port.setup()
+        iob_clkrst_portmap.setup()
         iob_utils.setup()
         iob_clkenrst_port.setup()
         iob_regfile_sp.setup()
