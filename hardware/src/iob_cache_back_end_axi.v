@@ -31,7 +31,7 @@ module iob_cache_back_end_axi #(
 
    // cache-line replacement
    input                                     replace_valid,
-   input  [ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr,
+   input  [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr,
    output                                    replace,
    output                                    read_valid,
    output [                  LINE2BE_W -1:0] read_addr,
