@@ -180,25 +180,25 @@ module iob_cache_memory #(
 
          // buffer status
          assign wtbuf_full   = buffer_full;
-         assign wtbuf_empty  = buffer_empty & write_ack & ~write_req;
+         assign wtbuf_empty  = buffer_empty & write_ack & ~write_valid;
 
          // back-end write channel
-         assign write_req    = ~buffer_empty;
+         assign write_valid    = ~buffer_empty;
          assign write_addr   = buffer_dout[FE_NBYTES+FE_DATA_W+:FE_ADDR_W-FE_NBYTES_W];
          assign write_wdata  = buffer_dout[FE_NBYTES+:FE_DATA_W];
          assign write_wstrb  = buffer_dout[0+:FE_NBYTES];
 
          // back-end read channel
-         assign replace_req  = (~hit & read_access & ~replace) & (buffer_empty & write_ack);
+         assign replace_valid  = (~hit & read_access & ~replace) & (buffer_empty & write_ack);
          assign replace_addr = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
       end else begin : g_write_back
          // if (WRITE_POL == WRITE_BACK)
          // back-end write channel
          assign write_wstrb  = {FE_NBYTES{1'bx}};
-         // write_req, write_addr and write_wdata assigns are generated bellow (dependencies)
+         // write_valid, write_addr and write_wdata assigns are generated bellow (dependencies)
 
          // back-end read channel
-         assign replace_req  = (~|way_hit) & (write_ack) & req_reg & ~replace;
+         assign replace_valid  = (~|way_hit) & (write_ack) & valid_reg & ~replace;
          assign replace_addr = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
       end
    endgenerate
@@ -246,7 +246,7 @@ module iob_cache_memory #(
       if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH)
          assign ack = (hit & read_access) | (~buffer_full & write_access);
       else  // if (WRITE_POL == WRITE_BACK)
-         assign ack = hit & req_reg;
+         assign ack = hit & valid_reg;
    endgenerate
 
    // cache-control hit-miss counters enables
@@ -270,7 +270,7 @@ module iob_cache_memory #(
                   .ADDR_W(NLINES_W)
                ) cache_memory (
                   .clk_i(clk_i),
-                  .en(req),
+                  .en(valid),
                   .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
                   .addr((write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
                   .data_in((replace) ? read_rdata[i*FE_DATA_W+:FE_DATA_W] : wdata_reg),
@@ -285,7 +285,7 @@ module iob_cache_memory #(
          always @* begin
             if (replace) begin
                // line-replacement: read_addr indexes the words in cache-line
-               line_wstrb = {BE_NBYTES{read_req}} << (read_addr * BE_NBYTES);
+               line_wstrb = {BE_NBYTES{read_valid}} << (read_addr * BE_NBYTES);
             end else begin
                line_wstrb = (wstrb_reg & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
             end
@@ -294,7 +294,7 @@ module iob_cache_memory #(
          always @* begin
             if (replace) begin
                // line-replacement: mem's word replaces entire line
-               line_wstrb = {BE_NBYTES{read_req}};
+               line_wstrb = {BE_NBYTES{read_valid}};
             end else begin
                line_wstrb = (wstrb_reg & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
             end
@@ -309,7 +309,7 @@ module iob_cache_memory #(
          always @(posedge clk_i, posedge arst_i) begin
             if (arst_i) v_reg <= 0;
             else if (invalidate) v_reg <= 0;
-            else if (replace_req)
+            else if (replace_valid)
                v_reg <= v_reg | (1 << (way_select_bin * (2 ** NLINES_W) + index_reg));
             else v_reg <= v_reg;
          end
@@ -326,8 +326,8 @@ module iob_cache_memory #(
                .ADDR_W(NLINES_W)
             ) tag_memory (
                .clk_i (clk_i),
-               .en_i  (req),
-               .we_i  (way_select[k] & replace_req),
+               .en_i  (valid),
+               .we_i  (way_select[k] & replace_valid),
                .addr_i(index[NLINES_W-1:0]),
                .d_i   (tag),
                .d_o   (line_tag[TAG_W*k+:TAG_W])
@@ -380,7 +380,7 @@ module iob_cache_memory #(
             end
 
             // flush line
-            assign write_req = req_reg & ~(|way_hit) & (way_select == dirty); //flush if there is not a hit, and the way selected is dirty
+            assign write_valid = valid_reg & ~(|way_hit) & (way_select == dirty); //flush if there is not a hit, and the way selected is dirty
             wire [TAG_W-1:0] tag_flush = line_tag >> (way_select_bin * TAG_W);  //auxiliary wire
             assign write_addr = {
                tag_flush, index_reg
@@ -393,7 +393,7 @@ module iob_cache_memory #(
          always @(posedge clk_i, posedge arst_i) begin
             if (arst_i) v_reg <= 0;
             else if (invalidate) v_reg <= 0;
-            else if (replace_req) v_reg <= v_reg | (1 << index);
+            else if (replace_valid) v_reg <= v_reg | (1 << index);
             else v_reg <= v_reg;
          end
 
@@ -409,8 +409,8 @@ module iob_cache_memory #(
             .ADDR_W(NLINES_W)
          ) tag_memory (
             .clk_i (clk_i),
-            .en_i  (req),
-            .we_i  (replace_req),
+            .en_i  (valid),
+            .we_i  (replace_valid),
             .addr_i(index),
             .d_i   (tag),
             .d_o   (line_tag)
@@ -428,7 +428,7 @@ module iob_cache_memory #(
             always @(posedge clk_i, posedge arst_i) begin
                if (arst_i) begin
                   dirty_reg <= 0;
-               end else if (write_req) begin
+               end else if (write_valid) begin
                   // updates postion with 0
                   dirty_reg <= dirty_reg & ~(1 << (index_reg));
                end else if (write_access & hit) begin
@@ -443,7 +443,7 @@ module iob_cache_memory #(
 
             // flush line
             // flush if there is not a hit, and is dirty
-            assign write_req = write_access & ~(way_hit) & dirty;
+            assign write_valid = write_access & ~(way_hit) & dirty;
             assign write_addr = {
                line_tag, index
             };  // the position of the current block in cache (not of the access)

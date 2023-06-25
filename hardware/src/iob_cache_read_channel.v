@@ -14,20 +14,21 @@ module iob_cache_read_channel #(
    parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
-   input                                          clk_i,
-   input                                          reset,
-   input                                          replace_valid,
-   input      [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr,
-   output reg                                     replace,
-   output reg                                     read_valid,
-   output reg [                    LINE2BE_W-1:0] read_addr,
-   output     [                    BE_DATA_W-1:0] read_rdata,
+   input                                     clk_i,
+   input                                     reset,
+   input                                     replace_valid,
+   input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr,
+   output reg                                replace,
+   output reg                                read_valid,
+   output reg [ LINE2BE_W-1:0]               read_addr,
+   output [ BE_DATA_W-1:0]                   read_rdata,
 
    // Native memory interface
-   output     [BE_ADDR_W-1:0] be_addr,
-   output reg                 be_valid,
-   input                      be_ready,
-   input      [BE_DATA_W-1:0] be_rdata
+   output [BE_ADDR_W-1:0]                    be_addr,
+   output reg                                be_valid,
+   input                                     be_ready,
+   input                                     be_rvalid,
+   input [BE_DATA_W-1:0]                     be_rdata
 );
 
    generate
@@ -52,18 +53,18 @@ module iob_cache_read_channel #(
             end else begin
                case (state)
                   idle: begin
-                     if (replace_valid)  // main_process flag
+                     if (replace_valid && be_ready)  // main_process flag
                         state <= handshake;
                      else state <= idle;
                   end
                   handshake: begin
-                     if (be_ready)
+                     if (be_rvalid) begin
                         if (read_addr == {LINE2BE_W{1'b1}}) begin
                            state <= end_handshake;
                         end else begin
                            state <= handshake;
                         end
-                     else begin
+                     end else begin
                         state <= handshake;
                      end
                   end
@@ -86,9 +87,9 @@ module iob_cache_read_channel #(
                   replace = 1'b0;
                end
                handshake: begin
-                  be_valid     = ~be_ready | ~(&read_addr);
-                  word_counter = read_addr + be_ready;
-                  read_valid   = be_ready;
+                  be_valid     = ~be_rvalid | ~(&read_addr);
+                  word_counter = read_addr + be_rvalid;
+                  read_valid   = be_rvalid;
                end
                default: ;
             endcase
@@ -113,7 +114,7 @@ module iob_cache_read_channel #(
                      else state <= idle;
                   end
                   handshake: begin
-                     if (be_ready) state <= end_handshake;
+                     if (be_rvalid) state <= end_handshake;
                      else state <= handshake;
                   end
                   end_handshake: begin  // read-latency delay (last line word)
@@ -134,8 +135,8 @@ module iob_cache_read_channel #(
                   replace = 1'b0;
                end
                handshake: begin
-                  be_valid   = ~be_ready;
-                  read_valid = be_ready;
+                  be_valid   = ~be_rvalid;
+                  read_valid = be_rvalid;
                end
                default: ;
             endcase

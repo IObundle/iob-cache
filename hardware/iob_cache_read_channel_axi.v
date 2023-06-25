@@ -17,7 +17,7 @@ module iob_cache_read_channel_axi #(
    //derived parameters
    parameter                BE_NBYTES     = BE_DATA_W / 8,
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
    input                                       replace_valid,
    input      [ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr,

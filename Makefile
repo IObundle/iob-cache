@@ -1,4 +1,7 @@
 CORE := iob_cache
+
+DISABLE_LINT:=1
+
 include submodules/LIB/setup.mk
 
 #BE_IF ?= "AXI4"

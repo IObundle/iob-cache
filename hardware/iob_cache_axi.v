@@ -48,17 +48,19 @@ module iob_cache_axi #(
    input [1-1:0]                   arst_i   //System reset, asynchronous and active high
 );
 
-   //Front-end & Front-end interface.
-   wire data_req, data_ack;
+   wire                                               ack;
+
+  //Front-end & Front-end interface.
+   wire data_valid, data_ack;
    wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr;
    wire [FE_DATA_W-1 : 0] data_wdata, data_rdata;
    wire [             FE_NBYTES-1:0] data_wstrb;
    wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr_reg;
    wire [           FE_DATA_W-1 : 0] data_wdata_reg;
    wire [             FE_NBYTES-1:0] data_wstrb_reg;
-   wire                              data_req_reg;
+   wire                              data_valid_reg;
 
-   wire ctrl_req, ctrl_ack;
+   wire ctrl_valid, ctrl_ack;
    wire [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr;
    wire [FE_DATA_W-1:0] ctrl_rdata;
    wire                               ctrl_invalidate;
@@ -76,15 +78,17 @@ module iob_cache_axi #(
       .reset(arst_i),
 
       // front-end port
-      .req  (req),
+      .valid  (valid),
       .addr (addr),
       .wdata(wdata),
       .wstrb(wstrb),
       .rdata(rdata),
+      .rvalid(rvalid),
+      .ready(ready),
       .ack  (ack),
 
       // cache-memory input signals
-      .data_req (data_req),
+      .data_valid (data_valid),
       .data_addr(data_addr),
 
       // cache-memory output
@@ -92,13 +96,13 @@ module iob_cache_axi #(
       .data_ack  (data_ack),
 
       // stored input signals
-      .data_req_reg  (data_req_reg),
+      .data_valid_reg  (data_valid_reg),
       .data_addr_reg (data_addr_reg),
       .data_wdata_reg(data_wdata_reg),
       .data_wstrb_reg(data_wstrb_reg),
 
       // cache-controller
-      .ctrl_req  (ctrl_req),
+      .ctrl_valid  (ctrl_valid),
       .ctrl_addr (ctrl_addr),
       .ctrl_rdata(ctrl_rdata),
       .ctrl_ack  (ctrl_ack)
@@ -108,21 +112,21 @@ module iob_cache_axi #(
    wire write_hit, write_miss, read_hit, read_miss;
 
    // back-end write-channel
-   wire write_req, write_ack;
+   wire write_valid, write_ack;
    wire [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
    wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata;
    wire [                                                       FE_NBYTES-1:0] write_wstrb;
 
    // back-end read-channel
-   wire replace_req, replace;
+   wire replace_valid, replace;
    wire [FE_ADDR_W -1 : BE_NBYTES_W+LINE2BE_W] replace_addr;
-   wire                                        read_req;
+   wire                                        read_valid;
    wire [                       LINE2BE_W-1:0] read_addr;
    wire [                       BE_DATA_W-1:0] read_rdata;
 
    iob_cache_memory #(
-      .ADDR_W       (FE_ADDR_W),
-      .DATA_W       (FE_DATA_W),
+      .FE_ADDR_W       (FE_ADDR_W),
+      .FE_DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .NWAYS_W      (NWAYS_W),
@@ -136,28 +140,28 @@ module iob_cache_axi #(
       .reset(arst_i),
 
       // front-end
-      .req      (data_req),
+      .valid      (data_valid),
       .addr     (data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
       .rdata    (data_rdata),
       .ack      (data_ack),
-      .req_reg  (data_req_reg),
+      .valid_reg  (data_valid_reg),
       .addr_reg (data_addr_reg),
       .wdata_reg(data_wdata_reg),
       .wstrb_reg(data_wstrb_reg),
 
       // back-end
       // write-through-buffer (write-channel)
-      .write_req  (write_req),
+      .write_valid  (write_valid),
       .write_addr (write_addr),
       .write_wdata(write_wdata),
       .write_wstrb(write_wstrb),
       .write_ack  (write_ack),
 
       // cache-line replacement (read-channel)
-      .replace_req (replace_req),
+      .replace_valid (replace_valid),
       .replace_addr(replace_addr),
       .replace     (replace),
-      .read_req    (read_req),
+      .read_valid    (read_valid),
       .read_addr   (read_addr),
       .read_rdata  (read_rdata),
 
@@ -173,8 +177,8 @@ module iob_cache_axi #(
 
    //Back-end interface & This block interfaces with the system level or next-level cache.
    iob_cache_back_end_axi #(
-      .ADDR_W       (FE_ADDR_W),
-      .DATA_W       (FE_DATA_W),
+      .FE_ADDR_W       (FE_ADDR_W),
+      .FE_DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W),
@@ -186,17 +190,17 @@ module iob_cache_axi #(
       .AXI_ID       (AXI_ID)
    ) back_end_axi (
       // write-through-buffer (write-channel)
-      .write_valid(write_req),
+      .write_valid(write_valid),
       .write_addr (write_addr),
       .write_wdata(write_wdata),
       .write_wstrb(write_wstrb),
       .write_ready(write_ack),
 
       // cache-line replacement (read-channel)
-      .replace_valid(replace_req),
+      .replace_valid(replace_valid),
       .replace_addr (replace_addr),
       .replace      (replace),
-      .read_valid   (read_req),
+      .read_valid   (read_valid),
       .read_addr    (read_addr),
       .read_rdata   (read_rdata),
 
@@ -215,7 +219,7 @@ module iob_cache_axi #(
             .reset(arst_i),
 
             // control's signals
-            .valid(ctrl_req),
+            .valid(ctrl_valid),
             .addr (ctrl_addr),
 
             // write data
