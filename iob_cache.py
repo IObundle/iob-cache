@@ -19,6 +19,7 @@ from iob_ram_sp_be import iob_ram_sp_be
 from iob_tasks import iob_tasks
 from iob_clkrst_port import iob_clkrst_port
 from iob_clkrst_portmap import iob_clkrst_portmap
+from iob_clkenrst_portmap import iob_clkenrst_portmap
 
 
 class iob_cache(iob_module):
@@ -93,17 +94,7 @@ class iob_cache(iob_module):
         # Hardware modules and snippets
 
         # iob control interface
-        iob_module.generate(
-            {
-                "file_prefix": "ctr_",
-                "interface": "iob_s_port",
-                "wire_prefix": "ctr_",
-                "port_prefix": "ctr_",
-                "bus_start": 0,
-                "bus_size": 1,
-            },
-            purpose="hardware",
-        )
+        iob_module.generate("iob_s_port")
 
         # iob frontend interface
         iob_module.generate(
@@ -169,6 +160,7 @@ class iob_cache(iob_module):
 
         iob_clkrst_port.setup()
         iob_clkrst_portmap.setup()
+        iob_clkenrst_portmap.setup()
         iob_utils.setup()
         iob_clkenrst_port.setup()
         iob_regfile_sp.setup()
@@ -495,9 +487,9 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 0,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Write-through buffer empty (1) or non-empty (0).",
                     },
                     {
@@ -505,39 +497,19 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 1,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Write-through buffer full (1) or non-full (0).",
-                    },
-                    {
-                        "name": "RW_HIT",
-                        "type": "R",
-                        "n_bits": 32,
-                        "rst_val": 0,
-                        "addr": 4,
-                        "log2n_items": 0,
-                        "autologic": False,
-                        "descr": "Read and write hit counter.",
-                    },
-                    {
-                        "name": "RW_MISS",
-                        "type": "R",
-                        "n_bits": 32,
-                        "rst_val": 0,
-                        "addr": 8,
-                        "log2n_items": 0,
-                        "autologic": False,
-                        "descr": "Read and write miss counter.",
                     },
                     {
                         "name": "READ_HIT",
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 12,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Read hit counter.",
                     },
                     {
@@ -545,9 +517,9 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 16,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Read miss counter.",
                     },
                     {
@@ -555,9 +527,9 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 20,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Write hit counter.",
                     },
                     {
@@ -565,9 +537,9 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 24,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Write miss counter.",
                     },
                     {
@@ -575,9 +547,9 @@ class iob_cache(iob_module):
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 28,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Reset read/write hit/miss counters by writing any value to this register.",
                     },
                     {
@@ -585,9 +557,9 @@ class iob_cache(iob_module):
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 32,
+                        "addr": -1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autologic": True,
                         "descr": "Invalidate the cache data contents by writing any value to this register.",
                     },
                 ],

@@ -31,7 +31,7 @@ module iob_cache_iob
     parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
     // Control interface
-    `include "ctr_iob_s_port.vs"
+    `include "iob_s_port.vs"
 
     // Front-end interface (IOb native slave)
     `include "fe_iob_s_port.vs"
@@ -69,10 +69,18 @@ module iob_cache_iob
   wire [                     BE_DATA_W-1:0] read_rdata;
 
 
-  wire wtbuf_empty;
-  wire wtbuf_full;
-  wire invalidate;
+   wire                                     wtbuf_empty;
+   wire wtbuf_full;
+   wire invalidate;
 
+   
+   wire [DATA_W-1:0] read_hit_cnt;
+   wire [DATA_W-1:0] read_miss_cnt;
+   wire [DATA_W-1:0] write_hit_cnt;
+   wire [DATA_W-1:0] write_miss_cnt;
+   
+`include "iob_cache_swreg_inst.vs"
+   
   iob_cache_memory #(
       .FE_ADDR_W    (FE_ADDR_W),
       .FE_DATA_W    (FE_DATA_W),
@@ -152,18 +160,18 @@ module iob_cache_iob
      .clk_i  (clk_i),
      .arst_i(arst_i),
      
-     // control's signals
-     .req_i  (ctr_avalid_i),
-     .addr_i (ctrl_addr_i),
-     .rdata_o(ctrl_rdata_o),
-     .ack_o  (ctrl_ack_o),
-     
      // write data
-     .write_hit (write_hit),
-     .write_miss(write_miss),
-     .read_hit  (read_hit),
-     .read_miss (read_miss),
-     .invalidate(invalidate)
+     .write_hit_i (write_hit),
+     .write_miss_i(write_miss),
+     .read_hit_i  (read_hit),
+     .read_miss_i (read_miss),
+     .invalidate_i(invalidate),
+
+     .read_hit_cnt_o (read_hit_cnt),
+     .read_miss_cnt_o(read_miss_cnt),
+     .write_hit_cnt_o(write_hit_cnt),
+     .write_miss_cnt_o(write_miss_cnt)
+     
      );
 
 endmodule

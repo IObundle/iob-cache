@@ -55,7 +55,7 @@ module iob_cache_memory #(
    output                                                                        write_hit_o,
    output                                                                        write_miss_o,
    output                                                                        read_hit_o,
-   output                                                                        read_miss_o,
+   output                                                                        read_miss_o
 );
 
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
