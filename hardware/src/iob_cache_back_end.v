@@ -24,7 +24,7 @@ module iob_cache_back_end #(
    input  [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr,
    input  [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata,
    input  [                                                       FE_NBYTES-1:0] write_wstrb,
-   output                                                                        write_ready,
+   output                                                                        write_ack,
 
    // cache-line replacement
    input                                        replace_valid,
@@ -40,6 +40,7 @@ module iob_cache_back_end #(
    output [ BE_DATA_W-1:0] be_wdata,
    output [ BE_NBYTES-1:0] be_wstrb,
    input  [ BE_DATA_W-1:0] be_rdata,
+   input                   be_rvalid,
    input                   be_ready
 );
 
@@ -66,6 +67,7 @@ module iob_cache_back_end #(
       .read_rdata   (read_rdata),
       .be_addr      (be_addr_read),
       .be_valid     (be_valid_read),
+      .be_rvalid    (be_rvalid),
       .be_ready     (be_ready),
       .be_rdata     (be_rdata)
    );
@@ -85,7 +87,7 @@ module iob_cache_back_end #(
       .addr (write_addr),
       .wstrb(write_wstrb),
       .wdata(write_wdata),
-      .ready(write_ready),
+      .wack(write_ack),
 
       .be_addr (be_addr_write),
       .be_valid(be_valid_write),

@@ -25,7 +25,7 @@ module iob_cache_write_channel #(
    input [ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr,
    input [FE_NBYTES-1:0] wstrb,
    input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1:0] wdata, // try [DATA_W*((2**WORD_OFFSET_W)**WRITE_POL)-1:0] (f(x)=a*b^x)
-   output reg ready,
+   output reg wack,
 
    // Native Memory interface
    output     [BE_ADDR_W -1:0] be_addr,
@@ -90,14 +90,14 @@ module iob_cache_write_channel #(
          end
 
          always @* begin
-            ready    = 1'b0;
+            wack    = 1'b0;
             be_valid = 1'b0;
 
             case (state)
-               idle: ready = 1'b1;
+               idle: wack = 1'b1;
                default: begin  // write
                   be_valid = ~be_ready;
-                  ready    = be_ready;
+                  wack    = be_ready;
                end
             endcase
          end
@@ -133,19 +133,19 @@ module iob_cache_write_channel #(
             end
 
             always @* begin
-               ready        = 1'b0;
+               wack        = 1'b0;
                be_valid     = 1'b0;
                be_wstrb     = 0;
                word_counter = 0;
 
                case (state)
                   idle: begin
-                     ready = ~valid;
+                     wack = ~valid;
                      if (valid) be_wstrb = {BE_NBYTES{1'b1}};
                      else be_wstrb = 0;
                   end
                   default: begin  // write
-                     ready        = be_ready & (&word_counter);  // last word transfered
+                     wack        = be_ready & (&word_counter);  // last word transfered
                      be_valid     = ~(be_ready & (&word_counter));
                      be_wstrb     = {BE_NBYTES{1'b1}};
                      word_counter = word_counter_reg + be_ready;
@@ -179,18 +179,18 @@ module iob_cache_write_channel #(
             end
 
             always @* begin
-               ready    = 1'b0;
+               wack    = 1'b0;
                be_valid = 1'b0;
                be_wstrb = 0;
 
                case (state)
                   idle: begin
-                     ready = ~valid;
+                     wack = ~valid;
                      if (valid) be_wstrb = {BE_NBYTES{1'b1}};
                      else be_wstrb = 0;
                   end
                   default: begin  // write
-                     ready    = be_ready;
+                     wack    = be_ready;
                      be_valid = ~be_ready;
                      be_wstrb = {BE_NBYTES{1'b1}};
                   end

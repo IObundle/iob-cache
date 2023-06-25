@@ -24,7 +24,7 @@ module iob_cache_iob #(
    parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input [ 1-1:0]                             req,
+   input [ 1-1:0]                             valid,
    input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
    input [ FE_DATA_W-1:0]                     wdata,
    input [ FE_NBYTES-1:0]                     wstrb,
@@ -33,12 +33,13 @@ module iob_cache_iob #(
    output                                     ready,
 
    // Back-end interface
-   output [ 1-1:0]                            be_req,
+   output [ 1-1:0]                            be_valid,
    output [ BE_ADDR_W-1:0]                    be_addr,
    output [ BE_DATA_W-1:0]                    be_wdata,
    output [ BE_NBYTES-1:0]                    be_wstrb,
    input [ BE_DATA_W-1:0]                     be_rdata,
-   input [ 1-1:0]                             be_ack,
+   input [ 1-1:0]                             be_rvalid,
+   input [ 1-1:0]                             be_ready,
 
    // Cache invalidate and write-trough buffer IO chain
    input [1-1:0]                              invalidate_in,
@@ -54,17 +55,17 @@ module iob_cache_iob #(
    wire                                               ack;
    
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
-   wire data_req, data_ack;
+   wire data_valid, data_ack;
    wire [FE_ADDR_W -1:FE_NBYTES_W] data_addr;
    wire [FE_DATA_W-1 : 0] data_wdata, data_rdata;
    wire [           FE_NBYTES-1:0] data_wstrb;
    wire [FE_ADDR_W -1:FE_NBYTES_W] data_addr_reg;
    wire [                 FE_DATA_W-1 : 0] data_wdata_reg;
    wire [           FE_NBYTES-1:0] data_wstrb_reg;
-   wire                                    data_req_reg;
+   wire                                    data_valid_reg;
    
 
-   wire                                    ctrl_req, ctrl_ack;
+   wire                                    ctrl_valid, ctrl_ack;
    wire [`IOB_CACHE_SWREG_ADDR_W-1:0]      ctrl_addr;
    wire [   USE_CTRL*(FE_DATA_W-1):0]      ctrl_rdata;
    wire                                    ctrl_invalidate;
@@ -74,15 +75,6 @@ module iob_cache_iob #(
    assign invalidate_out = ctrl_invalidate | invalidate_in;
    assign wtb_empty_out  = wtbuf_empty & wtb_empty_in;
 
-
-   generate 
-      if (USE_CTRL != 0)
-        assign ctrl_req = req & addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1];
-      else
-        assign ctrl_req = 1'b0;
-   endgenerate
-   
-  
    iob_cache_front_end #(
       .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
       .DATA_W  (FE_DATA_W),
@@ -92,7 +84,7 @@ module iob_cache_iob #(
       .reset(rst_i),
 
       // front-end port
-      .req  (req),
+      .valid  (valid),
       .addr (addr),
       .wdata(wdata),
       .wstrb(wstrb),
@@ -102,7 +94,7 @@ module iob_cache_iob #(
       .ack  (ack),
 
       // cache-memory input signals
-      .data_req (data_req),
+      .data_valid (data_valid),
       .data_addr(data_addr),
 
       // cache-memory output
@@ -110,13 +102,13 @@ module iob_cache_iob #(
       .data_ack  (data_ack),
 
       // stored input signals
-      .data_req_reg  (data_req_reg),
+      .data_valid_reg  (data_valid_reg),
       .data_addr_reg (data_addr_reg),
       .data_wdata_reg(data_wdata_reg),
       .data_wstrb_reg(data_wstrb_reg),
 
       // cache-controller
-      .ctrl_req  (ctrl_req),
+      .ctrl_valid  (ctrl_valid),
       .ctrl_addr (ctrl_addr),
       .ctrl_rdata(ctrl_rdata),
       .ctrl_ack  (ctrl_ack)
@@ -126,15 +118,15 @@ module iob_cache_iob #(
    wire write_hit, write_miss, read_hit, read_miss;
 
    // back-end write-channel
-   wire write_req, write_ack;
+   wire write_valid, write_ack;
    wire [                   FE_ADDR_W-1:FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
    wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata;
    wire [                                                       FE_NBYTES-1:0] write_wstrb;
 
    // back-end read-channel
-   wire replace_req, replace;
+   wire replace_valid, replace;
    wire [FE_ADDR_W -1:BE_NBYTES_W+LINE2BE_W] replace_addr;
-   wire                                      read_req;
+   wire                                      read_valid;
    wire [                     LINE2BE_W-1:0] read_addr;
    wire [                     BE_DATA_W-1:0] read_rdata;
 
@@ -155,28 +147,28 @@ module iob_cache_iob #(
       .reset(rst_i),
 
       // front-end
-      .req      (data_req),
+      .valid      (data_valid),
       .addr     (data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
       .rdata    (data_rdata),
       .ack      (data_ack),
-      .req_reg  (data_req_reg),
+      .valid_reg  (data_valid_reg),
       .addr_reg (data_addr_reg),
       .wdata_reg(data_wdata_reg),
       .wstrb_reg(data_wstrb_reg),
 
       // back-end
       // write-through-buffer (write-channel)
-      .write_req  (write_req),
+      .write_valid  (write_valid),
       .write_addr (write_addr),
       .write_wdata(write_wdata),
       .write_wstrb(write_wstrb),
       .write_ack  (write_ack),
 
       // cache-line replacement (read-channel)
-      .replace_req (replace_req),
+      .replace_valid (replace_valid),
       .replace_addr(replace_addr),
       .replace     (replace),
-      .read_req    (read_req),
+      .read_valid    (read_valid),
       .read_addr   (read_addr),
       .read_rdata  (read_rdata),
 
@@ -203,27 +195,29 @@ module iob_cache_iob #(
       .reset(rst_i),
 
       // write-through-buffer (write-channel)
-      .write_valid(write_req),
+      .write_valid(write_valid),
       .write_addr (write_addr),
       .write_wdata(write_wdata),
       .write_wstrb(write_wstrb),
-      .write_ready(write_ack),
+      .write_ack(write_ack),
 
       // cache-line replacement (read-channel)
-      .replace_valid(replace_req),
+      .replace_valid(replace_valid),
       .replace_addr (replace_addr),
       .replace      (replace),
-      .read_valid   (read_req),
+      .read_valid   (read_valid),
       .read_addr    (read_addr),
       .read_rdata   (read_rdata),
 
       // back-end native interface
-      .be_valid(be_req),
+      .be_valid(be_valid),
       .be_addr (be_addr),
       .be_wdata(be_wdata),
       .be_wstrb(be_wstrb),
       .be_rdata(be_rdata),
-      .be_ready(be_ack)
+      .be_ready(be_ready),
+      .be_rvalid(be_rvalid)
+
    );
 
    //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
@@ -237,7 +231,7 @@ module iob_cache_iob #(
             .reset(rst_i),
 
             // control's signals
-            .valid(ctrl_req),
+            .valid(ctrl_valid),
             .addr (ctrl_addr),
 
             // write data

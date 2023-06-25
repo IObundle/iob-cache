@@ -31,22 +31,23 @@ module iob_cache_sim_wrapper #(
    parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT
 ) (
    // Front-end interface (IOb native slave)
-   input  [                          1-1:0] req,
-   input  [USE_CTRL+ADDR_W-FE_NBYTES_W-1:0] addr,
-   input  [                     DATA_W-1:0] wdata,
-   input  [                  FE_NBYTES-1:0] wstrb,
-   output [                     DATA_W-1:0] rdata,
-   output [                          1-1:0] ack,
+   input [ 1-1:0]                             valid,
+   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
+   input [ DATA_W-1:0]                        wdata,
+   input [ FE_NBYTES-1:0]                     wstrb,
+   output [ DATA_W-1:0]                       rdata,
+   output [ 1-1:0]                            rvalid,
+   output [ 1-1:0]                            ready,
 
    // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_in,
-   output [1-1:0] invalidate_out,
-   input  [1-1:0] wtb_empty_in,
-   output [1-1:0] wtb_empty_out,
+   input [1-1:0]                              invalidate_in,
+   output [1-1:0]                             invalidate_out,
+   input [1-1:0]                              wtb_empty_in,
+   output [1-1:0]                             wtb_empty_out,
 
    //General Interface Signals
-   input [1-1:0] clk_i,  //V2TEX_IO System clock input.
-   input [1-1:0] rst_i   //V2TEX_IO System reset, active high.
+   input [1-1:0]                              clk_i, //V2TEX_IO System clock input.
+   input [1-1:0]                              rst_i   //V2TEX_IO System reset, active high.
 );
 
 `ifdef AXI
@@ -59,9 +60,9 @@ module iob_cache_sim_wrapper #(
       .addr (addr),
       .wstrb(wstrb),
       .rdata(rdata),
-      .req  (req),
-               .rvalid(rvalid),
-               .ready(ready),
+      .valid (valid),
+      .rvalid(rvalid),
+      .ready(ready),
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -71,18 +72,13 @@ module iob_cache_sim_wrapper #(
 
       `include "iob_cache_axi_m_portmap.vh"
 
-      .be_addr (be_addr),
-      .be_wdata(be_wdata),
-      .be_wstrb(be_wstrb),
-      .be_rdata(be_rdata),
-      .be_req  (be_req),
       .be_ack  (be_ack),
       .clk_i   (clk_i),
       .rst_i   (rst_i)
    );
 `else
-   wire                   be_req;
-   reg                    be_ack;
+   wire                   be_valid;
+   reg                    be_rvalid;
    wire [  BE_ADDR_W-1:0] be_addr;
    wire [  BE_DATA_W-1:0] be_wdata;
    wire [BE_DATA_W/8-1:0] be_wstrb;
@@ -90,13 +86,13 @@ module iob_cache_sim_wrapper #(
 
    iob_cache_iob  cache (
       //front-end
+      .valid  (valid),
       .wdata(wdata),
       .addr (addr),
       .wstrb(wstrb),
       .rdata(rdata),
-      .req  (req),
-               .rvalid(rvalid),
-               .ready(ready),
+      .rvalid(rvalid),
+      .ready(ready),
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -104,13 +100,13 @@ module iob_cache_sim_wrapper #(
       .wtb_empty_in  (1'b1),
       .wtb_empty_out (),
 
+      .be_valid  (be_valid),
       .be_addr (be_addr),
       .be_wdata(be_wdata),
       .be_wstrb(be_wstrb),
       .be_rdata(be_rdata),
-      .be_req  (be_req),
-      .be_ack  (be_ack),
-
+      .be_rvalid  (be_rvalid),
+      .be_ready (1'b1),
       .clk_i   (clk_i),
       .rst_i   (rst_i)
    );
@@ -133,7 +129,7 @@ module iob_cache_sim_wrapper #(
       .ADDR_W(BE_ADDR_W)
    ) native_ram (
       .clk_i (clk_i),
-      .en_i  (be_req),
+      .en_i  (be_valid),
       .we_i  (be_wstrb),
       .addr_i(be_addr),
       .d_o   (be_rdata),
@@ -141,8 +137,11 @@ module iob_cache_sim_wrapper #(
    );
 
    always @(posedge clk_i, posedge rst_i)
-      if (rst_i) be_ack <= 1'b0;
-      else be_ack <= be_req;
+      if (rst_i) begin
+         be_rvalid <= 1'b0;
+      end else begin
+         be_rvalid <= !wstrb && be_valid;
+      end
 `endif
 
 endmodule
