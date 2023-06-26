@@ -133,8 +133,8 @@ module iob_cache_axi #(
    wire [                       BE_DATA_W-1:0] read_rdata;
 
    iob_cache_memory #(
-      .FE_ADDR_W       (FE_ADDR_W),
-      .FE_DATA_W       (FE_DATA_W),
+      .FE_ADDR_W    (FE_ADDR_W),
+      .FE_DATA_W    (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .NWAYS_W      (NWAYS_W),
@@ -187,8 +187,8 @@ module iob_cache_axi #(
 
    //Back-end interface & This block interfaces with the system level or next-level cache.
    iob_cache_back_end_axi #(
-      .FE_ADDR_W       (FE_ADDR_W),
-      .FE_DATA_W       (FE_DATA_W),
+      .FE_ADDR_W    (FE_ADDR_W),
+      .FE_DATA_W    (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W),

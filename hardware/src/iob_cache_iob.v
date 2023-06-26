@@ -222,7 +222,6 @@ module iob_cache_iob #(
    //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
    generate
       if (USE_CTRL) begin : g_ctrl
-         assign ctrl_req = avalid & addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1];
          iob_cache_control #(
             .DATA_W      (FE_DATA_W),
             .USE_CTRL_CNT(USE_CTRL_CNT)
@@ -248,7 +247,6 @@ module iob_cache_iob #(
          );
       end
       else begin : g_no_ctrl
-         assign ctrl_req        = 1'b0;
          assign ctrl_rdata      = 1'bx;
          assign ctrl_ack        = 1'bx;
          assign ctrl_invalidate = 1'b0;
