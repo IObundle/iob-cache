@@ -84,7 +84,7 @@ module iob_cache_axi #(
    ) front_end (
       .clk_i(clk_i),
       .cke_i(cke_i),
-      .reset(arst_i),
+      .arst_i(arst_i),
 
       // front-end port
       .avalid(avalid),
