@@ -51,7 +51,7 @@ module iob_cache_replacement_policy #(
          ) mru_memory  // simply uses the same format as valid memory
          (
             .clk_i(clk_i),
-            .rst_i(reset),
+            .arst_i(reset),
 
             .we_i    (write_en),
             .addr_i  (line_addr),
@@ -82,7 +82,7 @@ module iob_cache_replacement_policy #(
          ) mru_memory  // simply uses the same format as valid memory
          (
             .clk_i(clk_i),
-            .rst_i(reset),
+            .arst_i(reset),
 
             .we_i    (write_en),
             .addr_i  (line_addr),
@@ -147,7 +147,7 @@ module iob_cache_replacement_policy #(
          ) mru_memory  // simply uses the same format as valid memory
          (
             .clk_i(clk_i),
-            .rst_i(reset),
+            .arst_i(reset),
 
             .we_i    (write_en),
             .addr_i  (line_addr),
