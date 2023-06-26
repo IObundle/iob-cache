@@ -9,7 +9,12 @@ from setup import setup
 # Submodules
 from iob_lib import iob_lib
 from iob_utils import iob_utils
+
+from iob_clkrst_port import iob_clkrst_port
+from iob_clkrst_portmap import iob_clkrst_portmap
 from iob_clkenrst_port import iob_clkenrst_port
+from iob_clkenrst_portmap import iob_clkenrst_portmap
+
 from iob_regfile_sp import iob_regfile_sp
 from iob_fifo_sync import iob_fifo_sync
 from iob_ram_2p import iob_ram_2p
@@ -17,9 +22,8 @@ from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
 from iob_tasks import iob_tasks
-from iob_clkrst_port import iob_clkrst_port
-from iob_clkrst_portmap import iob_clkrst_portmap
-from iob_clkenrst_portmap import iob_clkenrst_portmap
+
+from iob_reg_e import iob_reg_e
 
 
 class iob_cache(iob_module):
@@ -96,32 +100,9 @@ class iob_cache(iob_module):
         # iob control interface
         iob_module.generate("iob_s_port")
 
-        # iob frontend interface
-        iob_module.generate(
-            {
-                "file_prefix": "fe_",
-                "interface": "iob_s_port",
-                "wire_prefix": "fe_",
-                "port_prefix": "fe_",
-                "bus_start": 0,
-                "bus_size": 1,
-            },
-            purpose="hardware",
-        )
-
         if cls.BE_IF == "IOb":
+            iob_module.generate("iob_wire")
             # iob backend interface
-            iob_module.generate(
-                {
-                    "file_prefix": "be_",
-                    "interface": "iob_m_portmap",
-                    "wire_prefix": "be_",
-                    "port_prefix": "be_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                },
-                purpose="hardware",
-            )
             iob_module.generate(
                 {
                     "file_prefix": "be_",
@@ -133,6 +114,56 @@ class iob_cache(iob_module):
                 },
                 purpose="hardware",
             )
+            iob_module.generate(
+                {
+                    "file_prefix": "be_",
+                    "interface": "iob_m_portmap",
+                    "wire_prefix": "be_",
+                    "port_prefix": "be_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                },
+                purpose="hardware",
+            )
+
+            # Simulation modules & snippets
+            iob_module.generate("iob_m_tb_wire")
+            iob_module.generate(
+                {
+                    "file_prefix": "fe_",
+                    "interface": "iob_m_tb_wire",
+                    "wire_prefix": "fe_",
+                    "port_prefix": "fe_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                },
+                purpose="simulation",
+            )
+            iob_module.generate(
+                {
+                    "file_prefix": "fe_",
+                    "interface": "iob_s_portmap",
+                    "wire_prefix": "fe_",
+                    "port_prefix": "fe_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                },
+            )
+            iob_module.generate(
+                # not yet used as DATA_W is always 32
+                {
+                    "file_prefix": "be_",
+                    "interface": "iob_s_tb_wire",
+                    "wire_prefix": "be_",
+                    "port_prefix": "be_",
+                    "bus_start": 0,
+                    "bus_size": 1,
+                },
+                purpose="simulation",
+            )
+            iob_tasks.setup(purpose="simulation")
+            iob_ram_sp_be.setup(purpose="simulation")
+
         if cls.BE_IF == "AXI4":
             # iob backend interface
             iob_module.generate(
@@ -157,24 +188,22 @@ class iob_cache(iob_module):
             iob_module.generate("axi_m_read_port")
             iob_module.generate("axi_m_m_write_portmap")
             iob_module.generate("axi_m_m_read_portmap")
+            # Simulation modules & snippets
+            iob_module.generate("axi_s_portmap")
+            iob_module.generate("axi_wire", purpose="simulation")
+
+        iob_utils.setup()
 
         iob_clkrst_port.setup()
         iob_clkrst_portmap.setup()
-        iob_clkenrst_portmap.setup()
-        iob_utils.setup()
         iob_clkenrst_port.setup()
+        iob_clkenrst_portmap.setup()
         iob_regfile_sp.setup()
         iob_fifo_sync.setup()
         iob_ram_2p.setup()
         iob_ram_sp.setup()
         iob_reg.setup()
-
-        # Simulation headers & modules
-        iob_module.generate("iob_m_tb_wire")
-        iob_module.generate("axi_s_portmap")
-        iob_module.generate("axi_wire", purpose="simulation")
-        iob_tasks.setup(purpose="simulation")
-        iob_ram_sp_be.setup(purpose="simulation")
+        iob_reg_e.setup()
 
         # Verilog modules instances
         # TODO
@@ -196,64 +225,6 @@ class iob_cache(iob_module):
             [
                 # Macros
                 # Replacement Policy
-                {
-                    "name": "LRU",
-                    "type": "M",
-                    "val": "0",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters",
-                },
-                {
-                    "name": "PLRU_MRU",
-                    "type": "M",
-                    "val": "1",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line",
-                },
-                {
-                    "name": "PLRU_TREE",
-                    "type": "M",
-                    "val": "2",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line",
-                },
-                # Write Policy
-                {
-                    "name": "WRITE_THROUGH",
-                    "type": "M",
-                    "val": "0",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "write-through not allocate: implements a write-through buffer",
-                },
-                {
-                    "name": "WRITE_BACK",
-                    "type": "M",
-                    "val": "1",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "write-back allocate: implementes a dirty-memory",
-                },
-                # Swreg_gen parameters
-                {
-                    "name": "ADDR_W",
-                    "type": "P",
-                    "val": "`IOB_CACHE_SWREG_ADDR_W",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Cache address width used by swreg_gen",
-                },
-                {
-                    "name": "DATA_W",
-                    "type": "P",
-                    "val": "32",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Cache data width used by swreg_gen",
-                },
                 {
                     "name": "FE_ADDR_W",
                     "type": "P",
@@ -286,6 +257,7 @@ class iob_cache(iob_module):
                     "max": "256",
                     "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
                 },
+                # cache parameters
                 {
                     "name": "NWAYS_W",
                     "type": "P",
@@ -318,6 +290,7 @@ class iob_cache(iob_module):
                     "max": "",
                     "descr": "Write-through buffer depth (log2). A shallow buffer will fill up more frequently and cause write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty faster, decreasing the duration of the read stall. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty and cause long read stalls.",
                 },
+                # replacement policy
                 {
                     "name": "REP_POLICY",
                     "type": "P",
@@ -327,12 +300,69 @@ class iob_cache(iob_module):
                     "descr": "Line replacement policy: set to 0 for Least Recently Used (LRU); set to 1 for Pseudo LRU based on Most Recently Used (PLRU_MRU); set to 2 for tree-based Pseudo LRU (PLRU_TREE).",
                 },
                 {
+                    "name": "LRU",
+                    "type": "M",
+                    "val": "0",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters",
+                },
+                {
+                    "name": "PLRU_MRU",
+                    "type": "M",
+                    "val": "1",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line",
+                },
+                {
+                    "name": "PLRU_TREE",
+                    "type": "M",
+                    "val": "2",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line",
+                },
+                # Write Policy
+                {
                     "name": "WRITE_POL",
                     "type": "P",
                     "val": "0 ",
                     "min": "0",
                     "max": "1",
                     "descr": "Write policy: set to 0 for write-through or set to 1 for write-back.",
+                },
+                {
+                    "name": "WRITE_THROUGH",
+                    "type": "M",
+                    "val": "0",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "write-through not allocate: implements a write-through buffer",
+                },
+                {
+                    "name": "WRITE_BACK",
+                    "type": "M",
+                    "val": "1",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "write-back allocate: implementes a dirty-memory",
+                },
+                {
+                    "name": "ADDR_W",
+                    "type": "F",
+                    "val": "`IOB_CACHE_SWREG_ADDR_W",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Cache address width used by swreg_gen",
+                },
+                {
+                    "name": "DATA_W",
+                    "type": "F",
+                    "val": "32",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Cache data width used by swreg_gen",
                 },
             ]
             + cls.AXI_CONFS
@@ -342,86 +372,103 @@ class iob_cache(iob_module):
     def _setup_ios(cls):
         cls.ios += [
             {
+                "name": "iob_s_port",
+                "descr": "IOb Control and Status Registers Interface.",
+                "ports": [],
+            },
+            {
                 "name": "fe",
-                "descr": "Front-end interface (IOb native slave)",
+                "descr": "IOb data front-end interface",
                 "ports": [
                     {
-                        "name": "req",
+                        "name": "fe_iob_avalid_i",
                         "type": "I",
                         "n_bits": "1",
-                        "descr": "Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.",
+                        "descr": "Address valid.",
                     },
                     {
-                        "name": "addr",
+                        "name": "fe_iob_addr_i",
                         "type": "I",
-                        "n_bits": "USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W",
-                        "descr": "Address from CPU or other user core, excluding the byte selection LSBs.",
+                        "n_bits": "FE_ADDR_W",
+                        "descr": "Address.",
                     },
                     {
-                        "name": "wdata",
+                        "name": "fe_iob_wdata_i",
                         "type": "I",
                         "n_bits": "FE_DATA_W",
-                        "descr": "Write data fom host.",
+                        "descr": "Write data.",
                     },
                     {
-                        "name": "wstrb",
+                        "name": "fe_iob_wstrb_i",
                         "type": "I",
-                        "n_bits": "`IOB_CACHE_NBYTES",
-                        "descr": "Byte write strobe from host.",
+                        "n_bits": "FE_DATA_W/8",
+                        "descr": "Write strofe.",
                     },
                     {
-                        "name": "rdata",
+                        "name": "fe_iob_rdata_o",
                         "type": "O",
                         "n_bits": "FE_DATA_W",
-                        "descr": "Read data to host.",
+                        "descr": "Read data.",
                     },
                     {
-                        "name": "ack",
+                        "name": "fe_iob_rvalid_o",
                         "type": "O",
                         "n_bits": "1",
-                        "descr": "Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.",
+                        "descr": "Read valid.",
+                    },
+                    {
+                        "name": "fe_iob_ready_o",
+                        "type": "O",
+                        "n_bits": "1",
+                        "descr": "Ready.",
                     },
                 ],
             },
             {
                 "name": "be",
-                "descr": "Back-end interface",
+                "descr": "IOb data back-end interface",
                 "ports": [
                     {
-                        "name": "",
+                        "name": "be_iob_avalid_o",
                         "type": "O",
                         "n_bits": "1",
-                        "descr": "Read or write request to next-level cache or memory.",
+                        "descr": "Address valid.",
                     },
                     {
-                        "name": "be_addr",
+                        "name": "be_iob_addr_o",
                         "type": "O",
                         "n_bits": "BE_ADDR_W",
-                        "descr": "Address to next-level cache or memory.",
+                        "descr": "Address.",
                     },
                     {
-                        "name": "be_wdata",
+                        "name": "be_iob_wdata_o",
                         "type": "O",
                         "n_bits": "BE_DATA_W",
-                        "descr": "Write data to next-level cache or memory.",
+                        "descr": "Write data.",
                     },
                     {
-                        "name": "be_wstrb",
+                        "name": "be_iob_wstrb_o",
                         "type": "O",
-                        "n_bits": "`IOB_CACHE_BE_NBYTES",
-                        "descr": "Write strobe to next-level cache or memory.",
+                        "n_bits": "BE_DATA_W/8",
+                        "descr": "Write strobe.",
                     },
                     {
-                        "name": "be_rdata",
+                        "name": "be_iob_rdata_i",
                         "type": "I",
                         "n_bits": "BE_DATA_W",
-                        "descr": "Read data from next-level cache or memory.",
+                        "descr": "Read data.",
                     },
                     {
-                        "name": "be_ack",
+                        "name": "be_iob_rvalid_i",
                         "type": "I",
                         "n_bits": "1",
-                        "descr": "Acknowledge signal from next-level cache or memory.",
+                        "descr": "Read valid.",
+                    },
+                    {
+                        "name": "be_iob_ready_i",
+                        "type": "I",
+                        "n_bits": "1",
+                        "descr": "Ready.",
                     },
                 ],
             },
@@ -466,7 +513,13 @@ class iob_cache(iob_module):
                         "descr": "System clock input.",
                     },
                     {
-                        "name": "rst_i",
+                        "name": "cke_i",
+                        "type": "I",
+                        "n_bits": "1",
+                        "descr": "System clock enable signal.",
+                    },
+                    {
+                        "name": "arst_i",
                         "type": "I",
                         "n_bits": "1",
                         "descr": "System reset, asynchronous and active high.",

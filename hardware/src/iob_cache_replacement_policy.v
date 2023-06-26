@@ -9,7 +9,7 @@ module iob_cache_replacement_policy #(
    parameter REP_POLICY = `IOB_CACHE_PLRU_TREE
 ) (
    input                 clk_i,
-   input                 reset,
+   input                 arst_i,
    input                 write_en,
    input  [  N_WAYS-1:0] way_hit,
    input  [NLINES_W-1:0] line_addr,
@@ -51,7 +51,7 @@ module iob_cache_replacement_policy #(
          ) mru_memory  // simply uses the same format as valid memory
          (
             .clk_i(clk_i),
-            .rst_i(reset),
+            .arst_i(arst_i),
 
             .we_i    (write_en),
             .addr_i  (line_addr),
@@ -82,7 +82,7 @@ module iob_cache_replacement_policy #(
          ) mru_memory  // simply uses the same format as valid memory
          (
             .clk_i(clk_i),
-            .rst_i(reset),
+            .arst_i(arst_i),
 
             .we_i    (write_en),
             .addr_i  (line_addr),
@@ -147,7 +147,7 @@ module iob_cache_replacement_policy #(
          ) mru_memory  // simply uses the same format as valid memory
          (
             .clk_i(clk_i),
-            .rst_i(reset),
+            .arst_i(arst_i),
 
             .we_i    (write_en),
             .addr_i  (line_addr),

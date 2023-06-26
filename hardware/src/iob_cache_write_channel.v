@@ -18,71 +18,72 @@ module iob_cache_write_channel #(
    parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
-   input clk_i,
-   input reset,
+   input                                                             clk_i,
+   input                                                             arst_i,
 
-   input valid,
-   input [ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr,
-   input [FE_NBYTES-1:0] wstrb,
-   input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1:0] wdata, // try [DATA_W*((2**WORD_OFFSET_W)**WRITE_POL)-1:0] (f(x)=a*b^x)
-   output reg wack,
+   //write command 
+   input                                                             valid_i,
+   input [ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W]          addr_i,
+   input [FE_NBYTES-1:0]                                             wstrb_i,
+   input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1:0] wdata_i, // try [DATA_W*((2**WORD_OFFSET_W)**WRITE_POL)-1:0] (f(x)=a*b^x)
+   output reg                                                        wack_o,
 
-   // Native Memory interface
-   output     [BE_ADDR_W -1:0] be_addr,
-   output reg                  be_valid,
-   input                       be_ready,
-   output     [ BE_DATA_W-1:0] be_wdata,
-   output reg [ BE_NBYTES-1:0] be_wstrb
+   //write interface
+   output reg                                                        be_valid_o,
+   output [BE_ADDR_W -1:0]                                           be_addr_o,
+   output [ BE_DATA_W-1:0]                                           be_wdata_o,
+   output reg [ BE_NBYTES-1:0]                                       be_wstrb_o,
+   input                                                             be_ready
 );
 
    genvar i;
 
    generate
       if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
-         assign be_addr = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o = {BE_ADDR_W{1'b0}} + {addr_i[ADDR_W-1 : BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
 
          localparam idle = 1'd0, write = 1'd1;
 
          reg [0:0] state;
          if (BE_DATA_W == DATA_W) begin : g_same_data_w
-            assign be_wdata = wdata;
+            assign be_wdata_o = wdata_i;
 
             always @* begin
-               be_wstrb = 0;
+               be_wstrb_o = 0;
 
                case (state)
-                  write:   be_wstrb = wstrb;
+                  write:   be_wstrb_o = wstrb_i;
                   default: ;
                endcase
             end
          end else begin : g_not_same_data_w
-            wire [BE_NBYTES_W-FE_NBYTES_W -1 :0] word_align = addr[FE_NBYTES_W +: (BE_NBYTES_W - FE_NBYTES_W)];
+            wire [BE_NBYTES_W-FE_NBYTES_W -1 :0] word_align = addr_i[FE_NBYTES_W +: (BE_NBYTES_W - FE_NBYTES_W)];
 
             for (i = 0; i < BE_DATA_W / DATA_W; i = i + 1) begin : g_wdata_block
-               assign be_wdata[(i+1)*DATA_W-1:i*DATA_W] = wdata;
+               assign be_wdata_o[(i+1)*DATA_W-1:i*DATA_W] = wdata_i;
             end
 
             always @* begin
-               be_wstrb = 0;
+               be_wstrb_o = 0;
 
                case (state)
-                  write:   be_wstrb = wstrb << word_align * FE_NBYTES;
+                  write:   be_wstrb_o = wstrb_i << word_align * FE_NBYTES;
                   default: ;
                endcase
             end
          end
 
-         always @(posedge clk_i, posedge reset) begin
-            if (reset) state <= idle;
+         always @(posedge clk_i, posedge arst_i) begin
+            if (arst_i) state <= idle;
             else
                case (state)
                   idle: begin
-                     if (valid) state <= write;
+                     if (valid_i) state <= write;
                      else state <= idle;
                   end
                   default: begin  // write
-                     if (be_ready & ~valid) state <= idle;
-                     else if (be_ready & valid)  // still has data to write
+                     if (be_ready & ~valid_i) state <= idle;
+                     else if (be_ready & valid_i)  // still has data to write
                         state <= write;
                      else state <= write;
                   end
@@ -90,14 +91,14 @@ module iob_cache_write_channel #(
          end
 
          always @* begin
-            wack    = 1'b0;
-            be_valid = 1'b0;
+            wack_o    = 1'b0;
+            be_valid_o = 1'b0;
 
             case (state)
-               idle: wack = 1'b1;
+               idle: wack_o = 1'b1;
                default: begin  // write
-                  be_valid = ~be_ready;
-                  wack    = be_ready;
+                  be_valid_o = ~be_ready;
+                  wack_o    = be_ready;
                end
             endcase
          end
@@ -108,17 +109,17 @@ module iob_cache_write_channel #(
             always @(posedge clk_i) word_counter_reg <= word_counter;
 
             // memory address
-            assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1: BE_NBYTES_W + LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
+            assign be_addr_o  = {BE_ADDR_W{1'b0}} + {addr_i[ADDR_W-1: BE_NBYTES_W + LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
 
             // memory write-data
-            assign be_wdata = wdata >> (BE_DATA_W * word_counter);
+            assign be_wdata_o = wdata_i >> (BE_DATA_W * word_counter);
 
             localparam idle = 1'd0, write = 1'd1;
 
             reg [0:0] state;
 
-            always @(posedge clk_i, posedge reset) begin
-               if (reset) state <= idle;
+            always @(posedge clk_i, posedge arst_i) begin
+               if (arst_i) state <= idle;
                else
                   case (state)
                      idle: begin
@@ -133,42 +134,42 @@ module iob_cache_write_channel #(
             end
 
             always @* begin
-               wack        = 1'b0;
-               be_valid     = 1'b0;
-               be_wstrb     = 0;
+               wack_o        = 1'b0;
+               be_valid_o     = 1'b0;
+               be_wstrb_o     = 0;
                word_counter = 0;
 
                case (state)
                   idle: begin
-                     wack = ~valid;
-                     if (valid) be_wstrb = {BE_NBYTES{1'b1}};
-                     else be_wstrb = 0;
+                     wack_o = ~valid_i;
+                     if (valid_i) be_wstrb_o = {BE_NBYTES{1'b1}};
+                     else be_wstrb_o = 0;
                   end
                   default: begin  // write
-                     wack        = be_ready & (&word_counter);  // last word transfered
-                     be_valid     = ~(be_ready & (&word_counter));
-                     be_wstrb     = {BE_NBYTES{1'b1}};
+                     wack_o        = be_ready & (&word_counter);  // last word transfered
+                     be_valid_o     = ~(be_ready & (&word_counter));
+                     be_wstrb_o     = {BE_NBYTES{1'b1}};
                      word_counter = word_counter_reg + be_ready;
                   end
                endcase
             end
          end else begin : g_no_line2be_w
             // memory address
-            assign be_addr  = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1:BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
+            assign be_addr_o  = {BE_ADDR_W{1'b0}} + {addr_i[ADDR_W-1:BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
 
             // memory write-data
-            assign be_wdata = wdata;
+            assign be_wdata_o = wdata_i;
 
             localparam idle = 1'd0, write = 1'd1;
 
             reg [0:0] state;
 
-            always @(posedge clk_i, posedge reset) begin
-               if (reset) state <= idle;
+            always @(posedge clk_i, posedge arst_i) begin
+               if (arst_i) state <= idle;
                else
                   case (state)
                      idle: begin
-                        if (valid) state <= write;
+                        if (valid_i) state <= write;
                         else state <= idle;
                      end
                      default: begin  // write
@@ -179,20 +180,20 @@ module iob_cache_write_channel #(
             end
 
             always @* begin
-               wack    = 1'b0;
-               be_valid = 1'b0;
-               be_wstrb = 0;
+               wack_o    = 1'b0;
+               be_valid_o = 1'b0;
+               be_wstrb_o = 0;
 
                case (state)
                   idle: begin
-                     wack = ~valid;
-                     if (valid) be_wstrb = {BE_NBYTES{1'b1}};
-                     else be_wstrb = 0;
+                     wack_o = ~valid_i;
+                     if (valid_i) be_wstrb_o = {BE_NBYTES{1'b1}};
+                     else be_wstrb_o = 0;
                   end
                   default: begin  // write
-                     wack    = be_ready;
-                     be_valid = ~be_ready;
-                     be_wstrb = {BE_NBYTES{1'b1}};
+                     wack_o    = be_ready;
+                     be_valid_o = ~be_ready;
+                     be_wstrb_o = {BE_NBYTES{1'b1}};
                   end
                endcase
             end

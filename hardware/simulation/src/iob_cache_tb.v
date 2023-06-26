@@ -1,7 +1,7 @@
 `timescale 1ns / 10ps
+`include "iob_utils.vh"
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
-`include "iob_utils.vh"
 
 module iob_cache_tb;
 
@@ -10,13 +10,13 @@ module iob_cache_tb;
    
    //global reset
    reg rst = 0;
-   reg arst_i;
+   reg arst = 0;
+   reg cke_i = 0;
 
    //clock
    `IOB_CLOCK(clk, CLK_PER)
 
    //system async reset, sync de-assert
-   reg [1-1:0] arst = 0;
    always @(posedge clk, posedge rst) begin
       if (rst) begin 
          arst = 1;
@@ -25,17 +25,26 @@ module iob_cache_tb;
       end
    end
 
-   //frontend signals
-   reg                                                    fe_req = 0;
-   wire                                                   fe_ack;
-   reg [`IOB_CACHE_FE_ADDR_W-1:0]                         fe_addr = 0;
-   reg [                          `IOB_CACHE_FE_DATA_W-1:0] fe_wdata = 0;
-   reg [                        `IOB_CACHE_FE_DATA_W/8-1:0] fe_wstrb = 0;
-   wire [                          `IOB_CACHE_FE_DATA_W-1:0] fe_rdata;
-
    //control signals
 `include "iob_m_tb_wire.vs"
+
+
+localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
+localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    
+   //frontend signals
+`include "fe_iob_m_tb_wire.vs"
+
+   //backend signals
+   wire    [                1-1:0] be_iob_avalid_o;  //Request valid.
+   wire    [           BE_ADDR_W-1:0] be_iob_addr_o;  //Address.
+   wire    [           BE_DATA_W-1:0] be_iob_wdata_o;  //Write data.
+   wire    [       (BE_DATA_W/8)-1:0] be_iob_wstrb_o;  //Write strobe.
+   reg     [                1-1:0] be_iob_rvalid_i = 0;  //Read data valid.
+   reg     [           BE_DATA_W-1:0] be_iob_rdata_i = 0;  //Read data.
+   reg     [                1-1:0] be_iob_ready_i = 0;  //Interface ready.
+
+
    reg [`IOB_CACHE_DATA_W-1:0]                               data;
 
    //file descriptor
@@ -80,13 +89,10 @@ module iob_cache_tb;
    //
 `ifdef AXI
    iob_cache_axi cache (
-                        //front-end
-      .wdata(fe_wdata),
-      .addr (fe_addr),
-      .wstrb(fe_wstrb),
-      .rdata(fe_rdata),
-      .req  (fe_req),
-      .ack  (fe_ack),
+
+ `include "iob_s_portmap.vs"
+      //front-end
+`include "fe_iob_s_portmap.vs"
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -110,14 +116,9 @@ module iob_cache_tb;
 
    iob_cache_iob cache (
                         //control
-                        `include "iob_s_portmap.vs"
+ `include "iob_s_portmap.vs"
       //front-end
-      .wdata(fe_wdata),
-      .addr (fe_addr),
-      .wstrb(fe_wstrb),
-      .rdata(fe_rdata),
-      .req  (fe_req),
-      .ack  (fe_ack),
+`include "fe_iob_s_portmap.vs"
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -125,15 +126,10 @@ module iob_cache_tb;
       .wtb_empty_in  (1'b1),
       .wtb_empty_out (),
 
-      .be_addr (be_addr),
-      .be_wdata(be_wdata),
-      .be_wstrb(be_wstrb),
-      .be_rdata(be_rdata),
-      .be_req  (be_req),
-      .be_ack  (be_ack),
-
-      .clk_i(clk),
-      .rst_i(arst)
+`include "be_iob_m_portmap.vs"
+                        .clk_i(clk),
+                        .arst_i(arst),
+                        .cke_i(cke_i)
    );
 `endif
 
@@ -157,20 +153,23 @@ module iob_cache_tb;
       .ADDR_W(`IOB_CACHE_BE_ADDR_W)
    ) native_ram (
       .clk_i (clk),
-      .en_i  (be_req),
-      .we_i  (be_wstrb),
-      .addr_i(be_addr),
-      .d_o   (be_rdata),
-      .d_i   (be_wdata)
+      .en_i  (be_iob_avalid_o),
+      .addr_i(be_iob_addr_o),
+      .d_i   (be_iob_wdata_o),
+      .we_i  (be_iob_wstrb_o),
+      .d_o   (be_iob_rdata_i)
    );
 
    always @(posedge clk, posedge arst) begin
       if (arst) begin
-         be_ack <= 1'b0;
+         be_iob_rvalid_i <= 1'b0;
       end else begin
-         be_ack <= be_req;
+         be_iob_rvalid_i <= be_iob_valid_i;
       end
    end
+
+   assign be_iob_ready_i = 1'b1;
+   
 `endif
 
 endmodule
