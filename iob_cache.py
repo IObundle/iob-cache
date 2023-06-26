@@ -15,6 +15,7 @@ from iob_fifo_sync import iob_fifo_sync
 from iob_ram_2p import iob_ram_2p
 from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
+from iob_reg_re import iob_reg_re
 from iob_ram_sp_be import iob_ram_sp_be
 
 
@@ -103,6 +104,7 @@ class iob_cache(iob_module):
         iob_ram_2p.setup()
         iob_ram_sp.setup()
         iob_reg.setup()
+        iob_reg_re.setup()
 
         # Simulation headers & modules
         iob_module.generate("axi_portmap", purpose="simulation")
