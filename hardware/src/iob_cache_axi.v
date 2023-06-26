@@ -35,10 +35,10 @@ module iob_cache_axi #(
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input [ 1-1:0]                                     req,
-   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
+   input [ 1-1:0]                                     avalid,
+   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0]         addr,
    input [ FE_DATA_W-1:0]                             wdata,
-   input [FE_NBYTES-1:0]                     wstrb,
+   input [FE_NBYTES-1:0]                              wstrb,
    output [ FE_DATA_W-1:0]                            rdata,
    output                                             rvalid,
    output                                             ready,
@@ -53,10 +53,9 @@ module iob_cache_axi #(
    `include "iob_axi_m_port.vs"
    //General Interface Signals
    input [1-1:0]                                      clk_i, //System clock input
-   input [1-1:0]                                      rst_i   //System reset, asynchronous and active high
+   input [1-1:0]                                      cke_i, //System clock enable
+   input [1-1:0]                                      arst_i //System reset, asynchronous and active high
 );
-
-   wire                                               ack;
 
   //Front-end & Front-end interface.
    wire data_req, data_ack;
@@ -84,17 +83,17 @@ module iob_cache_axi #(
       .USE_CTRL(USE_CTRL)
    ) front_end (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .cke_i(cke_i),
+      .reset(arst_i),
 
       // front-end port
-      .req  (req),
-      .addr (addr),
-      .wdata(wdata),
-      .wstrb(wstrb),
-      .rdata(rdata),
+      .avalid(avalid),
+      .addr  (addr),
+      .wdata (wdata),
+      .wstrb (wstrb),
+      .rdata (rdata),
       .rvalid(rvalid),
-      .ready(ready),
-      .ack  (ack),
+      .ready (ready),
 
       // cache-memory input signals
       .data_req (data_req),
@@ -148,7 +147,7 @@ module iob_cache_axi #(
       .USE_CTRL_CNT (USE_CTRL_CNT)
    ) cache_memory (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .reset(arst_i),
 
       // front-end
       .req      (data_req),
@@ -218,7 +217,7 @@ module iob_cache_axi #(
       //back-end AXI4 interface
       `include "iob_axi_m_m_portmap.vs"
       .clk_i(clk_i),
-      .rst_i(rst_i)
+      .rst_i(arst_i)
    );
 
    //Cache control & Cache control block.
@@ -229,7 +228,7 @@ module iob_cache_axi #(
             .USE_CTRL_CNT(USE_CTRL_CNT)
          ) cache_control (
             .clk_i(clk_i),
-            .reset(rst_i),
+            .reset(arst_i),
 
             // control's signals
             .valid(ctrl_req),
