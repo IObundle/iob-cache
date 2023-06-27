@@ -102,82 +102,13 @@ class iob_cache(iob_module):
 
         if cls.BE_IF == "IOb":
             iob_module.generate("iob_wire")
-            # iob backend interface
-            iob_module.generate(
-                {
-                    "file_prefix": "be_",
-                    "interface": "iob_m_port",
-                    "wire_prefix": "be_",
-                    "port_prefix": "be_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                },
-                purpose="hardware",
-            )
-            iob_module.generate(
-                {
-                    "file_prefix": "be_",
-                    "interface": "iob_m_portmap",
-                    "wire_prefix": "be_",
-                    "port_prefix": "be_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                },
-                purpose="hardware",
-            )
-
             # Simulation modules & snippets
             iob_module.generate("iob_m_tb_wire")
-            iob_module.generate(
-                {
-                    "file_prefix": "fe_",
-                    "interface": "iob_m_tb_wire",
-                    "wire_prefix": "fe_",
-                    "port_prefix": "fe_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                },
-                purpose="simulation",
-            )
-            iob_module.generate(
-                {
-                    "file_prefix": "fe_",
-                    "interface": "iob_s_portmap",
-                    "wire_prefix": "fe_",
-                    "port_prefix": "fe_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                },
-            )
-            iob_module.generate(
-                # not yet used as DATA_W is always 32
-                {
-                    "file_prefix": "be_",
-                    "interface": "iob_s_tb_wire",
-                    "wire_prefix": "be_",
-                    "port_prefix": "be_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                },
-                purpose="simulation",
-            )
+            iob_module.generate("iob_s_s_portmap")
+            iob_ram_sp_be.setup(purpose="hardware")
             iob_tasks.setup(purpose="simulation")
-            iob_ram_sp_be.setup(purpose="simulation")
 
         if cls.BE_IF == "AXI4":
-            # iob backend interface
-            iob_module.generate(
-                {
-                    "file_prefix": "be_",
-                    "interface": "iob_axi4_port",
-                    "wire_prefix": "be_",
-                    "port_prefix": "be_",
-                    "bus_start": 0,
-                    "bus_size": 1,
-                    "confs": cls.AXI_CONFS,
-                },
-                purpose="hardware",
-            )
             # axi backend interface
             iob_module.generate("axi_m_port")
             # axi portmap for internal backend module
@@ -473,36 +404,6 @@ class iob_cache(iob_module):
                 ],
             },
             {
-                "name": "ie",
-                "descr": "Cache invalidate and write-trough buffer IO chain",
-                "ports": [
-                    {
-                        "name": "invalidate_in",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "Invalidates all cache lines instantaneously if high.",
-                    },
-                    {
-                        "name": "invalidate_out",
-                        "type": "O",
-                        "n_bits": "1",
-                        "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
-                    },
-                    {
-                        "name": "wtb_empty_in",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
-                    },
-                    {
-                        "name": "wtb_empty_out",
-                        "type": "O",
-                        "n_bits": "1",
-                        "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
-                    },
-                ],
-            },
-            {
                 "name": "ge",
                 "descr": "General Interface Signals",
                 "ports": [
@@ -556,7 +457,7 @@ class iob_cache(iob_module):
                         "descr": "Write-through buffer full (1) or non-full (0).",
                     },
                     {
-                        "name": "READ_HIT",
+                        "name": "READ_HIT_CNT",
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
@@ -566,7 +467,7 @@ class iob_cache(iob_module):
                         "descr": "Read hit counter.",
                     },
                     {
-                        "name": "READ_MISS",
+                        "name": "READ_MISS_CNT",
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
@@ -576,7 +477,7 @@ class iob_cache(iob_module):
                         "descr": "Read miss counter.",
                     },
                     {
-                        "name": "WRITE_HIT",
+                        "name": "WRITE_HIT_CNT",
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
@@ -586,7 +487,7 @@ class iob_cache(iob_module):
                         "descr": "Write hit counter.",
                     },
                     {
-                        "name": "WRITE_MISS",
+                        "name": "WRITE_MISS_CNT",
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
@@ -596,7 +497,7 @@ class iob_cache(iob_module):
                         "descr": "Write miss counter.",
                     },
                     {
-                        "name": "RST_CNTRS",
+                        "name": "RESET_COUNTERS",
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,

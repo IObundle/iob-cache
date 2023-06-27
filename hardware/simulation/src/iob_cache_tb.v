@@ -29,12 +29,21 @@ module iob_cache_tb;
 `include "iob_m_tb_wire.vs"
 
 
+localparam FE_ADDR_W = `IOB_CACHE_FE_ADDR_W;
+localparam FE_DATA_W = `IOB_CACHE_FE_DATA_W;
 localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
 localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    
    //frontend signals
-`include "fe_iob_m_tb_wire.vs"
+   reg     [                1-1:0] fe_iob_avalid_i = 0;  //Request valid.
+   reg     [           FE_ADDR_W-1:0] fe_iob_addr_i = 0;  //Address.
+   reg     [           FE_DATA_W-1:0] fe_iob_wdata_i = 0;  //Write data.
+   reg     [       (FE_DATA_W/8)-1:0] fe_iob_wstrb_i = 0;  //Write strobe.
+   wire    [                1-1:0] fe_iob_rvalid_o;  //Read data valid.
+   wire    [           FE_DATA_W-1:0] fe_iob_rdata_o;  //Read data.
+   wire    [                1-1:0] fe_iob_ready_o;  //Interface ready.
 
+   
    //backend signals
    wire    [                1-1:0] be_iob_avalid_o;  //Request valid.
    wire    [           BE_ADDR_W-1:0] be_iob_addr_o;  //Address.
@@ -90,9 +99,15 @@ localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
 `ifdef AXI
    iob_cache_axi cache (
 
- `include "iob_s_portmap.vs"
+ `include "iob_s_s_portmap.vs"
       //front-end
-`include "fe_iob_s_portmap.vs"
+      .fe_iob_avalid_i(fe_iob_avalid[0+:1]),          //Request valid.
+      .fe_iob_addr_i  (fe_iob_addr[0+:FE_ADDR_W]),       //Address.
+      .fe_iob_wdata_i (fe_iob_wdata[0+:FE_DATA_W]),      //Write data.
+      .fe_iob_wstrb_i (fe_iob_wstrb[0+:(FE_DATA_W/8)]),  //Write strobe.
+      .fe_iob_rvalid_o(fe_iob_rvalid[0+:1]),          //Read data valid.
+      .fe_iob_rdata_o (fe_iob_rdata[0+:FE_DATA_W]),      //Read data.
+      .fe_iob_ready_o (fe_iob_ready[0+:1]),           //Interface ready.
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -115,21 +130,28 @@ localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    wire [  `IOB_CACHE_BE_DATA_W-1:0] be_rdata;
 
    iob_cache_iob cache (
-                        //control
- `include "iob_s_portmap.vs"
+       //control
+ `include "iob_s_s_portmap.vs"
       //front-end
-`include "fe_iob_s_portmap.vs"
+      .fe_iob_avalid_i(fe_iob_avalid_i),          //Request valid.
+      .fe_iob_addr_i  (fe_iob_addr_i),       //Address.
+      .fe_iob_wdata_i (fe_iob_wdata_i),      //Write data.
+      .fe_iob_wstrb_i (fe_iob_wstrb_i),  //Write strobe.
+      .fe_iob_rvalid_o(fe_iob_rvalid_o),          //Read data valid.
+      .fe_iob_rdata_o (fe_iob_rdata_o),      //Read data.
+      .fe_iob_ready_o (fe_iob_ready_o),           //Interface ready.
 
-      //invalidate / wtb empty
-      .invalidate_in (1'b0),
-      .invalidate_out(),
-      .wtb_empty_in  (1'b1),
-      .wtb_empty_out (),
+      .be_iob_avalid_o(be_iob_avalid[0+:1]),          //Request valid.
+      .be_iob_addr_o  (be_iob_addr[0+:BE_ADDR_W]),       //Address.
+      .be_iob_wdata_o (be_iob_wdata[0+:BE_DATA_W]),      //Write data.
+      .be_iob_wstrb_o (be_iob_wstrb[0+:(BE_DATA_W/8)]),  //Write strobe.
+      .be_iob_rvalid_i(be_iob_rvalid[0+:1]),          //Read data valid.
+      .be_iob_rdata_i (be_iob_rdata[0+:BE_DATA_W]),      //Read data.
+      .be_iob_ready_i (be_iob_ready[0+:1]),           //Interface ready.
 
-`include "be_iob_m_portmap.vs"
-                        .clk_i(clk),
-                        .arst_i(arst),
-                        .cke_i(cke_i)
+  .clk_i(clk),
+    .arst_i(arst),
+    .cke_i(cke_i)
    );
 `endif
 

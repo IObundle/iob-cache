@@ -33,7 +33,7 @@ module iob_cache_write_channel #(
    output [BE_ADDR_W -1:0]                                           be_addr_o,
    output [ BE_DATA_W-1:0]                                           be_wdata_o,
    output reg [ BE_NBYTES-1:0]                                       be_wstrb_o,
-   input                                                             be_ready
+   input                                                             be_ready_i
 );
 
    genvar i;
@@ -82,8 +82,8 @@ module iob_cache_write_channel #(
                      else state <= idle;
                   end
                   default: begin  // write
-                     if (be_ready & ~valid_i) state <= idle;
-                     else if (be_ready & valid_i)  // still has data to write
+                     if (be_ready_i & ~valid_i) state <= idle;
+                     else if (be_ready_i & valid_i)  // still has data to write
                         state <= write;
                      else state <= write;
                   end
@@ -97,8 +97,8 @@ module iob_cache_write_channel #(
             case (state)
                idle: wack_o = 1'b1;
                default: begin  // write
-                  be_valid_o = ~be_ready;
-                  wack_o    = be_ready;
+                  be_valid_o = ~be_ready_i;
+                  wack_o    = be_ready_i;
                end
             endcase
          end
@@ -127,7 +127,7 @@ module iob_cache_write_channel #(
                         else state <= idle;
                      end
                      default: begin  // write
-                        if (be_ready & (&word_counter_reg)) state <= idle;
+                        if (be_ready_i & (&word_counter_reg)) state <= idle;
                         else state <= write;
                      end
                   endcase
@@ -146,10 +146,10 @@ module iob_cache_write_channel #(
                      else be_wstrb_o = 0;
                   end
                   default: begin  // write
-                     wack_o        = be_ready & (&word_counter);  // last word transfered
-                     be_valid_o     = ~(be_ready & (&word_counter));
+                     wack_o        = be_ready_i & (&word_counter);  // last word transfered
+                     be_valid_o     = ~(be_ready_i & (&word_counter));
                      be_wstrb_o     = {BE_NBYTES{1'b1}};
-                     word_counter = word_counter_reg + be_ready;
+                     word_counter = word_counter_reg + be_ready_i;
                   end
                endcase
             end
@@ -173,7 +173,7 @@ module iob_cache_write_channel #(
                         else state <= idle;
                      end
                      default: begin  // write
-                        if (be_ready) state <= idle;
+                        if (be_ready_i) state <= idle;
                         else state <= write;
                      end
                   endcase
@@ -191,8 +191,8 @@ module iob_cache_write_channel #(
                      else be_wstrb_o = 0;
                   end
                   default: begin  // write
-                     wack_o    = be_ready;
-                     be_valid_o = ~be_ready;
+                     wack_o    = be_ready_i;
+                     be_valid_o = ~be_ready_i;
                      be_wstrb_o = {BE_NBYTES{1'b1}};
                   end
                endcase

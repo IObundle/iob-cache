@@ -17,15 +17,17 @@ module iob_cache_read_channel #(
    input                                     clk_i,
    input                                     arst_i,
 
-   //read command 
+   //read request
    input                                     read_valid_i,
    input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] read_addr_i,
+
+   //read response
    output reg                                read_valid_o,
    output reg [ LINE2BE_W-1:0]               read_addr_o,
 
-   //read interface
-   output [BE_ADDR_W-1:0]                    be_addr_o,
+   //back-end read interface
    output reg                                be_valid_o,
+   output [BE_ADDR_W-1:0]                    be_addr_o,
    input                                     be_ready_i,
    input                                     be_rvalid_i,
    input [BE_DATA_W-1:0]                     be_rdata_i
@@ -89,9 +91,9 @@ module iob_cache_read_channel #(
                   read_valid_o   = 1'b0;
                end
                handshake: begin
-                  be_valid_o     = ~be_rvalid | ~(&read_addr_o);
-                  word_counter = read_addr_o + be_rvalid;
-                  read_valid_o   = be_rvalid;
+                  be_valid_o     = ~be_rvalid_i | ~(&read_addr_o);
+                  word_counter = read_addr_o + be_rvalid_i;
+                  read_valid_o   = be_rvalid_i;
                end
                default: begin
                   be_valid_o     = 1'b0;
@@ -133,8 +135,8 @@ module iob_cache_read_channel #(
                   read_valid_o = 1'b0;
                end
                handshake: begin
-                  be_valid_o   = ~be_rvalid;
-                  read_valid_o = be_rvalid;
+                  be_valid_o   = ~be_rvalid_i;
+                  read_valid_o = be_rvalid_i;
                end
                default: begin
                   be_valid_o   = 1'b0;

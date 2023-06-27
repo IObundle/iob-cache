@@ -25,12 +25,13 @@ module iob_cache_memory #(
    input                                                                         arst_i,
 
    // front-end
-   input                                                                         req_i,
+   input                                                                         avalid_i,
    input [FE_ADDR_W-1:FE_NBYTES_W]                                               addr_i,
    input [FE_DATA_W-1:0]                                                         wdata_i,
    input [FE_NBYTES-1:0]                                                         wstrb_i,
    output [ FE_DATA_W-1:0]                                                       rdata_o,
-   output                                                                        ack_o,
+   output                                                                        rvalid_o,
+   output                                                                        ready_o,
 
    // back-end write-channel
    output                                                                        write_req_o,
@@ -41,12 +42,12 @@ module iob_cache_memory #(
    input                                                                         write_ack_i,
 
    // back-end read-channel
-   output                                                                        replace_req_o,
-   output [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W]                                    replace_addr_o,
-   input                                                                         replace_i,
-   input                                                                         read_req_i,
+   output                                                                        read_req_o,
+   output [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W]                                    read_req_addr_o,
+   input                                                                         read_valid_i,
    input [ LINE2BE_W-1:0]                                                        read_addr_i,
-   input [ BE_DATA_W-1:0]                                                        read_rdata_i,
+   input [BE_DATA_W-1:0]                                                         read_rdata_i,
+   input                                                                         read_busy_i,
 
    // cache-control
    input                                                                         invalidate_i,
@@ -61,21 +62,23 @@ module iob_cache_memory #(
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
    localparam NWAYS = 2 ** NWAYS_W;
 
+   output ack;
+   
 
   // register inputs
-  reg                                       req_reg;
-   reg [                     FE_ADDR_W-1:FE_NBYTES_W] addr_reg;
+  reg avalid_reg;
+  reg [                     FE_ADDR_W-1:FE_NBYTES_W] addr_reg;
   reg  [                     FE_DATA_W-1:0] wdata_reg;
   reg  [                     FE_NBYTES-1:0] wstrb_reg;
 
   always @(posedge clk_i, posedge arst_i) begin
     if (arst_i) begin
-      req_reg   <= 0;
+      avalid_reg   <= 0;
       addr_reg  <= 0;
       wdata_reg <= 0;
       wstrb_reg <= 0;
     end else begin
-      req_reg   <= req_i;
+      avalid_reg   <= avalid_i;
       addr_reg  <= addr_i;
       wdata_reg <= wdata_i;
       wstrb_reg <= wstrb_i;
@@ -108,9 +111,10 @@ module iob_cache_memory #(
 
    reg [(2**WORD_OFFSET_W)*FE_NBYTES-1:0] line_wstrb;
 
-   wire write_access = |wstrb_reg & req_reg;
-   wire read_access = ~|wstrb_reg & req_reg;
+   wire write_access = |wstrb_reg & avalid_reg;
+   wire read_access = ~|wstrb_reg & avalid_reg;
 
+   assign rvalid_o = read_access & hit;
 
    // back-end write channel
    wire buffer_empty, buffer_full;
@@ -149,6 +153,7 @@ module iob_cache_memory #(
             .r_data_o(mem_r_data)
          );
 
+         //FIFO
          iob_fifo_sync #(
             .R_DATA_W(FIFO_DATA_W),
             .W_DATA_W(FIFO_DATA_W),
@@ -175,7 +180,7 @@ module iob_cache_memory #(
 
             .w_data_i({addr_reg, wdata_reg, wstrb_reg}),
             .w_full_o(buffer_full),
-            .w_en_i  (write_access & ack_o)
+            .w_en_i  (write_access & ack)
          );
 
          // buffer status
@@ -189,8 +194,8 @@ module iob_cache_memory #(
          assign write_wstrb_o  = buffer_dout[0+:FE_NBYTES];
 
          // back-end read channel
-         assign replace_req_o  = (~hit & read_access & ~replace_i) & (buffer_empty & write_ack_i);
-         assign replace_addr_o = addr_i[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
+         assign read_req_o  = (~hit & read_access & ~read_busy_i) & (buffer_empty & write_ack_i);
+         assign read_req_addr_o = addr_i[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
       end else begin : g_write_back
          // if (WRITE_POL == WRITE_BACK)
          // back-end write channel
@@ -198,8 +203,8 @@ module iob_cache_memory #(
          // write_req, write_addr and write_wdata assigns are generated bellow (dependencies)
 
          // back-end read channel
-         assign replace_req_o  = (~|way_hit) & (write_ack_i) & valid_reg & ~replace_i;
-         assign replace_addr_o = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
+         assign read_req_o  = (~|way_hit) & (write_ack_i) & valid_reg & ~read_busy_i;
+         assign read_req_addr_o = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
       end
    endgenerate
 
@@ -237,24 +242,24 @@ module iob_cache_memory #(
    ///////////////////////////////////////////////////////////////
    // Hit signal: data available and in the memory's output
    ///////////////////////////////////////////////////////////////
-   assign hit = |way_hit & ~replace_i & (~raw);
+   assign hit = |way_hit & ~read_busy_i & (~raw);
 
    /////////////////////////////////
    // front-end ACK signal
    /////////////////////////////////
    generate
       if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH)
-         assign ack_o = (hit & read_access) | (~buffer_full & write_access);
+         assign ack = (hit & read_access) | (~buffer_full & write_access);
       else  // if (WRITE_POL == WRITE_BACK)
-         assign ack_o = hit & valid_reg;
+         assign ack = hit & valid_reg;
    endgenerate
 
    // cache-control hit-miss counters enables
    // cache-control hit-miss counters enables
-   assign write_hit_o  = ack_o & (hit & write_access);
-   assign write_miss_o = ack_o & (~hit & write_access);
-   assign read_hit_o   = ack_o & (hit & read_access);
-   assign read_miss_o  = replace_req_o;  //will also subtract read_hit
+   assign write_hit_o  = ack & (hit & write_access);
+   assign write_miss_o = ack & (~hit & write_access);
+   assign read_hit_o   = ack & (hit & read_access);
+   assign read_miss_o  = read_req_o;  //will also subtract read_hit
 
    /////////////////////////////////////////
    // Memories implementation configurations
@@ -265,16 +270,16 @@ module iob_cache_memory #(
       for (k = 0; k < NWAYS; k = k + 1) begin : g_n_ways_block
          for (j = 0; j < 2 ** LINE2BE_W; j = j + 1) begin : g_line2mem_block
             for (i = 0; i < BE_DATA_W / FE_DATA_W; i = i + 1) begin : g_BE_block
-               iob_gen_sp_ram #(
+               iob_ram_sp_be #(
                   .DATA_W(FE_DATA_W),
                   .ADDR_W(NLINES_W)
                ) cache_memory (
                   .clk_i(clk_i),
-                  .en(req_i),
-                  .we ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                  .addr((write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
-                  .data_in((replace_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg),
-                  .data_out(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W+:FE_DATA_W])
+                  .en_i(avalid_i),
+                  .we_i ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
+                  .addr_i((write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
+                  .d_i((read_busy_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg),
+                  .d_o(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W+:FE_DATA_W])
                );
             end
          end
@@ -283,18 +288,18 @@ module iob_cache_memory #(
       // Cache Line Write Strobe
       if (LINE2BE_W > 0) begin : g_line2be_w
          always @* begin
-            if (replace_i) begin
+            if (read_busy_i) begin
                // line-replacement: read_addr_i indexes the words in cache-line
-               line_wstrb = {BE_NBYTES{read_req_i}} << (read_addr_i * BE_NBYTES);
+               line_wstrb = {BE_NBYTES{read_valid_i}} << (read_addr_i * BE_NBYTES);
             end else begin
                line_wstrb = (wstrb_reg & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
             end
          end
       end else begin : g_no_line2be_w
          always @* begin
-            if (replace_i) begin
+            if (read_busy_i) begin
                // line-replacement: mem's word replaces entire line
-               line_wstrb = {BE_NBYTES{read_req_i}};
+               line_wstrb = {BE_NBYTES{read_valid_i}};
             end else begin
                line_wstrb = (wstrb_reg & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
             end
@@ -309,7 +314,7 @@ module iob_cache_memory #(
          always @(posedge clk_i, posedge arst_i) begin
             if (arst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
-            else if (replace_req_o)
+            else if (read_req_o)
                v_reg <= v_reg | (1 << (way_select_bin * (2 ** NLINES_W) + index_reg));
             else v_reg <= v_reg;
          end
@@ -326,8 +331,8 @@ module iob_cache_memory #(
                .ADDR_W(NLINES_W)
             ) tag_memory (
                .clk_i (clk_i),
-               .en_i  (req_i),
-               .we_i  (way_select[k] & replace_req_o),
+               .en_i  (avalid_i),
+               .we_i  (way_select[k] & read_req_o),
                .addr_i(index[NLINES_W-1:0]),
                .d_i   (tag),
                .d_o   (line_tag[TAG_W*k+:TAG_W])
@@ -348,7 +353,7 @@ module iob_cache_memory #(
          ) replacement_policy_algorithm (
             .clk_i         (clk_i),
             .arst_i         (arst_i | invalidate_i),
-            .write_en      (ack_o),
+            .write_en      (ack),
             .way_hit       (way_hit),
             .line_addr     (index_reg[NLINES_W-1:0]),
             .way_select    (way_select),
@@ -393,7 +398,7 @@ module iob_cache_memory #(
          always @(posedge clk_i, posedge arst_i) begin
             if (arst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
-            else if (replace_req_o) v_reg <= v_reg | (1 << index);
+            else if (read_req_o) v_reg <= v_reg | (1 << index);
             else v_reg <= v_reg;
          end
 
@@ -409,8 +414,8 @@ module iob_cache_memory #(
             .ADDR_W(NLINES_W)
          ) tag_memory (
             .clk_i (clk_i),
-            .en_i  (req_i),
-            .we_i  (replace_req_o),
+            .en_i  (avalid_i),
+            .we_i  (read_req_o),
             .addr_i(index),
             .d_i   (tag),
             .d_o   (line_tag)
@@ -454,40 +459,3 @@ module iob_cache_memory #(
 
 endmodule
 
-/*---------------------------------*/
-/* Byte-width generable iob-sp-ram */
-/*---------------------------------*/
-
-// For cycle that generated byte-width (single enable) single-port SRAM
-// older synthesis tool may require this approch
-
-module iob_gen_sp_ram #(
-   parameter DATA_W = 32,
-   parameter ADDR_W = 10
-) (
-   input                 clk_i,
-   input                 en,
-   input  [DATA_W/8-1:0] we,
-   input  [  ADDR_W-1:0] addr,
-   output [  DATA_W-1:0] data_out,
-   input  [  DATA_W-1:0] data_in
-);
-
-   genvar i;
-   generate
-      for (i = 0; i < (DATA_W / 8); i = i + 1) begin : g_ram
-         iob_ram_sp #(
-            .DATA_W(8),
-            .ADDR_W(ADDR_W)
-         ) iob_cache_mem (
-            .clk_i (clk_i),
-            .en_i  (en),
-            .we_i  (we[i]),
-            .addr_i(addr),
-            .d_o   (data_out[8*i+:8]),
-            .d_i   (data_in[8*i+:8])
-         );
-      end
-   endgenerate
-
-endmodule

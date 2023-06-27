@@ -29,22 +29,22 @@ module iob_cache_control #(
 
   always @(posedge clk_i, posedge arst_i) begin
     if (arst_i) begin
-      read_hit_cnt   <= {DATA_W{1'b0}};
-      read_miss_cnt  <= {DATA_W{1'b0}};
-      write_hit_cnt  <= {DATA_W{1'b0}};
-      write_miss_cnt <= {DATA_W{1'b0}};
+      read_hit_cnt_o   <= {DATA_W{1'b0}};
+      read_miss_cnt_o  <= {DATA_W{1'b0}};
+      write_hit_cnt_o  <= {DATA_W{1'b0}};
+      write_miss_cnt_o <= {DATA_W{1'b0}};
     end else begin
-      if (reset_counters) begin
-        read_hit_cnt   <= {DATA_W{1'b0}};
-        read_miss_cnt  <= {DATA_W{1'b0}};
-        write_hit_cnt  <= {DATA_W{1'b0}};
-        write_miss_cnt <= {DATA_W{1'b0}};
+      if (reset_counters_i) begin
+        read_hit_cnt_o   <= {DATA_W{1'b0}};
+        read_miss_cnt_o  <= {DATA_W{1'b0}};
+        write_hit_cnt_o  <= {DATA_W{1'b0}};
+        write_miss_cnt_o <= {DATA_W{1'b0}};
       end else begin
-        read_hit_cnt <= read_hit_cnt + read_hit;
-        write_hit_cnt <= write_hit_cnt + write_hit;
-        read_miss_cnt <= read_miss_cnt + read_miss;
-        read_hit_cnt  <= read_hit_cnt - read_miss;
-        write_miss_cnt <= write_miss_cnt + write_miss;
+        read_hit_cnt_o <= read_hit_cnt_o + read_hit_i;
+        write_hit_cnt_o <= write_hit_cnt_o + write_hit_i;
+        read_miss_cnt_o <= read_miss_cnt_o + read_miss_i;
+        read_hit_cnt_o  <= read_hit_cnt_o - read_miss_i;
+        write_miss_cnt_o <= write_miss_cnt_o + write_miss_i;
       end
     end
   end
