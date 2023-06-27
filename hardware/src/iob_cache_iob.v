@@ -24,7 +24,7 @@ module iob_cache_iob #(
    parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input [ 1-1:0]                             req,
+   input [ 1-1:0]                             avalid,
    input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
    input [ FE_DATA_W-1:0]                     wdata,
    input [ FE_NBYTES-1:0]                     wstrb,
@@ -33,12 +33,13 @@ module iob_cache_iob #(
    output                                     ready,
 
    // Back-end interface
-   output [ 1-1:0]                            be_req,
+   output [ 1-1:0]                            be_avalid,
    output [ BE_ADDR_W-1:0]                    be_addr,
    output [ BE_DATA_W-1:0]                    be_wdata,
    output [ BE_NBYTES-1:0]                    be_wstrb,
    input [ BE_DATA_W-1:0]                     be_rdata,
-   input [ 1-1:0]                             be_ack,
+   input                                      be_rvalid,
+   input                                      be_ready,
 
    // Cache invalidate and write-trough buffer IO chain
    input [1-1:0]                              invalidate_in,
@@ -48,11 +49,10 @@ module iob_cache_iob #(
 
    //General Interface Signals
    input [1-1:0]                              clk_i, //V2TEX_IO System clock input.
-   input [1-1:0]                              rst_i   //V2TEX_IO System reset, asynchronous and active high.
+   input [1-1:0]                              cke_i, //V2TEX_IO System clock enable.
+   input [1-1:0]                              arst_i //V2TEX_IO System reset, asynchronous and active high.
 );
 
-   wire                                               ack;
-   
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
    wire data_req, data_ack;
    wire [FE_ADDR_W -1:FE_NBYTES_W] data_addr;
@@ -74,32 +74,23 @@ module iob_cache_iob #(
    assign invalidate_out = ctrl_invalidate | invalidate_in;
    assign wtb_empty_out  = wtbuf_empty & wtb_empty_in;
 
-
-   generate 
-      if (USE_CTRL != 0)
-        assign ctrl_req = req & addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1];
-      else
-        assign ctrl_req = 1'b0;
-   endgenerate
-   
-  
    iob_cache_front_end #(
       .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
       .DATA_W  (FE_DATA_W),
       .USE_CTRL(USE_CTRL)
    ) front_end (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .cke_i(cke_i),
+      .arst_i(arst_i),
 
       // front-end port
-      .req  (req),
-      .addr (addr),
-      .wdata(wdata),
-      .wstrb(wstrb),
-      .rdata(rdata),
+      .avalid(avalid),
+      .addr  (addr),
+      .wdata (wdata),
+      .wstrb (wstrb),
+      .rdata (rdata),
       .rvalid(rvalid),
-      .ready(ready),
-      .ack  (ack),
+      .ready (ready),
 
       // cache-memory input signals
       .data_req (data_req),
@@ -152,7 +143,7 @@ module iob_cache_iob #(
       .USE_CTRL_CNT (USE_CTRL_CNT)
    ) cache_memory (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .reset(arst_i),
 
       // front-end
       .req      (data_req),
@@ -200,7 +191,8 @@ module iob_cache_iob #(
       .WRITE_POL    (WRITE_POL)
    ) back_end (
       .clk_i(clk_i),
-      .reset(rst_i),
+      .cke_i(cke_i),
+      .arst_i(arst_i),
 
       // write-through-buffer (write-channel)
       .write_valid(write_req),
@@ -218,23 +210,24 @@ module iob_cache_iob #(
       .read_rdata   (read_rdata),
 
       // back-end native interface
-      .be_valid(be_req),
-      .be_addr (be_addr),
-      .be_wdata(be_wdata),
-      .be_wstrb(be_wstrb),
-      .be_rdata(be_rdata),
-      .be_ready(be_ack)
+      .be_avalid(be_avalid),
+      .be_addr  (be_addr),
+      .be_wdata (be_wdata),
+      .be_wstrb (be_wstrb),
+      .be_rdata (be_rdata),
+      .be_rvalid(be_rvalid),
+      .be_ready (be_ready)
    );
 
    //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
    generate
-      if (USE_CTRL)
+      if (USE_CTRL) begin : g_ctrl
          iob_cache_control #(
             .DATA_W      (FE_DATA_W),
             .USE_CTRL_CNT(USE_CTRL_CNT)
          ) cache_control (
             .clk_i(clk_i),
-            .reset(rst_i),
+            .reset(arst_i),
 
             // control's signals
             .valid(ctrl_req),
@@ -252,6 +245,7 @@ module iob_cache_iob #(
             .ready     (ctrl_ack),
             .invalidate(ctrl_invalidate)
          );
+      end
       else begin : g_no_ctrl
          assign ctrl_rdata      = 1'bx;
          assign ctrl_ack        = 1'bx;

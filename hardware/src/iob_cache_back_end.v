@@ -17,7 +17,8 @@ module iob_cache_back_end #(
    parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    input clk_i,
-   input reset,
+   input cke_i,
+   input arst_i,
 
    // write-through-buffer
    input                                                                         write_valid,
@@ -35,19 +36,36 @@ module iob_cache_back_end #(
    output [                     BE_DATA_W -1:0] read_rdata,
 
    // back-end memory interface
-   output                  be_valid,
+   output                  be_avalid,
    output [BE_ADDR_W -1:0] be_addr,
    output [ BE_DATA_W-1:0] be_wdata,
    output [ BE_NBYTES-1:0] be_wstrb,
    input  [ BE_DATA_W-1:0] be_rdata,
+   input                   be_rvalid,
    input                   be_ready
 );
 
    wire [BE_ADDR_W-1:0] be_addr_read, be_addr_write;
    wire be_valid_read, be_valid_write;
+   wire be_avalid_r;
+   wire be_ack;
 
-   assign be_addr  = (be_valid_read) ? be_addr_read : be_addr_write;
-   assign be_valid = be_valid_read | be_valid_write;
+   assign be_addr   = (be_valid_read) ? be_addr_read : be_addr_write;
+   assign be_avalid = be_valid_read | be_valid_write;
+   assign be_ack    = be_avalid_r & be_ready;
+
+   iob_reg_re #(
+      .DATA_W (1),
+      .RST_VAL(0)
+   ) iob_reg_avalid (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (be_ready),
+      .data_i(be_avalid),
+      .data_o(be_avalid_r)
+   );
 
    iob_cache_read_channel #(
       .FE_ADDR_W    (FE_ADDR_W),
@@ -57,7 +75,7 @@ module iob_cache_back_end #(
       .WORD_OFFSET_W(WORD_OFFSET_W)
    ) read_fsm (
       .clk_i        (clk_i),
-      .reset        (reset),
+      .reset        (arst_i),
       .replace_valid(replace_valid),
       .replace_addr (replace_addr),
       .replace      (replace),
@@ -66,7 +84,7 @@ module iob_cache_back_end #(
       .read_rdata   (read_rdata),
       .be_addr      (be_addr_read),
       .be_valid     (be_valid_read),
-      .be_ready     (be_ready),
+      .be_ack       (be_ack),
       .be_rdata     (be_rdata)
    );
 
@@ -79,7 +97,7 @@ module iob_cache_back_end #(
       .WORD_OFFSET_W(WORD_OFFSET_W)
    ) write_fsm (
       .clk_i(clk_i),
-      .reset(reset),
+      .reset(arst_i),
 
       .valid(write_valid),
       .addr (write_addr),
@@ -89,7 +107,7 @@ module iob_cache_back_end #(
 
       .be_addr (be_addr_write),
       .be_valid(be_valid_write),
-      .be_ready(be_ready),
+      .be_ack  (be_ack),
       .be_wdata(be_wdata),
       .be_wstrb(be_wstrb)
    );

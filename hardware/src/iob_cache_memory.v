@@ -104,6 +104,10 @@ module iob_cache_memory #(
          localparam FIFO_DATA_W = FE_ADDR_W - FE_NBYTES_W + FE_DATA_W + FE_NBYTES;
          localparam FIFO_ADDR_W = WTBUF_DEPTH_W;
 
+         wire                   mem_clk;
+         wire                   mem_arst;
+         wire                   mem_cke;
+
          wire                   mem_w_en;
          wire [FIFO_ADDR_W-1:0] mem_w_addr;
          wire [FIFO_DATA_W-1:0] mem_w_data;
@@ -137,6 +141,10 @@ module iob_cache_memory #(
             .rst_i (reset),
             .arst_i(reset),
             .cke_i (1'b1),
+
+            .ext_mem_clk_o   (mem_clk),
+            .ext_mem_arst_o  (mem_arst),
+            .ext_mem_cke_o   (mem_cke),
 
             .ext_mem_w_en_o  (mem_w_en),
             .ext_mem_w_addr_o(mem_w_addr),

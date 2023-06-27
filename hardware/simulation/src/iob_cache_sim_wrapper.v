@@ -31,12 +31,12 @@ module iob_cache_sim_wrapper #(
    parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT
 ) (
    // Front-end interface (IOb native slave)
-   input  [                          1-1:0] req,
-   input  [USE_CTRL+ADDR_W-FE_NBYTES_W-1:0] addr,
-   input  [                     DATA_W-1:0] wdata,
-   input  [                  FE_NBYTES-1:0] wstrb,
-   output [                     DATA_W-1:0] rdata,
-   output [                          1-1:0] ack,
+   input  [                             1-1:0] avalid,
+   input  [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
+   input  [                        DATA_W-1:0] wdata,
+   input  [                     FE_NBYTES-1:0] wstrb,
+   output [                        DATA_W-1:0] rdata,
+   output [                             1-1:0] ack,
 
    // Cache invalidate and write-trough buffer IO chain
    input  [1-1:0] invalidate_in,
@@ -46,22 +46,42 @@ module iob_cache_sim_wrapper #(
 
    //General Interface Signals
    input [1-1:0] clk_i,  //V2TEX_IO System clock input.
-   input [1-1:0] rst_i   //V2TEX_IO System reset, active high.
+   input [1-1:0] arst_i   //V2TEX_IO System reset, active high.
 );
+
+   wire cke_i;
+   wire avalid_r;
+   wire rvalid;
+   wire ready;
+
+   assign cke_i = 1'b1;
+   assign ack = avalid_r & ready;
+
+   iob_reg_re #(
+      .DATA_W (1),
+      .RST_VAL(0)
+   ) iob_reg_avalid (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (ready),
+      .data_i(avalid),
+      .data_o(avalid_r)
+   );
 
 `ifdef AXI
    `include "iob_cache_axi_wire.vh"
 
-  iob_cache_axi
-   ) cache (
+  iob_cache_axi cache (
       //front-end
       .wdata(wdata),
       .addr (addr),
       .wstrb(wstrb),
       .rdata(rdata),
-      .req  (req),
-               .rvalid(rvalid),
-               .ready(ready),
+      .avalid(avalid),
+      .rvalid(rvalid),
+      .ready(ready),
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -71,22 +91,25 @@ module iob_cache_sim_wrapper #(
 
       `include "iob_cache_axi_m_portmap.vh"
 
+      .be_avalid(be_avalid),
       .be_addr (be_addr),
       .be_wdata(be_wdata),
       .be_wstrb(be_wstrb),
       .be_rdata(be_rdata),
-      .be_req  (be_req),
-      .be_ack  (be_ack),
+      .be_rvalid(be_rvalid),
+      .be_avalid(be_avalid),
       .clk_i   (clk_i),
-      .rst_i   (rst_i)
+      .cke_i   (cke_i),
+      .arst_i  (arst_i)
    );
 `else
-   wire                   be_req;
-   reg                    be_ack;
+   wire                   be_avalid;
    wire [  BE_ADDR_W-1:0] be_addr;
    wire [  BE_DATA_W-1:0] be_wdata;
    wire [BE_DATA_W/8-1:0] be_wstrb;
    wire [  BE_DATA_W-1:0] be_rdata;
+   wire                   be_rvalid;
+   wire                   be_ready;
 
    iob_cache_iob  cache (
       //front-end
@@ -94,9 +117,9 @@ module iob_cache_sim_wrapper #(
       .addr (addr),
       .wstrb(wstrb),
       .rdata(rdata),
-      .req  (req),
-               .rvalid(rvalid),
-               .ready(ready),
+      .avalid(avalid),
+      .rvalid(rvalid),
+      .ready(ready),
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
@@ -104,17 +127,19 @@ module iob_cache_sim_wrapper #(
       .wtb_empty_in  (1'b1),
       .wtb_empty_out (),
 
-      .be_addr (be_addr),
-      .be_wdata(be_wdata),
-      .be_wstrb(be_wstrb),
-      .be_rdata(be_rdata),
-      .be_req  (be_req),
-      .be_ack  (be_ack),
+      .be_avalid(be_avalid),
+      .be_addr  (be_addr),
+      .be_wdata (be_wdata),
+      .be_wstrb (be_wstrb),
+      .be_rdata (be_rdata),
+      .be_rvalid(be_rvalid),
+      .be_ready (be_ready),
 
       .clk_i   (clk_i),
-      .rst_i   (rst_i)
+      .cke_i   (cke_i),
+      .arst_i  (arst_i)
    );
-`endif 
+`endif
 
 `ifdef AXI
    axi_ram #(
@@ -125,7 +150,7 @@ module iob_cache_sim_wrapper #(
    ) axi_ram (
       `include "iob_cache_ram_axi_portmap.vh"
       .clk(clk_i),
-      .rst(rst_i)
+      .rst(arst_i)
    );
 `else
    iob_ram_sp_be #(
@@ -133,16 +158,26 @@ module iob_cache_sim_wrapper #(
       .ADDR_W(BE_ADDR_W)
    ) native_ram (
       .clk_i (clk_i),
-      .en_i  (be_req),
+      .en_i  (be_avalid),
       .we_i  (be_wstrb),
       .addr_i(be_addr),
       .d_o   (be_rdata),
       .d_i   (be_wdata)
    );
 
-   always @(posedge clk_i, posedge rst_i)
-      if (rst_i) be_ack <= 1'b0;
-      else be_ack <= be_req;
+   assign be_ready = 1'b1;
+   iob_reg_re #(
+      .DATA_W (1),
+      .RST_VAL(0)
+   ) iob_reg_rvalid (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (1'b1),
+      .data_i(be_avalid & (~(|be_wstrb))),
+      .data_o(be_rvalid)
+   );
 `endif
 
 endmodule
