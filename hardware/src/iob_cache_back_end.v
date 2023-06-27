@@ -25,20 +25,21 @@ module iob_cache_back_end #(
 
    // read channel
    input                                                                        read_req_i,
-   input [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W]                                  read_addr_i,
+   input [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W]                                  read_req_addr_i,
    output                                                                       read_valid_o,
    output [ LINE2BE_W -1:0]                                                     read_addr_o,
+   output                                                                       read_busy_o,
 
    // back-end memory interface
-   output [         1-1:0] be_iob_avalid_o,
-   output [    BE_ADDR_W-1:0] be_iob_addr_o,
-   output [    BE_DATA_W-1:0] be_iob_wdata_o,
-   output [(BE_DATA_W/8)-1:0] be_iob_wstrb_o,
-   input  [         1-1:0] be_iob_rvalid_i,
-   input  [    BE_DATA_W-1:0] be_iob_rdata_i,
-   input  [         1-1:0] be_iob_ready_i,
-
-`include "iob_clkrst_port.vs"
+   output [ 1-1:0]                                                              be_iob_avalid_o,
+   output [ BE_ADDR_W-1:0]                                                      be_iob_addr_o,
+   output [ BE_DATA_W-1:0]                                                      be_iob_wdata_o,
+   output [(BE_DATA_W/8)-1:0]                                                   be_iob_wstrb_o,
+   input [ 1-1:0]                                                               be_iob_rvalid_i,
+   input [ BE_DATA_W-1:0]                                                       be_iob_rdata_i,
+   input [ 1-1:0]                                                               be_iob_ready_i,
+                                                                                
+                                                                                `include "iob_clkrst_port.vs"
    );
 
    wire be_valid_read, be_valid_write;
@@ -57,10 +58,11 @@ module iob_cache_back_end #(
       .clk_i       (clk_i),
       .arst_i      (arst_i),
                
-      .read_valid_i(read_req_i),
-      .read_addr_i (read_addr_i),
+      .read_req_i(read_req_i),
+      .read_req_addr_i (read_req_addr_i),
       .read_valid_o(read_valid_o),
       .read_addr_o (read_addr_o),
+      .read_busy_o (read_busy_o),
 
       .be_addr_o   (be_addr_read),
       .be_valid_o  (be_valid_read),

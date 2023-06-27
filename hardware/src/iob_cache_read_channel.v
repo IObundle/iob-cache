@@ -18,12 +18,13 @@ module iob_cache_read_channel #(
    input                                     arst_i,
 
    //read request
-   input                                     read_valid_i,
-   input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] read_addr_i,
+   input                                     read_req_i,
+   input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] read_req_addr_i,
 
    //read response
    output reg                                read_valid_o,
    output reg [ LINE2BE_W-1:0]               read_addr_o,
+   output reg                                read_busy_o,
 
    //back-end read interface
    output reg                                be_valid_o,
@@ -42,7 +43,7 @@ module iob_cache_read_channel #(
       if (LINE2BE_W > 0) begin : g_line2be_w
          reg [LINE2BE_W-1:0] word_counter;
 
-         assign be_addr_o   = {BE_ADDR_W{1'b0}} + {read_addr_i[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o   = {BE_ADDR_W{1'b0}} + {read_req_addr_i[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
 
          always @(posedge clk_i, posedge arst_i) begin
             if (arst_i) begin 
@@ -60,7 +61,7 @@ module iob_cache_read_channel #(
             end else begin
                case (state)
                   idle: begin
-                     if (read_valid_i && be_ready_i)  // main_process flag
+                     if (read_req_i && be_ready_i)  // main_process flag
                         state <= handshake;
                      else state <= idle;
                   end
@@ -89,21 +90,24 @@ module iob_cache_read_channel #(
                   be_valid_o     = 1'b0;
                   word_counter = 0;
                   read_valid_o   = 1'b0;
+                  read_busy_o  = 1'b0;
                end
                handshake: begin
                   be_valid_o     = ~be_rvalid_i | ~(&read_addr_o);
                   word_counter = read_addr_o + be_rvalid_i;
                   read_valid_o   = be_rvalid_i;
+                  read_busy_o  = 1'b1;
                end
                default: begin
                   be_valid_o     = 1'b0;
                   word_counter = 0;
                   read_valid_o   = 1'b0;
+                  read_busy_o  = 1'b1;
                end
             endcase
          end
       end else begin : g_no_line2be_w
-         assign be_addr_o    = {BE_ADDR_W{1'b0}} + {read_addr, {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o    = {BE_ADDR_W{1'b0}} + {read_req_addr_i, {BE_NBYTES_W{1'b0}}};
 
          reg [1:0] state;
 
@@ -113,7 +117,7 @@ module iob_cache_read_channel #(
             end else begin
                case (state)
                   idle: begin
-                     if (read_valid_i) state <= handshake;
+                     if (read_req_i) state <= handshake;
                      else state <= idle;
                   end
                   handshake: begin
@@ -133,14 +137,17 @@ module iob_cache_read_channel #(
                idle: begin
                   be_valid_o   = 1'b0;
                   read_valid_o = 1'b0;
+                  read_busy_o = 1'b0;
                end
                handshake: begin
                   be_valid_o   = ~be_rvalid_i;
-                  read_valid_o = be_rvalid_i;
+                  read_req_o = be_rvalid_i;
+                  read_busy_o = 1'b1;
                end
                default: begin
                   be_valid_o   = 1'b0;
                   read_valid_o = 1'b0;
+                  read_busy_o = 1'b1;
                end
             endcase
          end

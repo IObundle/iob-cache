@@ -320,7 +320,7 @@ class iob_cache(iob_module):
                     {
                         "name": "fe_iob_addr_i",
                         "type": "I",
-                        "n_bits": "FE_ADDR_W",
+                        "n_bits": "FE_ADDR_W-$clog2(FE_DATA_W/8)",
                         "descr": "Address.",
                     },
                     {

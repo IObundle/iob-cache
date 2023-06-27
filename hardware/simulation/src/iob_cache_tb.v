@@ -14,7 +14,7 @@ module iob_cache_tb;
    reg cke_i = 0;
 
    //clock
-   `IOB_CLOCK(clk, CLK_PER)
+   `IOB_CLOCK(clk, 10)
 
    //system async reset, sync de-assert
    always @(posedge clk, posedge rst) begin
@@ -35,24 +35,22 @@ localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
 localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    
    //frontend signals
-   reg     [                1-1:0] fe_iob_avalid_i = 0;  //Request valid.
-   reg     [           FE_ADDR_W-1:0] fe_iob_addr_i = 0;  //Address.
-   reg     [           FE_DATA_W-1:0] fe_iob_wdata_i = 0;  //Write data.
-   reg     [       (FE_DATA_W/8)-1:0] fe_iob_wstrb_i = 0;  //Write strobe.
-   wire    [                1-1:0] fe_iob_rvalid_o;  //Read data valid.
-   wire    [           FE_DATA_W-1:0] fe_iob_rdata_o;  //Read data.
-   wire    [                1-1:0] fe_iob_ready_o;  //Interface ready.
+   reg  fe_iob_avalid_i = 0;
+   reg     [           FE_ADDR_W-1:$clog2(FE_DATA_W/8)] fe_iob_addr_i = 0;
+   reg     [           FE_DATA_W-1:0] fe_iob_wdata_i = 0;
+   reg     [       (FE_DATA_W/8)-1:0] fe_iob_wstrb_i = 0;
+   wire    [                1-1:0] fe_iob_rvalid_o;
+   wire    [           FE_DATA_W-1:0] fe_iob_rdata_o;
+   wire    [                1-1:0] fe_iob_ready_o;
 
    
    //backend signals
-   wire    [                1-1:0] be_iob_avalid_o;  //Request valid.
+   wire be_iob_avalid_o;  //Request valid.
    wire    [           BE_ADDR_W-1:0] be_iob_addr_o;  //Address.
    wire    [           BE_DATA_W-1:0] be_iob_wdata_o;  //Write data.
    wire    [       (BE_DATA_W/8)-1:0] be_iob_wstrb_o;  //Write strobe.
-   reg     [                1-1:0] be_iob_rvalid_i = 0;  //Read data valid.
-   reg     [           BE_DATA_W-1:0] be_iob_rdata_i = 0;  //Read data.
-   reg     [                1-1:0] be_iob_ready_i = 0;  //Interface ready.
-
+   reg    [                1-1:0] be_iob_rvalid_i = 0;  //Read data valid.
+   wire     [           BE_DATA_W-1:0] be_iob_rdata_i = 0;  //Read data.
 
    reg [`IOB_CACHE_DATA_W-1:0]                               data;
 
@@ -133,25 +131,23 @@ localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
        //control
  `include "iob_s_s_portmap.vs"
       //front-end
-      .fe_iob_avalid_i(fe_iob_avalid_i),          //Request valid.
-      .fe_iob_addr_i  (fe_iob_addr_i),       //Address.
-      .fe_iob_wdata_i (fe_iob_wdata_i),      //Write data.
-      .fe_iob_wstrb_i (fe_iob_wstrb_i),  //Write strobe.
-      .fe_iob_rvalid_o(fe_iob_rvalid_o),          //Read data valid.
-      .fe_iob_rdata_o (fe_iob_rdata_o),      //Read data.
-      .fe_iob_ready_o (fe_iob_ready_o),           //Interface ready.
-
-      .be_iob_avalid_o(be_iob_avalid[0+:1]),          //Request valid.
-      .be_iob_addr_o  (be_iob_addr[0+:BE_ADDR_W]),       //Address.
-      .be_iob_wdata_o (be_iob_wdata[0+:BE_DATA_W]),      //Write data.
-      .be_iob_wstrb_o (be_iob_wstrb[0+:(BE_DATA_W/8)]),  //Write strobe.
-      .be_iob_rvalid_i(be_iob_rvalid[0+:1]),          //Read data valid.
-      .be_iob_rdata_i (be_iob_rdata[0+:BE_DATA_W]),      //Read data.
-      .be_iob_ready_i (be_iob_ready[0+:1]),           //Interface ready.
-
-  .clk_i(clk),
-    .arst_i(arst),
-    .cke_i(cke_i)
+      .fe_iob_avalid_i(fe_iob_avalid_i),
+      .fe_iob_addr_i  (fe_iob_addr_i),
+      .fe_iob_wdata_i (fe_iob_wdata_i),
+      .fe_iob_wstrb_i (fe_iob_wstrb_i),
+      .fe_iob_rvalid_o(fe_iob_rvalid_o),
+      .fe_iob_rdata_o (fe_iob_rdata_o),
+      .fe_iob_ready_o (fe_iob_ready_o),
+      .be_iob_avalid_o(be_iob_avalid_o),
+      .be_iob_addr_o  (be_iob_addr_o),
+      .be_iob_wdata_o (be_iob_wdata_o),
+      .be_iob_wstrb_o (be_iob_wstrb_o),
+      .be_iob_rvalid_i(be_iob_rvalid_i),
+      .be_iob_rdata_i (be_iob_rdata_i),
+      .be_iob_ready_i (1'b1),
+      .clk_i(clk),
+      .arst_i(arst),
+      .cke_i(cke_i)
    );
 `endif
 
@@ -186,12 +182,10 @@ localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
       if (arst) begin
          be_iob_rvalid_i <= 1'b0;
       end else begin
-         be_iob_rvalid_i <= be_iob_valid_i;
+         be_iob_rvalid_i <= be_iob_avalid_o;
       end
    end
 
-   assign be_iob_ready_i = 1'b1;
-   
 `endif
 
 endmodule

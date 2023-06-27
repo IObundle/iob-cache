@@ -32,6 +32,8 @@ module iob_cache_iob
    wire [FE_ADDR_W -1:BE_NBYTES_W+LINE2BE_W]                                   read_req_addr;
    wire                                                                        read_valid;
    wire [                     LINE2BE_W-1:0]                                   read_addr;
+   wire                                                                        read_busy;
+   
 
    
    
@@ -75,7 +77,7 @@ module iob_cache_iob
       .wstrb_i  (fe_iob_wstrb_i),
       .rdata_o  (fe_iob_rdata_o),
       .rvalid_o (fe_iob_rvalid_o),
-      .ready_o  (fe_iob_rdata_o),
+      .ready_o  (fe_iob_ready_o),
 
       // back-end write request
       .write_req_o   (write_req),
@@ -90,6 +92,7 @@ module iob_cache_iob
       .read_valid_i    (read_valid),
       .read_addr_i     (read_addr),
       .read_rdata_i    (be_iob_rdata_i),
+      .read_busy_i     (read_busy),
 
       // controla and status signals
       .wtbuf_empty_o   (WTB_EMPTY),
@@ -121,8 +124,9 @@ module iob_cache_iob
       // cache-line replacement (read-channel)
       .read_req_i (read_req),
       .read_req_addr_i(read_req_addr),
-      .read_valid_o    (read_req),
+      .read_valid_o    (read_valid),
       .read_addr_o   (read_addr),
+      .read_busy_o   (read_busy),
       // back-end native interface
       .be_iob_avalid_o(be_iob_avalid_o),
       .be_iob_addr_o  (be_iob_addr_o),
