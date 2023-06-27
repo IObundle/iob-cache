@@ -1,41 +1,46 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache.vh"
 `include "iob_cache_conf.vh"
 
 module iob_cache_back_end #(
-   parameter ADDR_W        = `IOB_CACHE_ADDR_W,
-   parameter DATA_W        = `IOB_CACHE_DATA_W,
+   parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
+   parameter FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
    parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   parameter WRITE_POL     = `IOB_CACHE_WRITE_THROUGH
+   parameter WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
+   //derived parameters
+   parameter FE_NBYTES     = FE_DATA_W / 8,
+   parameter FE_NBYTES_W   = $clog2(FE_NBYTES),
+   parameter BE_NBYTES     = BE_DATA_W / 8,
+   parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
+   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    input clk_i,
    input reset,
 
    // write-through-buffer
-   input                                                                write_valid,
-   input  [   ADDR_W-1 : `IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr,
-   input  [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] write_wdata,
-   input  [                                      `IOB_CACHE_NBYTES-1:0] write_wstrb,
-   output                                                               write_ready,
+   input                                                                         write_valid,
+   input  [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr,
+   input  [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata,
+   input  [                                                       FE_NBYTES-1:0] write_wstrb,
+   output                                                                        write_ready,
 
    // cache-line replacement
-   input                                                           replace_valid,
-   input  [ADDR_W-1:`IOB_CACHE_BE_NBYTES_W + `IOB_CACHE_LINE2BE_W] replace_addr,
-   output                                                          replace,
-   output                                                          read_valid,
-   output [                             `IOB_CACHE_LINE2BE_W -1:0] read_addr,
-   output [                                        BE_DATA_W -1:0] read_rdata,
+   input                                        replace_valid,
+   input  [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr,
+   output                                       replace,
+   output                                       read_valid,
+   output [                     LINE2BE_W -1:0] read_addr,
+   output [                     BE_DATA_W -1:0] read_rdata,
 
    // back-end memory interface
-   output                            be_valid,
-   output [          BE_ADDR_W -1:0] be_addr,
-   output [           BE_DATA_W-1:0] be_wdata,
-   output [`IOB_CACHE_BE_NBYTES-1:0] be_wstrb,
-   input  [           BE_DATA_W-1:0] be_rdata,
-   input                             be_ready
+   output                  be_valid,
+   output [BE_ADDR_W -1:0] be_addr,
+   output [ BE_DATA_W-1:0] be_wdata,
+   output [ BE_NBYTES-1:0] be_wstrb,
+   input  [ BE_DATA_W-1:0] be_rdata,
+   input                   be_ready
 );
 
    wire [BE_ADDR_W-1:0] be_addr_read, be_addr_write;
@@ -45,8 +50,8 @@ module iob_cache_back_end #(
    assign be_valid = be_valid_read | be_valid_write;
 
    iob_cache_read_channel #(
-      .ADDR_W       (ADDR_W),
-      .DATA_W       (DATA_W),
+      .FE_ADDR_W    (FE_ADDR_W),
+      .FE_DATA_W    (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W)
@@ -66,8 +71,8 @@ module iob_cache_back_end #(
    );
 
    iob_cache_write_channel #(
-      .ADDR_W       (ADDR_W),
-      .DATA_W       (DATA_W),
+      .ADDR_W       (FE_ADDR_W),
+      .DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WRITE_POL    (WRITE_POL),

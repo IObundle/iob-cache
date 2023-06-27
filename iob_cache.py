@@ -24,6 +24,67 @@ class iob_cache(iob_module):
     flows = "emb sim doc fpga"
     setup_dir = os.path.dirname(__file__)
 
+    # Public method to set dynamic attributes
+    # This method is automatically called by the `setup` method
+    @classmethod
+    def set_dynamic_attributes(cls):
+        super().set_dynamic_attributes()
+
+        # Parse BE_DATA_W argument
+        cls.BE_DATA_W = "32"
+        for arg in sys.argv[1:]:
+            if "BE_DATA_W" in arg:
+                cls.BE_DATA_W = arg.split("=")[1]
+                if cls.BE_DATA_W not in ["32", "64", "128", "256"]:
+                    print("ERROR: backend interface width must be 32, 64, 128 or 256")
+                    exit(1)
+
+        # Parse BE_IF argument
+        cls.BE_IF = "AXI4"
+        for arg in sys.argv[1:]:
+            if "BE_IF" in arg:
+                cls.BE_IF = arg.split("=")[1]
+                if cls.BE_IF not in ["AXI4", "IOb"]:
+                    print("ERROR: backend interface must be either AXI4 or IOb")
+                    exit(1)
+
+        cls.AXI_CONFS = []
+        if cls.BE_IF == "AXI4":
+            cls.AXI_CONFS = [
+                {
+                    "name": "AXI",
+                    "type": "M",
+                    "val": "NA",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "AXI interface used by backend",
+                },
+                {
+                    "name": "AXI_ID_W",
+                    "type": "M",
+                    "val": "1",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "description",
+                },
+                {
+                    "name": "AXI_LEN_W",
+                    "type": "M",
+                    "val": "4",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "description",
+                },
+                {
+                    "name": "AXI_ID",
+                    "type": "M",
+                    "val": "0",
+                    "min": "?",
+                    "max": "?",
+                    "descr": "description",
+                },
+            ]
+
     @classmethod
     def _run_setup(cls):
         # Hardware headers & modules
@@ -110,39 +171,6 @@ class iob_cache(iob_module):
                     "max": "?",
                     "descr": "write-back allocate: implementes a dirty-memory",
                 },
-                # AXI4
-                {
-                    "name": "AXI_ID_W",
-                    "type": "M",
-                    "val": "1",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
-                {
-                    "name": "AXI_LEN_W",
-                    "type": "M",
-                    "val": "4",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
-                {
-                    "name": "AXI_ID",
-                    "type": "M",
-                    "val": "0",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
-                {
-                    "name": "AXI_ID_W",
-                    "type": "M",
-                    "val": "1",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
                 # Swreg_gen parameters
                 {
                     "name": "ADDR_W",
@@ -155,18 +183,11 @@ class iob_cache(iob_module):
                 {
                     "name": "DATA_W",
                     "type": "P",
-                    "val": "`IOB_CACHE_FE_DATA_W",
+                    "val": "32",
                     "min": "NA",
                     "max": "NA",
                     "descr": "Cache data width used by swreg_gen",
                 },
-                # TODO: Need to handle ifdef AXI
-                # {'name':'AXI_ID_W', 'type':'P', 'val':'`IOB_CACHE_AXI_ID_W', 'min':'1', 'max':'NA', 'descr':'AXI ID bus width'},
-                # {'name':'AXI_LEN_W', 'type':'P', 'val':'`IOB_CACHE_AXI_LEN_W', 'min':'1', 'max':'NA', 'descr':'AXI LEN bus width'},
-                # {'name':'AXI_ADDR_W', 'type':'P', 'val':'BE_ADDR_W', 'min':'1', 'max':'NA', 'descr':'AXI address bus width'},
-                # {'name':'AXI_DATA_W', 'type':'P', 'val':'BE_DATA_W', 'min':'1', 'max':'NA', 'descr':'AXI data bus width'},
-                # {'name':'[AXI_ID_W-1:0] AXI_ID', 'type':'P', 'val':'`IOB_CACHE_AXI_ID', 'min':'?', 'max':'NA', 'descr':'AXI ID bus'},
-                # Other parameters
                 {
                     "name": "FE_ADDR_W",
                     "type": "P",
@@ -194,7 +215,7 @@ class iob_cache(iob_module):
                 {
                     "name": "BE_DATA_W",
                     "type": "P",
-                    "val": "32",
+                    "val": cls.BE_DATA_W,
                     "min": "32",
                     "max": "256",
                     "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
@@ -264,6 +285,7 @@ class iob_cache(iob_module):
                     "descr": "Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL=1), providing additional software accessible functions for these functions.",
                 },
             ]
+            + cls.AXI_CONFS
         )
 
     @classmethod
@@ -315,9 +337,6 @@ class iob_cache(iob_module):
                 "name": "be",
                 "descr": "Back-end interface",
                 "ports": [
-                    # `ifdef AXI #TODO: Need to handle ifdef AXI
-                    # `include "iob_cache_axi_m_port.vh"
-                    # `else
                     {
                         "name": "",
                         "type": "O",
@@ -353,8 +372,7 @@ class iob_cache(iob_module):
                         "type": "I",
                         "n_bits": "1",
                         "descr": "Acknowledge signal from next-level cache or memory.",
-                    }
-                    # `endif
+                    },
                 ],
             },
             {

@@ -6,8 +6,6 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_lib.vh"
-`include "iob_cache.vh"
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
@@ -25,41 +23,50 @@ module iob_cache_axi #(
    parameter                USE_CTRL      = `IOB_CACHE_USE_CTRL,
    parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT,
    parameter                AXI_ID_W      = `IOB_CACHE_AXI_ID_W,
+   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID,
    parameter                AXI_LEN_W     = `IOB_CACHE_AXI_LEN_W,
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
-   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID
+   //derived parameters
+   parameter                FE_NBYTES     = FE_DATA_W / 8,
+   parameter                FE_NBYTES_W   = $clog2(FE_NBYTES),
+   parameter                BE_NBYTES     = BE_DATA_W / 8,
+   parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
+   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input  [                                     1-1:0] req,
-   input  [USE_CTRL+FE_ADDR_W-`IOB_CACHE_NBYTES_W-1:0] addr,
-   input  [                             FE_DATA_W-1:0] wdata,
-   input  [                     `IOB_CACHE_NBYTES-1:0] wstrb,
-   output [                             FE_DATA_W-1:0] rdata,
-   output [                                     1-1:0] ack,
+   input [ 1-1:0]                                     req,
+   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr,
+   input [ FE_DATA_W-1:0]                             wdata,
+   input [FE_NBYTES-1:0]                     wstrb,
+   output [ FE_DATA_W-1:0]                            rdata,
+   output                                             rvalid,
+   output                                             ready,
 
    // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_in,
-   output [1-1:0] invalidate_out,
-   input  [1-1:0] wtb_empty_in,
-   output [1-1:0] wtb_empty_out,
+   input [1-1:0]                                      invalidate_in,
+   output [1-1:0]                                     invalidate_out,
+   input [1-1:0]                                      wtb_empty_in,
+   output [1-1:0]                                     wtb_empty_out,
 
    // AXI4 back-end interface
    `include "iob_axi_m_port.vs"
    //General Interface Signals
-   input [1-1:0] clk_i,  //System clock input
-   input [1-1:0] rst_i   //System reset, asynchronous and active high
+   input [1-1:0]                                      clk_i, //System clock input
+   input [1-1:0]                                      rst_i   //System reset, asynchronous and active high
 );
 
-   //Front-end & Front-end interface.
+   wire                                               ack;
+
+  //Front-end & Front-end interface.
    wire data_req, data_ack;
-   wire [FE_ADDR_W -1 : `IOB_CACHE_NBYTES_W] data_addr;
+   wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr;
    wire [FE_DATA_W-1 : 0] data_wdata, data_rdata;
-   wire [             `IOB_CACHE_NBYTES-1:0] data_wstrb;
-   wire [FE_ADDR_W -1 : `IOB_CACHE_NBYTES_W] data_addr_reg;
-   wire [                   FE_DATA_W-1 : 0] data_wdata_reg;
-   wire [             `IOB_CACHE_NBYTES-1:0] data_wstrb_reg;
-   wire                                      data_req_reg;
+   wire [             FE_NBYTES-1:0] data_wstrb;
+   wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr_reg;
+   wire [           FE_DATA_W-1 : 0] data_wdata_reg;
+   wire [             FE_NBYTES-1:0] data_wstrb_reg;
+   wire                              data_req_reg;
 
    wire ctrl_req, ctrl_ack;
    wire [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr;
@@ -72,7 +79,7 @@ module iob_cache_axi #(
    assign wtb_empty_out  = wtbuf_empty & wtb_empty_in;
 
    iob_cache_front_end #(
-      .ADDR_W  (FE_ADDR_W - `IOB_CACHE_NBYTES_W),
+      .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
       .DATA_W  (FE_DATA_W),
       .USE_CTRL(USE_CTRL)
    ) front_end (
@@ -85,6 +92,8 @@ module iob_cache_axi #(
       .wdata(wdata),
       .wstrb(wstrb),
       .rdata(rdata),
+      .rvalid(rvalid),
+      .ready(ready),
       .ack  (ack),
 
       // cache-memory input signals
@@ -113,20 +122,20 @@ module iob_cache_axi #(
 
    // back-end write-channel
    wire write_req, write_ack;
-   wire [         FE_ADDR_W-1 : `IOB_CACHE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
+   wire [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
    wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata;
-   wire [                                               `IOB_CACHE_NBYTES-1:0] write_wstrb;
+   wire [                                                       FE_NBYTES-1:0] write_wstrb;
 
    // back-end read-channel
    wire replace_req, replace;
-   wire [FE_ADDR_W -1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W] replace_addr;
-   wire                                                              read_req;
-   wire [                                  `IOB_CACHE_LINE2BE_W-1:0] read_addr;
-   wire [                                             BE_DATA_W-1:0] read_rdata;
+   wire [FE_ADDR_W -1 : BE_NBYTES_W+LINE2BE_W] replace_addr;
+   wire                                        read_req;
+   wire [                       LINE2BE_W-1:0] read_addr;
+   wire [                       BE_DATA_W-1:0] read_rdata;
 
    iob_cache_memory #(
-      .ADDR_W       (FE_ADDR_W),
-      .DATA_W       (FE_DATA_W),
+      .FE_ADDR_W       (FE_ADDR_W),
+      .FE_DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .NWAYS_W      (NWAYS_W),
@@ -143,7 +152,7 @@ module iob_cache_axi #(
 
       // front-end
       .req      (data_req),
-      .addr     (data_addr[FE_ADDR_W-1 : `IOB_CACHE_BE_NBYTES_W+`IOB_CACHE_LINE2BE_W]),
+      .addr     (data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
       .rdata    (data_rdata),
       .ack      (data_ack),
       .req_reg  (data_req_reg),
@@ -179,8 +188,8 @@ module iob_cache_axi #(
 
    //Back-end interface & This block interfaces with the system level or next-level cache.
    iob_cache_back_end_axi #(
-      .ADDR_W       (FE_ADDR_W),
-      .DATA_W       (FE_DATA_W),
+      .FE_ADDR_W       (FE_ADDR_W),
+      .FE_DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W),
