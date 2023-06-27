@@ -105,8 +105,8 @@ module iob_cache_memory #(
          localparam FIFO_ADDR_W = WTBUF_DEPTH_W;
 
          wire                   mem_clk;
-         wire [FIFO_ADDR_W-1:0] mem_arst;
-         wire [FIFO_DATA_W-1:0] mem_cke;
+         wire                   mem_arst;
+         wire                   mem_cke;
 
          wire                   mem_w_en;
          wire [FIFO_ADDR_W-1:0] mem_w_addr;
