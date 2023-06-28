@@ -46,9 +46,11 @@ module iob_cache_iob
    assign iob_ready_o  = iob_ready;
    assign iob_rvalid_o = iob_rvalid;
    assign iob_rdata_o  = iob_rdata;
-   
+  
    //Sofware acessible registers
     `include "iob_cache_swreg_inst.vs"
+
+   assign VERSION = `IOB_CACHE_VERSION;
    
    //events
    wire                                     write_hit;
@@ -56,7 +58,7 @@ module iob_cache_iob
    wire                                     read_hit;
    wire                                     read_miss;
    
-   iob_cache_memory #(
+   iob_cache_core #(
       .FE_ADDR_W    (FE_ADDR_W),
       .FE_DATA_W    (FE_DATA_W),
       .BE_DATA_W    (BE_DATA_W),
@@ -66,7 +68,7 @@ module iob_cache_iob
       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
       .REP_POLICY   (REP_POLICY),
       .WRITE_POL    (WRITE_POL)
-  ) cache_memory (
+  ) cache_core (
       .clk_i    (clk_i),
       .arst_i   (arst_i),
 
@@ -123,7 +125,7 @@ module iob_cache_iob
       .write_ack_o   (write_ack),
       // cache-line replacement (read-channel)
       .read_req_i (read_req),
-      .read_req_addr_i(read_req_addr),
+      .read_addr_i(read_req_addr),
       .read_valid_o    (read_valid),
       .read_addr_o   (read_addr),
       .read_busy_o   (read_busy),

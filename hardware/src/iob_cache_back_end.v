@@ -25,7 +25,7 @@ module iob_cache_back_end #(
 
    // read channel
    input                                                                        read_req_i,
-   input [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W]                                  read_req_addr_i,
+   input [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W]                                  read_addr_i,
    output                                                                       read_valid_o,
    output [ LINE2BE_W -1:0]                                                     read_addr_o,
    output                                                                       read_busy_o,
@@ -59,7 +59,7 @@ module iob_cache_back_end #(
       .arst_i      (arst_i),
                
       .read_req_i(read_req_i),
-      .read_req_addr_i (read_req_addr_i),
+      .read_req_addr_i (read_addr_i),
       .read_valid_o(read_valid_o),
       .read_addr_o (read_addr_o),
       .read_busy_o (read_busy_o),
@@ -72,8 +72,8 @@ module iob_cache_back_end #(
    );
 
    iob_cache_write_channel #(
-      .ADDR_W       (FE_ADDR_W),
-      .DATA_W       (FE_DATA_W),
+      .FE_ADDR_W       (FE_ADDR_W),
+      .FE_DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WRITE_POL    (WRITE_POL),

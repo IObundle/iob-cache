@@ -22,7 +22,6 @@ from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
 from iob_tasks import iob_tasks
-
 from iob_reg_e import iob_reg_e
 
 
@@ -155,7 +154,6 @@ class iob_cache(iob_module):
         super()._setup_confs(
             [
                 # Macros
-                # Replacement Policy
                 {
                     "name": "FE_ADDR_W",
                     "type": "P",
@@ -188,7 +186,7 @@ class iob_cache(iob_module):
                     "max": "256",
                     "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
                 },
-                # cache parameters
+                # Cache parameters
                 {
                     "name": "NWAYS_W",
                     "type": "P",
@@ -221,7 +219,7 @@ class iob_cache(iob_module):
                     "max": "",
                     "descr": "Write-through buffer depth (log2). A shallow buffer will fill up more frequently and cause write stalls; however, on a Read After Write (RAW) event, a shallow buffer will empty faster, decreasing the duration of the read stall. A deep buffer is unlkely to get full and cause write stalls; on the other hand, on a RAW event, it will take a long time to empty and cause long read stalls.",
                 },
-                # replacement policy
+                # Replacement policy
                 {
                     "name": "REP_POLICY",
                     "type": "P",

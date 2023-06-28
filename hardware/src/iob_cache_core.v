@@ -3,7 +3,7 @@
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
-module iob_cache_memory #(
+module iob_cache_core #(
    parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
    parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W,
    parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
@@ -63,7 +63,8 @@ module iob_cache_memory #(
    localparam NWAYS = 2 ** NWAYS_W;
 
    output ack;
-   
+
+   assign ready_o = ~wtbuf_full_o & ~read_busy_i;
 
   // register inputs
   reg avalid_reg;
@@ -73,12 +74,12 @@ module iob_cache_memory #(
 
   always @(posedge clk_i, posedge arst_i) begin
     if (arst_i) begin
-      avalid_reg   <= 0;
+      avalid_reg   <= 'b0;
       addr_reg  <= 0;
       wdata_reg <= 0;
       wstrb_reg <= 0;
     end else begin
-      avalid_reg   <= avalid_i;
+      avalid_reg <= avalid_i;
       addr_reg  <= addr_i;
       wdata_reg <= wdata_i;
       wstrb_reg <= wstrb_i;
@@ -113,16 +114,10 @@ module iob_cache_memory #(
 
    wire write_access = |wstrb_reg & avalid_reg;
    wire read_access = ~|wstrb_reg & avalid_reg;
-
    assign rvalid_o = read_access & hit;
 
-   // back-end write channel
-   wire buffer_empty, buffer_full;
-   wire [FE_NBYTES+(FE_ADDR_W-FE_NBYTES_W)+(FE_DATA_W)-1:0] buffer_dout;
-
-   // for write-back write-allocate only
-   reg  [                                        NWAYS-1:0] dirty;
-   reg  [                          NWAYS*(2**NLINES_W)-1:0] dirty_reg;
+   wire raw;
+   
 
    generate
       if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
@@ -137,6 +132,20 @@ module iob_cache_memory #(
          wire [FIFO_ADDR_W-1:0] mem_r_addr;
          wire [FIFO_DATA_W-1:0] mem_r_data;
 
+         wire                   buffer_empty, buffer_full;
+         reg                    buffer_empty_reg;
+
+         wire [FE_NBYTES+(FE_ADDR_W-FE_NBYTES_W)+(FE_DATA_W)-1:0] buffer_dout;
+
+         always @(posedge clk_i, posedge arst_i) begin
+            if (arst_i) begin
+               buffer_empty_reg <= 1'b1;
+            end else begin
+               buffer_empty_reg <= buffer_empty;
+            end
+         end
+
+         
          // FIFO memory
          iob_ram_2p #(
             .DATA_W(FIFO_DATA_W),
@@ -176,19 +185,19 @@ module iob_cache_memory #(
 
             .r_data_o (buffer_dout),
             .r_empty_o(buffer_empty),
-            .r_en_i   (write_ack_i),
+            .r_en_i   (~buffer_empty_reg),
 
-            .w_data_i({addr_reg, wdata_reg, wstrb_reg}),
+            .w_data_i({addr_i, wdata_i, wstrb_i}),
             .w_full_o(buffer_full),
-            .w_en_i  (write_access & ack)
+            .w_en_i  (avalid_i & |wstrb_i & ~buffer_full)
          );
 
-         // buffer status
+         // buffer sw reg status
          assign wtbuf_full_o   = buffer_full;
-         assign wtbuf_empty_o  = buffer_empty & write_ack_i & ~write_req_o;
+         assign wtbuf_empty_o  = buffer_empty;
 
          // back-end write channel
-         assign write_req_o    = ~buffer_empty;
+         assign write_req_o    = ~buffer_empty_reg;
          assign write_addr_o   = buffer_dout[FE_NBYTES+FE_DATA_W+:FE_ADDR_W-FE_NBYTES_W];
          assign write_wdata_o  = buffer_dout[FE_NBYTES+:FE_DATA_W];
          assign write_wstrb_o  = buffer_dout[0+:FE_NBYTES];
@@ -196,36 +205,30 @@ module iob_cache_memory #(
          // back-end read channel
          assign read_req_o  = (~hit & read_access & ~read_busy_i) & (buffer_empty & write_ack_i);
          assign read_req_addr_o = addr_i[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
-      end else begin : g_write_back
-         // if (WRITE_POL == WRITE_BACK)
-         // back-end write channel
-         assign write_wstrb_o  = {FE_NBYTES{1'bx}};
-         // write_req, write_addr and write_wdata assigns are generated bellow (dependencies)
 
-         // back-end read channel
-         assign read_req_o  = (~|way_hit) & (write_ack_i) & valid_reg & ~read_busy_i;
-         assign read_req_addr_o = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
-      end
-   endgenerate
-
-   //////////////////////////////////////////////////////
-   // Read-After-Write (RAW) Hazard (pipeline) control
-   //////////////////////////////////////////////////////
-   wire                     raw;
-   reg                      write_hit_prev;
-   reg  [WORD_OFFSET_W-1:0] offset_prev;
-   reg  [        NWAYS-1:0] way_hit_prev;
-
-   generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through_on_RAW
          always @(posedge clk_i) begin
             write_hit_prev <= write_access & (|way_hit);
             // previous write position
             offset_prev    <= offset;
             way_hit_prev   <= way_hit;
          end
+
          assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset);
-      end else begin : g_write_back_on_RAW
+
+         assign ack = (hit & read_access) | (~buffer_full & write_access);
+
+      end else begin : g_write_back
+         // if (WRITE_POL == WRITE_BACK)
+
+         reg  [                                        NWAYS-1:0] dirty;
+         reg [                          NWAYS*(2**NLINES_W)-1:0]  dirty_reg;
+
+         assign write_wstrb_o  = {FE_NBYTES{1'bx}};
+         // write_req, write_addr and write_wdata assigns are generated bellow (dependencies)
+
+         // back-end read channel
+         assign read_req_o  = (~|way_hit) & (write_ack_i) & avalid_reg & ~read_busy_i;
+         assign read_req_addr_o = addr[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
          // if (WRITE_POL == WRITE_BACK)
          always @(posedge clk_i) begin
             // all writes will have the data in cache in the end
@@ -234,25 +237,28 @@ module iob_cache_memory #(
             offset_prev    <= offset;
             way_hit_prev   <= way_hit;
          end
+         
          assign raw = write_hit_prev & (way_hit_prev == way_hit) & (offset_prev == offset) & read_access;
          // without read_access it is an infinite replacement loop
       end
+
+
+      assign ack = hit & avalid_reg;
    endgenerate
+
+   //////////////////////////////////////////////////////
+   // Read-After-Write (RAW) Hazard (pipeline) control
+   //////////////////////////////////////////////////////
+   reg                      write_hit_prev;
+   reg  [WORD_OFFSET_W-1:0] offset_prev;
+   reg  [        NWAYS-1:0] way_hit_prev;
+
 
    ///////////////////////////////////////////////////////////////
    // Hit signal: data available and in the memory's output
    ///////////////////////////////////////////////////////////////
    assign hit = |way_hit & ~read_busy_i & (~raw);
 
-   /////////////////////////////////
-   // front-end ACK signal
-   /////////////////////////////////
-   generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH)
-         assign ack = (hit & read_access) | (~buffer_full & write_access);
-      else  // if (WRITE_POL == WRITE_BACK)
-         assign ack = hit & valid_reg;
-   endgenerate
 
    // cache-control hit-miss counters enables
    // cache-control hit-miss counters enables
@@ -385,7 +391,7 @@ module iob_cache_memory #(
             end
 
             // flush line
-            assign write_req_o = valid_reg & ~(|way_hit) & (way_select == dirty); //flush if there is not a hit, and the way selected is dirty
+            assign write_req_o = avalid_reg & ~(|way_hit) & (way_select == dirty); //flush if there is not a hit, and the way selected is dirty
             wire [TAG_W-1:0] tag_flush = line_tag >> (way_select_bin * TAG_W);  //auxiliary wire
             assign write_addr_o = {
                tag_flush, index_reg
