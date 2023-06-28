@@ -26,7 +26,7 @@ module iob_cache_read_channel #(
    // Native memory interface
    output     [BE_ADDR_W-1:0] be_addr,
    output reg                 be_valid,
-   input                      be_ready,
+   input                      be_ack,
    input      [BE_DATA_W-1:0] be_rdata
 );
 
@@ -57,7 +57,7 @@ module iob_cache_read_channel #(
                      else state <= idle;
                   end
                   handshake: begin
-                     if (be_ready)
+                     if (be_ack)
                         if (read_addr == {LINE2BE_W{1'b1}}) begin
                            state <= end_handshake;
                         end else begin
@@ -86,9 +86,9 @@ module iob_cache_read_channel #(
                   replace = 1'b0;
                end
                handshake: begin
-                  be_valid     = ~be_ready | ~(&read_addr);
-                  word_counter = read_addr + be_ready;
-                  read_valid   = be_ready;
+                  be_valid     = ~be_ack | ~(&read_addr);
+                  word_counter = read_addr + be_ack;
+                  read_valid   = be_ack;
                end
                default: ;
             endcase
@@ -113,7 +113,7 @@ module iob_cache_read_channel #(
                      else state <= idle;
                   end
                   handshake: begin
-                     if (be_ready) state <= end_handshake;
+                     if (be_ack) state <= end_handshake;
                      else state <= handshake;
                   end
                   end_handshake: begin  // read-latency delay (last line word)
@@ -134,8 +134,8 @@ module iob_cache_read_channel #(
                   replace = 1'b0;
                end
                handshake: begin
-                  be_valid   = ~be_ready;
-                  read_valid = be_ready;
+                  be_valid   = ~be_ack;
+                  read_valid = be_ack;
                end
                default: ;
             endcase

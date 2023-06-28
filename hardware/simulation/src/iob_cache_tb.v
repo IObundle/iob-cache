@@ -13,7 +13,7 @@ module iob_cache_tb;
    reg                                                    rst = 1;
 
    //frontend signals
-   reg                                                    req = 0;
+   reg                                                    avalid = 0;
    wire                                                   ack;
    reg  [`IOB_CACHE_ADDR_W-2:$clog2(`IOB_CACHE_DATA_W/8)] addr = 0;
    reg  [                          `IOB_CACHE_DATA_W-1:0] wdata = 0;
@@ -36,23 +36,23 @@ module iob_cache_tb;
 
       $display("Test 1: Writing Test");
       for (i = 0; i < 5; i = i + 1) begin
-         @(posedge clk) #1 req = 1;
+         @(posedge clk) #1 avalid = 1;
          wstrb = {`IOB_CACHE_DATA_W / 8{1'b1}};
          addr  = i;
          wdata = i * 3;
          wait (ack);
-         #1 req = 0;
+         #1 avalid = 0;
       end
 
       #80 @(posedge clk);
 
       $display("Test 2: Reading Test");
       for (i = 0; i < 5; i = i + 1) begin
-         @(posedge clk) #1 req = 1;
+         @(posedge clk) #1 avalid = 1;
          wstrb = {`IOB_CACHE_DATA_W / 8{1'b0}};
          addr  = i;
          wait (ack);
-         #1 req = 0;
+         #1 avalid = 0;
          //Write "Test passed!" to a file named "test.log"
          if (rdata == i * 3) $display("\tReading rdata=0x%0h at addr=0x%0h: PASSED", rdata, i);
          else begin
@@ -75,7 +75,7 @@ module iob_cache_tb;
    //Unit Under Test (simulation wrapper)
    iob_cache_sim_wrapper uut (
       //frontend 
-      .req  (req),
+      .avalid(avalid),
       .addr ({ctrl, addr}),
       .wdata(wdata),
       .wstrb(wstrb),
@@ -90,7 +90,7 @@ module iob_cache_tb;
       .wtb_empty_out (),
 
       .clk_i(clk),
-      .rst_i(rst)
+      .arst_i(rst)
    );
 
 endmodule

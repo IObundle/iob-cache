@@ -7,19 +7,19 @@ module iob_cache_front_end #(
    parameter DATA_W = 32,
 
    // Derived parameters DO NOT CHANGE
-   parameter NBYTES       = DATA_W / 8,
    parameter USE_CTRL     = 0,
    parameter USE_CTRL_CNT = 0
 ) (
-   // front-end port
+   // General ports
    input                                clk_i,
-   input                                reset,
+   input                                cke_i,
+   input                                arst_i,
+   // IOb-bus front-end
+   input                                avalid,
    input [USE_CTRL + ADDR_W -1:0]       addr,
    input [ DATA_W-1:0]                  wdata,
-   input [ NBYTES-1:0]                  wstrb,
-   input                                req,
+   input [ DATA_W/8-1:0]                wstrb,
    output [ DATA_W-1:0]                 rdata,
-   output                               ack,
    output                               rvalid,
    output                               ready,
 
@@ -33,7 +33,7 @@ module iob_cache_front_end #(
    output reg                           data_req_reg,
    output reg [ADDR_W-1:0]              data_addr_reg,
    output reg [DATA_W-1:0]              data_wdata_reg,
-   output reg [NBYTES-1:0]              data_wstrb_reg,
+   output reg [DATA_W/8-1:0]            data_wstrb_reg,
 
    // cache-control
    output                               ctrl_req,
@@ -42,7 +42,9 @@ module iob_cache_front_end #(
    input                                ctrl_ack
 );
 
-   wire data_req_int;
+   wire ack;
+   wire avalid_int;
+   wire we_r;
 
    // select cache memory ir controller
    generate
@@ -51,82 +53,88 @@ module iob_cache_front_end #(
          assign ack          = ctrl_ack | data_ack;
          assign rdata        = (ctrl_ack) ? ctrl_rdata : data_rdata;
 
-         assign data_req_int = ~addr[USE_CTRL+ADDR_W-1] & req;
+         assign avalid_int = ~addr[USE_CTRL+ADDR_W-1] & avalid;
 
-         assign ctrl_req     = addr[USE_CTRL+ADDR_W-1] & req;
+         assign ctrl_req     = addr[USE_CTRL+ADDR_W-1] & avalid;
          assign ctrl_addr    = addr[`IOB_CACHE_SWREG_ADDR_W-1:0];
 
       end else begin : g_no_ctrl
          // Front-end output signals
-         assign ack          = data_ack;
-         assign rdata        = data_rdata;
-         assign data_req_int = req;
-         assign ctrl_req     = 1'bx;
-         assign ctrl_addr    = `IOB_CACHE_SWREG_ADDR_W'dx;
+         assign ack        = data_ack;
+         assign rdata      = data_rdata;
+         assign avalid_int = avalid;
+         assign ctrl_req   = 1'bx;
+         assign ctrl_addr  = `IOB_CACHE_SWREG_ADDR_W'dx;
       end
    endgenerate
 
-   // register inputs
-   always @(posedge clk_i, posedge reset) begin
-      if (reset) begin
-         data_req_reg   <= 0;
-         data_addr_reg  <= 0;
-         data_wdata_reg <= 0;
-         data_wstrb_reg <= 0;
-      end else begin
-         data_req_reg   <= data_req_int;
-         data_addr_reg  <= addr[ADDR_W-1:0];
-         data_wdata_reg <= wdata;
-         data_wstrb_reg <= wstrb;
-      end
-   end
-
    // data output ports
    assign data_addr = addr[ADDR_W-1 : 0];
-   assign data_req  = data_req_int | data_req_reg;
+   assign data_req  = avalid_int | data_req_reg;
 
+   assign rvalid = we_r ? 1'b0 : ack;
+   assign ready  = data_req_reg ~^ ack;
 
-   //ctlr rvalid and ready
-   reg ctrl_rvalid;
-   always @(posedge clk_i, posedge reset) begin
-      if (reset) begin
-         ctrl_rvalid <= 0;
-      end else begin
-         ctrl_rvalid <= ctrl_req & !wstrb;
-      end
-   end
-   wire ctrl_ready = 1'b1;
+   // Register every input
+   iob_reg_re #(
+      .DATA_W (1),
+      .RST_VAL(0)
+   ) iob_reg_avalid (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (avalid_int|ack),
+      .data_i(avalid_int),
+      .data_o(data_req_reg)
+   );
+   iob_reg_re #(
+      .DATA_W (ADDR_W),
+      .RST_VAL(0)
+   ) iob_reg_addr (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (avalid_int),
+      .data_i(addr[ADDR_W-1:0]),
+      .data_o(data_addr_reg)
+   );
+   iob_reg_re #(
+      .DATA_W (DATA_W),
+      .RST_VAL(0)
+   ) iob_reg_wdata (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (avalid_int),
+      .data_i(wdata),
+      .data_o(data_wdata_reg)
+   );
+   iob_reg_re #(
+      .DATA_W (DATA_W/8),
+      .RST_VAL(0)
+   ) iob_reg_wstrb (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (avalid_int),
+      .data_i(wstrb),
+      .data_o(data_wstrb_reg)
+   );
+   iob_reg_re #(
+      .DATA_W (1),
+      .RST_VAL(0)
+   ) iob_reg_we (
+      .clk_i (clk_i),
+      .arst_i(arst_i),
+      .cke_i (cke_i),
+      .rst_i (1'b0),
+      .en_i  (avalid_int),
+      .data_i(|wstrb),
+      .data_o(we_r)
+   );
 
-
-   // data rvalid and ready
-   reg last_access_was_read;
-
-   always @(posedge clk_i, posedge reset) begin
-      if (reset) begin
-         last_access_was_read <= 0;
-      end else begin
-         last_access_was_read <= data_req & !wstrb;
-      end
-   end
-
-   wire data_rvalid = last_access_was_read & ack;
-
-   // data ready is low if there was a request and it was not acked
-  //computed by a state machine that tracks when the request was made
-   reg data_ready, data_ready_nxt;
-   always @(posedge clk_i, posedge reset) begin
-      if (reset) begin
-         data_ready <= 1'b1;
-      end else begin
-         data_ready <= data_ready_nxt;
-      end
-   end
-
-   always @(*) begin
-      data_ready_nxt = ((data_req_reg | ~data_ready) & !data_ack) ? 1'b0 : 1'b1;
-   end
-
-   assign ready = ctrl_req & ctrl_ready | data_req & data_ready;
-   assign rvalid = ctrl_rvalid | data_rvalid;
-   
 endmodule

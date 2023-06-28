@@ -30,10 +30,10 @@ int main(int argc, char **argv) {
 #endif
 
   dut->clk_i = 1;
-  dut->rst_i = 0;
+  dut->arst_i = 0;
   while (main_time < MAX_SIM_TIME) {
     dut->clk_i = !dut->clk_i;
-    dut->rst_i = (main_time >= 1 && main_time <= 8) ? 1 : 0;
+    dut->arst_i = (main_time >= 1 && main_time <= 8) ? 1 : 0;
     dut->eval();
 
     if (dut->clk_i == 1) {
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
         if (posedge_cnt == 8)
           VL_PRINTF("Test 1: Writing Test\n");
         RW = 0;
-        dut->req = 1;
+        dut->avalid = 1;
         dut->wstrb = 15;
         dut->addr = iw;
         dut->wdata = iw * 3;
@@ -56,13 +56,13 @@ int main(int argc, char **argv) {
         if (posedge_cnt == 30)
           VL_PRINTF("Test 2: Reading Test\n");
         RW = 1;
-        dut->req = 1;
+        dut->avalid = 1;
         dut->wstrb = 0;
         dut->addr = ir;
       }
 
       if (dut->ack) {
-        dut->req = 0;
+        dut->avalid = 0;
         if ((posedge_cnt >= 8) && (posedge_cnt < 30))
           iw++;
         else if (posedge_cnt >= 30)
