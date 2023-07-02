@@ -3,29 +3,31 @@
 `include "iob_cache_conf.vh"
 
 module iob_cache_back_end #(
-   parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
-   parameter FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
+   parameter ADDR_W     = `IOB_CACHE_ADDR_W,
+   parameter DATA_W     = `IOB_CACHE_DATA_W,
    parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
    parameter WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
+   parameter WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
+
    //derived parameters
-   parameter FE_NBYTES     = FE_DATA_W / 8,
+   parameter FE_NBYTES     = DATA_W / 8,
    parameter FE_NBYTES_W   = $clog2(FE_NBYTES),
    parameter BE_NBYTES     = BE_DATA_W / 8,
    parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
    // write channel
    input                                                                        write_req_i,
-   input [ FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W]                 write_addr_i,
-   input [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_i,
+   input [ ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W]                 write_addr_i,
+   input [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] write_wdata_i,
    input [ FE_NBYTES-1:0]                                                       write_wstrb_i,
    output                                                                       write_ack_o,
 
    // read channel
    input                                                                        read_req_i,
-   input [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W]                                  read_addr_i,
+   input [ADDR_W-1:BE_NBYTES_W + LINE2BE_W]                                  read_addr_i,
    output                                                                       read_valid_o,
    output [ LINE2BE_W -1:0]                                                     read_addr_o,
    output                                                                       read_busy_o,
@@ -49,8 +51,8 @@ module iob_cache_back_end #(
    assign be_iob_addr_o  = (be_valid_read) ? be_addr_read : be_addr_write;
 
    iob_cache_read_channel #(
-      .FE_ADDR_W    (FE_ADDR_W),
-      .FE_DATA_W    (FE_DATA_W),
+      .ADDR_W    (ADDR_W),
+      .DATA_W    (DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W)
@@ -72,8 +74,8 @@ module iob_cache_back_end #(
    );
 
    iob_cache_write_channel #(
-      .FE_ADDR_W       (FE_ADDR_W),
-      .FE_DATA_W       (FE_DATA_W),
+      .ADDR_W       (ADDR_W),
+      .DATA_W       (DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WRITE_POL    (WRITE_POL),
@@ -95,4 +97,9 @@ module iob_cache_back_end #(
       .be_ready_i(be_iob_ready_i)
    );
 
+
+
+
+
+   
 endmodule

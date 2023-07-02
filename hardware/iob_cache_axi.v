@@ -12,8 +12,8 @@
 module iob_cache_axi #(
    parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
    parameter                DATA_W        = `IOB_CACHE_DATA_W,
-   parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
-   parameter                FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
+   parameter                ADDR_W     = `IOB_CACHE_ADDR_W,
+   parameter                DATA_W     = `IOB_CACHE_DATA_W,
    parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter                NWAYS_W       = `IOB_CACHE_NWAYS_W,
@@ -28,11 +28,11 @@ module iob_cache_axi #(
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
    //derived parameters
-   parameter                FE_NBYTES     = FE_DATA_W / 8,
+   parameter                FE_NBYTES     = DATA_W / 8,
    parameter                FE_NBYTES_W   = $clog2(FE_NBYTES),
    parameter                BE_NBYTES     = BE_DATA_W / 8,
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
    // IOb native slave interface (control)
    `include "ctr_iob_s_port.vs"
@@ -52,17 +52,17 @@ module iob_cache_axi #(
 
   //Front-end & Front-end interface.
    wire data_valid, data_ack;
-   wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr;
-   wire [FE_DATA_W-1 : 0] data_wdata, data_rdata;
+   wire [ADDR_W -1 : FE_NBYTES_W] data_addr;
+   wire [DATA_W-1 : 0] data_wdata, data_rdata;
    wire [             FE_NBYTES-1:0] data_wstrb;
-   wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr_reg;
-   wire [           FE_DATA_W-1 : 0] data_wdata_reg;
+   wire [ADDR_W -1 : FE_NBYTES_W] data_addr_reg;
+   wire [           DATA_W-1 : 0] data_wdata_reg;
    wire [             FE_NBYTES-1:0] data_wstrb_reg;
    wire                              data_valid_reg;
 
    wire ctrl_valid, ctrl_ack;
    wire [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr;
-   wire [FE_DATA_W-1:0] ctrl_rdata;
+   wire [DATA_W-1:0] ctrl_rdata;
    wire                               ctrl_invalidate;
 
    wire wtbuf_full, wtbuf_empty;
@@ -71,8 +71,8 @@ module iob_cache_axi #(
    assign wtb_empty_out  = wtbuf_empty & wtb_empty_in;
 
    iob_cache_front_end #(
-      .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
-      .DATA_W  (FE_DATA_W)
+      .ADDR_W  (ADDR_W - FE_NBYTES_W),
+      .DATA_W  (DATA_W)
    ) front_end (
       .clk_i(clk_i),
       .reset(arst_i),
@@ -113,20 +113,20 @@ module iob_cache_axi #(
 
    // back-end write-channel
    wire write_valid, write_ack;
-   wire [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
-   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata;
+   wire [                 ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
+   wire [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] write_wdata;
    wire [                                                       FE_NBYTES-1:0] write_wstrb;
 
    // back-end read-channel
    wire replace_valid, replace;
-   wire [FE_ADDR_W -1 : BE_NBYTES_W+LINE2BE_W] replace_addr;
+   wire [ADDR_W -1 : BE_NBYTES_W+LINE2BE_W] replace_addr;
    wire                                        read_valid;
    wire [                       LINE2BE_W-1:0] read_addr;
    wire [                       BE_DATA_W-1:0] read_rdata;
 
    iob_cache_memory #(
-      .FE_ADDR_W       (FE_ADDR_W),
-      .FE_DATA_W       (FE_DATA_W),
+      .ADDR_W       (ADDR_W),
+      .DATA_W       (DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .NWAYS_W      (NWAYS_W),
@@ -141,7 +141,7 @@ module iob_cache_axi #(
 
       // front-end
       .valid      (data_valid),
-      .addr     (data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
+      .addr     (data_addr[ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
       .rdata    (data_rdata),
       .ack      (data_ack),
       .valid_reg  (data_valid_reg),
@@ -177,8 +177,8 @@ module iob_cache_axi #(
 
    //Back-end interface & This block interfaces with the system level or next-level cache.
    iob_cache_back_end_axi #(
-      .FE_ADDR_W       (FE_ADDR_W),
-      .FE_DATA_W       (FE_DATA_W),
+      .ADDR_W       (ADDR_W),
+      .DATA_W       (DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W),

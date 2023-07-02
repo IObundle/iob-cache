@@ -4,22 +4,22 @@
 `include "iob_cache_conf.vh"
 
 module iob_cache_read_channel #(
-   parameter FE_ADDR_W     = `IOB_CACHE_ADDR_W,
-   parameter FE_DATA_W     = `IOB_CACHE_DATA_W,
+   parameter ADDR_W     = `IOB_CACHE_ADDR_W,
+   parameter DATA_W     = `IOB_CACHE_DATA_W,
    parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
    //derived parameters
    parameter BE_NBYTES     = BE_DATA_W / 8,
    parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
    input                                     clk_i,
    input                                     arst_i,
 
    //read request
    input                                     read_req_i,
-   input [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] read_req_addr_i,
+   input [ADDR_W-1:BE_NBYTES_W+LINE2BE_W] read_req_addr_i,
 
    //read response
    output reg                                read_valid_o,
@@ -43,7 +43,7 @@ module iob_cache_read_channel #(
       if (LINE2BE_W > 0) begin : g_line2be_w
          reg [LINE2BE_W-1:0] word_counter;
 
-         assign be_addr_o   = {BE_ADDR_W{1'b0}} + {read_req_addr_i[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o   = {BE_ADDR_W{1'b0}} + {read_req_addr_i[ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
 
          always @(posedge clk_i, posedge arst_i) begin
             if (arst_i) begin 

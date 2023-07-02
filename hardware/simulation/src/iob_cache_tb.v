@@ -28,18 +28,18 @@ module iob_cache_tb;
    //control signals
 `include "iob_m_tb_wire.vs"
 
-localparam FE_ADDR_W = `IOB_CACHE_FE_ADDR_W;
-localparam FE_DATA_W = `IOB_CACHE_FE_DATA_W;
+localparam ADDR_W = `IOB_CACHE_ADDR_W;
+localparam DATA_W = `IOB_CACHE_DATA_W;
 localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
 localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    
    //frontend signals
    reg  fe_iob_avalid_i = 0;
-   reg     [           FE_ADDR_W-1:0] fe_iob_addr_i = 0;
-   reg     [           FE_DATA_W-1:0] fe_iob_wdata_i = 0;
-   reg     [       (FE_DATA_W/8)-1:0] fe_iob_wstrb_i = 0;
+   reg     [           ADDR_W-1:0] fe_iob_addr_i = 0;
+   reg     [           DATA_W-1:0] fe_iob_wdata_i = 0;
+   reg     [       (DATA_W/8)-1:0] fe_iob_wstrb_i = 0;
    wire    [                1-1:0] fe_iob_rvalid_o;
-   wire    [           FE_DATA_W-1:0] fe_iob_rdata_o;
+   wire    [           DATA_W-1:0] fe_iob_rdata_o;
    wire    [                1-1:0] fe_iob_ready_o;
 
    
@@ -72,10 +72,10 @@ localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
       #10 `IOB_PULSE(rst, 50, 50, 50)
 
       for (i = 0; i < 10; i=i+1) begin
-         iob_write(4*i, i, `IOB_CACHE_FE_DATA_W);
+         iob_write(4*i, i, `IOB_CACHE_DATA_W);
       end
       for (i = 0; i < 10; i=i+1) begin
-         iob_read(4*i, data, `IOB_CACHE_FE_DATA_W);
+         iob_read(4*i, data, `IOB_CACHE_DATA_W);
          if (data != i) begin
             $display("ERROR: read data mismatch");
             $fwrite(fd, "Test failed!\n");
@@ -94,9 +94,9 @@ localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
 
 // Write data to IOb Native slave
 task iob_write;
-   input [FE_ADDR_W-1:0] addr;
-   input [FE_DATA_W-1:0] data;
-   input [$clog2(FE_DATA_W):0] width;
+   input [ADDR_W-1:0] addr;
+   input [DATA_W-1:0] data;
+   input [$clog2(DATA_W):0] width;
 
    begin
       @(posedge clk) #1 fe_iob_avalid_i = 1;  //sync and assign
@@ -113,9 +113,9 @@ endtask
 
 // Read data from IOb Native slave
 task iob_read;
-   input [FE_ADDR_W-1:0] addr;
-   output [FE_DATA_W-1:0] data;
-   input [$clog2(FE_DATA_W):0] width;
+   input [ADDR_W-1:0] addr;
+   output [DATA_W-1:0] data;
+   input [$clog2(DATA_W):0] width;
 
    begin
       @(posedge clk) #1 fe_iob_avalid_i = 1;
@@ -138,7 +138,7 @@ endtask
  `include "iob_s_s_portmap.vs"
       //front-end
       .fe_iob_avalid_i(fe_iob_avalid_i),
-      .fe_iob_addr_i  (fe_iob_addr_i[FE_ADDR_W-1:$clog2(FE_DATA_W/8)]),
+      .fe_iob_addr_i  (fe_iob_addr_i[ADDR_W-1:$clog2(DATA_W/8)]),
       .fe_iob_wdata_i (fe_iob_wdata_i),
       .fe_iob_wstrb_i (fe_iob_wstrb_i),
       .fe_iob_rvalid_o(fe_iob_rvalid_o),
@@ -164,7 +164,7 @@ endtask
  `include "iob_s_s_portmap.vs"
       //front-end
       .fe_iob_avalid_i(fe_iob_avalid_i),
-      .fe_iob_addr_i  (fe_iob_addr_i[FE_ADDR_W-1:$clog2(FE_DATA_W/8)]),
+      .fe_iob_addr_i  (fe_iob_addr_i[ADDR_W-1:$clog2(DATA_W/8)]),
       .fe_iob_wdata_i (fe_iob_wdata_i),
       .fe_iob_wstrb_i (fe_iob_wstrb_i),
       .fe_iob_rvalid_o(fe_iob_rvalid_o),
@@ -221,5 +221,25 @@ endtask
 
 `endif
 
+
+
+   
+   // write through buffer memory
+   iob_ram_2p #(
+                .DATA_W(FIFO_DATA_W),
+                .ADDR_W(FIFO_ADDR_W)
+                ) iob_ram_2p0 (
+          .clk_i(clk_i),
+
+          .w_en_i  (mem_w_en),
+          .w_addr_i(mem_w_addr),
+          .w_data_i(mem_w_data),
+
+          .r_en_i  (mem_r_en),
+          .r_addr_i(mem_r_addr),
+          .r_data_o(mem_r_data)
+      );
+
+  
 endmodule
 

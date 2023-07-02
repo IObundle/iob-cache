@@ -5,8 +5,8 @@
 module iob_cache_write_channel_axi #(
    parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
    parameter                DATA_W        = `IOB_CACHE_DATA_W,
-   parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
-   parameter                FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
+   parameter                ADDR_W     = `IOB_CACHE_ADDR_W,
+   parameter                DATA_W     = `IOB_CACHE_DATA_W,
    parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
    parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
    parameter                WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
@@ -17,11 +17,11 @@ module iob_cache_write_channel_axi #(
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
    //derived parameters
-   parameter                FE_NBYTES     = FE_DATA_W / 8,
+   parameter                FE_NBYTES     = DATA_W / 8,
    parameter                FE_NBYTES_W   = $clog2(FE_NBYTES),
    parameter                BE_NBYTES     = BE_DATA_W / 8,
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
    input                                                                    valid,
    input      [           ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr,

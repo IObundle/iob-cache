@@ -9,34 +9,7 @@ module iob_cache_iob
 ) (
     `include "iob_cache_io.vs"
 );
-    //derived parameters
-   localparam NBYTES        = DATA_W / 8;
-   localparam NBYTES_W      = $clog2(NBYTES);
-   localparam FE_NBYTES     = FE_DATA_W / 8;
-   localparam FE_NBYTES_W   = $clog2(FE_NBYTES);
-   localparam BE_NBYTES     = BE_DATA_W / 8;
-   localparam BE_NBYTES_W   = $clog2(BE_NBYTES);
-   localparam LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W);
-   
 
-
-  // back-end write-channel
-   wire write_req;
-   wire write_ack;
-   wire [                   FE_ADDR_W-1:FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr;
-   wire [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata;
-   wire [                                                       FE_NBYTES-1:0] write_wstrb;
-   
-  // back-end read-channel
-   wire                                                                        read_req;
-   wire [FE_ADDR_W -1:BE_NBYTES_W+LINE2BE_W]                                   read_req_addr;
-   wire                                                                        read_valid;
-   wire [                     LINE2BE_W-1:0]                                   read_addr;
-   wire                                                                        read_busy;
-   
-
-   
-   
    //IOb wires to coonect sw regs
     `include "iob_wire.vs"
    assign iob_avalid   = iob_avalid_i;
@@ -50,94 +23,87 @@ module iob_cache_iob
    //Sofware acessible registers
     `include "iob_cache_swreg_inst.vs"
 
-   assign VERSION = `IOB_CACHE_VERSION;
-   
-   //events
-   wire                                     write_hit;
-   wire                                     write_miss;
-   wire                                     read_hit;
-   wire                                     read_miss;
-   
-   iob_cache_core #(
-      .FE_ADDR_W    (FE_ADDR_W),
-      .FE_DATA_W    (FE_DATA_W),
+   iob_cache_dmem #(
+      .ADDR_W    (ADDR_W),
+      .DATA_W    (DATA_W),
       .BE_DATA_W    (BE_DATA_W),
       .NWAYS_W      (NWAYS_W),
       .NLINES_W     (NLINES_W),
       .WORD_OFFSET_W(WORD_OFFSET_W),
       .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
-      .REP_POLICY   (REP_POLICY),
+      .REPLACE_POL   (REPLACE_POL),
       .WRITE_POL    (WRITE_POL)
-  ) cache_core (
+  ) dmem (
       .clk_i    (clk_i),
       .arst_i   (arst_i),
 
-      // front-end read/write 
-      .avalid_i (fe_iob_avalid_i),
-      .addr_i   (fe_iob_addr_i),
-      .wdata_i  (fe_iob_wdata_i),
-      .wstrb_i  (fe_iob_wstrb_i),
-      .rdata_o  (fe_iob_rdata_o),
-      .rvalid_o (fe_iob_rvalid_o),
-      .ready_o  (fe_iob_ready_o),
+    // front-end interface
+    `include "fe_iob_s_portmap.vs"
 
-      // back-end write request
-      .write_req_o   (write_req),
-      .write_addr_o  (write_addr),
-      .write_wdata_o (write_wdata),
-      .write_wstrb_o (write_wstrb),
-      .write_ack_i   (write_ack),
-                  
-      // back-end read reques
-      .read_req_o      (read_req),
-      .read_req_addr_o (read_req_addr),
-      .read_valid_i    (read_valid),
-      .read_addr_i     (read_addr),
-      .read_rdata_i    (be_iob_rdata_i),
-      .read_busy_i     (read_busy),
+      // back-end interface
+    `include "int_iob_portmap.vs"
 
-      // controla and status signals
-      .wtbuf_empty_o   (WTB_EMPTY),
-      .wtbuf_full_o    (WTB_FULL),
+          .ext_mem_w_en_o  (data_mem_w_en_o),
+          .ext_mem_w_addr_o(data_mem_w_addr_o),
+          .ext_mem_w_data_o(data_mem_w_data_o),
+
+          .ext_mem_r_en_o  (data_mem_r_en_o),
+          .ext_mem_r_addr_o(data_mem_r_addr_o),
+          .ext_mem_r_data_i(data_mem_r_data_o),
+
+
+          
+      // control and status signals
       .invalidate_i    (INVALIDATE),
-
-      //event signals
       .write_hit_o     (write_hit),
       .write_miss_o    (write_miss),
       .read_hit_o      (read_hit),
       .read_miss_o     (read_miss)
   );
 
+   //Write through buffer
+   iob_fifo_sync #(
+                   .R_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
+                   .W_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
+                   .ADDR_W  (WTBUF_DEPTH_W)
+                   ) write_throught_buffer (
+                                            .clk_i (clk_i),
+                                            .rst_i (arst_i),
+                                            .arst_i(arst_i),
+                                            .cke_i (1'b1),
+
+          .ext_mem_w_en_o  (wtb_mem_w_en_o),
+          .ext_mem_w_addr_o(wtb_mem_w_addr_o),
+          .ext_mem_w_data_o(wtb_mem_w_data_o),
+
+          .ext_mem_r_en_o  (wtb_mem_r_en_o),
+          .ext_mem_r_addr_o(wtb_mem_r_addr_o),
+          .ext_mem_r_data_i(wtb_mem_r_data_o),
+
+          .level_o(WTB_LEVEL),
+
+          .r_data_o (wtb_data),
+          .r_empty_o(WTB_EMPTY),
+          .r_en_i   (wtb_read),
+
+          .w_data_i({fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i}),
+          .w_full_o(WTB_FULL),
+          .w_en_i  ((WRITE_POLICY == `IOB_CACHE_WRITE_THROUGH) & fe_iob_avalid_i & |fe_iob_wstrb_i & ~WTB_FULL)
+          );
+      );
+   
+   
   //Back-end interface
   iob_cache_back_end #(
-      .FE_ADDR_W    (FE_ADDR_W),
-      .FE_DATA_W    (FE_DATA_W),
+      .ADDR_W    (NLINES_W),
+      .DATA_W    (2**ADDR_OFFSET*DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
-      .WORD_OFFSET_W(WORD_OFFSET_W),
-      .WRITE_POL    (WRITE_POL)
+      .WORD_OFFSET_W(WORD_OFFSET_W)
   ) back_end (
-      // write-through-buffer (write-channel)
-      .write_req_i   (write_req),
-      .write_addr_i  (write_addr),
-      .write_wdata_i   (write_wdata),
-      .write_wstrb_i   (write_wstrb),
-      .write_ack_o   (write_ack),
-      // cache-line replacement (read-channel)
-      .read_req_i (read_req),
-      .read_addr_i(read_req_addr),
-      .read_valid_o    (read_valid),
-      .read_addr_o   (read_addr),
-      .read_busy_o   (read_busy),
-      // back-end native interface
-      .be_iob_avalid_o(be_iob_avalid_o),
-      .be_iob_addr_o  (be_iob_addr_o),
-      .be_iob_wdata_o (be_iob_wdata_o),
-      .be_iob_wstrb_o (be_iob_wstrb_o),
-      .be_iob_rvalid_i(be_iob_rvalid_i),
-      .be_iob_rdata_i (be_iob_rdata_i),
-      .be_iob_ready_i (be_iob_ready_i),
-   `include "iob_clkrst_portmap.vs"
+    `include "int_iob_portmap.vs"
+    `include "be_iob_s_portmap.vs"
+    `include "iob_clkrst_portmap.vs"
   );
 
   //Control block
