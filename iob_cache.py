@@ -354,13 +354,13 @@ class iob_cache(iob_module):
                     {
                         "name": "fe_iob_wstrb_i",
                         "type": "I",
-                        "n_bits": "FE_DATA_W/8",
+                        "n_bits": "DATA_W/8",
                         "descr": "Write strofe.",
                     },
                     {
                         "name": "fe_iob_rdata_o",
                         "type": "O",
-                        "n_bits": "FE_DATA_W",
+                        "n_bits": "DATA_W",
                         "descr": "Read data.",
                     },
                     {
@@ -466,6 +466,7 @@ class iob_cache(iob_module):
                         "descr": "Write through buffer memory read address.",
                     },
                 ],
+            },
             {
                 "name": "data_mem",
                 "descr": "Data memory interface",
@@ -537,7 +538,7 @@ class iob_cache(iob_module):
                 "regs": [
                     {
                         "name": "WRITE_POLICY",
-                        "type": "w",
+                        "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
                         "addr": -1,
