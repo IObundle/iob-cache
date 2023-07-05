@@ -5,13 +5,14 @@
 
 module iob_cache_iob 
   #(
-    `include "iob_cache_params.vs"
-) (
-    `include "iob_cache_io.vs"
-);
+`include "iob_cache_params.vs"
+    ) 
+   (
+`include "iob_cache_io.vs"
+    );
 
    //IOb wires to coonect sw regs
-    `include "iob_wire.vs"
+`include "iob_wire.vs"
    assign iob_avalid   = iob_avalid_i;
    assign iob_addr     = iob_addr_i;
    assign iob_wstrb    = iob_wstrb_i;
@@ -21,7 +22,7 @@ module iob_cache_iob
    assign iob_rdata_o  = iob_rdata;
   
    //Sofware acessible registers
-    `include "iob_cache_swreg_inst.vs"
+`include "iob_cache_swreg_inst.vs"
 
    iob_cache_dmem #(
       .ADDR_W        (ADDR_W),
@@ -33,26 +34,26 @@ module iob_cache_iob
       .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
       .REPLACE_POL   (REPLACE_POL),
       .WRITE_POL     (WRITE_POL)
-  ) dmem (
+  ) 
+   dmem 
+     (
       .clk_i         (clk_i),
       .arst_i        (arst_i),
+      
+      // front-end interface
+`include "fe_iob_s_s_portmap.vs"
 
-    // front-end interface
-    `include "fe_iob_s_portmap.vs"
+      // internal interface
+`include "int_iob_m_portmap.vs"
 
-      // back-end interface
-    `include "int_iob_portmap.vs"
-
-          .ext_mem_w_en_o  (data_mem_w_en_o),
-          .ext_mem_w_addr_o(data_mem_w_addr_o),
-          .ext_mem_w_data_o(data_mem_w_data_o),
-
-          .ext_mem_r_en_o  (data_mem_r_en_o),
-          .ext_mem_r_addr_o(data_mem_r_addr_o),
-          .ext_mem_r_data_i(data_mem_r_data_o),
-
-
-          
+      .ext_mem_w_en_o  (data_mem_w_en_o),
+      .ext_mem_w_addr_o(data_mem_w_addr_o),
+      .ext_mem_w_data_o(data_mem_w_data_o),
+      
+      .ext_mem_r_en_o  (data_mem_r_en_o),
+      .ext_mem_r_addr_o(data_mem_r_addr_o),
+      .ext_mem_r_data_i(data_mem_r_data_o),
+    
       // control and status signals
       .invalidate_i    (INVALIDATE),
       .write_hit_o     (write_hit),
@@ -103,9 +104,9 @@ module iob_cache_iob
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W)
   ) back_end (
-    `include "int_iob_portmap.vs"
-    `include "be_iob_s_portmap.vs"
-    `include "iob_clkrst_portmap.vs"
+    `include "int_iob_s_portmap.vs"
+    `include "be_iob_m_m_portmap.vs"
+    `include "iob_clkenrst_portmap.vs"
   );
 
   //Control block

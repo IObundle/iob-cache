@@ -69,7 +69,7 @@ module iob_cache_dmem
    output                    rd_hit_o,
    output                    rd_miss_o,
                              
-`include "iob_clkrsten_port.vs"
+`include "iob_clkenrst_port.vs"
    );
    
   // select way
@@ -138,7 +138,7 @@ module iob_cache_dmem
    assign buf_wdata_o = data_mem_d_i >> (way_replace*BLKSZ*DATA_W);
    generate 
       if (WRITE_POLICY == `IOB_CACHE_WRITE_BACK) begin: g_wb
-         assign buf_iob_avalid_o = write_policy == miss;
+         assign buf_iob_avalid_o = miss;
          assign buf_wstrb_o = {BLKSZ*NBYTES{1'b1}};
       end
       else begin: g_wt
@@ -238,10 +238,10 @@ module iob_cache_dmem
       .clk_i         (clk_i),
       .arst_i        (arst_i),
       .rst_i         (reset | invalidate),
-      .we_i      (ack),
-      .way_hit_i       (way_hit),
-      .line_addr_i     (index_reg[NLINES_W-1:0]),
-      .way_select_o    (way_select),
+      .we_i          (ack),
+      .way_hit_i     (way_hit),
+      .line_addr_i   (index_reg[NLINES_W-1:0]),
+      .way_select_o  (way_select),
       .way_select_bin(way_select_bin)
       );
 
