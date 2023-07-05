@@ -24,18 +24,18 @@ module iob_cache_iob
     `include "iob_cache_swreg_inst.vs"
 
    iob_cache_dmem #(
-      .ADDR_W    (ADDR_W),
-      .DATA_W    (DATA_W),
-      .BE_DATA_W    (BE_DATA_W),
-      .NWAYS_W      (NWAYS_W),
-      .NLINES_W     (NLINES_W),
-      .WORD_OFFSET_W(WORD_OFFSET_W),
-      .WTBUF_DEPTH_W(WTBUF_DEPTH_W),
+      .ADDR_W        (ADDR_W),
+      .DATA_W        (DATA_W),
+      .BE_DATA_W     (BE_DATA_W),
+      .NWAYS_W       (NWAYS_W),
+      .NLINES_W      (NLINES_W),
+      .WORD_OFFSET_W (WORD_OFFSET_W),
+      .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
       .REPLACE_POL   (REPLACE_POL),
-      .WRITE_POL    (WRITE_POL)
+      .WRITE_POL     (WRITE_POL)
   ) dmem (
-      .clk_i    (clk_i),
-      .arst_i   (arst_i),
+      .clk_i         (clk_i),
+      .arst_i        (arst_i),
 
     // front-end interface
     `include "fe_iob_s_portmap.vs"
@@ -62,34 +62,36 @@ module iob_cache_iob
   );
 
    //Write through buffer
-   iob_fifo_sync #(
-                   .R_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
-                   .W_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
-                   .ADDR_W  (WTBUF_DEPTH_W)
-                   ) write_throught_buffer (
-                                            .clk_i (clk_i),
-                                            .rst_i (arst_i),
-                                            .arst_i(arst_i),
-                                            .cke_i (1'b1),
-
-          .ext_mem_w_en_o  (wtb_mem_w_en_o),
-          .ext_mem_w_addr_o(wtb_mem_w_addr_o),
-          .ext_mem_w_data_o(wtb_mem_w_data_o),
-
-          .ext_mem_r_en_o  (wtb_mem_r_en_o),
-          .ext_mem_r_addr_o(wtb_mem_r_addr_o),
-          .ext_mem_r_data_i(wtb_mem_r_data_o),
-
-          .level_o(WTB_LEVEL),
-
-          .r_data_o (wtb_data),
-          .r_empty_o(WTB_EMPTY),
-          .r_en_i   (wtb_read),
-
-          .w_data_i({fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i}),
-          .w_full_o(WTB_FULL),
-          .w_en_i  ((WRITE_POLICY == `IOB_CACHE_WRITE_THROUGH) & fe_iob_avalid_i & |fe_iob_wstrb_i & ~WTB_FULL)
-          );
+   iob_fifo_sync 
+     #(
+       .R_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
+       .W_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
+       .ADDR_W  (WTBUF_DEPTH_W)
+       ) write_throught_buffer 
+       (
+        .clk_i (clk_i),
+        .rst_i (arst_i),
+        .arst_i(arst_i),
+        .cke_i (1'b1),
+        
+        .ext_mem_w_en_o  (wtb_mem_w_en_o),
+        .ext_mem_w_addr_o(wtb_mem_w_addr_o),
+        .ext_mem_w_data_o(wtb_mem_w_data_o),
+        
+        .ext_mem_r_en_o  (wtb_mem_r_en_o),
+        .ext_mem_r_addr_o(wtb_mem_r_addr_o),
+        .ext_mem_r_data_i(wtb_mem_r_data_o),
+        
+        .level_o(WTB_LEVEL),
+        
+        .r_data_o (wtb_data),
+        .r_empty_o(WTB_EMPTY),
+        .r_en_i   (wtb_read),
+        
+        .w_data_i({fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i}),
+        .w_full_o(WTB_FULL),
+        .w_en_i  ((WRITE_POLICY == `IOB_CACHE_WRITE_THROUGH) & fe_iob_avalid_i & |fe_iob_wstrb_i & ~WTB_FULL)
+        );
       );
    
    

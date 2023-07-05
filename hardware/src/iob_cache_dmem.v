@@ -10,6 +10,7 @@ module iob_cache_dmem
     parameter NWAYS_W       = 0,
     parameter NLINES_W      = 0,
     parameter WORD_OFFSET_W = 0,
+    parameter WRITE_POL    = 0,
     parameter REPLACE_POL    = 0,
     //derived cache parameters
     parameter TAG_W = ADDR_W - (WORD_OFFSET_W + NLINES_W),
@@ -68,31 +69,31 @@ module iob_cache_dmem
    output                    rd_hit_o,
    output                    rd_miss_o,
                              
-                             `include "iob_clkrsten_port.vs"
+`include "iob_clkrsten_port.vs"
    );
    
   // select way
-   wire [NWAYS-1:0] way_hit_1hot, way_replace_1hot;
-   wire [NWAYS_W-1:0] way_hit, way_replace;
-
+   wire [NWAYS-1:0]          way_hit_1hot, way_replace_1hot;
+   wire [NWAYS_W-1:0]        way_hit, way_replace;
+   
    // address register
    wire [ADDR_W-1:WORD_OFFSET_W] addr_r;
-
+   
    // write strobe register
-   wire [NBYTES-1:0] wstrb_r;
-
+   wire [NBYTES-1:0]             wstrb_r;
+   
    // tag
-   wire [TAG_W-1:0] tag = iob_addr_i[ADDR_W-1-:TAG_W];
-   wire [TAG_W-1:0] tag_r = addr_r[ADDR_W-1-:TAG_W];
-
+   wire [TAG_W-1:0]              tag = iob_addr_i[ADDR_W-1-:TAG_W];
+   wire [TAG_W-1:0]              tag_r = addr_r[ADDR_W-1-:TAG_W];
+   
    //index
-   wire [NLINES_W-1:0] index = iob_addr_i[ADDR_W-1-TAG_W-:NLINES_W];
-   wire [NLINES_W-1:0] index_r = addr_r[ADDR_W-1-TAG_W-:NLINES_W];
-
+   wire [NLINES_W-1:0]           index = iob_addr_i[ADDR_W-1-TAG_W-:NLINES_W];
+   wire [NLINES_W-1:0]           index_r = addr_r[ADDR_W-1-TAG_W-:NLINES_W];
+   
    //word offset
-   wire [WORD_OFFSET_W-1:0] word_offset = iob_addr_i[WORD_OFFSET_W-1:0];
-   wire [WORD_OFFSET_W-1:0] word_offset_r = addr_r[WORD_OFFSET_W-1:0];
-
+   wire [WORD_OFFSET_W-1:0]      word_offset = iob_addr_i[WORD_OFFSET_W-1:0];
+   wire [WORD_OFFSET_W-1:0]      word_offset_r = addr_r[WORD_OFFSET_W-1:0];
+   
    
    // external data memory interface NWAYS*LINE_W X NLINES
    assign data_mem_en_o = iob_avalid_o | buf_iob_rvalid_i;
@@ -101,7 +102,7 @@ module iob_cache_dmem
    assign data_mem_we_o = buf_iob_rvalid_i? {BLKSZ*NBYTES*{1'b1}} << way_replace: wstrb_r << (way_hit*BLKSZ+word_offset_r)*NBYTES;
    
 
-   wire [DMEM_DATA_W-1:0] dmem_d_i = data_mem_d_i >> ((way_hit*LINE_W)+(word_offset_r*DATA_W));
+   wire [DMEM_DATA_W-1:0]        dmem_d_i = data_mem_d_i >> ((way_hit*LINE_W)+(word_offset_r*DATA_W));
    assign iob_rdata_o =  dmem_d_i[DATA_W-1:0];
    assign iob_ready_o = buf_iob_ready_i;
 
@@ -126,18 +127,26 @@ module iob_cache_dmem
    assign rd_hit_o = rd_en_r & |way_hit;
    assign rd_miss_o = rd_en_r & ~|way_hit;
 
-   wire miss = wr_miss_o | rd_miss_o;
+   wire                           miss = wr_miss_o | rd_miss_o;
    
    //valid bit for each line in each way
-   wire [NWAYS*NLINES-1:0] valid_bit;
-   wire [NWAYS*NLINES_W-1:0] valid_bit_int = valid_bit | (rd_en << (way_hit*NLINES + addr_i[NLINES_W-1:0]));
-
+   wire [NWAYS*NLINES-1:0]        valid_bit;
+   wire [NWAYS*NLINES_W-1:0]      valid_bit_int = valid_bit | (rd_en << (way_hit*NLINES + addr_i[NLINES_W-1:0]));
+   
    //back-end buffer interface
-   assign buf_iob_avalid_o = write_policy == `IOB_CACHE_WRITE_BACK? miss : rd_miss_o;
    assign buf_iob_addr_o = addr_i[ADDR_W-1:WORD_OFFSET_W];
    assign buf_wdata_o = data_mem_d_i >> (way_replace*BLKSZ*DATA_W);
-   assign buf_wstrb_o = write_policy == `IOB_CACHE_WRITE_BACK && buf_iob_ready_i? {BLKSZ*NBYTES{1'b1}} : {BLKSZ*NBYTES{1'b0}};
-
+   generate 
+      if (WRITE_POLICY == `IOB_CACHE_WRITE_BACK) begin: g_wb
+         assign buf_iob_avalid_o = write_policy == miss;
+         assign buf_wstrb_o = {BLKSZ*NBYTES{1'b1}};
+      end
+      else begin: g_wt
+         assign buf_iob_avalid_o = rd_miss_o;
+         assign buf_wstrb_o = {BLKSZ*NBYTES{1'b0}};
+      end
+   endgenerate
+   
    assign iob_ready = buf_iob_ready_i & ~miss;
    assign buf_iob_rvalid_i = buf_iob_rvalid_i & ~miss;
 
@@ -202,17 +211,39 @@ module iob_cache_dmem
    );
 
    //write strobe register
-   iob_reg #(
-         .DATA_W(NBYTES)
-      ) wstrb_reg (
-         .clk(clk),
-         .rst(rst),
-                   .cke(1'b1),
-         .d_i(iob_wstrb_i),
-         .d_o(wstrb_r),
-      );
+   iob_reg 
+     #(
+       .DATA_W(NBYTES)
+       ) 
+   wstrb_reg (
+              .clk(clk),
+              .rst(rst),
+              .cke(1'b1),
+              .d_i(iob_wstrb_i),
+              .d_o(wstrb_r)
+              );
    
    assign tag_r = addr_r[ADDR_W-1-:TAG_W];
+
+
+   // line replace
+   iob_cache_replace
+     #(
+       .N_WAYS    (NWAYS),
+       .NLINES_W  (NLINES_W),
+       .REP_POLICY(REP_POLICY)
+       )
+   replace_inst 
+     (
+      .clk_i         (clk_i),
+      .arst_i        (arst_i),
+      .rst_i         (reset | invalidate),
+      .we_i      (ack),
+      .way_hit_i       (way_hit),
+      .line_addr_i     (index_reg[NLINES_W-1:0]),
+      .way_select_o    (way_select),
+      .way_select_bin(way_select_bin)
+      );
 
 endmodule
 

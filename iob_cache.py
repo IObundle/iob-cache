@@ -537,16 +537,6 @@ class iob_cache(iob_module):
                 "descr": "CACHE software accessible registers.",
                 "regs": [
                     {
-                        "name": "WRITE_POLICY",
-                        "type": "W",
-                        "n_bits": 1,
-                        "rst_val": 0,
-                        "addr": -1,
-                        "log2n_items": 0,
-                        "autologic": True,
-                        "descr": "Write policy.",
-                    },
-                    {
                         "name": "WTB_EMPTY",
                         "type": "R",
                         "n_bits": 1,

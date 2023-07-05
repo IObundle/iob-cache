@@ -8,13 +8,13 @@ module iob_cache_replace #(
    parameter NWAYS_W    = $clog2(N_WAYS),
    parameter REP_POLICY = `IOB_CACHE_PLRU_TREE
 ) (
-   input                 clk_i,
-   input                 arst_i,
-   input                 we_i,
-   input  [  N_WAYS-1:0] way_hit_i,
-   input  [NLINES_W-1:0] line_addr_i,
-   output [  N_WAYS-1:0] way_select_o,
-   output [ NWAYS_W-1:0] way_select_bin_o
+   input                clk_i,
+   input                arst_i,
+   input                rst_i,
+   input                we_i,
+   input [ N_WAYS-1:0]  way_hit_i,
+   input [NLINES_W-1:0] line_addr_i,
+   output [ N_WAYS-1:0] way_select_o,
 );
 
    genvar i, j, k;
@@ -52,6 +52,7 @@ module iob_cache_replace #(
          (
             .clk_i(clk_i),
             .arst_i(arst_i),
+            .rst_i(rst_i),
 
             .we_i    (we_i),
             .addr_i  (line_addr_i),
@@ -59,10 +60,6 @@ module iob_cache_replace #(
             .r_data_o(mru_out)
          );
 
-         iob_cache_onehot_to_bin #(NWAYS_W) onehot_bin (
-            .onehot(way_select_o[N_WAYS-1:1]),
-            .bin   (way_select_bin_o)
-         );
       end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin : g_PLRU_MRU
          wire [N_WAYS -1:0] mru_in, mru_out;
 
@@ -83,6 +80,7 @@ module iob_cache_replace #(
          (
             .clk_i(clk_i),
             .arst_i(arst_i),
+            .rst_i(rst_i),
 
             .we_i    (we_i),
             .addr_i  (line_addr_i),
@@ -90,10 +88,6 @@ module iob_cache_replace #(
             .r_data_o(mru_out)
          );
 
-         iob_cache_onehot_to_bin #(NWAYS_W) onehot_bin (
-            .onehot(way_select_o[N_WAYS-1:1]),
-            .bin   (way_select_bin_o)
-         );
       end else begin : g_PLRU_TREE
          // (REP_POLICY == PLRU_TREE)
          /*
@@ -137,8 +131,7 @@ module iob_cache_replace #(
             end
          end
 
-         assign way_select_bin_o = node_id[NWAYS_W] - N_WAYS;
-         assign way_select_o     = (1 << way_select_bin_o);
+         assign way_select_o     = (1 << (node_id[NWAYS_W] - N_WAYS));
 
          // Most Recently Used (MRU) memory
          iob_regfile_sp #(
@@ -148,6 +141,7 @@ module iob_cache_replace #(
          (
             .clk_i(clk_i),
             .arst_i(arst_i),
+            .rst_i(rst_i),
 
             .we_i    (we_i),
             .addr_i  (line_addr_i),
