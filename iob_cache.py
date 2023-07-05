@@ -10,8 +10,6 @@ from setup import setup
 from iob_lib import iob_lib
 from iob_utils import iob_utils
 
-from iob_clkrst_port import iob_clkrst_port
-from iob_clkrst_portmap import iob_clkrst_portmap
 from iob_clkenrst_port import iob_clkenrst_port
 from iob_clkenrst_portmap import iob_clkenrst_portmap
 
@@ -104,6 +102,38 @@ class iob_cache(iob_module):
             # Simulation modules & snippets
             iob_module.generate("iob_m_tb_wire")
             iob_module.generate("iob_s_s_portmap")
+            iob_module.generate(
+                {
+                    "file_prefix": "fe_",
+                    "interface": "iob_s_s_portmap",
+                    "wire_prefix": "fe_",
+                    "port_prefix": "fe_",
+                }
+            )
+            iob_module.generate(
+                {
+                    "file_prefix": "int_",
+                    "interface": "iob_m_portmap",
+                    "wire_prefix": "int_",
+                    "port_prefix": "int_",
+                }
+            )
+            iob_module.generate(
+                {
+                    "file_prefix": "int_",
+                    "interface": "iob_s_portmap",
+                    "wire_prefix": "int_",
+                    "port_prefix": "int_",
+                }
+            )
+            iob_module.generate(
+                {
+                    "file_prefix": "be_",
+                    "interface": "iob_m_m_portmap",
+                    "wire_prefix": "be_",
+                    "port_prefix": "be_",
+                }
+            )
             iob_ram_sp_be.setup(purpose="hardware")
             iob_tasks.setup(purpose="simulation")
 
@@ -124,8 +154,6 @@ class iob_cache(iob_module):
 
         iob_utils.setup()
 
-        iob_clkrst_port.setup()
-        iob_clkrst_portmap.setup()
         iob_clkenrst_port.setup()
         iob_clkenrst_portmap.setup()
         iob_regfile_sp.setup()
