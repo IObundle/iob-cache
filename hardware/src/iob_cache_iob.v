@@ -68,31 +68,31 @@ module iob_cache_iob
        .R_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
        .W_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
        .ADDR_W  (WTBUF_DEPTH_W)
-       ) write_throught_buffer 
-       (
-        .clk_i (clk_i),
-        .rst_i (arst_i),
-        .arst_i(arst_i),
-        .cke_i (1'b1),
-        
-        .ext_mem_w_en_o  (wtb_mem_w_en_o),
-        .ext_mem_w_addr_o(wtb_mem_w_addr_o),
-        .ext_mem_w_data_o(wtb_mem_w_data_o),
-        
-        .ext_mem_r_en_o  (wtb_mem_r_en_o),
-        .ext_mem_r_addr_o(wtb_mem_r_addr_o),
-        .ext_mem_r_data_i(wtb_mem_r_data_o),
-        
-        .level_o(WTB_LEVEL),
-        
-        .r_data_o (wtb_data),
-        .r_empty_o(WTB_EMPTY),
-        .r_en_i   (wtb_read),
-        
-        .w_data_i({fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i}),
-        .w_full_o(WTB_FULL),
-        .w_en_i  ((WRITE_POLICY == `IOB_CACHE_WRITE_THROUGH) & fe_iob_avalid_i & |fe_iob_wstrb_i & ~WTB_FULL)
-        );
+       ) 
+   write_throught_buffer 
+     (
+      .clk_i (clk_i),
+      .rst_i (arst_i),
+      .arst_i(arst_i),
+      .cke_i (1'b1),
+      
+      .ext_mem_w_en_o  (wtb_mem_w_en_o),
+      .ext_mem_w_addr_o(wtb_mem_w_addr_o),
+      .ext_mem_w_data_o(wtb_mem_w_data_o),
+      
+      .ext_mem_r_en_o  (wtb_mem_r_en_o),
+      .ext_mem_r_addr_o(wtb_mem_r_addr_o),
+      .ext_mem_r_data_i(wtb_mem_r_data_o),
+      
+      .level_o(WTB_LEVEL),
+      
+      .r_data_o (wtb_data),
+      .r_empty_o(WTB_EMPTY),
+      .r_en_i   (wtb_read),
+      
+      .w_data_i({fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i}),
+      .w_full_o(WTB_FULL),
+      .w_en_i  ((WRITE_POLICY == `IOB_CACHE_WRITE_THROUGH) & fe_iob_avalid_i & |fe_iob_wstrb_i & ~WTB_FULL)
       );
    
    

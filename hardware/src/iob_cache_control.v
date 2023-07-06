@@ -12,6 +12,7 @@ module iob_cache_control #(
 ) (
     input                   clk_i,
     input                   arst_i,
+    input                   cke_i,
 
    //control signals
     input                   write_hit_i,
@@ -33,7 +34,7 @@ module iob_cache_control #(
       read_miss_cnt_o  <= {DATA_W{1'b0}};
       write_hit_cnt_o  <= {DATA_W{1'b0}};
       write_miss_cnt_o <= {DATA_W{1'b0}};
-    end else begin
+    end else if (cke_i) begin
       if (reset_counters_i) begin
         read_hit_cnt_o   <= {DATA_W{1'b0}};
         read_miss_cnt_o  <= {DATA_W{1'b0}};

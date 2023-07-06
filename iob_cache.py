@@ -29,10 +29,11 @@ class iob_cache(iob_module):
     flows = "emb sim doc fpga"
     setup_dir = os.path.dirname(__file__)
 
-    # Public method to set dynamic attributes
-    # This method is automatically called by the `setup` method
+    # Public method to set attributes
+    # This method is called by iob_module's `setup` method
     @classmethod
     def set_dynamic_attributes(cls):
+        # init
         super().set_dynamic_attributes()
 
         # Parse BE_DATA_W argument
@@ -163,9 +164,7 @@ class iob_cache(iob_module):
         iob_reg.setup()
         iob_reg_e.setup()
 
-        # Verilog modules instances
-        # TODO
-
+        # TODO: will be done by iob_module
         cls._setup_confs()
         cls._setup_ios()
         cls._setup_regs()
@@ -175,6 +174,7 @@ class iob_cache(iob_module):
         super()._run_setup()
 
         # Setup core using LIB function
+        # TODO: this should be done by iob_module
         setup(cls)
 
     @classmethod
@@ -661,3 +661,7 @@ class iob_cache(iob_module):
     @classmethod
     def _setup_block_groups(cls):
         cls.block_groups += []
+
+    @classmethod
+    def _copy_srcs(cls):
+        super()._copy_srcs()

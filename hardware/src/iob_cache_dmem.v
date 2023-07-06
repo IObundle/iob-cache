@@ -111,7 +111,7 @@ module iob_cache_dmem
    genvar                        i;
    generate
       for (i=1; i<=NWAYS; i=i+1) begin: way
-         way_hit_1hot[i] = (tag_r == data_mem_d_i[i*(TAG_W+BLKSZ*DATA_W)-1-:TAG_W]);
+         assign way_hit_1hot[i] = (tag_r == data_mem_d_i[i*(TAG_W+BLKSZ*DATA_W)-1-:TAG_W]);
       end
    endgenerate
    
@@ -199,7 +199,7 @@ module iob_cache_dmem
 
    //address register
    iob_reg #(
-      .DATA_W(TAG_W+NLINES_W)
+      .DATA_W(TAG_W+NLINES_W),
       .RST_VAL(0)
    ) addr_reg (
       .clk_i(clk_i),

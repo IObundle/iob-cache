@@ -7,12 +7,16 @@ module iob_cache_tb;
 
    localparam ADDR_W = `IOB_CACHE_ADDR_W;
    localparam DATA_W = `IOB_CACHE_DATA_W;
+   localparam FE_ADDR_W = `IOB_CACHE_FE_ADDR_W;
+   localparam FE_DATA_W = DATA_W;
+   localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
+   localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    
    //global reset
    reg rst = 0;
    reg arst = 0;
-   reg cke_i = 0;
-
+   reg cke = 0;
+   
    //clock
    `IOB_CLOCK(clk, 10)
 
@@ -28,27 +32,24 @@ module iob_cache_tb;
    //control signals
 `include "iob_m_tb_wire.vs"
 
-localparam ADDR_W = `IOB_CACHE_ADDR_W;
-localparam DATA_W = `IOB_CACHE_DATA_W;
-localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
-localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
-   
+   //TODO: to be done with stubs 
    //frontend signals
    reg  fe_iob_avalid_i = 0;
-   reg     [           ADDR_W-1:0] fe_iob_addr_i = 0;
-   reg     [           DATA_W-1:0] fe_iob_wdata_i = 0;
-   reg     [       (DATA_W/8)-1:0] fe_iob_wstrb_i = 0;
+   reg     [           FE_ADDR_W-1:0] fe_iob_addr_i = 0;
+   reg     [           FE_DATA_W-1:0] fe_iob_wdata_i = 0;
+   reg     [       (FE_DATA_W/8)-1:0] fe_iob_wstrb_i = 0;
    wire    [                1-1:0] fe_iob_rvalid_o;
-   wire    [           DATA_W-1:0] fe_iob_rdata_o;
+   wire    [           FE_DATA_W-1:0] fe_iob_rdata_o;
    wire    [                1-1:0] fe_iob_ready_o;
 
    
    //backend signals
-   wire be_iob_avalid_o;  //Request valid.
+   wire           be_iob_avalid_o;
    wire    [           BE_ADDR_W-1:0] be_iob_addr_o;
    wire    [           BE_DATA_W-1:0] be_iob_wdata_o;
    wire    [       (BE_DATA_W/8)-1:0] be_iob_wstrb_o;
-   reg    [                1-1:0] be_iob_rvalid_i = 0;
+   reg                                be_iob_rvalid_i = 0;
+   reg                                be_iob_ready_i = 1;
    wire     [           BE_DATA_W-1:0] be_iob_rdata_i = 0;
 
    reg [`IOB_CACHE_DATA_W-1:0]                               data;
@@ -130,57 +131,33 @@ task iob_read;
 endtask
 
    //
-   // cache
+   // Intantiate Cache
    //
 `ifdef AXI
    iob_cache_axi cache (
 
  `include "iob_s_s_portmap.vs"
       //front-end
-      .fe_iob_avalid_i(fe_iob_avalid_i),
-      .fe_iob_addr_i  (fe_iob_addr_i[ADDR_W-1:$clog2(DATA_W/8)]),
-      .fe_iob_wdata_i (fe_iob_wdata_i),
-      .fe_iob_wstrb_i (fe_iob_wstrb_i),
-      .fe_iob_rvalid_o(fe_iob_rvalid_o),
-      .fe_iob_rdata_o (fe_iob_rdata_o),
-      .fe_iob_ready_o (fe_iob_ready_o),
+ `include "fe_iob_s_s_portmap.vs"
       //back-end
-      `include "iob_axi_m_m_portmap.vs"
+ `include "iob_axi_m_m_portmap.vs"
       //general
       .clk_i(clk),
       .rst_i(arst),
-      .cke_i(cke_i)                   
+      .cke_i(cke)                   
    );
 `else
-   wire                   be_req;
-   reg                    be_ack;
-   wire [  `IOB_CACHE_BE_ADDR_W-1:0] be_addr;
-   wire [  `IOB_CACHE_BE_DATA_W-1:0] be_wdata;
-   wire [`IOB_CACHE_BE_DATA_W/8-1:0] be_wstrb;
-   wire [  `IOB_CACHE_BE_DATA_W-1:0] be_rdata;
-
-   iob_cache_iob cache (
-       //control
+   iob_cache_iob cache 
+     (
+      //control
  `include "iob_s_s_portmap.vs"
       //front-end
-      .fe_iob_avalid_i(fe_iob_avalid_i),
-      .fe_iob_addr_i  (fe_iob_addr_i[ADDR_W-1:$clog2(DATA_W/8)]),
-      .fe_iob_wdata_i (fe_iob_wdata_i),
-      .fe_iob_wstrb_i (fe_iob_wstrb_i),
-      .fe_iob_rvalid_o(fe_iob_rvalid_o),
-      .fe_iob_rdata_o (fe_iob_rdata_o),
-      .fe_iob_ready_o (fe_iob_ready_o),
-                        //back-end
-      .be_iob_avalid_o(be_iob_avalid_o),
-      .be_iob_addr_o  (be_iob_addr_o),
-      .be_iob_wdata_o (be_iob_wdata_o),
-      .be_iob_wstrb_o (be_iob_wstrb_o),
-      .be_iob_rvalid_i(be_iob_rvalid_i),
-      .be_iob_rdata_i (be_iob_rdata_i),
-      .be_iob_ready_i (1'b1),
+ `include "fe_iob_s_s_portmap.vs"
+      //back-end
+ `include "fe_iob_s_s_portmap.vs"
       .clk_i(clk),
       .arst_i(arst),
-      .cke_i(cke_i)
+      .cke_i(cke)
    );
 `endif
 
@@ -198,7 +175,7 @@ endtask
       .clk(clk),
       .rst(arst)
    );
-`else
+`else //IOb
    iob_ram_sp_be #(
       .DATA_W(`IOB_CACHE_BE_DATA_W),
       .ADDR_W(`IOB_CACHE_BE_ADDR_W)
@@ -221,23 +198,33 @@ endtask
 
 `endif
 
-
+   wire              wtb_mem_w_en;
+   wire [FE_ADDR_W-1:0] wtb_mem_w_addr;
+   wire [FE_DATA_W-1:0] wtb_mem_w_data;
+   
+   wire [FE_DATA_W-1:0] wtb_mem_r_data;
+   wire [FE_DATA_W/8-1:0] wtb_mem_wstrb;
+   wire                   wtb_mem_ren;
+   
 
    
    // write through buffer memory
-   iob_ram_2p #(
-                .DATA_W(FIFO_DATA_W),
-                .ADDR_W(FIFO_ADDR_W)
-                ) iob_ram_2p0 (
-          .clk_i(clk_i),
-
-          .w_en_i  (mem_w_en),
-          .w_addr_i(mem_w_addr),
-          .w_data_i(mem_w_data),
-
-          .r_en_i  (mem_r_en),
-          .r_addr_i(mem_r_addr),
-          .r_data_o(mem_r_data)
+   iob_ram_2p 
+     #(
+       .DATA_W(FIFO_DATA_W),
+       .ADDR_W(FIFO_ADDR_W)
+       ) 
+   iob_ram_2p0 
+     (
+      .clk_i(clk),
+      
+      .w_en_i  (wtb_mem_w_en),
+      .w_addr_i(wtb_mem_w_addr),
+      .w_data_i(wtb_mem_w_data),
+      
+      .r_en_i  (wtb_mem_r_en),
+      .r_addr_i(wtb_mem_r_addr),
+      .r_data_o(wtb_mem_r_data)
       );
 
   
