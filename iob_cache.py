@@ -21,6 +21,7 @@ from iob_reg import iob_reg
 from iob_ram_sp_be import iob_ram_sp_be
 from iob_tasks import iob_tasks
 from iob_reg_e import iob_reg_e
+from iob_prio_enc import iob_prio_enc
 
 
 class iob_cache(iob_module):
@@ -209,7 +210,7 @@ class iob_cache(iob_module):
                 {
                     "name": "BE_DATA_W",
                     "type": "F",
-                    "val": "FE_DATA_W * 2**BE_RATIO_W",
+                    "val": "DATA_W * 2**BE_RATIO_W",
                     "min": "NA",
                     "max": "NA",
                     "descr": "Back-end data width (log2): defines the data width of the backend.",
@@ -257,7 +258,7 @@ class iob_cache(iob_module):
                 },
                 # Replacement policy
                 {
-                    "name": "REP_POLICY",
+                    "name": "REPLACE_POL",
                     "type": "P",
                     "val": "0",
                     "min": "0",
@@ -370,13 +371,13 @@ class iob_cache(iob_module):
                     {
                         "name": "fe_iob_addr_i",
                         "type": "I",
-                        "n_bits": "FE_ADDR_W-$clog2(FE_DATA_W/8)",
+                        "n_bits": "FE_ADDR_W-$clog2(DATA_W/8)",
                         "descr": "Address.",
                     },
                     {
                         "name": "fe_iob_wdata_i",
                         "type": "I",
-                        "n_bits": "FE_DATA_W",
+                        "n_bits": "DATA_W",
                         "descr": "Write data.",
                     },
                     {
@@ -466,7 +467,7 @@ class iob_cache(iob_module):
                     {
                         "name": "wtb_mem_w_data_o",
                         "type": "O",
-                        "n_bits": "FE_ADDR_W+FE_DATA_W+NBYTES",
+                        "n_bits": "FE_ADDR_W+DATA_W+NBYTES",
                         "descr": "Write through buffer memory write data.",
                     },
                     {
@@ -484,7 +485,7 @@ class iob_cache(iob_module):
                     {
                         "name": "wtb_mem_r_data_i",
                         "type": "I",
-                        "n_bits": "FE_ADDR_W+FE_DATA_W+NBYTES",
+                        "n_bits": "FE_ADDR_W+DATA_W+NBYTES",
                         "descr": "Write through buffer memory read data.",
                     },
                     {
@@ -500,31 +501,31 @@ class iob_cache(iob_module):
                 "descr": "Data memory interface",
                 "ports": [
                     {
-                        "name": "data_mem_w_addr_o",
+                        "name": "data_mem_addr_o",
                         "type": "O",
                         "n_bits": "NLINES_W",
                         "descr": "Data memory write address.",
                     },
                     {
-                        "name": "data_mem_w_data_o",
+                        "name": "data_mem_d_o",
                         "type": "O",
                         "n_bits": "2**NWAYS_W*(TAG_W+DATA_W)",
                         "descr": "Data memory write data.",
                     },
                     {
-                        "name": "data_mem_w_en_o",
+                        "name": "data_mem_we_o",
                         "type": "O",
                         "n_bits": "1",
                         "descr": "Data memory write enable.",
                     },
                     {
-                        "name": "data_mem_r_en_o",
+                        "name": "data_mem_en_o",
                         "type": "O",
                         "n_bits": "1",
                         "descr": "Data memory read enable.",
                     },
                     {
-                        "name": "data_mem_r_data_i",
+                        "name": "data_mem_d_i",
                         "type": "I",
                         "n_bits": "2**NWAYS_W*(TAG_W+DATA_W)",
                         "descr": "Data memory read data.",

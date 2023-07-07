@@ -4,7 +4,7 @@
 
 module iob_cache_backend_iob #(
    parameter ADDR_W     = 32,
-   parameter DATA_W     = 
+   parameter DATA_W     = 32,
    parameter BE_ADDR_W     = 32,
    parameter BE_DATA_W     = 32,
    parameter WORD_OFFSET_W = 2,

@@ -20,18 +20,21 @@ module iob_cache_iob
    assign iob_ready_o  = iob_ready;
    assign iob_rvalid_o = iob_rvalid;
    assign iob_rdata_o  = iob_rdata;
-  
+
    //Sofware acessible registers
 `include "iob_cache_swreg_inst.vs"
 
+   wire write_hit;
+   wire write_miss;
+   wire read_hit;
+   wire read_miss;
+   
    iob_cache_dmem #(
       .ADDR_W        (ADDR_W),
       .DATA_W        (DATA_W),
-      .BE_DATA_W     (BE_DATA_W),
       .NWAYS_W       (NWAYS_W),
       .NLINES_W      (NLINES_W),
       .WORD_OFFSET_W (WORD_OFFSET_W),
-      .WTBUF_DEPTH_W (WTBUF_DEPTH_W),
       .REPLACE_POL   (REPLACE_POL),
       .WRITE_POL     (WRITE_POL)
   ) 
@@ -46,13 +49,12 @@ module iob_cache_iob
       // internal interface
 `include "int_iob_m_portmap.vs"
 
-      .ext_mem_w_en_o  (data_mem_w_en_o),
-      .ext_mem_w_addr_o(data_mem_w_addr_o),
-      .ext_mem_w_data_o(data_mem_w_data_o),
-      
-      .ext_mem_r_en_o  (data_mem_r_en_o),
-      .ext_mem_r_addr_o(data_mem_r_addr_o),
-      .ext_mem_r_data_i(data_mem_r_data_o),
+      .data_mem_en_o (data_mem_en_o),
+      .data_mem_en_o (data_mem_we_o),
+      .data_mem_addr_o(data_mem_addr_o),
+      .data_mem_d_o(data_mem_d_o),
+      .data_mem_d_i(data_mem_d_i),
+
     
       // control and status signals
       .invalidate_i    (INVALIDATE),
@@ -62,44 +64,54 @@ module iob_cache_iob
       .read_miss_o     (read_miss)
   );
 
-   //Write through buffer
-   iob_fifo_sync 
-     #(
-       .R_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
-       .W_DATA_W(FE_ADDR_W+FE_DATA_W+NBYTES),
-       .ADDR_W  (WTBUF_DEPTH_W)
-       ) 
-   write_throught_buffer 
-     (
-      .clk_i (clk_i),
-      .rst_i (arst_i),
-      .arst_i(arst_i),
-      .cke_i (1'b1),
+   generate
+      if (WRITE_POL == "WRITE_THROUGH") begin: g_write_through
+
+         wire [FE_ADDR_W+DATA_W+NBYTES-1:0] wtb_wdata = {fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i};
+         wire [FE_ADDR_W+DATA_W+NBYTES-1:0] wtb_rdata;
+         wire                                  wtb_wen = fe_iob_avalid_i & fe_iob_wstrb_i;
+         wire                                  wtb_ren;
+         
+         //Write through buffer
+         iob_fifo_sync 
+           #(
+             .R_DATA_W(FE_ADDR_W+DATA_W+NBYTES),
+             .W_DATA_W(FE_ADDR_W+DATA_W+NBYTES),
+             .ADDR_W  (WTBUF_DEPTH_W)
+             ) 
+         write_throught_buffer 
+           (
+            .clk_i (clk_i),
+            .rst_i (arst_i),
+            .arst_i(arst_i),
+            .cke_i (1'b1),
+            
+            .ext_mem_w_en_o  (wtb_mem_w_en_o),
+            .ext_mem_w_addr_o(wtb_mem_w_addr_o),
+            .ext_mem_w_data_o(wtb_mem_w_data_o),
       
-      .ext_mem_w_en_o  (wtb_mem_w_en_o),
-      .ext_mem_w_addr_o(wtb_mem_w_addr_o),
-      .ext_mem_w_data_o(wtb_mem_w_data_o),
-      
-      .ext_mem_r_en_o  (wtb_mem_r_en_o),
-      .ext_mem_r_addr_o(wtb_mem_r_addr_o),
-      .ext_mem_r_data_i(wtb_mem_r_data_o),
-      
-      .level_o(WTB_LEVEL),
-      
-      .r_data_o (wtb_data),
-      .r_empty_o(WTB_EMPTY),
-      .r_en_i   (wtb_read),
-      
-      .w_data_i({fe_iob_addr_i, fe_iob_wdata_i, fe_iob_wstrb_i}),
-      .w_full_o(WTB_FULL),
-      .w_en_i  ((WRITE_POLICY == `IOB_CACHE_WRITE_THROUGH) & fe_iob_avalid_i & |fe_iob_wstrb_i & ~WTB_FULL)
-      );
-   
+            .ext_mem_r_en_o  (wtb_mem_r_en_o),
+            .ext_mem_r_addr_o(wtb_mem_r_addr_o),
+            .ext_mem_r_data_i(wtb_mem_r_data_i),
+            
+            .w_data_i(wtb_wdata),
+            .w_full_o(WTB_FULL),
+            .w_en_i  (wtb_wen),
+
+            .r_data_o (wtb_rdata),
+            .r_empty_o(WTB_EMPTY),
+            .r_en_i   (wtb_ren),
+            
+            .level_o(WTB_LEVEL)
+            
+            );
+      end // block: g_write_through
+   endgenerate // generate
    
   //Back-end interface
-  iob_cache_back_end #(
-      .ADDR_W    (NLINES_W),
-      .DATA_W    (2**ADDR_OFFSET*DATA_W),
+  iob_cache_backend_iob #(
+      .ADDR_W       (NLINES_W),
+      .DATA_W       ((2**WORD_OFFSET_W)*DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W)

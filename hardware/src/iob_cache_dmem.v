@@ -26,7 +26,7 @@ module iob_cache_dmem
     parameter BUF_DATA_W = LINE_W,
     parameter BUF_NBYTES = LINE_W/8,
     //derived cache data memory parameters
-    parameter DMEM_DATA_W = N_WAYS * LINE_W,
+    parameter DMEM_DATA_W = NWAYS * LINE_W,
     parameter DMEM_ADDR_W = NLINES_W,
     parameter DMEM_NBYTES_W = DMEM_DATA_W/8,
     //derived cache tag memory parameters
@@ -38,7 +38,7 @@ module iob_cache_dmem
 
    // back-end buffer (can't use stub because of BUF_ADDR_W and BUF_DATA_W)
    output                    buf_iob_avalid_o,
-   output [BUF_ADDR_W-1:0]   buf_iob_awaddr_o,
+   output [BUF_ADDR_W-1:0]   buf_iob_addr_o,
    output [BUF_DATA_W-1:0]   buf_iob_wdata_o,
    output [BUF_NBYTES_W-1:0] buf_iob_wstrb_o,
    output [BUF_DATA_W-1:0]   buf_iob_rdata_o,
@@ -135,27 +135,35 @@ module iob_cache_dmem
    
    //back-end buffer interface
    assign buf_iob_addr_o = addr_i[ADDR_W-1:WORD_OFFSET_W];
-   assign buf_wdata_o = data_mem_d_i >> (way_replace*BLKSZ*DATA_W);
+   assign buf_iob_wdata_o = data_mem_d_i >> (way_replace*BLKSZ*DATA_W);
    generate 
-      if (WRITE_POLICY == `IOB_CACHE_WRITE_BACK) begin: g_wb
+      if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin: g_wb
          assign buf_iob_avalid_o = miss;
-         assign buf_wstrb_o = {BLKSZ*NBYTES{1'b1}};
+         assign buf_iob_wstrb_o = {BLKSZ*NBYTES{1'b1}};
       end
       else begin: g_wt
          assign buf_iob_avalid_o = rd_miss_o;
-         assign buf_wstrb_o = {BLKSZ*NBYTES{1'b0}};
+         assign buf_iob_wstrb_o = {BLKSZ*NBYTES{1'b0}};
       end
    endgenerate
    
-   assign iob_ready = buf_iob_ready_i & ~miss;
+   assign iob_ready_o = buf_iob_ready_i & ~miss;
    assign buf_iob_rvalid_i = buf_iob_rvalid_i & ~miss;
 
    //convert way_hit 1-hot encoding to binary encoding
-   iob_prio_encoder #(
-       .DATA_W(NWAYS)
-   ) prio_encoder (
+   iob_prio_enc #(
+       .W(NWAYS)
+   ) way_hit_enc (
        .unencoded_i(way_hit_1hot),
        .encoded_o(way_hit)
+   );
+
+   //convert way_replace 1-hot encoding to binary encoding
+   iob_prio_enc #(
+       .W(NWAYS)
+   ) way_replace_enc (
+       .unencoded_i(way_replace_1hot),
+       .encoded_o(way_replace)
    );
 
    //front-end read enable register
@@ -181,7 +189,7 @@ module iob_cache_dmem
    );   
 
    //valid bit register
-   iob_reg_re (
+   iob_reg_re #(
       .DATA_W(NWAYS*NLINES),
       .RST_VAL(0)
    ) valid_reg (
@@ -195,30 +203,45 @@ module iob_cache_dmem
    );
 
    //tag register
-   wire req_reg_en = iob_avalid_i & iob_ready_o;
+   wire req_en = iob_avalid_i & iob_ready_o;
 
    //address register
-   iob_reg #(
+   iob_reg_e #(
       .DATA_W(TAG_W+NLINES_W),
       .RST_VAL(0)
    ) addr_reg (
       .clk_i(clk_i),
       .cke_i(cke_i),
       .arst_i(arst_i),
-      .en_i(req_reg_en),
+      .en_i(req_en),
       .d_i(addr_i[ADDR_W-1:WORD_OFFSET_W]),
       .d_o(addr_r)
    );
 
+   wire ack;
+   iob_reg #(
+      .DATA_W(1),
+      .RST_VAL(0)
+   ) ack_reg (
+      .clk_i(clk_i),
+      .cke_i(cke_i),
+      .arst_i(arst_i),
+      .d_i(req_en),
+      .d_o(ack)
+   );
+
+   
    //write strobe register
-   iob_reg 
+   iob_reg_e 
      #(
-       .DATA_W(NBYTES)
+       .DATA_W(NBYTES),
+       .RST_VAL(0)
        ) 
    wstrb_reg (
-              .clk(clk),
-              .rst(rst),
-              .cke(1'b1),
+              .clk(clk_i),
+              .arst(arst_i),
+              .cke(cke_i),
+              .en_i(req_en),
               .d_i(iob_wstrb_i),
               .d_o(wstrb_r)
               );
@@ -229,20 +252,21 @@ module iob_cache_dmem
    // line replace
    iob_cache_replace
      #(
-       .N_WAYS    (NWAYS),
+       .NWAYS    (NWAYS),
        .NLINES_W  (NLINES_W),
-       .REP_POLICY(REP_POLICY)
+       .REP_POLICY(REPLACE_POL)
        )
    replace_inst 
      (
       .clk_i         (clk_i),
       .arst_i        (arst_i),
-      .rst_i         (reset | invalidate),
+      .cke(cke_i),
+      .rst_i         (invalidate_i),
       .we_i          (ack),
+      .way_hit_1hot_i     (way_hit_1hot),
       .way_hit_i     (way_hit),
       .line_addr_i   (index_reg[NLINES_W-1:0]),
-      .way_select_o  (way_select),
-      .way_select_bin(way_select_bin)
+      .way_select_o  (way_replace_1hot)
       );
 
 endmodule

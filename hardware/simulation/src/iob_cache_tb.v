@@ -134,8 +134,12 @@ endtask
    // Intantiate Cache
    //
 `ifdef AXI
-   iob_cache_axi cache (
-
+   iob_cache_axi
+     #(
+ `include "iob_cache_inst_params.vs"
+       )
+   cache 
+     (
  `include "iob_s_s_portmap.vs"
       //front-end
  `include "fe_iob_s_s_portmap.vs"
@@ -147,7 +151,11 @@ endtask
       .cke_i(cke)                   
    );
 `else
-   iob_cache_iob cache 
+   iob_cache_iob
+     #(
+ `include "iob_cache_inst_params.vs"
+       ) 
+   cache
      (
       //control
  `include "iob_s_s_portmap.vs"
@@ -203,16 +211,19 @@ endtask
    wire [FE_DATA_W-1:0] wtb_mem_w_data;
    
    wire [FE_DATA_W-1:0] wtb_mem_r_data;
-   wire [FE_DATA_W/8-1:0] wtb_mem_wstrb;
-   wire                   wtb_mem_ren;
+   wire [FE_DATA_W/8-1:0] wtb_mem_r_addr;
+   wire                   wtb_mem_r_en;
    
 
    
    // write through buffer memory
+   localparam WTB_MEM_ADDR_W = 1 << `IOB_CACHE_WTB_MEM_ADDR_W;
+   localparam WTB_MEM_DATA_W = FE_ADDR_W + FE_DATA_W + FE_DATA_W/8;
+  
    iob_ram_2p 
      #(
-       .DATA_W(FIFO_DATA_W),
-       .ADDR_W(FIFO_ADDR_W)
+       .DATA_W(WTB_MEM_DATA_W),
+       .ADDR_W(WTB_MEM_ADDR_W)
        ) 
    iob_ram_2p0 
      (
