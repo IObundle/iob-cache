@@ -11,6 +11,16 @@ module iob_cache_tb;
    localparam FE_DATA_W = DATA_W;
    localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
    localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
+   localparam NLINES_W = `IOB_CACHE_NLINES_W;
+   localparam NWAYS_W = `IOB_CACHE_NWAYS_W;
+   localparam BE_RATIO_W = `IOB_CACHE_BE_RATIO_W;
+   localparam WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W;
+   localparam REPLACE_POL = `IOB_CACHE_REPLACE_POL;
+   localparam TAG_W = `IOB_CACHE_TAG_W;
+   localparam WRITE_POL = `IOB_CACHE_WRITE_POL;
+   localparam NBYTES_W = `IOB_CACHE_NBYTES_W;
+   localparam NBYTES = `IOB_CACHE_NBYTES;
+
    
    //global reset
    reg rst = 0;
@@ -73,10 +83,10 @@ module iob_cache_tb;
       #10 `IOB_PULSE(rst, 50, 50, 50)
 
       for (i = 0; i < 10; i=i+1) begin
-         iob_write(4*i, i, `IOB_CACHE_DATA_W);
+         iob_write(4*i, i, DATA_W);
       end
       for (i = 0; i < 10; i=i+1) begin
-         iob_read(4*i, data, `IOB_CACHE_DATA_W);
+         iob_read(4*i, data, DATA_W);
          if (data != i) begin
             $display("ERROR: read data mismatch");
             $fwrite(fd, "Test failed!\n");
@@ -133,25 +143,7 @@ endtask
    //
    // Intantiate Cache
    //
-`ifdef AXI
-   iob_cache_axi
-     #(
- `include "iob_cache_inst_params.vs"
-       )
-   cache 
-     (
- `include "iob_s_s_portmap.vs"
-      //front-end
- `include "fe_iob_s_s_portmap.vs"
-      //back-end
- `include "iob_axi_m_m_portmap.vs"
-      //general
-      .clk_i(clk),
-      .rst_i(arst),
-      .cke_i(cke)                   
-   );
-`else
-   iob_cache_iob
+   iob_cache
      #(
  `include "iob_cache_inst_params.vs"
        ) 
@@ -167,26 +159,13 @@ endtask
       .arst_i(arst),
       .cke_i(cke)
    );
-`endif
 
    //
    //system memory
    //
-`ifdef AXI
-   axi_ram #(
-      .ID_WIDTH  (`IOB_CACHE_AXI_ID_W),
-      .LEN_WIDTH (`IOB_CACHE_AXI_LEN_W),
-      .DATA_WIDTH(`IOB_CACHE_BE_DATA_W),
-      .ADDR_WIDTH(`IOB_CACHE_BE_ADDR_W)
-   ) axi_ram (
- `include "iob_axi_s_portmap.vs"
-      .clk(clk),
-      .rst(arst)
-   );
-`else //IOb
    iob_ram_sp_be #(
-      .DATA_W(`IOB_CACHE_BE_DATA_W),
-      .ADDR_W(`IOB_CACHE_BE_ADDR_W)
+      .DATA_W(BE_DATA_W),
+      .ADDR_W(BE_ADDR_W)
    ) native_ram (
       .clk_i (clk),
       .en_i  (be_iob_avalid_o),
@@ -204,8 +183,7 @@ endtask
       end
    end
 
-`endif
-
+   
    wire              wtb_mem_w_en;
    wire [FE_ADDR_W-1:0] wtb_mem_w_addr;
    wire [FE_DATA_W-1:0] wtb_mem_w_data;

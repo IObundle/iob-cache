@@ -46,51 +46,6 @@ class iob_cache(iob_module):
                     print("ERROR: backend interface width must be 32, 64, 128 or 256")
                     exit(1)
 
-        # Parse BE_IF argument
-        cls.BE_IF = "IOb"
-        for arg in sys.argv[1:]:
-            if "BE_IF" in arg:
-                cls.BE_IF = arg.split("=")[1]
-                if cls.BE_IF not in ["AXI4", "IOb"]:
-                    print("ERROR: backend interface must be either AXI4 or IOb")
-                    exit(1)
-
-        cls.AXI_CONFS = []
-        if cls.BE_IF == "AXI4":
-            cls.AXI_CONFS = [
-                {
-                    "name": "AXI",
-                    "type": "M",
-                    "val": "NA",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "AXI interface used by backend",
-                },
-                {
-                    "name": "AXI_ID_W",
-                    "type": "M",
-                    "val": "1",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
-                {
-                    "name": "AXI_LEN_W",
-                    "type": "M",
-                    "val": "4",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
-                {
-                    "name": "AXI_ID",
-                    "type": "M",
-                    "val": "0",
-                    "min": "?",
-                    "max": "?",
-                    "descr": "description",
-                },
-            ]
 
     @classmethod
     def _run_setup(cls):
@@ -99,61 +54,66 @@ class iob_cache(iob_module):
         # iob control interface
         iob_module.generate("iob_s_port")
 
-        if cls.BE_IF == "IOb":
-            iob_module.generate("iob_wire")
-            # Simulation modules & snippets
-            iob_module.generate("iob_m_tb_wire")
-            iob_module.generate("iob_s_s_portmap")
-            iob_module.generate(
-                {
-                    "file_prefix": "fe_",
-                    "interface": "iob_s_s_portmap",
-                    "wire_prefix": "fe_",
-                    "port_prefix": "fe_",
-                }
-            )
-            iob_module.generate(
-                {
-                    "file_prefix": "int_",
-                    "interface": "iob_m_portmap",
-                    "wire_prefix": "int_",
-                    "port_prefix": "int_",
-                }
-            )
-            iob_module.generate(
-                {
-                    "file_prefix": "int_",
-                    "interface": "iob_s_portmap",
-                    "wire_prefix": "int_",
-                    "port_prefix": "int_",
-                }
-            )
-            iob_module.generate(
-                {
-                    "file_prefix": "be_",
-                    "interface": "iob_m_m_portmap",
-                    "wire_prefix": "be_",
-                    "port_prefix": "be_",
-                }
-            )
-            iob_ram_sp_be.setup(purpose="hardware")
-            iob_tasks.setup(purpose="simulation")
+        # interface snippets
+        iob_module.generate("iob_s_port")
+        iob_module.generate(
+            {
+                "file_prefix": "fe_",
+                "interface": "iob_s_port",
+                "wire_prefix": "fe_",
+                "port_prefix": "fe_",
+                "param_prefix": "FE_",
+            }
+        )
+        iob_module.generate(
+            {
+                "file_prefix": "buf_",
+                "interface": "iob_m_port",
+                "wire_prefix": "buf_",
+                "port_prefix": "buf_",
+                "param_prefix": "BUF_",
+            }
+        )
 
-        if cls.BE_IF == "AXI4":
-            # axi backend interface
-            iob_module.generate("axi_m_port")
-            # axi portmap for internal backend module
-            iob_module.generate("axi_m_m_portmap")
+        # Simulation snippets
+        iob_module.generate("iob_m_tb_wire")
+        iob_module.generate("iob_s_s_portmap")
+        iob_module.generate(
+            {
+                "file_prefix": "fe_",
+                "interface": "iob_s_s_portmap",
+                "wire_prefix": "fe_",
+                "port_prefix": "fe_",
+            }
+        )
+        iob_module.generate(
+            {
+                "file_prefix": "int_",
+                "interface": "iob_m_portmap",
+                "wire_prefix": "int_",
+                "port_prefix": "int_",
+            }
+        )
+        iob_module.generate(
+            {
+                "file_prefix": "int_",
+                "interface": "iob_s_portmap",
+                "wire_prefix": "int_",
+                "port_prefix": "int_",
+            }
+        )
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_m_m_portmap",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            }
+        )
+        iob_ram_sp_be.setup(purpose="hardware")
+        iob_tasks.setup(purpose="simulation")
 
-            # internal axi backend module headers
-            iob_module.generate("axi_m_write_port")
-            iob_module.generate("axi_m_read_port")
-            iob_module.generate("axi_m_m_write_portmap")
-            iob_module.generate("axi_m_m_read_portmap")
-            # Simulation modules & snippets
-            iob_module.generate("axi_s_portmap")
-            iob_module.generate("axi_wire", purpose="simulation")
-
+        # Utils header 
         iob_utils.setup()
 
         iob_clkenrst_port.setup()
@@ -190,6 +150,14 @@ class iob_cache(iob_module):
                     "min": "1",
                     "max": "64",
                     "descr": "Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.",
+                },
+                {
+                    "name": "FE_DATA_W",
+                    "type": "F",
+                    "val": "DATA_W",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Front-end data width (log2): defines the data width of the backend.",
                 },
                 {
                     "name": "BE_RATIO_W",
@@ -347,7 +315,6 @@ class iob_cache(iob_module):
                     "descr": "Number of bytes in a data word (log2).",
                 },
             ]
-            + cls.AXI_CONFS
         )
 
     @classmethod
@@ -361,50 +328,7 @@ class iob_cache(iob_module):
             {
                 "name": "fe",
                 "descr": "IOb data front-end interface",
-                "ports": [
-                    {
-                        "name": "fe_iob_avalid_i",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "Address valid.",
-                    },
-                    {
-                        "name": "fe_iob_addr_i",
-                        "type": "I",
-                        "n_bits": "FE_ADDR_W-$clog2(DATA_W/8)",
-                        "descr": "Address.",
-                    },
-                    {
-                        "name": "fe_iob_wdata_i",
-                        "type": "I",
-                        "n_bits": "DATA_W",
-                        "descr": "Write data.",
-                    },
-                    {
-                        "name": "fe_iob_wstrb_i",
-                        "type": "I",
-                        "n_bits": "DATA_W/8",
-                        "descr": "Write strofe.",
-                    },
-                    {
-                        "name": "fe_iob_rdata_o",
-                        "type": "O",
-                        "n_bits": "DATA_W",
-                        "descr": "Read data.",
-                    },
-                    {
-                        "name": "fe_iob_rvalid_o",
-                        "type": "O",
-                        "n_bits": "1",
-                        "descr": "Read valid.",
-                    },
-                    {
-                        "name": "fe_iob_ready_o",
-                        "type": "O",
-                        "n_bits": "1",
-                        "descr": "Ready.",
-                    },
-                ],
+                "ports": [],
             },
             {
                 "name": "be",
