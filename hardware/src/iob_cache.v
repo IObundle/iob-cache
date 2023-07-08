@@ -37,7 +37,7 @@ module iob_cache
 `include "fe_iob_s_s_portmap.vs"
 
       // internal interface
-`include "int_iob_m_portmap.vs"
+`include "buf_iob_m_portmap.vs"
 
       .data_mem_en_o (data_mem_en_o),
       .data_mem_en_o (data_mem_we_o),
@@ -59,7 +59,7 @@ module iob_cache
 
    localparam INT_ADDR_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_ADDR_W : FE_ADDR_W-WORD_OFFSET_W;
    localparam INT_DATA_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_DATA_W : LINE_W;
-   iob_cache_backend_iob 
+   iob_cache_backend 
      #(
        .INT_ADDR_W       (INT_ADDR_W),
        .INT_DATA_W       (INT_DATA_W),
@@ -67,7 +67,7 @@ module iob_cache
        .BE_DATA_W    (BE_DATA_W),
        .WRITE_POL    (WRITE_POL)
        ) back_end (
-`include "int_iob_s_portmap.vs"
+`include "buf_iob_s_portmap.vs"
 `include "be_iob_m_m_portmap.vs"
 `include "iob_clkenrst_portmap.vs"
                    );

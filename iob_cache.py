@@ -46,16 +46,14 @@ class iob_cache(iob_module):
                     print("ERROR: backend interface width must be 32, 64, 128 or 256")
                     exit(1)
 
-
     @classmethod
     def _run_setup(cls):
         # Hardware modules and snippets
 
-        # iob control interface
+        # control interface
         iob_module.generate("iob_s_port")
 
-        # interface snippets
-        iob_module.generate("iob_s_port")
+        # front-end interface
         iob_module.generate(
             {
                 "file_prefix": "fe_",
@@ -65,6 +63,19 @@ class iob_cache(iob_module):
                 "param_prefix": "FE_",
             }
         )
+
+        # back-end interface
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_m_port",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            }
+        )
+
+        # back-end buffer interface
+        # master port on dmem
         iob_module.generate(
             {
                 "file_prefix": "buf_",
@@ -74,26 +85,37 @@ class iob_cache(iob_module):
                 "param_prefix": "BUF_",
             }
         )
-
-        # Simulation snippets
-        iob_module.generate("iob_m_tb_wire")
-        iob_module.generate("iob_s_s_portmap")
+        # dmem instance portmap in cache
         iob_module.generate(
             {
-                "file_prefix": "fe_",
-                "interface": "iob_s_s_portmap",
-                "wire_prefix": "fe_",
-                "port_prefix": "fe_",
-            }
-        )
-        iob_module.generate(
-            {
-                "file_prefix": "int_",
+                "file_prefix": "buf_",
                 "interface": "iob_m_portmap",
-                "wire_prefix": "int_",
-                "port_prefix": "int_",
+                "wire_prefix": "buf_",
+                "port_prefix": "buf_",
             }
         )
+
+        # slave port on backend module
+        iob_module.generate(
+            {
+                "file_prefix": "buf_",
+                "interface": "iob_s_port",
+                "wire_prefix": "buf_",
+                "port_prefix": "buf_",
+                "param_prefix": "BUF_",
+            }
+        )
+
+        # backend module instance portmap in cache
+        iob_module.generate(
+            {
+                "file_prefix": "buf_",
+                "interface": "iob_s_portmap",
+                "wire_prefix": "buf_",
+                "port_prefix": "buf_",
+            }
+        )
+
         iob_module.generate(
             {
                 "file_prefix": "int_",
@@ -102,18 +124,9 @@ class iob_cache(iob_module):
                 "port_prefix": "int_",
             }
         )
-        iob_module.generate(
-            {
-                "file_prefix": "be_",
-                "interface": "iob_m_m_portmap",
-                "wire_prefix": "be_",
-                "port_prefix": "be_",
-            }
-        )
         iob_ram_sp_be.setup(purpose="hardware")
-        iob_tasks.setup(purpose="simulation")
 
-        # Utils header 
+        # Utils header
         iob_utils.setup()
 
         iob_clkenrst_port.setup()
@@ -124,6 +137,31 @@ class iob_cache(iob_module):
         iob_ram_sp.setup()
         iob_reg.setup()
         iob_reg_e.setup()
+
+        # Simulation snippets
+        iob_tasks.setup(purpose="simulation")
+        iob_module.generate("iob_m_tb_wire")
+        iob_module.generate("iob_s_s_portmap")
+
+        # front-end portmap on cache instance
+        iob_module.generate(
+            {
+                "file_prefix": "fe_",
+                "interface": "iob_s_s_portmap",
+                "wire_prefix": "fe_",
+                "port_prefix": "fe_",
+            }
+        )
+
+        # back-end portmap on cache instance
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_m_m_portmap",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            }
+        )
 
         # TODO: will be done by iob_module
         cls._setup_confs()
