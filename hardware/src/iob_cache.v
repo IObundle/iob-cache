@@ -24,7 +24,7 @@ module iob_cache
       .FE_DATA_W     (FE_DATA_W),
       .NWAYS_W       (NWAYS_W),
       .NLINES_W      (NLINES_W),
-      .WORD_OFFSET_W (WORD_OFFSET_W),
+      .NWORDS_W (NWORDS_W),
       .REPLACE_POL   (REPLACE_POL),
       .WRITE_POL     (WRITE_POL)
   ) 
@@ -40,10 +40,16 @@ module iob_cache
 `include "buf_iob_m_portmap.vs"
 
       .data_mem_en_o (data_mem_en_o),
-      .data_mem_en_o (data_mem_we_o),
+      .data_mem_we_o (data_mem_we_o),
       .data_mem_addr_o(data_mem_addr_o),
       .data_mem_d_o(data_mem_d_o),
       .data_mem_d_i(data_mem_d_i),
+
+      .tag_mem_en_o (tag_mem_en_o),
+      .tag_mem_we_o (tag_mem_we_o),
+      .tag_mem_addr_o(tag_mem_addr_o),
+      .tag_mem_d_o(tag_mem_d_o),
+      .tag_mem_d_i(tag_mem_d_i),
 
     
       // control and status signals
@@ -57,7 +63,7 @@ module iob_cache
  
   //Back-end interface
 
-   localparam INT_ADDR_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_ADDR_W : FE_ADDR_W-WORD_OFFSET_W;
+   localparam INT_ADDR_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_ADDR_W : FE_ADDR_W-NWORDS_W;
    localparam INT_DATA_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_DATA_W : LINE_W;
    iob_cache_backend 
      #(
@@ -73,7 +79,7 @@ module iob_cache
                    );
 
   //Control block
-  iob_cache_control #(
+  iob_cache_monitor #(
       .DATA_W(DATA_W),
       .ADDR_W(ADDR_W)
   ) cache_control 

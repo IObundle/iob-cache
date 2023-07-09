@@ -8,9 +8,9 @@ module iob_cache_backend #(
    parameter BUF_NBYTES = BUF_DATA_W/8,
    parameter BE_ADDR_W     = 32,
    parameter BE_DATA_W     = 32,
-   parameter WORD_OFFSET_W = 2,
+   parameter NWORDS_W = 2,
    parameter WRITE_POL     = 0,
-   parameter WTB_MEM_ADDR_W = 32
+   parameter WTB_DEPTH_W = 32
 ) (
    //TODO: add the port stubs instead of the following lists
    // internal data interface
@@ -42,7 +42,7 @@ module iob_cache_backend #(
            #(
              .R_DATA_W(BUF_ADDR_W+DATA_W+NBYTES),
              .W_DATA_W(BUF_ADDR_W+DATA_W+NBYTES),
-             .ADDR_W  (WTB_MEM_ADDR_W),
+             .ADDR_W  (WTB_DEPTH_W),
              ) 
          write_throught_buffer 
            (

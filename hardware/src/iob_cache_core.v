@@ -3,33 +3,9 @@
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
-module iob_cache_dmem 
+module iob_cache_core
   #(
-    parameter FE_ADDR_W        = 0,
-    parameter FE_DATA_W        = 0,
-    parameter NWAYS_W       = 0,
-    parameter NLINES_W      = 0,
-    parameter WORD_OFFSET_W = 0,
-    parameter WRITE_POL    = 0,
-    parameter REPLACE_POL    = 0,
-    //derived cache parameters
-    parameter NWAYS = 1 << NWAYS_W,
-    parameter BLKSZ = 1 << WORD_OFFSET_W,
-    parameter LINE_W = FE_DATA_W * BLKSZ,
-    parameter NLINES = 1 << NLINES_W,
-    parameter NBYTES     = FE_DATA_W/8,
-    //derived backend buffer interface parameters
-    parameter BUF_ADDR_W = FE_ADDR_W-WORD_OFFSET_W,
-    parameter BUF_DATA_W = LINE_W,
-    parameter BUF_NBYTES = LINE_W/8,
-    //derived cache data memory parameters
-    parameter DMEM_DATA_W = NWAYS * LINE_W,
-    parameter DMEM_ADDR_W = NLINES_W,
-    parameter DMEM_NBYTES = DMEM_DATA_W/8,
-    //derived cache tag memory parameters
-    parameter TAG_W = FE_ADDR_W - (WORD_OFFSET_W + NLINES_W),
-    parameter TAG_DATA_W = TAG_W * NWAYS,
-    parameter TAG_ADDR_W = NLINES_W
+ `include "iob_cache_params.vs"
 ) (
     // front-end
 `include "fe_iob_s_port.vs"
@@ -52,7 +28,7 @@ module iob_cache_dmem
    output [TAG_DATA_W-1:0]   tag_mem_d_o,
    input [TAG_DATA_W-1:0]    tag_mem_d_i,
    
-    // cache-control
+    //interface to cache monitor
    input                     invalidate_i,
    output                    wr_hit_o,
    output                    wr_miss_o,
@@ -67,7 +43,7 @@ module iob_cache_dmem
    wire [NWAYS_W-1:0]        way_hit, way_replace;
    
    // address register
-   wire [FE_ADDR_W-1:WORD_OFFSET_W] addr_r;
+   wire [FE_ADDR_W-1:NWORDS_W] addr_r;
    
    // write strobe register
    wire [NBYTES-1:0]             wstrb_r;
@@ -81,8 +57,8 @@ module iob_cache_dmem
    wire [NLINES_W-1:0]           index_r = addr_r[FE_ADDR_W-1-TAG_W-:NLINES_W];
    
    //word offset
-   wire [WORD_OFFSET_W-1:0]      word_offset = fe_iob_addr_i[WORD_OFFSET_W-1:0];
-   wire [WORD_OFFSET_W-1:0]      word_offset_r = addr_r[WORD_OFFSET_W-1:0];
+   wire [NWORDS_W-1:0]      word_offset = fe_iob_addr_i[NWORDS_W-1:0];
+   wire [NWORDS_W-1:0]      word_offset_r = addr_r[NWORDS_W-1:0];
    
    
    // external data memory interface NWAYS*LINE_W X NLINES
@@ -124,7 +100,7 @@ module iob_cache_dmem
    wire [NWAYS*NLINES_W-1:0]      valid_bit_int = valid_bit | (rd_en << (way_hit*NLINES + addr_i[NLINES_W-1:0]));
    
    //back-end buffer interface
-   assign buf_iob_addr_o = addr_i[FE_ADDR_W-1:WORD_OFFSET_W];
+   assign buf_iob_addr_o = addr_i[FE_ADDR_W-1:NWORDS_W];
    assign buf_iob_wdata_o = data_mem_d_i >> (way_replace*BLKSZ*FE_DATA_W);
    generate 
       if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin: g_wb
@@ -204,7 +180,7 @@ module iob_cache_dmem
       .cke_i(cke_i),
       .arst_i(arst_i),
       .en_i(req_en),
-      .d_i(addr_i[FE_ADDR_W-1:WORD_OFFSET_W]),
+      .d_i(addr_i[FE_ADDR_W-1:NWORDS_W]),
       .d_o(addr_r)
    );
 
