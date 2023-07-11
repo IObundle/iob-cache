@@ -3,6 +3,12 @@
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
+
+//reset GENERATOR
+`define IOB_RESET(PRE, DURATION) reg arst=0; initial begin #PRE arst=1; #DURATION @(posedge clk) arst=0; end
+
+
+
 module iob_cache_tb;
 
    localparam ADDR_W = `IOB_CACHE_ADDR_W;
@@ -14,12 +20,14 @@ module iob_cache_tb;
    localparam NLINES_W = `IOB_CACHE_NLINES_W;
    localparam NWAYS_W = `IOB_CACHE_NWAYS_W;
    localparam BE_RATIO_W = `IOB_CACHE_BE_RATIO_W;
-   localparam WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W;
+   localparam NWORDS_W = `IOB_CACHE_NWORDS_W;
    localparam REPLACE_POL = `IOB_CACHE_REPLACE_POL;
    localparam TAG_W = `IOB_CACHE_TAG_W;
    localparam WRITE_POL = `IOB_CACHE_WRITE_POL;
    localparam NBYTES_W = `IOB_CACHE_NBYTES_W;
    localparam NBYTES = `IOB_CACHE_NBYTES;
+   localparam WTB_DEPTH_W = `IOB_CACHE_WTB_DEPTH_W;
+   localparam WTB_DATA_W = `IOB_CACHE_DATA_W;
 
    
    //global reset
@@ -30,37 +38,18 @@ module iob_cache_tb;
    //clock
    `IOB_CLOCK(clk, 10)
 
-   //system async reset, sync de-assert
-   always @(posedge clk, posedge rst) begin
-      if (rst) begin 
-         arst = 1;
-      end else begin 
-         arst = #1 rst;
-      end
-   end
+   `IOB_RESET(11, 11)
+
 
    //control signals
 `include "iob_m_tb_wire.vs"
 
-   //TODO: to be done with stubs 
    //frontend signals
-   reg  fe_iob_avalid_i = 0;
-   reg     [           FE_ADDR_W-1:0] fe_iob_addr_i = 0;
-   reg     [           FE_DATA_W-1:0] fe_iob_wdata_i = 0;
-   reg     [       (FE_DATA_W/8)-1:0] fe_iob_wstrb_i = 0;
-   wire    [                1-1:0] fe_iob_rvalid_o;
-   wire    [           FE_DATA_W-1:0] fe_iob_rdata_o;
-   wire    [                1-1:0] fe_iob_ready_o;
-
+`include "fe_iob_tb_wire.vs"
    
    //backend signals
-   wire           be_iob_avalid_o;
-   wire    [           BE_ADDR_W-1:0] be_iob_addr_o;
-   wire    [           BE_DATA_W-1:0] be_iob_wdata_o;
-   wire    [       (BE_DATA_W/8)-1:0] be_iob_wstrb_o;
-   reg                                be_iob_rvalid_i = 0;
-   reg                                be_iob_ready_i = 1;
-   wire     [           BE_DATA_W-1:0] be_iob_rdata_i = 0;
+`include "fe_iob_wire.vs"
+
 
    reg [`IOB_CACHE_DATA_W-1:0]                               data;
 
@@ -79,8 +68,8 @@ module iob_cache_tb;
 
       fd = $fopen("test.log", "w");
 
-      //core hard reset (loads default configuration)
-      #10 `IOB_PULSE(rst, 50, 50, 50)
+      //allow time for reset
+      #50;
 
       for (i = 0; i < 10; i=i+1) begin
          iob_write(4*i, i, DATA_W);
@@ -161,6 +150,34 @@ endtask
    );
 
    //
+   //cache data memory
+   //
+   iob_ram_sp_be #(
+      .DATA_W(BE_DATA_W),
+      .ADDR_W(BE_ADDR_W)
+   ) native_ram (
+      .clk_i (clk),
+      .en_i  (be_iob_avalid_o),
+      .addr_i(be_iob_addr_o),
+      .d_i   (be_iob_wdata_o),
+      .we_i  (be_iob_wstrb_o),
+      .d_o   (be_iob_rdata_i)
+   );
+
+   assign be_iob_ready_o = 1;
+   
+   iob_reg #(
+      .DATA_W(1)
+   ) rvalid_reg (
+      .clk_i (clk),
+      .arst_i(arst),
+      .cke_i  (cke),
+      .d_i   (be_iob_avalid_o),
+      .d_o   (be_iob_rvalid_i)
+   );
+   
+  
+   //
    //system memory
    //
    iob_ram_sp_be #(
@@ -175,13 +192,19 @@ endtask
       .d_o   (be_iob_rdata_i)
    );
 
-   always @(posedge clk, posedge arst) begin
-      if (arst) begin
-         be_iob_rvalid_i <= 1'b0;
-      end else begin
-         be_iob_rvalid_i <= be_iob_avalid_o;
-      end
-   end
+   assign be_iob_ready_o = 1;
+   
+   iob_reg #(
+      .DATA_W(1)
+   ) rvalid_reg (
+      .clk_i (clk),
+      .arst_i(arst),
+      .cke_i  (cke),
+      .d_i   (be_iob_avalid_o),
+      .d_o   (be_iob_rvalid_i)
+   );
+   
+  
 
    
    wire              wtb_mem_w_en;
@@ -194,14 +217,11 @@ endtask
    
 
    
-   // write through buffer memory
-   localparam WTB_MEM_ADDR_W = 1 << `IOB_CACHE_WTB_MEM_ADDR_W;
-   localparam WTB_MEM_DATA_W = FE_ADDR_W + FE_DATA_W + FE_DATA_W/8;
   
    iob_ram_2p 
      #(
-       .DATA_W(WTB_MEM_DATA_W),
-       .ADDR_W(WTB_MEM_ADDR_W)
+       .DATA_W(WTB_DATA_W),
+       .ADDR_W(WTB_DEPTH_W)
        ) 
    iob_ram_2p0 
      (

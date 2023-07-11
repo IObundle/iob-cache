@@ -124,7 +124,7 @@ class iob_cache(iob_module):
                 "port_prefix": "int_",
             }
         )
-        iob_ram_sp_be.setup(purpose="hardware")
+
 
         # Utils header
         iob_utils.setup()
@@ -139,6 +139,7 @@ class iob_cache(iob_module):
         iob_reg_e.setup()
 
         # Simulation snippets
+        iob_ram_sp_be.setup(purpose="simulation")
         iob_tasks.setup(purpose="simulation")
         iob_module.generate("iob_m_tb_wire")
         iob_module.generate("iob_s_s_portmap")
@@ -174,20 +175,38 @@ class iob_cache(iob_module):
 
         # Setup core using LIB function
         # TODO: this should be done by iob_module
+        # Thiis function will become an iob_module method
         setup(cls)
 
     @classmethod
     def _setup_confs(cls):
         super()._setup_confs(
             [
-                # Macros
+                # control interface
+                {
+                    "name": "ADDR_W",
+                    "type": "F",
+                    "val": "`IOB_CACHE_SWREG_ADDR_W",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Address width used by the CSR interface.",
+                },
+                {
+                    "name": "DATA_W",
+                    "type": "F",
+                    "val": "32",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Data width used by the CSR interface.",
+                },
+                # front-end interface
                 {
                     "name": "FE_ADDR_W",
                     "type": "P",
                     "val": "24",
                     "min": "1",
                     "max": "64",
-                    "descr": "Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.",
+                    "descr": "Address width of the front-end interface.",
                 },
                 {
                     "name": "FE_DATA_W",
@@ -195,31 +214,40 @@ class iob_cache(iob_module):
                     "val": "DATA_W",
                     "min": "NA",
                     "max": "NA",
-                    "descr": "Front-end data width (log2): defines the data width of the backend.",
+                    "descr": "Front-end data width (log2).",
                 },
+                {
+                    "name": "FE_NBYTES",
+                    "type": "F",
+                    "val": "FE_DATA_W/8",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Number of bytes in a data word.",
+                },
+                # back-end interface
                 {
                     "name": "BE_RATIO_W",
                     "type": "P",
                     "val": "0",
                     "min": "0",
                     "max": "5",
-                    "descr": "Ratio between the front-end and back-end data widths (log2): defines the ratio between the front-end and back-end data widths, which must be a power of two.",
-                },
-                {
-                    "name": "BE_ADDR_W",
-                    "type": "F",
-                    "val": "FE_ADDR_W - BE_RATIO_W",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Back-end address width (log2): defines the total memory space accessible via the backend, which must be a power of two.",
+                    "descr": "Ratio between the cache block size and back-end data width (log2).",
                 },
                 {
                     "name": "BE_DATA_W",
                     "type": "F",
-                    "val": "DATA_W * 2**BE_RATIO_W",
+                    "val": "(2**(NWORDS_W-BE_RATIO_W))*DATA_W",
                     "min": "NA",
                     "max": "NA",
-                    "descr": "Back-end data width (log2): defines the data width of the backend.",
+                    "descr": "Back-end data width (log2).",
+                },
+                {
+                    "name": "BE_ADDR_W",
+                    "type": "F",
+                    "val": "FE_ADDR_W - (NWORDS_W - BE_RATIO_W)",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Back-end address width (log2).",
                 },
                 # Cache parameters
                 {
@@ -228,7 +256,7 @@ class iob_cache(iob_module):
                     "val": "1",
                     "min": "0",
                     "max": "8",
-                    "descr": "Number of cache ways (log2): defines the number of ways in the cache, which must be a power of two.",
+                    "descr": "Number of cache ways (log2).",
                 },
                 {
                     "name": "NLINES_W",
@@ -236,32 +264,49 @@ class iob_cache(iob_module):
                     "val": "7",
                     "min": "",
                     "max": "",
-                    "descr": "Line offset width (log2): defines the number of bits used to address a line within the cache.",
+                    "descr": "Number of cache lines (log2).
                 },
                 {
-                    "name": "WORD_OFFSET_W",
+                    "name": "NWORDS_W",
                     "type": "P",
                     "val": "3",
                     "min": "0",
                     "max": "",
-                    "descr": "Word offset width (log2): defines the number of bits used to address a word within a cache line.",
+                    "descr": "Number of words per cache line (log2).",
                 },
                 {
                     "name": "TAG_W",
                     "type": "F",
-                    "val": "FE_ADDR_W - NLINES_W - WORD_OFFSET_W",
+                    "val": "FE_ADDR_W - NLINES_W - NWORDS_W",
                     "min": "NA",
                     "max": "NA",
-                    "descr": "Tag width (log2): defines the number of bits of the tag.",
+                    "descr": "Tag width (log2).",
                 },
                 {
-                    "name": "WTB_MEM_ADDR_W",
-                    "type": "P",
-                    "val": "4",
-                    "min": "",
-                    "max": "",
-                    "descr": "Write-through buffer depth (log2): defines the number of entries in the write-through buffer, which must be a power of two.",
+                    "name": "LINE_W",
+                    "type": "F",
+                    "val": "(2**NWORDS_W)*DATA_W",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Line width (log2).",
                 },
+                {
+                    "name": "DMEM_DATA_W",
+                    "type": "F",
+                    "val": "(2**NWAYS_W)*LINE_W",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Data width of the data memory (log2).",
+                },
+                {
+                    "name": "TAGMEM_DATA_W",
+                    "type": "F",
+                    "val": "(2**NWAYS_W)*TAG_W",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Data width of the tag memory (log2).",
+                },
+
                 # Replacement policy
                 {
                     "name": "REPLACE_POL",
@@ -269,7 +314,7 @@ class iob_cache(iob_module):
                     "val": "0",
                     "min": "0",
                     "max": "3",
-                    "descr": "Replacement policy: defines the replacement policy used by the cache.",
+                    "descr": "Replacement policy: 0: LRU, 1: FIFO, 2: Random, 3: PLRU.",
                 },
                 {
                     "name": "LRU",
@@ -302,7 +347,7 @@ class iob_cache(iob_module):
                     "val": "0 ",
                     "min": "0",
                     "max": "1",
-                    "descr": "Write policy: defines the write policy used by the cache.",
+                    "descr": "Write policy: 0: Write-through, 1: Write-back.",
                 },
                 {
                     "name": "WRITE_THROUGH",
@@ -313,44 +358,28 @@ class iob_cache(iob_module):
                     "descr": "Write-through",
                 },
                 {
+                    "name": "WTB_DATA_W",
+                    "type": "F",
+                    "val": "BE_ADDR_W + FE_DATA_W + FE_NBYTES",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Write-through buffer data width (log2).",
+                },
+                {
+                    "name": "WTB_DEPTH_W",
+                    "type": "P",
+                    "val": "4",
+                    "min": "1",
+                    "max": "NA",
+                    "descr": "Write-through buffer depth (log2).",
+                },
+                {
                     "name": "WRITE_BACK",
                     "type": "M",
                     "val": "1",
                     "min": "NA",
                     "max": "NA",
                     "descr": "Write-back",
-                },
-                {
-                    "name": "ADDR_W",
-                    "type": "F",
-                    "val": "`IOB_CACHE_SWREG_ADDR_W",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Address width used by the CSR interface.",
-                },
-                {
-                    "name": "DATA_W",
-                    "type": "F",
-                    "val": "32",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Data width used by the CSR interface.",
-                },
-                {
-                    "name": "NBYTES",
-                    "type": "F",
-                    "val": "DATA_W/8",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Number of bytes in a data word.",
-                },
-                {
-                    "name": "NBYTES_W",
-                    "type": "F",
-                    "val": "$clog2(NBYTES)",
-                    "min": "NA",
-                    "max": "NA",
-                    "descr": "Number of bytes in a data word (log2).",
                 },
             ]
         )
@@ -364,57 +393,14 @@ class iob_cache(iob_module):
                 "ports": [],
             },
             {
-                "name": "fe",
+                "name": "fe_iob_s_port",
                 "descr": "IOb data front-end interface",
                 "ports": [],
             },
             {
-                "name": "be",
+                "name": "be_iob_s_port",
                 "descr": "IOb data back-end interface",
-                "ports": [
-                    {
-                        "name": "be_iob_avalid_o",
-                        "type": "O",
-                        "n_bits": "1",
-                        "descr": "Address valid.",
-                    },
-                    {
-                        "name": "be_iob_addr_o",
-                        "type": "O",
-                        "n_bits": "BE_ADDR_W",
-                        "descr": "Address.",
-                    },
-                    {
-                        "name": "be_iob_wdata_o",
-                        "type": "O",
-                        "n_bits": "BE_DATA_W",
-                        "descr": "Write data.",
-                    },
-                    {
-                        "name": "be_iob_wstrb_o",
-                        "type": "O",
-                        "n_bits": "BE_DATA_W/8",
-                        "descr": "Write strobe.",
-                    },
-                    {
-                        "name": "be_iob_rdata_i",
-                        "type": "I",
-                        "n_bits": "BE_DATA_W",
-                        "descr": "Read data.",
-                    },
-                    {
-                        "name": "be_iob_rvalid_i",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "Read valid.",
-                    },
-                    {
-                        "name": "be_iob_ready_i",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "Ready.",
-                    },
-                ],
+                "ports": [],
             },
             {
                 "name": "wtb_mem",
@@ -423,13 +409,13 @@ class iob_cache(iob_module):
                     {
                         "name": "wtb_mem_w_addr_o",
                         "type": "O",
-                        "n_bits": "WTB_MEM_ADDR_W",
+                        "n_bits": "WTB_DEPTH_W",
                         "descr": "Write through buffer memory write address.",
                     },
                     {
                         "name": "wtb_mem_w_data_o",
                         "type": "O",
-                        "n_bits": "FE_ADDR_W+DATA_W+NBYTES",
+                        "n_bits": "FE_ADDR_W+FE_DATA_W+FE_NBYTES",
                         "descr": "Write through buffer memory write data.",
                     },
                     {
@@ -447,13 +433,13 @@ class iob_cache(iob_module):
                     {
                         "name": "wtb_mem_r_data_i",
                         "type": "I",
-                        "n_bits": "FE_ADDR_W+DATA_W+NBYTES",
+                        "n_bits": "FE_ADDR_W+FE_DATA_W+FE_NBYTES",
                         "descr": "Write through buffer memory read data.",
                     },
                     {
                         "name": "wtb_mem_r_addr_o",
                         "type": "O",
-                        "n_bits": "WTB_MEM_ADDR_W",
+                        "n_bits": "WTB_DEPTH_W",
                         "descr": "Write through buffer memory read address.",
                     },
                 ],
@@ -471,7 +457,7 @@ class iob_cache(iob_module):
                     {
                         "name": "data_mem_d_o",
                         "type": "O",
-                        "n_bits": "2**NWAYS_W*(TAG_W+DATA_W)",
+                        "n_bits": "(2**NWAYS_W)*DATA_W",
                         "descr": "Data memory write data.",
                     },
                     {
@@ -489,7 +475,43 @@ class iob_cache(iob_module):
                     {
                         "name": "data_mem_d_i",
                         "type": "I",
-                        "n_bits": "2**NWAYS_W*(TAG_W+DATA_W)",
+                        "n_bits": "2**NWAYS_W*DATA_W",
+                        "descr": "Data memory read data.",
+                    },
+                ],
+            },
+            {
+                "name": "tag_mem",
+                "descr": "Data memory interface",
+                "ports": [
+                    {
+                        "name": "tag_mem_addr_o",
+                        "type": "O",
+                        "n_bits": "NLINES_W",
+                        "descr": "Data memory write address.",
+                    },
+                    {
+                        "name": "tag_mem_d_o",
+                        "type": "O",
+                        "n_bits": "(2**NWAYS_W)*TAG_W",
+                        "descr": "Data memory write data.",
+                    },
+                    {
+                        "name": "tag_mem_we_o",
+                        "type": "O",
+                        "n_bits": "1",
+                        "descr": "Data memory write enable.",
+                    },
+                    {
+                        "name": "tag_mem_en_o",
+                        "type": "O",
+                        "n_bits": "1",
+                        "descr": "Data memory read enable.",
+                    },
+                    {
+                        "name": "tag_mem_d_i",
+                        "type": "I",
+                        "n_bits": "(2**NWAYS_W)*TAG_W",
                         "descr": "Data memory read data.",
                     },
                 ],
