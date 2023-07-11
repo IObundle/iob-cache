@@ -31,7 +31,7 @@ module iob_cache_backend #(
    // back-end memory interface
 `include "be_iob_m_port.vs"
    // clock and reset
-`include "iob_clkenrst_port.vs"
+`include "iob_clk_en_rst_port.vs"
    );
 
     generate

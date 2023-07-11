@@ -9,10 +9,6 @@ from setup import setup
 # Submodules
 from iob_lib import iob_lib
 from iob_utils import iob_utils
-
-from iob_clkenrst_port import iob_clkenrst_port
-from iob_clkenrst_portmap import iob_clkenrst_portmap
-
 from iob_regfile_sp import iob_regfile_sp
 from iob_fifo_sync import iob_fifo_sync
 from iob_ram_2p import iob_ram_2p
@@ -48,12 +44,11 @@ class iob_cache(iob_module):
 
     @classmethod
     def _run_setup(cls):
-        # Hardware modules and snippets
-
-        # control interface
-        iob_module.generate("iob_s_port")
-
-        # front-end interface
+        # clock, enable and reset
+        iob_module.generate("iob_clk_en_rst_port"),
+        iob_module.generate("iob_clk_en_rst_portmap"),
+        
+        # front-end port for top level and cache modules
         iob_module.generate(
             {
                 "file_prefix": "fe_",
@@ -63,88 +58,18 @@ class iob_cache(iob_module):
                 "param_prefix": "FE_",
             }
         )
-
-        # back-end interface
+        # back-end port for top level and back-end modules
         iob_module.generate(
             {
                 "file_prefix": "be_",
                 "interface": "iob_m_port",
                 "wire_prefix": "be_",
                 "port_prefix": "be_",
+                "param_prefix": "FE_",
             }
         )
 
-        # back-end buffer interface
-        # master port on dmem
-        iob_module.generate(
-            {
-                "file_prefix": "buf_",
-                "interface": "iob_m_port",
-                "wire_prefix": "buf_",
-                "port_prefix": "buf_",
-                "param_prefix": "BUF_",
-            }
-        )
-        # dmem instance portmap in cache
-        iob_module.generate(
-            {
-                "file_prefix": "buf_",
-                "interface": "iob_m_portmap",
-                "wire_prefix": "buf_",
-                "port_prefix": "buf_",
-            }
-        )
-
-        # slave port on backend module
-        iob_module.generate(
-            {
-                "file_prefix": "buf_",
-                "interface": "iob_s_port",
-                "wire_prefix": "buf_",
-                "port_prefix": "buf_",
-                "param_prefix": "BUF_",
-            }
-        )
-
-        # backend module instance portmap in cache
-        iob_module.generate(
-            {
-                "file_prefix": "buf_",
-                "interface": "iob_s_portmap",
-                "wire_prefix": "buf_",
-                "port_prefix": "buf_",
-            }
-        )
-
-        iob_module.generate(
-            {
-                "file_prefix": "int_",
-                "interface": "iob_s_portmap",
-                "wire_prefix": "int_",
-                "port_prefix": "int_",
-            }
-        )
-
-
-        # Utils header
-        iob_utils.setup()
-
-        iob_clkenrst_port.setup()
-        iob_clkenrst_portmap.setup()
-        iob_regfile_sp.setup()
-        iob_fifo_sync.setup()
-        iob_ram_2p.setup()
-        iob_ram_sp.setup()
-        iob_reg.setup()
-        iob_reg_e.setup()
-
-        # Simulation snippets
-        iob_ram_sp_be.setup(purpose="simulation")
-        iob_tasks.setup(purpose="simulation")
-        iob_module.generate("iob_m_tb_wire")
-        iob_module.generate("iob_s_s_portmap")
-
-        # front-end portmap on cache instance
+        # front-end portmap for top level and cache modules
         iob_module.generate(
             {
                 "file_prefix": "fe_",
@@ -154,7 +79,7 @@ class iob_cache(iob_module):
             }
         )
 
-        # back-end portmap on cache instance
+        # back-end portmap for top level and back-end modules
         iob_module.generate(
             {
                 "file_prefix": "be_",
@@ -163,6 +88,78 @@ class iob_cache(iob_module):
                 "port_prefix": "be_",
             }
         )
+
+
+        # back-end master port for cache module
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_m_port",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+                "param_prefix": "FE_",
+            }
+        )
+
+        # back-end master portmap for cache module
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_m_portmap",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            }
+        )
+
+        # back-end wire for connecting cache module and back-end module
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_wire",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            }
+        )
+
+        # back-end slave port for backend module
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_s_port",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+                "param_prefix": "BE_",
+            }
+        )
+
+
+        # back-end slave portmap for backend module
+        iob_module.generate(
+            {
+                "file_prefix": "be_",
+                "interface": "iob_s_portmap",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            }
+        )
+
+
+        # Utils header
+        iob_utils.setup()
+
+        # hardware modules used
+        iob_regfile_sp.setup()
+        iob_fifo_sync.setup()
+        #iob_reg_e.setup()
+
+        # Simulation snippets
+        iob_ram_2p.setup(purpose="simulation")
+        iob_ram_sp.setup(purpose="simulation")
+        iob_ram_sp_be.setup(purpose="simulation")
+        iob_tasks.setup(purpose="simulation")
+        iob_module.generate("iob_m_tb_wire")
+        iob_module.generate("iob_s_s_portmap")
+        
 
         # TODO: will be done by iob_module
         cls._setup_confs()
@@ -264,7 +261,7 @@ class iob_cache(iob_module):
                     "val": "7",
                     "min": "",
                     "max": "",
-                    "descr": "Number of cache lines (log2).
+                    "descr": "Number of cache lines (log2).",
                 },
                 {
                     "name": "NWORDS_W",
@@ -306,7 +303,6 @@ class iob_cache(iob_module):
                     "max": "NA",
                     "descr": "Data width of the tag memory (log2).",
                 },
-
                 # Replacement policy
                 {
                     "name": "REPLACE_POL",
@@ -387,6 +383,11 @@ class iob_cache(iob_module):
     @classmethod
     def _setup_ios(cls):
         cls.ios += [
+            {
+                "name": "iob_clk_en_rst",
+                "descr": "Clock, clock enable and asynchronous reset interface.",
+                "ports": [],
+            },
             {
                 "name": "iob_s_port",
                 "descr": "IOb Control and Status Registers Interface.",
@@ -513,30 +514,6 @@ class iob_cache(iob_module):
                         "type": "I",
                         "n_bits": "(2**NWAYS_W)*TAG_W",
                         "descr": "Data memory read data.",
-                    },
-                ],
-            },
-            {
-                "name": "ge",
-                "descr": "General Interface Signals",
-                "ports": [
-                    {
-                        "name": "clk_i",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "System clock input.",
-                    },
-                    {
-                        "name": "cke_i",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "System clock enable signal.",
-                    },
-                    {
-                        "name": "arst_i",
-                        "type": "I",
-                        "n_bits": "1",
-                        "descr": "System reset, asynchronous and active high.",
                     },
                 ],
             },

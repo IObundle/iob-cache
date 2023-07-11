@@ -3,15 +3,15 @@
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
-module iob_cache_core
+module iob_cache
   #(
  `include "iob_cache_params.vs"
 ) (
-    // front-end
+    // front-end interface
 `include "fe_iob_s_port.vs"
 
-    // back-end
-`include "buf_iob_m_port.vs"
+    // internal interface
+`include "int_iob_m_port.vs"
 
 
    //interface to external data memory
@@ -35,10 +35,10 @@ module iob_cache_core
    output                    rd_hit_o,
    output                    rd_miss_o,
                              
-`include "iob_clkenrst_port.vs"
+`include "iob_clk_en_rst_port.vs"
    );
    
-  // select way
+   // select way
    wire [NWAYS-1:0]          way_hit_1hot, way_replace_1hot;
    wire [NWAYS_W-1:0]        way_hit, way_replace;
    
@@ -46,19 +46,22 @@ module iob_cache_core
    wire [FE_ADDR_W-1:NWORDS_W] addr_r;
    
    // write strobe register
-   wire [NBYTES-1:0]             wstrb_r;
+   wire [NBYTES-1:0]           wstrb_r;
+   
+   // write data register
+   wire [FE_DATA_W-1:0]        wdata_r;
    
    // tag
-   wire [TAG_W-1:0]              tag = fe_iob_addr_i[FE_ADDR_W-1-:TAG_W];
-   wire [TAG_W-1:0]              tag_r = addr_r[FE_ADDR_W-1-:TAG_W];
+   wire [TAG_W-1:0]            tag = fe_iob_addr_i[FE_ADDR_W-1-:TAG_W];
+   wire [TAG_W-1:0]            tag_r = addr_r[FE_ADDR_W-1-:TAG_W];
    
    //index
-   wire [NLINES_W-1:0]           index = fe_iob_addr_i[FE_ADDR_W-1-TAG_W-:NLINES_W];
-   wire [NLINES_W-1:0]           index_r = addr_r[FE_ADDR_W-1-TAG_W-:NLINES_W];
+   wire [NLINES_W-1:0]         index = fe_iob_addr_i[FE_ADDR_W-1-TAG_W-:NLINES_W];
+   wire [NLINES_W-1:0]         index_r = addr_r[FE_ADDR_W-1-TAG_W-:NLINES_W];
    
    //word offset
-   wire [NWORDS_W-1:0]      word_offset = fe_iob_addr_i[NWORDS_W-1:0];
-   wire [NWORDS_W-1:0]      word_offset_r = addr_r[NWORDS_W-1:0];
+   wire [NWORDS_W-1:0]         word_offset = fe_iob_addr_i[NWORDS_W-1:0];
+   wire [NWORDS_W-1:0]         word_offset_r = addr_r[NWORDS_W-1:0];
    
    
    // external data memory interface NWAYS*LINE_W X NLINES

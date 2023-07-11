@@ -3,7 +3,7 @@
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
-module iob_cache
+module iob_cache_wt
   #(
 `include "iob_cache_params.vs"
     ) 
@@ -18,40 +18,38 @@ module iob_cache
    wire write_miss;
    wire read_hit;
    wire read_miss;
+
+`include "be_iob_cache_wire.vs"
+
    
-   iob_cache_dmem #(
-      .FE_ADDR_W     (FE_ADDR_W),
-      .FE_DATA_W     (FE_DATA_W),
-      .NWAYS_W       (NWAYS_W),
-      .NLINES_W      (NLINES_W),
-      .NWORDS_W (NWORDS_W),
-      .REPLACE_POL   (REPLACE_POL),
-      .WRITE_POL     (WRITE_POL)
+   iob_cache #(
+`include "iob_cache_inst_params.vs"
   ) 
-   dmem 
+   cache
      (
-      .clk_i         (clk_i),
-      .arst_i        (arst_i),
-      
+      //clock, enable and reset
+`include "iob_clk_en_rst.vs"
+
       // front-end interface
 `include "fe_iob_s_s_portmap.vs"
 
       // internal interface
-`include "buf_iob_m_portmap.vs"
+`include "be_iob_m_portmap.vs"
 
+      //data memory interface
       .data_mem_en_o (data_mem_en_o),
       .data_mem_we_o (data_mem_we_o),
       .data_mem_addr_o(data_mem_addr_o),
       .data_mem_d_o(data_mem_d_o),
       .data_mem_d_i(data_mem_d_i),
 
+      //tag memory interface
       .tag_mem_en_o (tag_mem_en_o),
       .tag_mem_we_o (tag_mem_we_o),
       .tag_mem_addr_o(tag_mem_addr_o),
       .tag_mem_d_o(tag_mem_d_o),
       .tag_mem_d_i(tag_mem_d_i),
 
-    
       // control and status signals
       .invalidate_i    (INVALIDATE),
       .write_hit_o     (write_hit),
@@ -61,10 +59,6 @@ module iob_cache
   );
 
  
-  //Back-end interface
-
-   localparam INT_ADDR_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_ADDR_W : FE_ADDR_W-NWORDS_W;
-   localparam INT_DATA_W = (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) ? FE_DATA_W : LINE_W;
    iob_cache_backend 
      #(
        .INT_ADDR_W       (INT_ADDR_W),
@@ -73,12 +67,13 @@ module iob_cache
        .BE_DATA_W    (BE_DATA_W),
        .WRITE_POL    (WRITE_POL)
        ) back_end (
-`include "buf_iob_s_portmap.vs"
-`include "be_iob_m_m_portmap.vs"
+                   //clock, enable and reset
 `include "iob_clkenrst_portmap.vs"
+                   //internal interface
+`include "be_iob_s_portmap.vs"
+`include "be_iob_m_m_portmap.vs"
                    );
 
-  //Control block
   iob_cache_monitor #(
       .DATA_W(DATA_W),
       .ADDR_W(ADDR_W)
