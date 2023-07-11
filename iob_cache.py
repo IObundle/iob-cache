@@ -28,8 +28,8 @@ class iob_cache(iob_module):
     # Public method to set dynamic attributes
     # This method is automatically called by the `setup` method
     @classmethod
-    def set_dynamic_attributes(cls):
-        super().set_dynamic_attributes()
+    def init_attributes(cls):
+        super().init_attributes()
 
         # Parse BE_DATA_W argument
         cls.BE_DATA_W = "32"
