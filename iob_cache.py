@@ -8,7 +8,6 @@ from iob_module import iob_module
 # Submodules
 from iob_lib import iob_lib
 from iob_utils import iob_utils
-from iob_clkenrst_port import iob_clkenrst_port
 from iob_regfile_sp import iob_regfile_sp
 from iob_fifo_sync import iob_fifo_sync
 from iob_ram_2p import iob_ram_2p
@@ -93,7 +92,7 @@ class iob_cache(iob_module):
         iob_module.generate("axi_m_m_read_portmap")
         iob_lib.setup()
         iob_utils.setup()
-        iob_clkenrst_port.setup()
+        iob_module.generate("clk_en_rst_port")
         iob_regfile_sp.setup()
         iob_fifo_sync.setup()
         iob_ram_2p.setup()
