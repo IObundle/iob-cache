@@ -143,6 +143,7 @@ module iob_cache_iob #(
       .USE_CTRL_CNT (USE_CTRL_CNT)
    ) cache_memory (
       .clk_i(clk_i),
+      .cke_i(cke_i),
       .reset(arst_i),
 
       // front-end
