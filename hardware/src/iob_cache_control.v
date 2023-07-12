@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_swreg_def.vh"
+`include "iob_cache_conf.vh"
 
 // Module responsible for performance measuring, information about the current
 // cache state, and other cache functions

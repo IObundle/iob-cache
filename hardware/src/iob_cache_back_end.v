@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
+`include "iob_cache_swreg_def.vh"
 
 module iob_cache_back_end #(
    parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,

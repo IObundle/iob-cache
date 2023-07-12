@@ -9,17 +9,25 @@ module iob_cache_tb;
    reg clk = 1;
    always #clk_per clk = ~clk;
 
+   parameter ADDR_W       = `IOB_CACHE_ADDR_W;
+   parameter DATA_W       = `IOB_CACHE_DATA_W;
+   parameter FE_ADDR_W    = `IOB_CACHE_FE_ADDR_W;
+   parameter FE_DATA_W    = `IOB_CACHE_FE_DATA_W;
+   parameter FE_NBYTES    = FE_DATA_W / 8;
+   parameter FE_NBYTES_W  = $clog2(FE_NBYTES);
+   parameter USE_CTRL     = `IOB_CACHE_USE_CTRL;
+   parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT;
 
-   reg                                                    rst = 1;
+   reg                                       rst = 1;
 
    //frontend signals
-   reg                                                    avalid = 0;
-   wire                                                   ack;
-   reg  [`IOB_CACHE_ADDR_W-2:$clog2(`IOB_CACHE_DATA_W/8)] addr = 0;
-   reg  [                          `IOB_CACHE_DATA_W-1:0] wdata = 0;
-   reg  [                        `IOB_CACHE_DATA_W/8-1:0] wstrb = 0;
-   wire [                          `IOB_CACHE_DATA_W-1:0] rdata;
-   reg                                                    ctrl = 0;
+   reg                                       avalid = 0;
+   wire                                      ack;
+   reg  [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr = 0;
+   reg  [                        DATA_W-1:0] wdata = 0;
+   reg  [                      DATA_W/8-1:0] wstrb = 0;
+   wire [                        DATA_W-1:0] rdata;
+   reg                                       ctrl = 0;
 
    //iterator
    integer i, fd;
@@ -60,7 +68,6 @@ module iob_cache_tb;
             fd = $fopen("test.log", "w");
             $fdisplay(fd, "Test failed!\nReading rdata=0x%0h at addr=0x%0h: FAILED", rdata, i);
             $fclose(fd);
-            $finish();
          end
       end
 
@@ -76,7 +83,7 @@ module iob_cache_tb;
    iob_cache_sim_wrapper uut (
       //frontend 
       .avalid(avalid),
-      .addr ({ctrl, addr}),
+      .addr ({ctrl, addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-2:0]}),
       .wdata(wdata),
       .wstrb(wstrb),
       .rdata(rdata),
