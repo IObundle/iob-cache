@@ -81,7 +81,7 @@ module iob_cache_tb;
 
    //Unit Under Test (simulation wrapper)
    iob_cache_sim_wrapper uut (
-      //frontend 
+      //frontend
       .avalid(avalid),
       .addr ({ctrl, addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-2:0]}),
       .wdata(wdata),
