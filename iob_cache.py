@@ -4,7 +4,6 @@ import os
 import sys
 
 from iob_module import iob_module
-from setup import setup
 
 # Submodules
 from iob_lib import iob_lib
@@ -25,12 +24,8 @@ class iob_cache(iob_module):
     flows = "emb sim doc fpga"
     setup_dir = os.path.dirname(__file__)
 
-    # Public method to set dynamic attributes
-    # This method is automatically called by the `setup` method
     @classmethod
-    def init_attributes(cls):
-        super().init_attributes()
-
+    def _init_attributes(cls):
         # Parse BE_DATA_W argument
         cls.BE_DATA_W = "32"
         for arg in sys.argv[1:]:
@@ -87,7 +82,7 @@ class iob_cache(iob_module):
             ]
 
     @classmethod
-    def _run_setup(cls):
+    def _specific_setup(cls):
         # Hardware headers & modules
         iob_module.generate("iob_s_port")
         iob_module.generate("axi_m_port")
@@ -114,17 +109,6 @@ class iob_cache(iob_module):
 
         # Verilog modules instances
         # TODO
-
-        cls._setup_confs()
-        cls._setup_ios()
-        cls._setup_regs()
-        cls._setup_block_groups()
-
-        # Copy sources of this module to the build directory
-        super()._run_setup()
-
-        # Setup core using LIB function
-        setup(cls)
 
     @classmethod
     def _setup_confs(cls):
