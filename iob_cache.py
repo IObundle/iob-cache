@@ -101,8 +101,10 @@ class iob_cache(iob_module):
         iob_clkenrst_port.setup()
         iob_regfile_sp.setup()
         iob_fifo_sync.setup()
-        iob_ram_2p.setup()
-        iob_ram_sp.setup()
+        iob_ram_2p.setup(purpose="simulation")
+        iob_ram_2p.setup(purpose="fpga")
+        iob_ram_sp.setup(purpose="simulation")
+        iob_ram_sp.setup(purpose="fpga")
         iob_reg.setup()
         iob_reg_re.setup()
 
