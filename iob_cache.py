@@ -97,8 +97,10 @@ class iob_cache(iob_module):
             "clk_en_rst_port",
             iob_regfile_sp,
             iob_fifo_sync,
-            iob_ram_2p,
-            iob_ram_sp,
+            (iob_ram_2p, {"purpose": "simulation"}),
+            (iob_ram_2p, {"purpose": "fpga"}),
+            (iob_ram_sp, {"purpose": "simulation"}),
+            (iob_ram_sp, {"purpose": "fpga"}),
             iob_reg,
             iob_reg_re,
 
