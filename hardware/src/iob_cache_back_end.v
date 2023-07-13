@@ -60,7 +60,7 @@ module iob_cache_back_end #(
    iob_reg_re #(
       .DATA_W (1),
       .RST_VAL(0)
-   ) iob_reg_avalid (
+   ) iob_reg_be_wack (
       .clk_i (clk_i),
       .arst_i(arst_i),
       .cke_i (cke_i),
