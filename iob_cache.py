@@ -81,33 +81,33 @@ class iob_cache(iob_module):
             ]
 
     @classmethod
-    def _specific_setup(cls):
-        # Hardware headers & modules
-        iob_module.generate("iob_s_port")
-        iob_module.generate("axi_m_port")
-        iob_module.generate("axi_m_m_portmap")
-        iob_module.generate("axi_m_write_port")
-        iob_module.generate("axi_m_m_write_portmap")
-        iob_module.generate("axi_m_read_port")
-        iob_module.generate("axi_m_m_read_portmap")
-        iob_lib.setup()
-        iob_utils.setup()
-        iob_module.generate("clk_en_rst_port")
-        iob_regfile_sp.setup()
-        iob_fifo_sync.setup()
-        iob_ram_2p.setup()
-        iob_ram_sp.setup()
-        iob_reg.setup()
-        iob_reg_re.setup()
+    def _create_submodules_list(cls):
+        ''' Create submodules list with dependencies of this module
+        '''
+        super()._create_submodules_list([
+            "iob_s_port",
+            "axi_m_port",
+            "axi_m_m_portmap",
+            "axi_m_write_port",
+            "axi_m_m_write_portmap",
+            "axi_m_read_port",
+            "axi_m_m_read_portmap",
+            iob_lib,
+            iob_utils,
+            "clk_en_rst_port",
+            iob_regfile_sp,
+            iob_fifo_sync,
+            iob_ram_2p,
+            iob_ram_sp,
+            iob_reg,
+            iob_reg_re,
 
-        # Simulation headers & modules
-        iob_module.generate("axi_portmap", purpose="simulation")
-        iob_module.generate("axi_wire", purpose="simulation")
-        iob_module.generate("axi_m_portmap", purpose="simulation")
-        iob_ram_sp_be.setup(purpose="simulation")
-
-        # Verilog modules instances
-        # TODO
+            # Simulation headers & modules
+            ("axi_portmap", {"purpose": "simulation"}),
+            ("axi_wire", {"purpose": "simulation"}),
+            ("axi_m_portmap", {"purpose": "simulation"}),
+            (iob_ram_sp_be, {"purpose": "simulation"}),
+        ])
 
     @classmethod
     def _setup_confs(cls):
