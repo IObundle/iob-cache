@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
+`include "iob_cache_swreg_def.vh"
 
 module iob_cache_back_end #(
    parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
@@ -47,12 +48,14 @@ module iob_cache_back_end #(
 
    wire [BE_ADDR_W-1:0] be_addr_read, be_addr_write;
    wire be_valid_read, be_valid_write;
-   wire be_avalid_r;
    wire be_ack;
+   wire be_wack;
+   wire be_wack_r;
 
    assign be_addr   = (be_valid_read) ? be_addr_read : be_addr_write;
    assign be_avalid = be_valid_read | be_valid_write;
-   assign be_ack    = be_avalid_r & be_ready;
+   assign be_ack    = be_rvalid | be_wack_r;
+   assign be_wack   = be_ready & be_avalid & (| be_wstrb);
 
    iob_reg_re #(
       .DATA_W (1),
@@ -62,9 +65,9 @@ module iob_cache_back_end #(
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (be_ready),
-      .data_i(be_avalid),
-      .data_o(be_avalid_r)
+      .en_i  (1'b1),
+      .data_i(be_wack),
+      .data_o(be_wack_r)
    );
 
    iob_cache_read_channel #(

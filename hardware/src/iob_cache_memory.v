@@ -27,6 +27,7 @@ module iob_cache_memory #(
    parameter LINE2BE_W    = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    input clk_i,
+   input cke_i,
    input reset,
 
    // front-end
@@ -343,6 +344,7 @@ module iob_cache_memory #(
             .REP_POLICY(REP_POLICY)
          ) replacement_policy_algorithm (
             .clk_i         (clk_i),
+            .cke_i         (cke_i),
             .reset         (reset | invalidate),
             .write_en      (ack),
             .way_hit       (way_hit),

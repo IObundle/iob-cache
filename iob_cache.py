@@ -4,12 +4,10 @@ import os
 import sys
 
 from iob_module import iob_module
-from setup import setup
 
 # Submodules
 from iob_lib import iob_lib
 from iob_utils import iob_utils
-from iob_clkenrst_port import iob_clkenrst_port
 from iob_regfile_sp import iob_regfile_sp
 from iob_fifo_sync import iob_fifo_sync
 from iob_ram_2p import iob_ram_2p
@@ -25,12 +23,8 @@ class iob_cache(iob_module):
     flows = "emb sim doc fpga"
     setup_dir = os.path.dirname(__file__)
 
-    # Public method to set dynamic attributes
-    # This method is automatically called by the `setup` method
     @classmethod
-    def set_dynamic_attributes(cls):
-        super().set_dynamic_attributes()
-
+    def _init_attributes(cls):
         # Parse BE_DATA_W argument
         cls.BE_DATA_W = "32"
         for arg in sys.argv[1:]:
@@ -87,46 +81,35 @@ class iob_cache(iob_module):
             ]
 
     @classmethod
-    def _run_setup(cls):
-        # Hardware headers & modules
-        iob_module.generate("iob_s_port")
-        iob_module.generate("axi_m_port")
-        iob_module.generate("axi_m_m_portmap")
-        iob_module.generate("axi_m_write_port")
-        iob_module.generate("axi_m_m_write_portmap")
-        iob_module.generate("axi_m_read_port")
-        iob_module.generate("axi_m_m_read_portmap")
-        iob_lib.setup()
-        iob_utils.setup()
-        iob_clkenrst_port.setup()
-        iob_regfile_sp.setup()
-        iob_fifo_sync.setup()
-        iob_ram_2p.setup(purpose="simulation")
-        iob_ram_2p.setup(purpose="fpga")
-        iob_ram_sp.setup(purpose="simulation")
-        iob_ram_sp.setup(purpose="fpga")
-        iob_reg.setup()
-        iob_reg_re.setup()
-
-        # Simulation headers & modules
-        iob_module.generate("axi_portmap", purpose="simulation")
-        iob_module.generate("axi_wire", purpose="simulation")
-        iob_module.generate("axi_m_portmap", purpose="simulation")
-        iob_ram_sp_be.setup(purpose="simulation")
-
-        # Verilog modules instances
-        # TODO
-
-        cls._setup_confs()
-        cls._setup_ios()
-        cls._setup_regs()
-        cls._setup_block_groups()
-
-        # Copy sources of this module to the build directory
-        super()._run_setup()
-
-        # Setup core using LIB function
-        setup(cls)
+    def _create_submodules_list(cls):
+        """Create submodules list with dependencies of this module"""
+        super()._create_submodules_list(
+            [
+                "iob_s_port",
+                "axi_m_port",
+                "axi_m_m_portmap",
+                "axi_m_write_port",
+                "axi_m_m_write_portmap",
+                "axi_m_read_port",
+                "axi_m_m_read_portmap",
+                iob_lib,
+                iob_utils,
+                "clk_en_rst_port",
+                iob_regfile_sp,
+                iob_fifo_sync,
+                (iob_ram_2p, {"purpose": "simulation"}),
+                (iob_ram_2p, {"purpose": "fpga"}),
+                (iob_ram_sp, {"purpose": "simulation"}),
+                (iob_ram_sp, {"purpose": "fpga"}),
+                iob_reg,
+                iob_reg_re,
+                # Simulation headers & modules
+                ("axi_portmap", {"purpose": "simulation"}),
+                ("axi_wire", {"purpose": "simulation"}),
+                ("axi_m_portmap", {"purpose": "simulation"}),
+                (iob_ram_sp_be, {"purpose": "simulation"}),
+            ]
+        )
 
     @classmethod
     def _setup_confs(cls):

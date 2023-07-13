@@ -50,12 +50,14 @@ module iob_cache_sim_wrapper #(
 );
 
    wire cke_i;
-   wire avalid_r;
    wire rvalid;
    wire ready;
+   wire wack;
+   wire wack_r;
 
    assign cke_i = 1'b1;
-   assign ack = avalid_r & ready;
+   assign ack = rvalid | wack_r;
+   assign wack = ready & avalid & (| wstrb);
 
    iob_reg_re #(
       .DATA_W (1),
@@ -65,9 +67,9 @@ module iob_cache_sim_wrapper #(
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (ready),
-      .data_i(avalid),
-      .data_o(avalid_r)
+      .en_i  (1'b1),
+      .data_i(wack),
+      .data_o(wack_r)
    );
 
 `ifdef AXI
@@ -85,9 +87,9 @@ module iob_cache_sim_wrapper #(
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
-      .invalidate_out(),
+      .invalidate_out(invalidate_out),
       .wtb_empty_in  (1'b1),
-      .wtb_empty_out (),
+      .wtb_empty_out (wtb_empty_out),
 
       `include "iob_cache_axi_m_portmap.vh"
 
@@ -123,9 +125,9 @@ module iob_cache_sim_wrapper #(
 
       //invalidate / wtb empty
       .invalidate_in (1'b0),
-      .invalidate_out(),
+      .invalidate_out(invalidate_out),
       .wtb_empty_in  (1'b1),
-      .wtb_empty_out (),
+      .wtb_empty_out (wtb_empty_out),
 
       .be_avalid(be_avalid),
       .be_addr  (be_addr),
