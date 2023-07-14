@@ -85,16 +85,16 @@ class iob_cache(iob_module):
         """Create submodules list with dependencies of this module"""
         super()._create_submodules_list(
             [
-                "iob_s_port",
-                "axi_m_port",
-                "axi_m_m_portmap",
-                "axi_m_write_port",
-                "axi_m_m_write_portmap",
-                "axi_m_read_port",
-                "axi_m_m_read_portmap",
+                {"interface": "iob_s_port"},
+                {"interface": "axi_m_port"},
+                {"interface": "axi_m_m_portmap"},
+                {"interface": "axi_m_write_port"},
+                {"interface": "axi_m_m_write_portmap"},
+                {"interface": "axi_m_read_port"},
+                {"interface": "axi_m_m_read_portmap"},
                 iob_lib,
                 iob_utils,
-                "clk_en_rst_port",
+                {"interface": "clk_en_rst_port"},
                 iob_regfile_sp,
                 iob_fifo_sync,
                 (iob_ram_2p, {"purpose": "simulation"}),
@@ -104,9 +104,9 @@ class iob_cache(iob_module):
                 iob_reg,
                 iob_reg_re,
                 # Simulation headers & modules
-                ("axi_portmap", {"purpose": "simulation"}),
-                ("axi_wire", {"purpose": "simulation"}),
-                ("axi_m_portmap", {"purpose": "simulation"}),
+                ({"interface": "axi_portmap"}, {"purpose": "simulation"}),
+                ({"interface": "axi_wire"}, {"purpose": "simulation"}),
+                ({"interface": "axi_m_portmap"}, {"purpose": "simulation"}),
                 (iob_ram_sp_be, {"purpose": "simulation"}),
             ]
         )
