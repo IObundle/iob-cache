@@ -18,7 +18,6 @@ module iob_cache_backend #(
    output wtb_mem_w_en_o,
    output [WTB_DEPTH_W-1:0] wtb_mem_w_addr_o,
    output [WTB_DATA_W-1:0] wtb_mem_w_data_o,
-
    output wtb_mem_r_en_o,
    output [WTB_DEPTH_W-1:0] wtb_mem_r_addr_o,
    input  [WTB_DATA_W-1:0] wtb_mem_r_data_i,
@@ -37,9 +36,9 @@ module iob_cache_backend #(
     generate
       if (WRITE_POL == "WRITE_THROUGH") begin: g_write_through
 
-         wire [WTB_DATA_W-1:0] wtb_wdata = {buf_iob_addr_i, buf_iob_wdata_i, buf_iob_wstrb_i};
+         wire [WTB_DATA_W-1:0] wtb_wdata = {be_iob_addr_i, be_iob_wdata_i, be_iob_wstrb_i};
          wire [WTB_DATA_W-1:0] wtb_rdata;
-         wire                  wtb_wen = buf_iob_avalid_i & buf_iob_wstrb_i;
+         wire                  wtb_wen = be_iob_avalid_i & be_iob_wstrb_i;
          wire                  wtb_ren;
          
          //Write through buffer
@@ -79,7 +78,10 @@ module iob_cache_backend #(
        assign be_iob_addr_o = wtb_rdata[BE_DATA_W+BE_NBYTES+R_W +: BE_ADDR_W];
        assign be_iob_data_o = wtb_rdata[BE_NBYTES +: BE_DATA_W];
        assign be_iob_wstrb_o = wtb_rdata[0 +: BE_NBYTES];
-
+       assign be_iob_rdata_o = be_iob_rdata_i;
+       assign be_iob_ready_o = be_iob_ready_i & ~wtb_full_o;
+       assign be_iob_rvalid_o = be_iob_rvalid_i;
+       
    endgenerate // generate
    
 

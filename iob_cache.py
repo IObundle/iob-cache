@@ -26,22 +26,6 @@ class iob_cache(iob_module):
     flows = "emb sim doc fpga"
     setup_dir = os.path.dirname(__file__)
 
-    # Public method to set attributes
-    # This method is called by iob_module's `setup` method
-    @classmethod
-    def set_dynamic_attributes(cls):
-        # init
-        super().set_dynamic_attributes()
-
-        # Parse BE_DATA_W argument
-        cls.BE_DATA_W = "32"
-        for arg in sys.argv[1:]:
-            if "BE_DATA_W" in arg:
-                cls.BE_DATA_W = arg.split("=")[1]
-                if cls.BE_DATA_W not in ["32", "64", "128", "256"]:
-                    print("ERROR: backend interface width must be 32, 64, 128 or 256")
-                    exit(1)
-
     @classmethod
     def _run_setup(cls):
         # clock, enable and reset
@@ -196,6 +180,14 @@ class iob_cache(iob_module):
                     "max": "NA",
                     "descr": "Data width used by the CSR interface.",
                 },
+                {
+                    "name": "NBYTES",
+                    "type": "F",
+                    "val": "FE_DATA_W/8",
+                    "min": "NA",
+                    "max": "NA",
+                    "descr": "Number of bytes in a data word.",
+                },
                 # front-end interface
                 {
                     "name": "FE_ADDR_W",
@@ -272,20 +264,28 @@ class iob_cache(iob_module):
                     "descr": "Number of words per cache line (log2).",
                 },
                 {
+                    "name": "NWAYS",
+                    "type": "F",
+                    "val": "2**NWAYS_W",
+                    "min": "0",
+                    "max": "8",
+                    "descr": "Number of cache ways.",
+                },
+                {
                     "name": "TAG_W",
                     "type": "F",
                     "val": "FE_ADDR_W - NLINES_W - NWORDS_W",
                     "min": "NA",
                     "max": "NA",
-                    "descr": "Tag width (log2).",
+                    "descr": "Tag width.",
                 },
                 {
                     "name": "LINE_W",
                     "type": "F",
-                    "val": "(2**NWORDS_W)*DATA_W",
+                    "val": "(2**NWORDS_W)*FE_DATA_W",
                     "min": "NA",
                     "max": "NA",
-                    "descr": "Line width (log2).",
+                    "descr": "Line width.",
                 },
                 {
                     "name": "DMEM_DATA_W",

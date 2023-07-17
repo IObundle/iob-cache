@@ -11,7 +11,7 @@ module iob_cache_wt
 `include "iob_cache_io.vs"
     );
 
-   //Sofware acessible registers
+   //sofware acessible registers
 `include "iob_cache_swreg_inst.vs"
 
    wire write_hit;
@@ -21,7 +21,7 @@ module iob_cache_wt
 
 `include "be_iob_cache_wire.vs"
 
-   
+   //cache engine   
    iob_cache #(
 `include "iob_cache_inst_params.vs"
   ) 
@@ -33,7 +33,7 @@ module iob_cache_wt
       // front-end interface
 `include "fe_iob_s_s_portmap.vs"
 
-      // internal interface
+      // back-end interface
 `include "be_iob_m_portmap.vs"
 
       //data memory interface
@@ -58,7 +58,7 @@ module iob_cache_wt
       .read_miss_o     (read_miss)
   );
 
- 
+   //back-end module
    iob_cache_backend 
      #(
        .INT_ADDR_W       (INT_ADDR_W),
@@ -66,13 +66,15 @@ module iob_cache_wt
        .BE_ADDR_W    (BE_ADDR_W),
        .BE_DATA_W    (BE_DATA_W),
        .WRITE_POL    (WRITE_POL)
-       ) back_end (
-                   //clock, enable and reset
+       ) 
+   back_end 
+  (
+   //clock, enable and reset
 `include "iob_clkenrst_portmap.vs"
-                   //internal interface
+   //internal interface
 `include "be_iob_s_portmap.vs"
 `include "be_iob_m_m_portmap.vs"
-                   );
+   );
 
   iob_cache_monitor #(
       .DATA_W(DATA_W),
