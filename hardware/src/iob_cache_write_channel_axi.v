@@ -29,7 +29,7 @@ module iob_cache_write_channel_axi #(
    input      [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] wdata,
    input      [                                              FE_NBYTES-1:0] wstrb,
    output reg                                                               ready,
-   `include "iob_axi_m_write_port.vs"
+   `include "axi_m_write_port.vs"
    input                                                                    clk_i,
    input                                                                    reset
 );
