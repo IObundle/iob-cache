@@ -11,7 +11,7 @@ module iob_cache_backend #(
    parameter WTB_DATA_W = BE_ADDR_W+BE_DATA_W+BE_NBYTES
 ) (
    
-`include "buf_iob_s_port.vs"
+`include "be_iob_s_port.vs"
 
    //TODO: add the port stubs instead of the following lists
    //external memory interface
