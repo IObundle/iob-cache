@@ -45,13 +45,13 @@ module iob_cache_tb;
 `include "iob_m_tb_wire.vs"
 
    //frontend signals
-`include "fe_iob_tb_wire.vs"
+`include "fe_iob_m_tb_wire.vs"
    
    //backend signals
-`include "fe_iob_wire.vs"
+`include "be_iob_wire.vs"
 
 
-   reg [`IOB_CACHE_DATA_W-1:0]                               data;
+   reg [`IOB_CACHE_DATA_W-1:0] data;
 
    //file descriptor
    integer fd;

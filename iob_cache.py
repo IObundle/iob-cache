@@ -20,7 +20,6 @@ from iob_prio_enc import iob_prio_enc
 from iob_tasks import iob_tasks
 
 
-
 class iob_cache(iob_module):
     name = "iob_cache"
     version = "V0.10"
@@ -41,23 +40,47 @@ class iob_cache(iob_module):
             # front-end slave port for top level and cache modules
             {"interface": "iob_s_port", "file_prefix": "fe_", "port_prefix": "fe_"},
             # front-end slave portmap for top level and cache modules
-            {"interface": "iob_s_s_portmap", "file_prefix": "fe_", "port_prefix": "fe_", "wire_prefix": "fe_"},
+            {
+                "interface": "iob_s_s_portmap",
+                "file_prefix": "fe_",
+                "port_prefix": "fe_",
+                "wire_prefix": "fe_",
+            },
             # back-end master port for top level and back-end modules
             {"interface": "iob_m_port", "file_prefix": "be_", "port_prefix": "be_"},
             # back-end master portmap for top level and back-end modules
-            {"interface": "iob_m_m_portmap", "file_prefix": "be_", "port_prefix": "be_", "wire_prefix": "be_"},
+            {
+                "interface": "iob_m_m_portmap",
+                "file_prefix": "be_",
+                "port_prefix": "be_",
+                "wire_prefix": "be_",
+            },
             # back-end wire for connecting cache module and back-end module
             {"interface": "iob_wire", "file_prefix": "be_", "wire_prefix": "be_"},
             # back-end slave port for backend module
             {"interface": "iob_s_port", "file_prefix": "be_", "port_prefix": "be_"},
             # back-end slave portmap for backend module
-            {"interface": "iob_s_portmap", "file_prefix": "be_", "port_prefix": "be_", "wire_prefix": "be_"},
+            {
+                "interface": "iob_s_portmap",
+                "file_prefix": "be_",
+                "port_prefix": "be_",
+                "wire_prefix": "be_",
+            },
             iob_utils,
             iob_regfile_sp,
             iob_fifo_sync,
             # simulation specific interfaces, headers and modules
-            {"interface": "iob_m_tb_wire"},
-            {"interface": "iob_s_s_portmap"},
+            # control interface driver
+            ({"interface": "iob_m_tb_wire"}, {"purpose": "simulation"}),
+            # front-end interface driver
+            (
+                {
+                    "interface": "iob_m_tb_wire",
+                    "file_prefix": "fe_",
+                    "wire_prefix": "fe_",
+                },
+                {"purpose": "simulation"},
+            ),
             (iob_tasks, {"purpose": "simulation"}),
             (iob_ram_2p, {"purpose": "simulation"}),
             (iob_ram_sp, {"purpose": "simulation"}),
@@ -209,14 +232,14 @@ class iob_cache(iob_module):
                 "descr": "Data width of the tag memory (log2).",
             },
             # Replacement policy
-                {
-                    "name": "REPLACE_POL",
-                    "type": "P",
-                    "val": "0",
-                    "min": "0",
-                    "max": "3",
-                    "descr": "Replacement policy: 0: LRU, 1: FIFO, 2: Random, 3: PLRU.",
-                },
+            {
+                "name": "REPLACE_POL",
+                "type": "P",
+                "val": "0",
+                "min": "0",
+                "max": "3",
+                "descr": "Replacement policy: 0: LRU, 1: FIFO, 2: Random, 3: PLRU.",
+            },
             {
                 "name": "LRU",
                 "type": "M",
@@ -242,16 +265,16 @@ class iob_cache(iob_module):
                 "descr": "Pseudo Least Recently Used (Tree)",
             },
             # Write Policy
-                {
-                    "name": "WRITE_POL",
-                    "type": "P",
-                    "val": "0 ",
-                    "min": "0",
-                    "max": "1",
-                    "descr": "Write policy: 0: Write-through, 1: Write-back.",
-                },
             {
-                    "name": "WRITE_THROUGH",
+                "name": "WRITE_POL",
+                "type": "P",
+                "val": "0 ",
+                "min": "0",
+                "max": "1",
+                "descr": "Write policy: 0: Write-through, 1: Write-back.",
+            },
+            {
+                "name": "WRITE_THROUGH",
                 "type": "M",
                 "val": "0",
                 "min": "NA",

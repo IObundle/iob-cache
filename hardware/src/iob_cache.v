@@ -17,7 +17,7 @@ module iob_cache
     parameter LINE_W = 0,
     parameter TAG_W = 0,
     parameter DMEM_DATA_W = 32,
-    parameter DMEM_NBYTES = 4,
+    parameter DMEM_NBYTES = 4
 ) (
    //clock, enable, reset
 `include "clk_en_rst_port.vs"
@@ -175,6 +175,10 @@ module iob_cache
    );
 
 
+   iob_reg_e #(
+      .DATA_W(FE_ADDR_W-NWORDS_W),
+      .RST_VAL(0)
+   ) addr_reg (
       .clk_i(clk_i),
       .cke_i(cke_i),
       .arst_i(arst_i),
@@ -199,7 +203,7 @@ module iob_cache
    //request register
    iob_reg_e 
      #(
-       .DATA_W(REQ_W)
+       .DATA_W(REQ_W),
        .RST_VAL(0)
        ) 
    req_reg (
@@ -214,7 +218,7 @@ module iob_cache
    //valid register
    iob_reg_e 
      #(
-       .DATA_W(REQ_W)
+       .DATA_W(REQ_W),
        .RST_VAL(0)
        ) 
    req_reg (
@@ -229,7 +233,7 @@ module iob_cache
    //front-end read valid register
    iob_reg
      #(
-       .DATA_W(1)
+       .DATA_W(1),
        .RST_VAL(0)
        )
    fe_rvalid_reg (

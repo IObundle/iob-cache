@@ -30,7 +30,7 @@ module iob_cache_backend #(
    // back-end memory interface
 `include "be_iob_m_port.vs"
    // clock and reset
-`include "iob_clk_en_rst_port.vs"
+`include "clk_en_rst_port.vs"
    );
 
     generate
@@ -63,7 +63,7 @@ module iob_cache_backend #(
             .r_empty_o(wtb_empty_o),
             .r_en_i   (wtb_ren),
             //status
-            .level_o(wtb_level_o)
+            .level_o(wtb_level_o),
           
             //external memory interface
             .ext_mem_w_en_o  (wtb_mem_w_en_o),

@@ -19,7 +19,7 @@ module iob_cache_wt
    wire read_hit;
    wire read_miss;
 
-`include "be_iob_cache_wire.vs"
+`include "be_iob_wire.vs"
 
    //cache engine   
    iob_cache #(
@@ -28,13 +28,13 @@ module iob_cache_wt
    cache
      (
       //clock, enable and reset
-`include "iob_clk_en_rst.vs"
+`include "clk_en_rst_portmap.vs"
 
       // front-end interface
 `include "fe_iob_s_s_portmap.vs"
 
       // back-end interface
-`include "be_iob_m_portmap.vs"
+`include "be_iob_m_m_portmap.vs"
 
       //data memory interface
       .data_mem_en_o (data_mem_en_o),
@@ -70,7 +70,7 @@ module iob_cache_wt
    back_end 
   (
    //clock, enable and reset
-`include "iob_clkenrst_portmap.vs"
+`include "clk_en_rst_portmap.vs"
    //internal interface
 `include "be_iob_s_portmap.vs"
 `include "be_iob_m_m_portmap.vs"
