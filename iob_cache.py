@@ -67,6 +67,7 @@ class iob_cache(iob_module):
                 "wire_prefix": "be_",
             },
             iob_utils,
+            iob_reg_e,
             iob_regfile_sp,
             iob_fifo_sync,
             # simulation specific interfaces, headers and modules
@@ -78,6 +79,15 @@ class iob_cache(iob_module):
                     "interface": "iob_m_tb_wire",
                     "file_prefix": "fe_",
                     "wire_prefix": "fe_",
+                },
+                {"purpose": "simulation"},
+            ),
+            # back-end interface bus connecting cache and memory
+            (
+                {
+                    "interface": "iob_wire",
+                    "file_prefix": "be_",
+                    "wire_prefix": "be_",
                 },
                 {"purpose": "simulation"},
             ),
@@ -159,6 +169,14 @@ class iob_cache(iob_module):
                 "descr": "Back-end data width (log2).",
             },
             {
+                "name": "BE_NBYTES",
+                "type": "F",
+                "val": "BE_DATA_W/8",
+                "min": "NA",
+                "max": "NA",
+                "descr": "Number of bytes in a data word.",
+            },
+            {
                 "name": "BE_ADDR_W",
                 "type": "F",
                 "val": "FE_ADDR_W - (NWORDS_W - BE_RATIO_W)",
@@ -222,6 +240,14 @@ class iob_cache(iob_module):
                 "min": "NA",
                 "max": "NA",
                 "descr": "Data width of the data memory (log2).",
+            },
+            {
+                "name": "DMEM_NBYTES",
+                "type": "F",
+                "val": "DMEM_DATA_W/8",
+                "min": "NA",
+                "max": "NA",
+                "descr": "Number of bytes in a data word.",
             },
             {
                 "name": "TAGMEM_DATA_W",
@@ -413,7 +439,7 @@ class iob_cache(iob_module):
     def _setup_ios(cls):
         cls.ios += [
             {
-                "name": "iob_clk_en_rst",
+                "name": "clk_en_rst_port",
                 "descr": "Clock, clock enable and asynchronous reset interface.",
                 "ports": [],
             },
@@ -428,7 +454,7 @@ class iob_cache(iob_module):
                 "ports": [],
             },
             {
-                "name": "be_iob_s_port",
+                "name": "be_iob_m_port",
                 "descr": "IOb data back-end interface",
                 "ports": [],
             },

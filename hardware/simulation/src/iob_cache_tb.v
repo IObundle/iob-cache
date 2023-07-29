@@ -3,51 +3,51 @@
 `include "iob_cache_conf.vh"
 `include "iob_cache_swreg_def.vh"
 
-
-//reset GENERATOR
-`define IOB_RESET(PRE, DURATION) reg arst=0; initial begin #PRE arst=1; #DURATION @(posedge clk) arst=0; end
-
-
-
 module iob_cache_tb;
 
    localparam ADDR_W = `IOB_CACHE_ADDR_W;
    localparam DATA_W = `IOB_CACHE_DATA_W;
    localparam FE_ADDR_W = `IOB_CACHE_FE_ADDR_W;
-   localparam FE_DATA_W = DATA_W;
+   localparam FE_DATA_W = `IOB_CACHE_FE_DATA_W;
+   localparam FE_NBYTES = `IOB_CACHE_FE_NBYTES;
    localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
    localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
-   localparam NLINES_W = `IOB_CACHE_NLINES_W;
-   localparam NWAYS_W = `IOB_CACHE_NWAYS_W;
+   localparam BE_NBYTES = `IOB_CACHE_BE_NBYTES;
    localparam BE_RATIO_W = `IOB_CACHE_BE_RATIO_W;
+   localparam NLINES_W = `IOB_CACHE_NLINES_W;
+   localparam LINE_W = `IOB_CACHE_LINE_W;
+   localparam NWAYS_W = `IOB_CACHE_NWAYS_W;
+   localparam NWAYS = `IOB_CACHE_NWAYS;
    localparam NWORDS_W = `IOB_CACHE_NWORDS_W;
    localparam REPLACE_POL = `IOB_CACHE_REPLACE_POL;
    localparam TAG_W = `IOB_CACHE_TAG_W;
    localparam WRITE_POL = `IOB_CACHE_WRITE_POL;
-   localparam NBYTES_W = `IOB_CACHE_NBYTES_W;
    localparam NBYTES = `IOB_CACHE_NBYTES;
    localparam WTB_DEPTH_W = `IOB_CACHE_WTB_DEPTH_W;
    localparam WTB_DATA_W = `IOB_CACHE_DATA_W;
-
+   localparam DMEM_DATA_W = `IOB_CACHE_DMEM_DATA_W;
+   localparam DMEM_NBYTES = `IOB_CACHE_DMEM_NBYTES;
+   localparam TAGMEM_DATA_W = `IOB_CACHE_TAGMEM_DATA_W;
    
    //global reset
-   reg rst = 0;
-   reg arst = 0;
    reg cke = 0;
    
+   //clock period
+   localparam CLK_PER = 10;  //ns
+
    //clock
-   `IOB_CLOCK(clk, 10)
+   `IOB_CLOCK(clk, CLK_PER)
 
-   `IOB_RESET(11, 11)
+   //async reset
+   reg arst;
 
-
-   //control signals
+   //control bus
 `include "iob_m_tb_wire.vs"
 
-   //frontend signals
+   //frontend data bus
 `include "fe_iob_m_tb_wire.vs"
    
-   //backend signals
+   //backend data bus to memory
 `include "be_iob_wire.vs"
 
 
@@ -68,8 +68,8 @@ module iob_cache_tb;
 
       fd = $fopen("test.log", "w");
 
-      //allow time for reset
-      #50;
+      //reset core
+      `IOB_RESET(clk, arst, CLK_PER, CLK_PER, CLK_PER)
 
       for (i = 0; i < 10; i=i+1) begin
          iob_write(4*i, i, DATA_W);
@@ -132,7 +132,7 @@ endtask
    //
    // Intantiate Cache
    //
-   iob_cache
+   iob_cache_wt
      #(
  `include "iob_cache_inst_params.vs"
        ) 
@@ -150,21 +150,21 @@ endtask
    );
 
    //
-   //cache data memory
+   // cache data memory
    //
    iob_ram_sp_be #(
       .DATA_W(BE_DATA_W),
       .ADDR_W(BE_ADDR_W)
-   ) native_ram (
+   ) cache_data_mem (
       .clk_i (clk),
-      .en_i  (be_iob_avalid_o),
-      .addr_i(be_iob_addr_o),
-      .d_i   (be_iob_wdata_o),
-      .we_i  (be_iob_wstrb_o),
-      .d_o   (be_iob_rdata_i)
+      .en_i  (be_iob_avalid),
+      .addr_i(be_iob_addr),
+      .d_i   (be_iob_wdata),
+      .we_i  (be_iob_wstrb),
+      .d_o   (be_iob_rdata)
    );
 
-   assign be_iob_ready_o = 1;
+   assign be_iob_ready = 1;
    
    iob_reg #(
       .DATA_W(1)
@@ -172,40 +172,14 @@ endtask
       .clk_i (clk),
       .arst_i(arst),
       .cke_i  (cke),
-      .d_i   (be_iob_avalid_o),
-      .d_o   (be_iob_rvalid_i)
+      .d_i   (be_iob_avalid),
+      .d_o   (be_iob_rvalid)
    );
    
   
    //
-   //system memory
+   // write through buffer memory
    //
-   iob_ram_sp_be #(
-      .DATA_W(BE_DATA_W),
-      .ADDR_W(BE_ADDR_W)
-   ) native_ram (
-      .clk_i (clk),
-      .en_i  (be_iob_avalid_o),
-      .addr_i(be_iob_addr_o),
-      .d_i   (be_iob_wdata_o),
-      .we_i  (be_iob_wstrb_o),
-      .d_o   (be_iob_rdata_i)
-   );
-
-   assign be_iob_ready_o = 1;
-   
-   iob_reg #(
-      .DATA_W(1)
-   ) rvalid_reg (
-      .clk_i (clk),
-      .arst_i(arst),
-      .cke_i  (cke),
-      .d_i   (be_iob_avalid_o),
-      .d_o   (be_iob_rvalid_i)
-   );
-   
-  
-
    
    wire              wtb_mem_w_en;
    wire [FE_ADDR_W-1:0] wtb_mem_w_addr;
@@ -214,16 +188,13 @@ endtask
    wire [FE_DATA_W-1:0] wtb_mem_r_data;
    wire [FE_DATA_W/8-1:0] wtb_mem_r_addr;
    wire                   wtb_mem_r_en;
-   
-
-   
   
    iob_ram_2p 
      #(
        .DATA_W(WTB_DATA_W),
        .ADDR_W(WTB_DEPTH_W)
        ) 
-   iob_ram_2p0 
+   wtb_mem
      (
       .clk_i(clk),
       
@@ -236,6 +207,20 @@ endtask
       .r_data_o(wtb_mem_r_data)
       );
 
-  
+   //
+   // system memory
+   //
+   iob_ram_sp_be #(
+      .DATA_W(BE_DATA_W),
+      .ADDR_W(BE_ADDR_W)
+   ) sys_mem (
+      .clk_i (clk),
+      .en_i  (be_iob_avalid),
+      .addr_i(be_iob_addr),
+      .d_i   (be_iob_wdata),
+      .we_i  (be_iob_wstrb),
+      .d_o   (be_iob_rdata)
+   );
+   
 endmodule
 

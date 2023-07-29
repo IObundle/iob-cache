@@ -6,7 +6,7 @@
 // performance measuring, information about the current
 // cache status, and other functions
 
-module iob_cache_control #(
+module iob_cache_monitor #(
     parameter ADDR_W       = 32,
     parameter DATA_W       = 32
 ) (

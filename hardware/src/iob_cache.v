@@ -9,22 +9,24 @@ module iob_cache
     parameter FE_DATA_W = 0,
     parameter FE_NBYTES = 0,
     parameter NWAYS_W = 0,
+    parameter NWAYS = 0,
     parameter NLINES_W = 0,
     parameter NWORDS_W = 0,
-    parameter BE_RATIO = 0,
-    //the following parameters cannot be deived because they are needed on the top-level interface
-    parameter NWAYS = 0,
+    parameter BE_RATIO_W = 0,
     parameter LINE_W = 0,
     parameter TAG_W = 0,
     parameter DMEM_DATA_W = 32,
-    parameter DMEM_NBYTES = 4
+    parameter DMEM_NBYTES = 4,
+    parameter TAGMEM_DATA_W = 32
 ) (
    //clock, enable, reset
 `include "clk_en_rst_port.vs"
 
    // front-end interface
 `include "fe_iob_s_port.vs"
-
+   output iob_ready_nxt_o,
+   output iob_rvalid_nxt_o,
+   
    // internal interface
 `include "be_iob_m_port.vs"
 
@@ -46,8 +48,8 @@ module iob_cache
    output                   tag_mem_en_o,
    output [NWAYS_W-1:0]     tag_mem_we_o,
    output [NLINES_W-1:0]    tag_mem_addr_o,
-   output [NWAYS*TAG_W-1:0] tag_mem_d_o,
-   input [NWAYS*TAG_W-1:0]  tag_mem_d_i
+   output [TAGMEM_DATA_W-1:0] tag_mem_d_o,
+   input [TAGMEM_DATA_W-1:0]  tag_mem_d_i
    
    );
 
@@ -174,46 +176,21 @@ module iob_cache
        .encoded_o(way_replace)
    );
 
-
-   iob_reg_e #(
-      .DATA_W(FE_ADDR_W-NWORDS_W),
-      .RST_VAL(0)
-   ) addr_reg (
-      .clk_i(clk_i),
-      .cke_i(cke_i),
-      .arst_i(arst_i),
-      .en_i(req_en),
-      .d_i(addr_i[FE_ADDR_W-1:NWORDS_W]),
-      .d_o(addr_r)
-   );
-
-   wire ack;
-   iob_reg #(
-      .DATA_W(1),
-      .RST_VAL(0)
-   ) ack_reg (
-      .clk_i(clk_i),
-      .cke_i(cke_i),
-      .arst_i(arst_i),
-      .d_i(req_en),
-      .d_o(ack)
-   );
-
-   
    //request register
    iob_reg_e 
      #(
        .DATA_W(REQ_W),
        .RST_VAL(0)
        ) 
-   req_reg (
-              .clk(clk_i),
-              .arst(arst_i),
-              .cke(cke_i),
-              .en_i(fe_iob_avalid_i),
-              .d_i(req),
-              .d_o(req_r)
-              );
+   req_reg 
+     (
+      .clk(clk_i),
+      .arst(arst_i),
+      .cke(cke_i),
+      .en_i(fe_iob_avalid_i),
+      .d_i(req),
+      .d_o(req_r)
+      );
    
    //valid register
    iob_reg_e 
@@ -221,14 +198,15 @@ module iob_cache
        .DATA_W(REQ_W),
        .RST_VAL(0)
        ) 
-   req_reg (
-              .clk(clk_i),
-              .arst(arst_i),
-              .cke(cke_i),
-              .en_i(replace_en),
-              .d_i(valid_bit_nxt),
-              .d_o(valid_bit)
-              );
+   valid_reg 
+     (
+      .clk(clk_i),
+      .arst(arst_i),
+      .cke(cke_i),
+      .en_i(replace_en),
+      .d_i(valid_bit_nxt),
+      .d_o(valid_bit)
+      );
 
    //front-end read valid register
    iob_reg
@@ -236,13 +214,14 @@ module iob_cache
        .DATA_W(1),
        .RST_VAL(0)
        )
-   fe_rvalid_reg (
-                  .clk(clk_i),
-                  .arst(arst_i),
-                  .cke(cke_i),
-                  .d_i(replace_en),
-                  .d_o(fe_rvalid)
-                  );
+   rvalid_reg 
+     (
+      .clk(clk_i),
+      .arst(arst_i),
+      .cke(cke_i),
+      .d_i(replace_en),
+      .d_o(fe_rvalid)
+      );
 
 endmodule
 
