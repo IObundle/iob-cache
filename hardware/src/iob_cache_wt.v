@@ -30,13 +30,15 @@ module iob_cache_wt
        .FE_ADDR_W(FE_ADDR_W),
        .FE_DATA_W(FE_DATA_W),
        .FE_NBYTES(FE_NBYTES),
+       .BE_ADDR_W(FE_ADDR_W),
+       .BE_DATA_W(FE_DATA_W),
+       .BE_NBYTES(FE_NBYTES),
        .NWAYS_W(NWAYS_W),
        .NWAYS(NWAYS),
-       .NLINES_W(NLINES_W),
-       .LINE_W(LINE_W),
-       .NWORDS_W(NWORDS_W),
-       .BE_RATIO_W(BE_RATIO_W),
+       .NSETS_W(NSETS_W),
+       .BLK_SIZE_W(BLK_SIZE_W),
        .TAG_W(TAG_W),
+       .LINE_W(LINE_W),
        .DMEM_DATA_W(DMEM_DATA_W),
        .DMEM_NBYTES(DMEM_NBYTES),
        .TAGMEM_DATA_W(TAGMEM_DATA_W)
@@ -69,10 +71,10 @@ module iob_cache_wt
 
       // control and status signals
       .invalidate_i    (INVALIDATE),
-      .write_hit_o     (write_hit),
-      .write_miss_o    (write_miss),
-      .read_hit_o      (read_hit),
-      .read_miss_o     (read_miss)
+      .wr_hit_o     (write_hit),
+      .wr_miss_o    (write_miss),
+      .rd_hit_o      (read_hit),
+      .rd_miss_o     (read_miss)
   );
 
    //back-end module

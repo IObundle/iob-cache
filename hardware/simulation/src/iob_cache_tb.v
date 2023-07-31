@@ -13,12 +13,11 @@ module iob_cache_tb;
    localparam BE_ADDR_W = `IOB_CACHE_BE_ADDR_W;
    localparam BE_DATA_W = `IOB_CACHE_BE_DATA_W;
    localparam BE_NBYTES = `IOB_CACHE_BE_NBYTES;
-   localparam BE_RATIO_W = `IOB_CACHE_BE_RATIO_W;
-   localparam NLINES_W = `IOB_CACHE_NLINES_W;
+   localparam NSETS_W = `IOB_CACHE_NSETS_W;
    localparam LINE_W = `IOB_CACHE_LINE_W;
    localparam NWAYS_W = `IOB_CACHE_NWAYS_W;
    localparam NWAYS = `IOB_CACHE_NWAYS;
-   localparam NWORDS_W = `IOB_CACHE_NWORDS_W;
+   localparam BLK_SIZE_W = `IOB_CACHE_BLK_SIZE_W;
    localparam REPLACE_POL = `IOB_CACHE_REPLACE_POL;
    localparam TAG_W = `IOB_CACHE_TAG_W;
    localparam WRITE_POL = `IOB_CACHE_WRITE_POL;
@@ -143,7 +142,7 @@ endtask
       //front-end
  `include "fe_iob_s_s_portmap.vs"
       //back-end
- `include "fe_iob_s_s_portmap.vs"
+ `include "be_iob_m_portmap.vs"
       .clk_i(clk),
       .arst_i(arst),
       .cke_i(cke)

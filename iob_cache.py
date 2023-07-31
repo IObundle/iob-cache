@@ -48,7 +48,7 @@ class iob_cache(iob_module):
             },
             # back-end master port for top level and back-end modules
             {"interface": "iob_m_port", "file_prefix": "be_", "port_prefix": "be_"},
-            # back-end master portmap for top level and back-end modules
+            # back-end master portmap for top level and cache modules
             {
                 "interface": "iob_m_m_portmap",
                 "file_prefix": "be_",
@@ -79,6 +79,16 @@ class iob_cache(iob_module):
                     "interface": "iob_m_tb_wire",
                     "file_prefix": "fe_",
                     "wire_prefix": "fe_",
+                },
+                {"purpose": "simulation"},
+            ),
+            # back-end portmap for testbench
+            (
+                {
+                    "interface": "iob_m_portmap",
+                    "file_prefix": "be_",
+                    "port_prefix": "be_",
+                    "wire_prefix": "be_",
                 },
                 {"purpose": "simulation"},
             ),
@@ -131,7 +141,7 @@ class iob_cache(iob_module):
                 "name": "FE_ADDR_W",
                 "type": "P",
                 "val": "24",
-                "min": "1",
+                "min": "20",
                 "max": "64",
                 "descr": "Address width of the front-end interface.",
             },
@@ -153,17 +163,17 @@ class iob_cache(iob_module):
             },
             # back-end interface
             {
-                "name": "BE_RATIO_W",
-                "type": "P",
-                "val": "0",
-                "min": "0",
-                "max": "5",
-                "descr": "Ratio between the cache block size and back-end data width (log2).",
+                "name": "BE_ADDR_W",
+                "type": "F",
+                "val": "FE_ADDR_W - $clog2(BE_DATA_W/FE_DATA_W)",
+                "min": "20",
+                "max": "64",
+                "descr": "Back-end address width (log2).",
             },
             {
                 "name": "BE_DATA_W",
-                "type": "F",
-                "val": "(2**(NWORDS_W-BE_RATIO_W))*DATA_W",
+                "type": "P",
+                "val": "32",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Back-end data width (log2).",
@@ -176,14 +186,6 @@ class iob_cache(iob_module):
                 "max": "NA",
                 "descr": "Number of bytes in a data word.",
             },
-            {
-                "name": "BE_ADDR_W",
-                "type": "F",
-                "val": "FE_ADDR_W - (NWORDS_W - BE_RATIO_W)",
-                "min": "NA",
-                "max": "NA",
-                "descr": "Back-end address width (log2).",
-            },
             # Cache parameters
             {
                 "name": "NWAYS_W",
@@ -191,36 +193,36 @@ class iob_cache(iob_module):
                 "val": "1",
                 "min": "0",
                 "max": "8",
-                "descr": "Number of cache ways (log2).",
+                "descr": "Number of ways (log2).",
             },
             {
-                "name": "NLINES_W",
-                "type": "P",
-                "val": "7",
-                "min": "",
-                "max": "",
-                "descr": "Number of cache lines (log2).",
-            },
-            {
-                "name": "NWORDS_W",
-                "type": "P",
-                "val": "3",
-                "min": "0",
-                "max": "",
-                "descr": "Number of words per cache line (log2).",
-            },
-            {
-                "name": "NWAYS",
+                "name": "NWAYS",  # needed for way one hot encoding
                 "type": "F",
                 "val": "2**NWAYS_W",
                 "min": "0",
                 "max": "8",
-                "descr": "Number of cache ways.",
+                "descr": "Number of ways.",
+            },
+            {
+                "name": "NSETS_W",
+                "type": "P",
+                "val": "7",
+                "min": "",
+                "max": "",
+                "descr": "Number of sets (log2).",
+            },
+            {
+                "name": "BLK_SIZE_W",
+                "type": "P",
+                "val": "3",
+                "min": "0",
+                "max": "8",
+                "descr": "BLK_SIZE_W (log2).",
             },
             {
                 "name": "TAG_W",
                 "type": "F",
-                "val": "FE_ADDR_W - NLINES_W - NWORDS_W",
+                "val": "FE_ADDR_W - NSETS_W - BLK_SIZE_W",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Tag width.",
@@ -228,7 +230,7 @@ class iob_cache(iob_module):
             {
                 "name": "LINE_W",
                 "type": "F",
-                "val": "(2**NWORDS_W)*FE_DATA_W",
+                "val": "(2**BLK_SIZE_W)*FE_DATA_W",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Line width.",
@@ -507,7 +509,7 @@ class iob_cache(iob_module):
                     {
                         "name": "data_mem_addr_o",
                         "type": "O",
-                        "n_bits": "NLINES_W",
+                        "n_bits": "NSETS_W",
                         "descr": "Data memory write address.",
                     },
                     {
@@ -543,7 +545,7 @@ class iob_cache(iob_module):
                     {
                         "name": "tag_mem_addr_o",
                         "type": "O",
-                        "n_bits": "NLINES_W",
+                        "n_bits": "NSETS_W",
                         "descr": "Data memory write address.",
                     },
                     {
