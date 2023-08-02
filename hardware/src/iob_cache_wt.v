@@ -83,7 +83,8 @@ module iob_cache_wt
        .BE_ADDR_W    (BE_ADDR_W),
        .BE_DATA_W    (BE_DATA_W),
        .WRITE_POL    (WRITE_POL),
-       .WTB_DEPTH_W  (WTB_DEPTH_W)
+       .WTB_DEPTH_W  (WTB_DEPTH_W),
+       .WTB_DATA_W   (WTB_DATA_W)
        ) 
    back_end 
      (

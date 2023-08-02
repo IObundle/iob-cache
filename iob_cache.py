@@ -173,7 +173,7 @@ class iob_cache(iob_module):
             {
                 "name": "BE_DATA_W",
                 "type": "P",
-                "val": "32",
+                "val": "64",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Back-end data width (log2).",
@@ -198,7 +198,7 @@ class iob_cache(iob_module):
             {
                 "name": "NWAYS",  # needed for way one hot encoding
                 "type": "F",
-                "val": "2**NWAYS_W",
+                "val": "(2**NWAYS_W)",
                 "min": "0",
                 "max": "8",
                 "descr": "Number of ways.",
@@ -217,7 +217,15 @@ class iob_cache(iob_module):
                 "val": "3",
                 "min": "0",
                 "max": "8",
-                "descr": "BLK_SIZE_W (log2).",
+                "descr": "Block size (log2).",
+            },
+            {
+                "name": "BLK_SIZE",
+                "type": "F",
+                "val": "(2**BLK_SIZE_W)",
+                "min": "NA",
+                "max": "NA",
+                "descr": "Block size (log2).",
             },
             {
                 "name": "TAG_W",
@@ -230,7 +238,7 @@ class iob_cache(iob_module):
             {
                 "name": "LINE_W",
                 "type": "F",
-                "val": "(2**BLK_SIZE_W)*FE_DATA_W",
+                "val": "BLK_SIZE*FE_DATA_W",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Line width.",
@@ -238,7 +246,7 @@ class iob_cache(iob_module):
             {
                 "name": "DMEM_DATA_W",
                 "type": "F",
-                "val": "(2**NWAYS_W)*LINE_W",
+                "val": "NWAYS*LINE_W",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Data width of the data memory (log2).",
@@ -254,7 +262,7 @@ class iob_cache(iob_module):
             {
                 "name": "TAGMEM_DATA_W",
                 "type": "F",
-                "val": "(2**NWAYS_W)*TAG_W",
+                "val": "NWAYS*TAG_W",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Data width of the tag memory (log2).",
@@ -312,7 +320,7 @@ class iob_cache(iob_module):
             {
                 "name": "WTB_DATA_W",
                 "type": "F",
-                "val": "BE_ADDR_W + FE_DATA_W + FE_NBYTES",
+                "val": "BE_ADDR_W + BE_NBYTES + BE_DATA_W",
                 "min": "NA",
                 "max": "NA",
                 "descr": "Write-through buffer data width (log2).",
@@ -515,13 +523,13 @@ class iob_cache(iob_module):
                     {
                         "name": "data_mem_d_o",
                         "type": "O",
-                        "n_bits": "(2**NWAYS_W)*DATA_W",
+                        "n_bits": "DMEM_DATA_W",
                         "descr": "Data memory write data.",
                     },
                     {
                         "name": "data_mem_we_o",
                         "type": "O",
-                        "n_bits": "1",
+                        "n_bits": "DMEM_NBYTES",
                         "descr": "Data memory write enable.",
                     },
                     {
@@ -533,7 +541,7 @@ class iob_cache(iob_module):
                     {
                         "name": "data_mem_d_i",
                         "type": "I",
-                        "n_bits": "2**NWAYS_W*DATA_W",
+                        "n_bits": "DMEM_DATA_W",
                         "descr": "Data memory read data.",
                     },
                 ],
@@ -551,13 +559,13 @@ class iob_cache(iob_module):
                     {
                         "name": "tag_mem_d_o",
                         "type": "O",
-                        "n_bits": "(2**NWAYS_W)*TAG_W",
+                        "n_bits": "TAGMEM_DATA_W",
                         "descr": "Data memory write data.",
                     },
                     {
                         "name": "tag_mem_we_o",
                         "type": "O",
-                        "n_bits": "1",
+                        "n_bits": "NWAYS",
                         "descr": "Data memory write enable.",
                     },
                     {
@@ -569,7 +577,7 @@ class iob_cache(iob_module):
                     {
                         "name": "tag_mem_d_i",
                         "type": "I",
-                        "n_bits": "(2**NWAYS_W)*TAG_W",
+                        "n_bits": "TAGMEM_DATA_W",
                         "descr": "Data memory read data.",
                     },
                 ],

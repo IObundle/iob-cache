@@ -48,7 +48,7 @@ module iob_cache
    
    //interface to external tag memory
    output                   tag_mem_en_o,
-   output [NWAYS_W-1:0]     tag_mem_we_o,
+   output [NWAYS-1:0]     tag_mem_we_o,
    output [NSETS_W-1:0]    tag_mem_addr_o,
    output [TAGMEM_DATA_W-1:0] tag_mem_d_o,
    input [TAGMEM_DATA_W-1:0]  tag_mem_d_i
@@ -56,7 +56,7 @@ module iob_cache
    );
 
    //number of words in cache line
-   localparam NLINES = 1 << NSETS_W;
+   localparam NSETS = 1 << NSETS_W;
 
    //number of words in cache line
    localparam NWORDS = 2**BLK_SIZE_W;
@@ -154,15 +154,25 @@ module iob_cache
    wire                           miss = wr_miss_o | rd_miss_o;
    
    //valid bit for each line in each way
-   wire [NWAYS*NLINES-1:0]        valid_bit;
-   wire [NWAYS*NSETS_W-1:0]      valid_bit_nxt = valid_bit | (replace_en << (way_hit*NLINES + index_r));
+   wire [NWAYS*NSETS-1:0]         valid_bit;
+   wire [NWAYS*NSETS-1:0]         valid_bit_nxt = valid_bit | (replace_en << (way_hit*NSETS + index_r));
    
    //back-end buffer interface
+   localparam BE_NFEWORDS_W = FE_ADDR_W-BE_ADDR_W;
+   localparam BE_NFEWORDS = 2**BE_NFEWORDS_W;
+
    reg                            replacing;
    assign be_iob_avalid_o = replacing | wr_en;
-   assign be_iob_addr_o = replacing? addr_r : fe_iob_addr_i[FE_ADDR_W-1-:BE_ADDR_W];
-   assign be_iob_wdata_o = fe_iob_wdata_i << (fe_iob_addr_i[NWORDS_IN_BE_W-1:0]*FE_DATA_W);
-   assign be_iob_wstrb_o = fe_iob_wstrb_i << (be_iob_addr_i[NWORDS_IN_BE_W-1:0]*FE_NBYTES);
+   generate if (BE_NFEWORDS == 1) begin
+      assign be_iob_addr_o = fe_iob_addr_i;
+      assign be_iob_wdata_o = fe_iob_wdata_i;
+      assign be_iob_wstrb_o = fe_iob_wstrb_i;
+   end else begin
+      assign be_iob_addr_o = replacing? addr_r >> BE_NFEWORDS_W : fe_iob_addr_i >> BE_NFEWORDS_W;
+      assign be_iob_wdata_o = fe_iob_wdata_i << (fe_iob_addr_i[BE_NFEWORDS_W-1:0]*FE_DATA_W);
+      assign be_iob_wstrb_o = fe_iob_wstrb_i << (fe_iob_addr_i[BE_NFEWORDS_W-1:0]*FE_NBYTES);
+   end endgenerate
+   
 
    //convert way_hit 1-hot encoding to binary encoding
    iob_prio_enc #(
@@ -188,28 +198,28 @@ module iob_cache
        ) 
    req_reg 
      (
-      .clk(clk_i),
-      .arst(arst_i),
-      .cke(cke_i),
+      .clk_i(clk_i),
+      .arst_i(arst_i),
+      .cke_i(cke_i),
       .en_i(fe_iob_avalid_i),
-      .d_i(req),
-      .d_o(req_r)
+      .data_i(req),
+      .data_o(req_r)
       );
    
    //valid register
    iob_reg_e 
      #(
-       .DATA_W(REQ_W),
+       .DATA_W(NWAYS*NSETS),
        .RST_VAL(0)
        ) 
    valid_reg 
      (
-      .clk(clk_i),
-      .arst(arst_i),
-      .cke(cke_i),
+      .clk_i(clk_i),
+      .arst_i(arst_i),
+      .cke_i(cke_i),
       .en_i(replace_en),
-      .d_i(valid_bit_nxt),
-      .d_o(valid_bit)
+      .data_i(valid_bit_nxt),
+      .data_o(valid_bit)
       );
 
    //front-end read valid register
@@ -220,11 +230,11 @@ module iob_cache
        )
    rvalid_reg 
      (
-      .clk(clk_i),
-      .arst(arst_i),
-      .cke(cke_i),
-      .d_i(replace_en),
-      .d_o(fe_rvalid)
+      .clk_i(clk_i),
+      .arst_i(arst_i),
+      .cke_i(cke_i),
+      .data_i(replace_en),
+      .data_o(fe_rvalid)
       );
 
 endmodule

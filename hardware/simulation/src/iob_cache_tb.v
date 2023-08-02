@@ -18,6 +18,7 @@ module iob_cache_tb;
    localparam NWAYS_W = `IOB_CACHE_NWAYS_W;
    localparam NWAYS = `IOB_CACHE_NWAYS;
    localparam BLK_SIZE_W = `IOB_CACHE_BLK_SIZE_W;
+   localparam BLK_SIZE = `IOB_CACHE_BLK_SIZE;
    localparam REPLACE_POL = `IOB_CACHE_REPLACE_POL;
    localparam TAG_W = `IOB_CACHE_TAG_W;
    localparam WRITE_POL = `IOB_CACHE_WRITE_POL;
