@@ -30,45 +30,34 @@ module iob_cache_wt
        .FE_ADDR_W(FE_ADDR_W),
        .FE_DATA_W(FE_DATA_W),
        .FE_NBYTES(FE_NBYTES),
-       .BE_ADDR_W(FE_ADDR_W),
-       .BE_DATA_W(FE_DATA_W),
-       .BE_NBYTES(FE_NBYTES),
+       .BE_ADDR_W(BE_ADDR_W),
+       .BE_DATA_W(BE_DATA_W),
+       .BE_NBYTES(BE_NBYTES),
        .NWAYS_W(NWAYS_W),
        .NWAYS(NWAYS),
        .NSETS_W(NSETS_W),
        .BLK_SIZE_W(BLK_SIZE_W),
        .TAG_W(TAG_W),
        .LINE_W(LINE_W),
-       .DMEM_DATA_W(DMEM_DATA_W),
-       .DMEM_NBYTES(DMEM_NBYTES),
-       .TAGMEM_DATA_W(TAGMEM_DATA_W)
+       .DATA_ADDR_W(DATA_ADDR_W),
+       .DATA_DATA_W(DATA_DATA_W),
+       .TAG_ADDR_W(DATA_ADDR_W),
+       .TAG_DATA_W(TAG_DATA_W)
   ) 
    cache
      (
       //clock, enable and reset
 `include "clk_en_rst_portmap.vs"
-
       // front-end interface
 `include "fe_iob_s_s_portmap.vs"
       .iob_ready_nxt_o(),
       .iob_rvalid_nxt_o(),
       // back-end interface
 `include "be_iob_m_m_portmap.vs"
-
       //data memory interface
-      .data_mem_en_o (data_mem_en_o),
-      .data_mem_we_o (data_mem_we_o),
-      .data_mem_addr_o(data_mem_addr_o),
-      .data_mem_d_o(data_mem_d_o),
-      .data_mem_d_i(data_mem_d_i),
-
+`include "data_ram_sp_be_portmap.vs"
       //tag memory interface
-      .tag_mem_en_o (tag_mem_en_o),
-      .tag_mem_we_o (tag_mem_we_o),
-      .tag_mem_addr_o(tag_mem_addr_o),
-      .tag_mem_d_o(tag_mem_d_o),
-      .tag_mem_d_i(tag_mem_d_i),
-
+`include "tag_ram_sp_portmap.vs"
       // control and status signals
       .invalidate_i    (INVALIDATE),
       .wr_hit_o     (write_hit),
@@ -82,9 +71,9 @@ module iob_cache_wt
      #(
        .BE_ADDR_W    (BE_ADDR_W),
        .BE_DATA_W    (BE_DATA_W),
-       .WRITE_POL    (WRITE_POL),
-       .WTB_DEPTH_W  (WTB_DEPTH_W),
-       .WTB_DATA_W   (WTB_DATA_W)
+       .WTB_ADDR_W   (WTB_ADDR_W),
+       .WTB_DATA_W   (WTB_DATA_W),
+       .WRITE_POL    (WRITE_POL)
        ) 
    back_end 
      (
@@ -93,6 +82,7 @@ module iob_cache_wt
       //internal interface
 `include "be_iob_s_portmap.vs"
 `include "be_iob_m_m_portmap.vs"
+`include "wtb_ram_2p_portmap.vs"
       );
    
    iob_cache_monitor 

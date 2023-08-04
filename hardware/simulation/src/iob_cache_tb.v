@@ -23,11 +23,12 @@ module iob_cache_tb;
    localparam TAG_W = `IOB_CACHE_TAG_W;
    localparam WRITE_POL = `IOB_CACHE_WRITE_POL;
    localparam NBYTES = `IOB_CACHE_NBYTES;
-   localparam WTB_DEPTH_W = `IOB_CACHE_WTB_DEPTH_W;
+   localparam WTB_ADDR_W = `IOB_CACHE_WTB_ADDR_W;
    localparam WTB_DATA_W = `IOB_CACHE_DATA_W;
-   localparam DMEM_DATA_W = `IOB_CACHE_DMEM_DATA_W;
-   localparam DMEM_NBYTES = `IOB_CACHE_DMEM_NBYTES;
-   localparam TAGMEM_DATA_W = `IOB_CACHE_TAGMEM_DATA_W;
+   localparam DATA_DATA_W = `IOB_CACHE_DATA_DATA_W;
+   localparam DATA_ADDR_W = `IOB_CACHE_DATA_ADDR_W;
+   localparam TAG_DATA_W = `IOB_CACHE_TAG_DATA_W;
+   localparam TAG_ADDR_W = `IOB_CACHE_TAG_ADDR_W;
    
    //global reset
    reg cke = 0;
@@ -192,7 +193,7 @@ endtask
    iob_ram_2p 
      #(
        .DATA_W(WTB_DATA_W),
-       .ADDR_W(WTB_DEPTH_W)
+       .ADDR_W(WTB_ADDR_W)
        ) 
    wtb_mem
      (
