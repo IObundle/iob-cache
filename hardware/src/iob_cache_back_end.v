@@ -22,28 +22,28 @@ module iob_cache_back_end #(
    input arst_i,
 
    // write-through-buffer
-   input                                                                         write_valid,
-   input  [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr,
-   input  [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata,
-   input  [                                                       FE_NBYTES-1:0] write_wstrb,
-   output                                                                        write_ready,
+   input                                                                         write_valid_i,
+   input  [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr_i,
+   input  [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_i,
+   input  [                                                       FE_NBYTES-1:0] write_wstrb_i,
+   output                                                                        write_ready_o,
 
    // cache-line replacement
-   input                                        replace_valid,
-   input  [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr,
-   output                                       replace,
-   output                                       read_valid,
-   output [                     LINE2BE_W -1:0] read_addr,
-   output [                     BE_DATA_W -1:0] read_rdata,
+   input                                        replace_valid_i,
+   input  [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr_i,
+   output                                       replace_o,
+   output                                       read_valid_o,
+   output [                     LINE2BE_W -1:0] read_addr_o,
+   output [                     BE_DATA_W -1:0] read_rdata_o,
 
    // back-end memory interface
-   output                  be_avalid,
-   output [BE_ADDR_W -1:0] be_addr,
-   output [ BE_DATA_W-1:0] be_wdata,
-   output [ BE_NBYTES-1:0] be_wstrb,
-   input  [ BE_DATA_W-1:0] be_rdata,
-   input                   be_rvalid,
-   input                   be_ready
+   output                  be_avalid_o,
+   output [BE_ADDR_W -1:0] be_addr_o,
+   output [ BE_DATA_W-1:0] be_wdata_o,
+   output [ BE_NBYTES-1:0] be_wstrb_o,
+   input  [ BE_DATA_W-1:0] be_rdata_i,
+   input                   be_rvalid_i,
+   input                   be_ready_i
 );
 
    wire [BE_ADDR_W-1:0] be_addr_read, be_addr_write;
@@ -52,10 +52,10 @@ module iob_cache_back_end #(
    wire be_wack;
    wire be_wack_r;
 
-   assign be_addr   = (be_valid_read) ? be_addr_read : be_addr_write;
-   assign be_avalid = be_valid_read | be_valid_write;
-   assign be_ack    = be_rvalid | be_wack_r;
-   assign be_wack   = be_ready & be_avalid & (| be_wstrb);
+   assign be_addr_o   = (be_valid_read) ? be_addr_read : be_addr_write;
+   assign be_avalid_o = be_valid_read | be_valid_write;
+   assign be_ack    = be_rvalid_i | be_wack_r;
+   assign be_wack   = be_ready_i & be_avalid_o & (| be_wstrb_o);
 
    iob_reg_re #(
       .DATA_W (1),
@@ -78,17 +78,17 @@ module iob_cache_back_end #(
       .WORD_OFFSET_W(WORD_OFFSET_W)
    ) read_fsm (
       .clk_i        (clk_i),
-      .reset        (arst_i),
-      .replace_valid(replace_valid),
-      .replace_addr (replace_addr),
-      .replace      (replace),
-      .read_valid   (read_valid),
-      .read_addr    (read_addr),
-      .read_rdata   (read_rdata),
-      .be_addr      (be_addr_read),
-      .be_valid     (be_valid_read),
-      .be_ack       (be_ack),
-      .be_rdata     (be_rdata)
+      .reset_i        (arst_i),
+      .replace_valid_i(replace_valid_i),
+      .replace_addr_i (replace_addr_i),
+      .replace_o      (replace_o),
+      .read_valid_o   (read_valid_o),
+      .read_addr_o    (read_addr_o),
+      .read_rdata_o   (read_rdata_o),
+      .be_addr_o      (be_addr_read),
+      .be_valid_o     (be_valid_read),
+      .be_ack_i       (be_ack),
+      .be_rdata_i     (be_rdata_i)
    );
 
    iob_cache_write_channel #(
@@ -100,19 +100,19 @@ module iob_cache_back_end #(
       .WORD_OFFSET_W(WORD_OFFSET_W)
    ) write_fsm (
       .clk_i(clk_i),
-      .reset(arst_i),
+      .reset_i(arst_i),
 
-      .valid(write_valid),
-      .addr (write_addr),
-      .wstrb(write_wstrb),
-      .wdata(write_wdata),
-      .ready(write_ready),
+      .valid_i(write_valid_i),
+      .addr_i (write_addr_i),
+      .wstrb_i(write_wstrb_i),
+      .wdata_i(write_wdata_i),
+      .ready_o(write_ready_o),
 
-      .be_addr (be_addr_write),
-      .be_valid(be_valid_write),
-      .be_ack  (be_ack),
-      .be_wdata(be_wdata),
-      .be_wstrb(be_wstrb)
+      .be_addr_o (be_addr_write),
+      .be_valid_o(be_valid_write),
+      .be_ack_i  (be_ack),
+      .be_wdata_o(be_wdata_o),
+      .be_wstrb_o(be_wstrb_o)
    );
 
 endmodule

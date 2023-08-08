@@ -19,15 +19,15 @@ module iob_cache_read_channel_axi #(
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
-   input                                       replace_valid,
-   input      [ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr,
-   output reg                                  replace,
-   output                                      read_valid,
-   output reg [                 LINE2BE_W-1:0] read_addr,
-   output     [                 BE_DATA_W-1:0] read_rdata,
+   input                                       replace_valid_i,
+   input      [ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr_i,
+   output reg                                  replace_o,
+   output                                      read_valid_o,
+   output reg [                 LINE2BE_W-1:0] read_addr_o,
+   output     [                 BE_DATA_W-1:0] read_rdata_o,
    `include "axi_m_read_port.vs"
    input                                       clk_i,
-   input                                       reset
+   input                                       reset_i
 );
 
    reg axi_arvalid_int;
@@ -50,21 +50,21 @@ module iob_cache_read_channel_axi #(
          assign axi_arlen_o   = 2**LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
          assign axi_arsize_o  = BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst_o = 2'b01;  // incremental burst
-         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr, {(LINE2BE_W+BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i, {(LINE2BE_W+BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
-         assign read_rdata = axi_rdata_i;
-         assign read_valid = axi_rvalid_i;
+         assign read_rdata_o = axi_rdata_i;
+         assign read_valid_o = axi_rvalid_i;
 
          localparam idle = 2'd0, init_process = 2'd1, load_process = 2'd2, end_process = 2'd3;
 
          reg [1:0] state;
          reg                                 slave_error; // axi slave_error during reply (axi_rresp[1] == 1) - burst can't be interrupted, so a flag needs to be active
 
-         always @(posedge clk_i, posedge reset) begin
-            if (reset) begin
+         always @(posedge clk_i, posedge reset_i) begin
+            if (reset_i) begin
                state       <= idle;
-               read_addr   <= 0;
+               read_addr_o   <= 0;
                slave_error <= 0;
             end else begin
                slave_error <= slave_error;
@@ -72,13 +72,13 @@ module iob_cache_read_channel_axi #(
                case (state)
                   idle: begin
                      slave_error <= 0;
-                     read_addr   <= 0;
-                     if (replace_valid) state <= init_process;
+                     read_addr_o   <= 0;
+                     if (replace_valid_i) state <= init_process;
                      else state <= idle;
                   end
                   init_process: begin
                      slave_error <= 0;
-                     read_addr   <= 0;
+                     read_addr_o   <= 0;
                      if (axi_arready_i) state <= load_process;
                      else state <= init_process;
                   end
@@ -87,17 +87,17 @@ module iob_cache_read_channel_axi #(
                         if (axi_rlast_i) begin
                            state     <= end_process;
                            // to avoid writting last data in first line word
-                           read_addr <= read_addr;
+                           read_addr_o <= read_addr_o;
                            // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                            if (axi_rresp_i != 2'b00) slave_error <= 1;
                         end else begin
-                           read_addr <= read_addr + 1'b1;
+                           read_addr_o <= read_addr_o + 1'b1;
                            state     <= load_process;
                            // slave_error - received at the same time as the valid - needs to wait until the end to start all over - going directly to init_process would cause a stall to this burst
                            if (axi_rresp_i != 2'b00) slave_error <= 1;
                         end
                      else begin
-                        read_addr <= read_addr;
+                        read_addr_o <= read_addr_o;
                         state     <= load_process;
                      end
                   end
@@ -113,10 +113,10 @@ module iob_cache_read_channel_axi #(
          always @* begin
             axi_arvalid_int = 1'b0;
             axi_rready_int  = 1'b0;
-            replace         = 1'b1;
+            replace_o         = 1'b1;
 
             case (state)
-               idle:         replace = 1'b0;
+               idle:         replace_o = 1'b0;
                init_process: axi_arvalid_int = 1'b1;
                default:      axi_rready_int = 1'b1;  // load_process
             endcase
@@ -134,22 +134,22 @@ module iob_cache_read_channel_axi #(
          assign axi_arlen_o = 8'd0;  // A single burst of Memory data width word
          assign axi_arsize_o  = BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst_o = 2'b00;
-         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
-         assign read_valid = axi_rvalid_i;
-         assign read_rdata = axi_rdata_i;
+         assign read_valid_o = axi_rvalid_i;
+         assign read_rdata_o = axi_rdata_i;
 
          localparam idle = 2'd0, init_process = 2'd1, load_process = 2'd2, end_process = 2'd3;
 
          reg [1:0] state;
 
-         always @(posedge clk_i, posedge reset) begin
-            if (reset) state <= idle;
+         always @(posedge clk_i, posedge reset_i) begin
+            if (reset_i) state <= idle;
             else
                case (state)
                   idle: begin
-                     if (replace_valid) state <= init_process;
+                     if (replace_valid_i) state <= init_process;
                      else state <= idle;
                   end
                   init_process: begin
@@ -172,11 +172,11 @@ module iob_cache_read_channel_axi #(
          always @* begin
             axi_arvalid_int = 1'b0;
             axi_rready_int  = 1'b0;
-            replace         = 1'b1;
+            replace_o         = 1'b1;
 
             case (state)
                idle: begin
-                  replace = 1'b0;
+                  replace_o = 1'b0;
                end
                init_process: begin
                   axi_arvalid_int = 1'b1;

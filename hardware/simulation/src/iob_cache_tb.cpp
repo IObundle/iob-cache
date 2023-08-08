@@ -46,35 +46,35 @@ int main(int argc, char **argv) {
         if (posedge_cnt == 8)
           VL_PRINTF("Test 1: Writing Test\n");
         RW = 0;
-        dut->avalid = 1;
-        dut->wstrb = 15;
-        dut->addr = iw;
-        dut->wdata = iw * 3;
+        dut->avalid_i = 1;
+        dut->wstrb_i = 15;
+        dut->addr_i = iw;
+        dut->wdata_i = iw * 3;
       }
 
       if ((posedge_cnt >= 30) && (ir < 5)) {
         if (posedge_cnt == 30)
           VL_PRINTF("Test 2: Reading Test\n");
         RW = 1;
-        dut->avalid = 1;
-        dut->wstrb = 0;
-        dut->addr = ir;
+        dut->avalid_i = 1;
+        dut->wstrb_i = 0;
+        dut->addr_i = ir;
       }
 
-      if (dut->ack) {
-        dut->avalid = 0;
+      if (dut->ack_o) {
+        dut->avalid_i = 0;
         if ((posedge_cnt >= 8) && (posedge_cnt < 30))
           iw++;
         else if (posedge_cnt >= 30)
           ir++;
       }
 
-      if ((RW == 1) && dut->ack && (itest < 5)) {
-        if (dut->rdata == itest * 3) {
-          VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n", dut->rdata,
+      if ((RW == 1) && dut->ack_o && (itest < 5)) {
+        if (dut->rdata_o == itest * 3) {
+          VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n", dut->rdata_o,
                     itest);
         } else {
-          VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n", dut->rdata,
+          VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n", dut->rdata_o,
                     itest);
           std::ofstream log_file;
           log_file.open("test.log");

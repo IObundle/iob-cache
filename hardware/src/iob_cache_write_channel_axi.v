@@ -24,14 +24,14 @@ module iob_cache_write_channel_axi #(
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
-   input                                                                    valid,
-   input      [           ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr,
-   input      [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] wdata,
-   input      [                                              FE_NBYTES-1:0] wstrb,
-   output reg                                                               ready,
+   input                                                                    valid_i,
+   input      [           ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] addr_i,
+   input      [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] wdata_i,
+   input      [                                              FE_NBYTES-1:0] wstrb_i,
+   output reg                                                               ready_o,
    `include "axi_m_write_port.vs"
    input                                                                    clk_i,
-   input                                                                    reset
+   input                                                                    reset_i
 );
 
    reg axi_awvalid_int;
@@ -58,17 +58,17 @@ module iob_cache_write_channel_axi #(
          assign axi_wlast_o = axi_wvalid_o;
 
          // AXI Buffer Output signals
-         assign axi_awaddr_o = {BE_ADDR_W{1'b0}} + {addr[ADDR_W-1 : BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
+         assign axi_awaddr_o = {BE_ADDR_W{1'b0}} + {addr_i[ADDR_W-1 : BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
 
          if (BE_DATA_W == DATA_W) begin : g_same_data_w
-            assign axi_wstrb_o = wstrb;
-            assign axi_wdata_o = wdata;
+            assign axi_wstrb_o = wstrb_i;
+            assign axi_wdata_o = wdata_i;
          end else begin : g_not_same_data_w
-            wire [BE_NBYTES_W - FE_NBYTES_W -1 :0] word_align = addr[FE_NBYTES_W +: (BE_NBYTES_W - FE_NBYTES_W)];
-            assign axi_wstrb_o = wstrb << (word_align * FE_NBYTES);
+            wire [BE_NBYTES_W - FE_NBYTES_W -1 :0] word_align = addr_i[FE_NBYTES_W +: (BE_NBYTES_W - FE_NBYTES_W)];
+            assign axi_wstrb_o = wstrb_i << (word_align * FE_NBYTES);
 
             for (i = 0; i < BE_DATA_W / DATA_W; i = i + 1) begin : g_wdata_block
-               assign axi_wdata_o[(i+1)*DATA_W-1:i*DATA_W] = wdata;
+               assign axi_wdata_o[(i+1)*DATA_W-1:i*DATA_W] = wdata_i;
             end
          end
 
@@ -76,12 +76,12 @@ module iob_cache_write_channel_axi #(
 
          reg [1:0] state;
 
-         always @(posedge clk_i, posedge reset) begin
-            if (reset) state <= idle;
+         always @(posedge clk_i, posedge reset_i) begin
+            if (reset_i) state <= idle;
             else
                case (state)
                   idle: begin
-                     if (valid) state <= address;
+                     if (valid_i) state <= address;
                      else state <= idle;
                   end
                   address: begin
@@ -93,9 +93,9 @@ module iob_cache_write_channel_axi #(
                      else state <= write;
                   end
                   default: begin // verif - needs to be after the last word has been written, so this can't be optim
-                     if (axi_bvalid_i & (axi_bresp_i == 2'b00) & ~valid)
+                     if (axi_bvalid_i & (axi_bresp_i == 2'b00) & ~valid_i)
                         state <= idle;  // no more words to write
-                     else if (axi_bvalid_i & (axi_bresp_i == 2'b00) & valid)
+                     else if (axi_bvalid_i & (axi_bresp_i == 2'b00) & valid_i)
                         state <= address;  // buffer still isn't empty
                      else if (axi_bvalid_i & ~(axi_bresp_i == 2'b00))  // error
                         state <= address;  // goes back to transfer the same data.
@@ -105,18 +105,18 @@ module iob_cache_write_channel_axi #(
          end
 
          always @* begin
-            ready           = 1'b0;
+            ready_o           = 1'b0;
             axi_awvalid_int = 1'b0;
             axi_wvalid_int  = 1'b0;
             axi_bready_int  = 1'b0;
 
             case (state)
-               idle:    ready = 1'b1;
+               idle:    ready_o = 1'b1;
                address: axi_awvalid_int = 1'b1;
                write:   axi_wvalid_int = 1'b1;
                default: begin  // verif
                   axi_bready_int = 1'b1;
-                  ready          = axi_bvalid_i & ~(|axi_bresp_i);
+                  ready_o          = axi_bvalid_i & ~(|axi_bresp_i);
                end
             endcase
          end
@@ -135,11 +135,11 @@ module iob_cache_write_channel_axi #(
             assign axi_awburst_o = 2'b01;  // incremental burst
 
             // memory address
-            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr, {(FE_NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
+            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr_i, {(FE_NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
             reg [LINE2BE_W-1:0] word_counter;
-            assign axi_wdata_o = wdata >> (word_counter * BE_DATA_W);
+            assign axi_wdata_o = wdata_i >> (word_counter * BE_DATA_W);
             assign axi_wstrb_o = {BE_NBYTES{1'b1}};
             assign axi_wlast_o = &word_counter;
 
@@ -147,8 +147,8 @@ module iob_cache_write_channel_axi #(
 
             reg [1:0] state;
 
-            always @(posedge clk_i, posedge reset) begin
-               if (reset) begin
+            always @(posedge clk_i, posedge reset_i) begin
+               if (reset_i) begin
                   state        <= idle;
                   word_counter <= 0;
                end else begin
@@ -156,7 +156,7 @@ module iob_cache_write_channel_axi #(
 
                   case (state)
                      idle:
-                     if (valid) state <= address;
+                     if (valid_i) state <= address;
                      else state <= idle;
                      address:
                      if (axi_awready_i) state <= write;
@@ -183,18 +183,18 @@ module iob_cache_write_channel_axi #(
             end
 
             always @* begin
-               ready           = 1'b0;
+               ready_o           = 1'b0;
                axi_awvalid_int = 1'b0;
                axi_wvalid_int  = 1'b0;
                axi_bready_int  = 1'b0;
 
                case (state)
-                  idle:    ready = ~valid;
+                  idle:    ready_o = ~valid_i;
                   address: axi_awvalid_int = 1'b1;
                   write:   axi_wvalid_int = 1'b1;
                   default: begin  // verif
                      axi_bready_int = 1'b1;
-                     ready          = axi_bvalid_i & ~(|axi_bresp_i);
+                     ready_o          = axi_bvalid_i & ~(|axi_bresp_i);
                   end
                endcase
             end
@@ -212,10 +212,10 @@ module iob_cache_write_channel_axi #(
             assign axi_awburst_o = 2'b00;
 
             // memory address
-            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr_i, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
-            assign axi_wdata_o = wdata;
+            assign axi_wdata_o = wdata_i;
             assign axi_wstrb_o = {BE_NBYTES{1'b1}};  // uses entire bandwidth
             assign axi_wlast_o = axi_wvalid_o;
 
@@ -223,12 +223,12 @@ module iob_cache_write_channel_axi #(
 
             reg [1:0] state;
 
-            always @(posedge clk_i, posedge reset) begin
-               if (reset) state <= idle;
+            always @(posedge clk_i, posedge reset_i) begin
+               if (reset_i) state <= idle;
                else
                   case (state)
                      idle:
-                     if (valid) state <= address;
+                     if (valid_i) state <= address;
                      else state <= idle;
                      address:
                      if (axi_awready_i) state <= write;
@@ -246,18 +246,18 @@ module iob_cache_write_channel_axi #(
             end
 
             always @* begin
-               ready           = 1'b0;
+               ready_o           = 1'b0;
                axi_awvalid_int = 1'b0;
                axi_wvalid_int  = 1'b0;
                axi_bready_int  = 1'b0;
 
                case (state)
-                  idle:    ready = ~valid;
+                  idle:    ready_o = ~valid_i;
                   address: axi_awvalid_int = 1'b1;
                   write:   axi_wvalid_int = 1'b1;
                   default: begin  // verif
                      axi_bready_int = 1'b1;
-                     ready          = axi_bvalid_i & ~(|axi_bresp_i);
+                     ready_o          = axi_bvalid_i & ~(|axi_bresp_i);
                   end
                endcase
             end

@@ -82,19 +82,19 @@ module iob_cache_tb;
    //Unit Under Test (simulation wrapper)
    iob_cache_sim_wrapper uut (
       //frontend
-      .avalid(avalid),
-      .addr ({ctrl, addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-2:0]}),
-      .wdata(wdata),
-      .wstrb(wstrb),
-      .rdata(rdata),
-      .ack  (ack),
+      .avalid_i(avalid),
+      .addr_i ({ctrl, addr[USE_CTRL+FE_ADDR_W-FE_NBYTES_W-2:0]}),
+      .wdata_i(wdata),
+      .wstrb_i(wstrb),
+      .rdata_o(rdata),
+      .ack_o  (ack),
 
 
       //invalidate / wtb empty
-      .invalidate_in (1'b0),
-      .invalidate_out(),
-      .wtb_empty_in  (1'b1),
-      .wtb_empty_out (),
+      .invalidate_i (1'b0),
+      .invalidate_o(),
+      .wtb_empty_i  (1'b1),
+      .wtb_empty_o (),
 
       .clk_i(clk),
       .arst_i(rst)
