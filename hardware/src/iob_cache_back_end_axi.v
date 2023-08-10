@@ -61,7 +61,7 @@ module iob_cache_back_end_axi #(
       .read_valid_o   (read_valid_o),
       .read_addr_o    (read_addr_o),
       .read_rdata_o   (read_rdata_o),
-      `include "axi_m_m_read_portmap.vs"
+      `include "axi_read_m_m_portmap.vs"
       .clk_i        (clk_i),
       .reset_i        (rst_i)
    );
@@ -84,7 +84,7 @@ module iob_cache_back_end_axi #(
       .wstrb_i(write_wstrb_i),
       .wdata_i(write_wdata_i),
       .ready_o(write_ready_o),
-      `include "axi_m_m_write_portmap.vs"
+      `include "axi_write_m_m_portmap.vs"
       .clk_i(clk_i),
       .reset_i(rst_i)
    );
