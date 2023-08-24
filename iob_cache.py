@@ -84,13 +84,6 @@ class iob_cache(iob_module):
         """Create submodules list with dependencies of this module"""
         super()._create_submodules_list(
             [
-                {"interface": "iob_s_port"},
-                {"interface": "axi_m_port"},
-                {"interface": "axi_m_m_portmap"},
-                {"interface": "axi_write_m_port"},
-                {"interface": "axi_write_m_m_portmap"},
-                {"interface": "axi_read_m_port"},
-                {"interface": "axi_read_m_m_portmap"},
                 iob_utils,
                 {"interface": "clk_en_rst_s_port"},
                 iob_regfile_sp,
@@ -272,16 +265,57 @@ class iob_cache(iob_module):
             + cls.AXI_CONFS
         )
 
-    USE_CTRL = 0
-    USE_CTRL_CNT = 0
-    FE_DATA_W = 32
-    BE_DATA_W = 32
-    
-        
-        
     @classmethod
     def _setup_ios(cls):
         cls.ios += [
+            {
+                "name": "clk_en_rst",
+                "type": "slave",
+                "port_prefix": "",
+                "wire_prefix": "",
+                "descr": "Clock, clock enable and reset",
+                "ports": [],
+            },
+            {
+                "name": "iob",
+                "type": "slave",
+                "port_prefix": "",
+                "wire_prefix": "",
+                "descr": "Front-end interface",
+                "ports": [],
+            },
+            {
+                "name": "iob",
+                "type": "master",
+                "port_prefix": "be_",
+                "wire_prefix": "be_",
+                "descr": "Back-end interface",
+                "ports": [],
+            },
+            {
+                "name": "axi",
+                "type": "master",
+                "port_prefix": "",
+                "wire_prefix": "",
+                "descr": "AXI4 interface",
+                "ports": [],
+            },
+            {
+                "name": "axi_write",
+                "type": "master",
+                "port_prefix": "",
+                "wire_prefix": "",
+                "descr": "AXI4 write interface",
+                "ports": [],
+            },
+            {
+                "name": "axi_read",
+                "type": "master",
+                "port_prefix": "",
+                "wire_prefix": "",
+                "descr": "AXI4 read interface",
+                "ports": [],
+            },
             {
                 "name": "fe",
                 "type": "slave",
@@ -291,37 +325,37 @@ class iob_cache(iob_module):
                 "ports": [
                     {
                         "name": "req",
-                        "type": "input",
+                        "direction": "input",
                         "width": 1,
                         "descr": "Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.",
                     },
                     {
                         "name": "addr",
-                        "type": "input",
-                        "width": USE_CTRL+FE_ADDR_W-2,
+                        "direction": "input",
+                        "width": "USE_CTRL+FE_ADDR_W-2",
                         "descr": "Address from CPU or other user core, excluding the byte selection LSBs.",
                     },
                     {
                         "name": "wdata",
-                        "type": "input",
-                        "width": FE_DATA_W,
+                        "direction": "input",
+                        "width": "FE_DATA_W",
                         "descr": "Write data fom host.",
                     },
                     {
                         "name": "wstrb",
-                        "type": "input",
+                        "direction": "input",
                         "width": 4,
                         "descr": "Byte write strobe from host.",
                     },
                     {
                         "name": "rdata",
-                        "type": "output",
-                        "width": FE_DATA_W,
+                        "direction": "output",
+                        "width": "FE_DATA_W",
                         "descr": "Read data to host.",
                     },
                     {
                         "name": "ack",
-                        "type": "output",
+                        "direction": "output",
                         "width": 1,
                         "descr": "Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.",
                     },
@@ -336,37 +370,37 @@ class iob_cache(iob_module):
                 "ports": [
                     {
                         "name": "req",
-                        "type": "output",
+                        "direction": "output",
                         "width": 1,
                         "descr": "Read or write request to next-level cache or memory.",
                     },
                     {
                         "name": "be_addr",
-                        "type": "output",
-                        "width": BE_ADDR_W,
+                        "direction": "output",
+                        "width": "BE_ADDR_W",
                         "descr": "Address to next-level cache or memory.",
                     },
                     {
                         "name": "be_wdata",
-                        "type": "output",
-                        "width": BE_DATA_W,
+                        "direction": "output",
+                        "width": "BE_DATA_W",
                         "descr": "Write data to next-level cache or memory.",
                     },
                     {
                         "name": "be_wstrb",
-                        "type": "output",
+                        "direction": "output",
                         "width": 4,
                         "descr": "Write strobe to next-level cache or memory.",
                     },
                     {
                         "name": "be_rdata",
-                        "type": "input",
-                        "width": BE_DATA_W,
+                        "direction": "input",
+                        "width": "BE_DATA_W",
                         "descr": "Read data from next-level cache or memory.",
                     },
                     {
                         "name": "be_ack",
-                        "type": "input",
+                        "direction": "input",
                         "width": 1,
                         "descr": "Acknowledge signal from next-level cache or memory.",
                     },
@@ -374,29 +408,32 @@ class iob_cache(iob_module):
             },
             {
                 "name": "ie",
+                "type": "master",
+                "port_prefix": "",
+                "wire_prefix": "",
                 "descr": "Cache invalidate and write-trough buffer IO chain",
                 "ports": [
                     {
                         "name": "invalidate_in",
-                        "type": "input",
+                        "direction": "input",
                         "width": 1,
                         "descr": "Invalidates all cache lines instantaneously if high.",
                     },
                     {
                         "name": "invalidate_out",
-                        "type": "output",
+                        "direction": "output",
                         "width": 1,
                         "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
                     },
                     {
                         "name": "wtb_empty_in",
-                        "type": "input",
+                        "direction": "input",
                         "width": 1,
                         "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
                     },
                     {
                         "name": "wtb_empty_out",
-                        "type": "output",
+                        "direction": "output",
                         "width": 1,
                         "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
                     },
@@ -404,17 +441,20 @@ class iob_cache(iob_module):
             },
             {
                 "name": "ge",
+                "type": "slave",
+                "port_prefix": "",
+                "wire_prefix": "",
                 "descr": "General Interface Signals",
                 "ports": [
                     {
                         "name": "clk_i",
-                        "type": "input",
+                        "direction": "input",
                         "width": 1,
                         "descr": "System clock input.",
                     },
                     {
                         "name": "rst_i",
-                        "type": "input",
+                        "direction": "input",
                         "width": 1,
                         "descr": "System reset, asynchronous and active high.",
                     },
