@@ -1,24 +1,11 @@
 CORE := iob_cache
-
 DISABLE_LINT:=1
-
 include submodules/LIB/setup.mk
 
-
-
-
 BE_IF ?= "AXI4"
-
 SETUP_ARGS += BE_IF=$(BE_IF)
-
 BE_DATA_W ?= "32"
-
 SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
-
-
-#------------------------------------------------------------
-# SIMULATION
-#------------------------------------------------------------
 
 sim-build: clean
 	rm -rf ../$(CORE)_V*

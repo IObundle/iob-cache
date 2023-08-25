@@ -85,7 +85,6 @@ class iob_cache(iob_module):
         super()._create_submodules_list(
             [
                 iob_utils,
-                {"interface": "clk_en_rst_s_port"},
                 iob_regfile_sp,
                 iob_fifo_sync,
                 (iob_ram_2p, {"purpose": "simulation"}),
@@ -95,8 +94,6 @@ class iob_cache(iob_module):
                 iob_reg,
                 iob_reg_re,
                 # Simulation headers & modules
-                ({"interface": "axi_wire"}, {"purpose": "simulation"}),
-                ({"interface": "axi_m_portmap"}, {"purpose": "simulation"}),
                 (iob_ram_sp_be, {"purpose": "simulation"}),
             ]
         )
