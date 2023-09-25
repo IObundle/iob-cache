@@ -11,7 +11,7 @@ module iob_cache_backend #(
     parameter WRITE_POL   = 0
 ) (
    // clock and reset
-`include "clk_en_rst_port.vs"
+`include "clk_en_rst_s_port.vs"
    // backend slave interface for cache
 `include "be_iob_s_port.vs"
    // back-end master interface for memory

@@ -30,17 +30,14 @@ module iob_cache_tb;
    localparam TAG_DATA_W = `IOB_CACHE_TAG_DATA_W;
    localparam TAG_ADDR_W = `IOB_CACHE_TAG_ADDR_W;
    
-   //global reset
-   reg cke = 0;
-   
+`include "clk_en_rst_m_tb_wire.vs"
+
    //clock period
    localparam CLK_PER = 10;  //ns
 
    //clock
    `IOB_CLOCK(clk, CLK_PER)
 
-   //async reset
-   reg arst;
 
    //control bus
 `include "iob_m_tb_wire.vs"
@@ -139,16 +136,19 @@ endtask
        ) 
    cache
      (
+      //clock, clock enable and reset
+ `include "clk_en_rst_s_s_portmap.vs"
       //control
  `include "iob_s_s_portmap.vs"
       //front-end
  `include "fe_iob_s_s_portmap.vs"
       //back-end
  `include "be_iob_m_portmap.vs"
-      .clk_i(clk),
-      .arst_i(arst),
-      .cke_i(cke)
-   );
+      //data memory interface
+ `include "data_ram_sp_be_portmap.vs"
+      //tag memory interface
+ `include "tag_ram_sp_portmap.vs"
+    );
 
    //
    // cache data memory

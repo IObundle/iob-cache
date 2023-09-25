@@ -25,7 +25,7 @@ module iob_cache
     ) 
    (
     //clock, enable, reset
-`include "clk_en_rst_port.vs"
+`include "clk_en_rst_s_port.vs"
     // front-end interface
 `include "fe_iob_s_port.vs"
     output iob_ready_nxt_o,

@@ -47,7 +47,7 @@ module iob_cache_wt
    cache
      (
       //clock, enable and reset
-`include "clk_en_rst_portmap.vs"
+`include "clk_en_rst_s_s_portmap.vs"
       // front-end interface
 `include "fe_iob_s_s_portmap.vs"
       .iob_ready_nxt_o(),
@@ -78,7 +78,7 @@ module iob_cache_wt
    back_end 
      (
       //clock, enable and reset
-`include "clk_en_rst_portmap.vs"
+`include "clk_en_rst_s_s_portmap.vs"
       //internal interface
 `include "be_iob_s_portmap.vs"
 `include "be_iob_m_m_portmap.vs"
@@ -91,22 +91,19 @@ module iob_cache_wt
        .ADDR_W(ADDR_W)
        ) cache_monitor 
        (
-        .clk_i  (clk_i),
-        .arst_i(arst_i),
-        
+        //clock, enable and reset
+`include "clk_en_rst_s_s_portmap.vs"
         //monitored events
         .write_hit_i (write_hit),
         .write_miss_i(write_miss),
         .read_hit_i  (read_hit),
         .read_miss_i (read_miss),
-        
         //control and status signals
         .reset_counters_i(RESET_COUNTERS),
         .read_hit_cnt_o (READ_HIT_CNT),
         .read_miss_cnt_o(READ_MISS_CNT),
         .write_hit_cnt_o(WRITE_HIT_CNT),
         .write_miss_cnt_o(WRITE_MISS_CNT)
-        
         );
 
 endmodule

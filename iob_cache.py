@@ -35,8 +35,8 @@ class iob_cache(iob_module):
         submodules_list = extra_submodules
         submodules_list += [
             # hardware interfaces, headers and modules
-            {"interface": "clk_en_rst_port"},
-            {"interface": "clk_en_rst_portmap"},
+            {"interface": "clk_en_rst_s_port"},
+            {"interface": "clk_en_rst_s_s_portmap"},
             # front-end slave port for top level and cache modules
             {"interface": "iob_s_port", "file_prefix": "fe_", "port_prefix": "fe_"},
             # front-end slave portmap for top level and cache modules
@@ -56,7 +56,12 @@ class iob_cache(iob_module):
                 "wire_prefix": "be_",
             },
             # back-end wire for connecting cache module and back-end module
-            {"interface": "iob_wire", "file_prefix": "be_", "wire_prefix": "be_"},
+            {
+                "interface": "iob_wire",
+                "file_prefix": "be_",
+                "wire_prefix": "be_",
+                "port_prefix": "be_",
+            },
             # back-end slave port for backend module
             {"interface": "iob_s_port", "file_prefix": "be_", "port_prefix": "be_"},
             # back-end slave portmap for backend module
@@ -108,6 +113,7 @@ class iob_cache(iob_module):
             iob_fifo_sync,
             # simulation specific interfaces, headers and modules
             # control interface driver
+            ({"interface": "clk_en_rst_m_tb_wire"}, {"purpose": "simulation"}),
             ({"interface": "iob_m_tb_wire"}, {"purpose": "simulation"}),
             # front-end interface driver
             (
@@ -115,6 +121,7 @@ class iob_cache(iob_module):
                     "interface": "iob_m_tb_wire",
                     "file_prefix": "fe_",
                     "wire_prefix": "fe_",
+                    "port_prefix": "fe_",
                 },
                 {"purpose": "simulation"},
             ),
@@ -493,7 +500,7 @@ class iob_cache(iob_module):
     def _setup_ios(cls):
         cls.ios += [
             {
-                "name": "clk_en_rst_port",
+                "name": "clk_en_rst_s_port",
                 "descr": "Clock, clock enable and asynchronous reset interface.",
                 "ports": [],
             },
