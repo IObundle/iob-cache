@@ -22,14 +22,13 @@ from iob_ram_sp_be import iob_ram_sp_be
 
 
 class iob_cache(iob_module):
-    name = "iob_cache"
-    version = "V0.10"
-    flows = "emb sim doc fpga"
-    setup_dir = os.path.dirname(__file__)
-
     @classmethod
     def _init_attributes(cls):
-        # Parse BE_DATA_W argument
+        """Init module attributes"""
+        cls.name = "iob_cache"
+        cls.version = "V0.10"
+        cls.flows = "emb sim doc fpga"
+        cls.setup_dir = os.path.dirname(__file__)
         cls.BE_DATA_W = "32"
         for arg in sys.argv[1:]:
             if "BE_DATA_W" in arg:
@@ -476,7 +475,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 0,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write-through buffer empty (1) or non-empty (0).",
@@ -486,7 +485,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 1,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write-through buffer full (1) or non-full (0).",
@@ -496,7 +495,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 4,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read and write hit counter.",
@@ -506,7 +505,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 8,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read and write miss counter.",
@@ -516,7 +515,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 12,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read hit counter.",
@@ -526,7 +525,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 16,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read miss counter.",
@@ -536,7 +535,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 20,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write hit counter.",
@@ -546,7 +545,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": 24,
+                        "addr": -1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write miss counter.",
@@ -566,7 +565,7 @@ class iob_cache(iob_module):
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 32,
+                        "addr": 29,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Invalidate the cache data contents by writing any value to this register.",
