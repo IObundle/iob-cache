@@ -26,6 +26,8 @@ int cache_write_hit() { return (CACHEFUNC(cache_base, IOB_CACHE_WRITE_HIT)); }
 
 int cache_write_miss() { return (CACHEFUNC(cache_base, IOB_CACHE_WRITE_MISS)); }
 
-int cache_counter_reset() { return (CACHEFUNC(cache_base, IOB_CACHE_RST_CNTRS)); }
+int cache_counter_reset() {
+  return (CACHEFUNC(cache_base, IOB_CACHE_RST_CNTRS));
+}
 
 int cache_version() { return (CACHEFUNC(cache_base, IOB_CACHE_VERSION)); }
