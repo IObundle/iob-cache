@@ -1,5 +1,6 @@
 CORE := iob_cache
 DISABLE_LINT:=1
+export DISABLE_LINT
 BE_IF ?= "AXI4"
 SETUP_ARGS += BE_IF=$(BE_IF)
 BE_DATA_W ?= "32"
