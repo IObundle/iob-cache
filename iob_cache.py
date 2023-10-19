@@ -288,6 +288,12 @@ class iob_cache(iob_module):
                 "wire_prefix": "",
                 "descr": "AXI4 interface",
                 "ports": [],
+                "widths": {
+                    "ID_W": "AXI_ID_W",
+                    "ADDR_W": "AXI_ADDR_W",
+                    "DATA_W": "AXI_DATA_W",
+                    "LEN_W": "AXI_LEN_W",
+                },
             },
             {
                 "name": "axi_write",
@@ -296,6 +302,12 @@ class iob_cache(iob_module):
                 "wire_prefix": "",
                 "descr": "AXI4 write interface",
                 "ports": [],
+                "widths": {
+                    "ID_W": "AXI_ID_W",
+                    "ADDR_W": "AXI_ADDR_W",
+                    "DATA_W": "AXI_DATA_W",
+                    "LEN_W": "AXI_LEN_W",
+                },
             },
             {
                 "name": "axi_read",
@@ -304,6 +316,12 @@ class iob_cache(iob_module):
                 "wire_prefix": "",
                 "descr": "AXI4 read interface",
                 "ports": [],
+                "widths": {
+                    "ID_W": "AXI_ID_W",
+                    "ADDR_W": "AXI_ADDR_W",
+                    "DATA_W": "AXI_DATA_W",
+                    "LEN_W": "AXI_LEN_W",
+                },
             },
             {
                 "name": "fe",
