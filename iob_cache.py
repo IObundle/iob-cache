@@ -85,6 +85,7 @@ class iob_cache(iob_module):
         super()._create_submodules_list(
             [
                 {"interface": "iob_s_port"},
+                {"interface": "iob_s_portmap"},
                 {"interface": "axi_m_port"},
                 {"interface": "axi_m_m_portmap"},
                 {"interface": "axi_m_write_port"},
@@ -412,6 +413,7 @@ class iob_cache(iob_module):
 
     @classmethod
     def _setup_regs(cls):
+        cls.autoaddr = False
         cls.regs += [
             {
                 "name": "cache",
@@ -422,7 +424,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 0,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write-through buffer empty (1) or non-empty (0).",
@@ -432,7 +434,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 1,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write-through buffer full (1) or non-full (0).",
@@ -442,7 +444,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 4,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read and write hit counter.",
@@ -452,7 +454,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 8,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read and write miss counter.",
@@ -462,7 +464,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 12,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read hit counter.",
@@ -472,7 +474,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 16,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Read miss counter.",
@@ -482,7 +484,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 20,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write hit counter.",
@@ -492,7 +494,7 @@ class iob_cache(iob_module):
                         "type": "R",
                         "n_bits": 32,
                         "rst_val": 0,
-                        "addr": -1,
+                        "addr": 24,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Write miss counter.",
