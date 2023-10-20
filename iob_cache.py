@@ -85,6 +85,7 @@ class iob_cache(iob_module):
         super()._create_submodules_list(
             [
                 {"interface": "iob_s_port"},
+                {"interface": "iob_s_portmap"},
                 {"interface": "axi_m_port"},
                 {"interface": "axi_m_m_portmap"},
                 {"interface": "axi_m_write_port"},
