@@ -1,1 +1,0 @@
-submodules/LIB/scripts/default.nix
