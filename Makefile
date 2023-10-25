@@ -8,17 +8,13 @@ PROJECT_ROOT=..
 include ../LIB/setup.mk
 
 BE_IF ?= "AXI4"
-
 SETUP_ARGS += BE_IF=$(BE_IF)
 
 BE_DATA_W ?= "32"
-
 SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
 
-
-#------------------------------------------------------------
-# SIMULATION
-#------------------------------------------------------------
+DOC ?= ug
+SETUP_ARGS += DOC=$(DOC)
 
 sim-build: clean
 	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-build"
@@ -32,4 +28,11 @@ sim-waves:
 sim-test: clean
 	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-test"
 
+doc-build: clean
+	nix-shell --run "make build-setup && make -C ../$(CORE)_V*/ doc-build DOC=$(DOC)"
+
+doc-view: ../$(CORE)_V*/document/$(DOC).pdf
+	nix-shell --run "make build-setup && make -C ../$(CORE)_V*/ doc-view DOC=$(DOC)"
+
+../$(CORE)_V*/document/$(DOC).pdf: doc-build
 
