@@ -35,19 +35,19 @@ module iob_cache_axi #(
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
 ) (
    // Front-end interface (IOb native slave)
-   input [ 1-1:0]                                     avalid,
-   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0]         addr,
-   input [ FE_DATA_W-1:0]                             wdata,
-   input [FE_NBYTES-1:0]                              wstrb,
-   output [ FE_DATA_W-1:0]                            rdata,
-   output                                             rvalid,
-   output                                             ready,
+   input [ 1-1:0]                                     avalid_i,
+   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0]         addr_i,
+   input [ FE_DATA_W-1:0]                             wdata_i,
+   input [FE_NBYTES-1:0]                              wstrb_i,
+   output [ FE_DATA_W-1:0]                            rdata_o,
+   output                                             rvalid_o,
+   output                                             ready_o,
 
    // Cache invalidate and write-trough buffer IO chain
-   input [1-1:0]                                      invalidate_in,
-   output [1-1:0]                                     invalidate_out,
-   input [1-1:0]                                      wtb_empty_in,
-   output [1-1:0]                                     wtb_empty_out,
+   input [1-1:0]                                      invalidate_i,
+   output [1-1:0]                                     invalidate_o,
+   input [1-1:0]                                      wtb_empty_i,
+   output [1-1:0]                                     wtb_empty_o,
 
    // AXI4 back-end interface
    `include "axi_m_port.vs"
@@ -74,8 +74,8 @@ module iob_cache_axi #(
 
    wire wtbuf_full, wtbuf_empty;
 
-   assign invalidate_out = ctrl_invalidate | invalidate_in;
-   assign wtb_empty_out  = wtbuf_empty & wtb_empty_in;
+   assign invalidate_o = ctrl_invalidate | invalidate_i;
+   assign wtb_empty_o  = wtbuf_empty & wtb_empty_i;
 
    iob_cache_front_end #(
       .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
@@ -87,33 +87,33 @@ module iob_cache_axi #(
       .arst_i(arst_i),
 
       // front-end port
-      .avalid(avalid),
-      .addr  (addr),
-      .wdata (wdata),
-      .wstrb (wstrb),
-      .rdata (rdata),
-      .rvalid(rvalid),
-      .ready (ready),
+      .avalid_i(avalid_i),
+      .addr_i  (addr_i),
+      .wdata_i (wdata_i),
+      .wstrb_i (wstrb_i),
+      .rdata_o (rdata_o),
+      .rvalid_o(rvalid_o),
+      .ready_o (ready_o),
 
       // cache-memory input signals
-      .data_req (data_req),
-      .data_addr(data_addr),
+      .data_req_o (data_req),
+      .data_addr_o(data_addr),
 
       // cache-memory output
-      .data_rdata(data_rdata),
-      .data_ack  (data_ack),
+      .data_rdata_i(data_rdata),
+      .data_ack_i  (data_ack),
 
       // stored input signals
-      .data_req_reg  (data_req_reg),
-      .data_addr_reg (data_addr_reg),
-      .data_wdata_reg(data_wdata_reg),
-      .data_wstrb_reg(data_wstrb_reg),
+      .data_req_reg_o  (data_req_reg),
+      .data_addr_reg_o (data_addr_reg),
+      .data_wdata_reg_o(data_wdata_reg),
+      .data_wstrb_reg_o(data_wstrb_reg),
 
       // cache-controller
-      .ctrl_req  (ctrl_req),
-      .ctrl_addr (ctrl_addr),
-      .ctrl_rdata(ctrl_rdata),
-      .ctrl_ack  (ctrl_ack)
+      .ctrl_req_o  (ctrl_req),
+      .ctrl_addr_o (ctrl_addr),
+      .ctrl_rdata_i(ctrl_rdata),
+      .ctrl_ack_i  (ctrl_ack)
    );
 
    //Cache memory & This block implements the cache memory.
@@ -148,42 +148,42 @@ module iob_cache_axi #(
    ) cache_memory (
       .clk_i(clk_i),
       .cke_i(cke_i),
-      .reset(arst_i),
+      .reset_i(arst_i),
 
       // front-end
-      .req      (data_req),
-      .addr     (data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
-      .rdata    (data_rdata),
-      .ack      (data_ack),
-      .req_reg  (data_req_reg),
-      .addr_reg (data_addr_reg),
-      .wdata_reg(data_wdata_reg),
-      .wstrb_reg(data_wstrb_reg),
+      .req_i      (data_req),
+      .addr_i     (data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]),
+      .rdata_o    (data_rdata),
+      .ack_o      (data_ack),
+      .req_reg_i  (data_req_reg),
+      .addr_reg_i (data_addr_reg),
+      .wdata_reg_i(data_wdata_reg),
+      .wstrb_reg_i(data_wstrb_reg),
 
       // back-end
       // write-through-buffer (write-channel)
-      .write_req  (write_req),
-      .write_addr (write_addr),
-      .write_wdata(write_wdata),
-      .write_wstrb(write_wstrb),
-      .write_ack  (write_ack),
+      .write_req_o  (write_req),
+      .write_addr_o (write_addr),
+      .write_wdata_o(write_wdata),
+      .write_wstrb_o(write_wstrb),
+      .write_ack_i  (write_ack),
 
       // cache-line replacement (read-channel)
-      .replace_req (replace_req),
-      .replace_addr(replace_addr),
-      .replace     (replace),
-      .read_req    (read_req),
-      .read_addr   (read_addr),
-      .read_rdata  (read_rdata),
+      .replace_req_o (replace_req),
+      .replace_addr_o(replace_addr),
+      .replace_i     (replace),
+      .read_req_i    (read_req),
+      .read_addr_i   (read_addr),
+      .read_rdata_i  (read_rdata),
 
       // control's signals
-      .wtbuf_empty(wtbuf_empty),
-      .wtbuf_full (wtbuf_full),
-      .write_hit  (write_hit),
-      .write_miss (write_miss),
-      .read_hit   (read_hit),
-      .read_miss  (read_miss),
-      .invalidate (invalidate_out)
+      .wtbuf_empty_o(wtbuf_empty),
+      .wtbuf_full_o (wtbuf_full),
+      .write_hit_o  (write_hit),
+      .write_miss_o (write_miss),
+      .read_hit_o   (read_hit),
+      .read_miss_o  (read_miss),
+      .invalidate_i (invalidate_o)
    );
 
    //Back-end interface & This block interfaces with the system level or next-level cache.
@@ -201,19 +201,19 @@ module iob_cache_axi #(
       .AXI_ID       (AXI_ID)
    ) back_end_axi (
       // write-through-buffer (write-channel)
-      .write_valid(write_req),
-      .write_addr (write_addr),
-      .write_wdata(write_wdata),
-      .write_wstrb(write_wstrb),
-      .write_ready(write_ack),
+      .write_valid_i(write_req),
+      .write_addr_i (write_addr),
+      .write_wdata_i(write_wdata),
+      .write_wstrb_i(write_wstrb),
+      .write_ready_o(write_ack),
 
       // cache-line replacement (read-channel)
-      .replace_valid(replace_req),
-      .replace_addr (replace_addr),
-      .replace      (replace),
-      .read_valid   (read_req),
-      .read_addr    (read_addr),
-      .read_rdata   (read_rdata),
+      .replace_valid_i(replace_req),
+      .replace_addr_i (replace_addr),
+      .replace_o      (replace),
+      .read_valid_o   (read_req),
+      .read_addr_o    (read_addr),
+      .read_rdata_o   (read_rdata),
 
       //back-end AXI4 interface
       `include "axi_m_m_portmap.vs"
@@ -229,23 +229,23 @@ module iob_cache_axi #(
             .USE_CTRL_CNT(USE_CTRL_CNT)
          ) cache_control (
             .clk_i(clk_i),
-            .reset(arst_i),
+            .reset_i(arst_i),
 
             // control's signals
-            .valid(ctrl_req),
-            .addr (ctrl_addr),
+            .valid_i(ctrl_req),
+            .addr_i (ctrl_addr),
 
             // write data
-            .wtbuf_full (wtbuf_full),
-            .wtbuf_empty(wtbuf_empty),
-            .write_hit  (write_hit),
-            .write_miss (write_miss),
-            .read_hit   (read_hit),
-            .read_miss  (read_miss),
+            .wtbuf_full_i (wtbuf_full),
+            .wtbuf_empty_i(wtbuf_empty),
+            .write_hit_i  (write_hit),
+            .write_miss_i (write_miss),
+            .read_hit_i   (read_hit),
+            .read_miss_i  (read_miss),
 
-            .rdata     (ctrl_rdata),
-            .ready     (ctrl_ack),
-            .invalidate(ctrl_invalidate)
+            .rdata_o     (ctrl_rdata),
+            .ready_o     (ctrl_ack),
+            .invalidate_o(ctrl_invalidate)
          );
       else begin : g_no_cache_ctrl
          assign ctrl_rdata      = 1'bx;

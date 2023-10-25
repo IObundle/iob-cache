@@ -6,7 +6,6 @@ import sys
 from iob_module import iob_module
 
 # Submodules
-from iob_lib import iob_lib
 from iob_utils import iob_utils
 from iob_regfile_sp import iob_regfile_sp
 from iob_fifo_sync import iob_fifo_sync
@@ -86,15 +85,15 @@ class iob_cache(iob_module):
         super()._create_submodules_list(
             [
                 {"interface": "iob_s_port"},
+                {"interface": "iob_s_portmap"},
                 {"interface": "axi_m_port"},
                 {"interface": "axi_m_m_portmap"},
                 {"interface": "axi_m_write_port"},
                 {"interface": "axi_m_m_write_portmap"},
                 {"interface": "axi_m_read_port"},
                 {"interface": "axi_m_m_read_portmap"},
-                iob_lib,
                 iob_utils,
-                {"interface": "clk_en_rst_port"},
+                {"interface": "clk_en_rst_s_port"},
                 iob_regfile_sp,
                 iob_fifo_sync,
                 (iob_ram_2p, {"purpose": "simulation"}),
@@ -414,6 +413,7 @@ class iob_cache(iob_module):
 
     @classmethod
     def _setup_regs(cls):
+        cls.autoaddr = False
         cls.regs += [
             {
                 "name": "cache",
@@ -514,7 +514,7 @@ class iob_cache(iob_module):
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 32,
+                        "addr": 29,
                         "log2n_items": 0,
                         "autologic": False,
                         "descr": "Invalidate the cache data contents by writing any value to this register.",
