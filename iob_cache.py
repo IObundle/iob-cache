@@ -426,7 +426,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 0,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Write-through buffer empty (1) or non-empty (0).",
                     },
                     {
@@ -436,7 +436,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 1,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Write-through buffer full (1) or non-full (0).",
                     },
                     {
@@ -446,7 +446,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 4,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Read and write hit counter.",
                     },
                     {
@@ -456,7 +456,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 8,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Read and write miss counter.",
                     },
                     {
@@ -466,7 +466,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 12,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Read hit counter.",
                     },
                     {
@@ -476,7 +476,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 16,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Read miss counter.",
                     },
                     {
@@ -486,7 +486,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 20,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Write hit counter.",
                     },
                     {
@@ -496,7 +496,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 24,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Write miss counter.",
                     },
                     {
@@ -506,7 +506,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 28,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Reset read/write hit/miss counters by writing any value to this register.",
                     },
                     {
@@ -516,7 +516,7 @@ class iob_cache(iob_module):
                         "rst_val": 0,
                         "addr": 29,
                         "log2n_items": 0,
-                        "autologic": False,
+                        "autoreg": False,
                         "descr": "Invalidate the cache data contents by writing any value to this register.",
                     },
                 ],
