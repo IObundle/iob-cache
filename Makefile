@@ -1,6 +1,9 @@
 CORE := iob_cache
 DISABLE_LINT:=1
+LIB_DIR=../LIB
+PROJECT_ROOT=..
 export DISABLE_LINT
+export LIB_DIR
 
 all: sim-run
 

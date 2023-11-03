@@ -5,10 +5,11 @@ import sys
 
 # Find python modules
 if __name__ == "__main__":
-    sys.path.append("./submodules/LIB/scripts")
+    sys.path.append("../LIB/scripts")
 from iob_module import iob_module
+
 if __name__ == "__main__":
-    iob_module.find_modules()
+    iob_module.find_modules(search_path="..")
 
 # Submodules
 from iob_utils import iob_utils
@@ -469,8 +470,6 @@ class iob_cache(iob_module):
             },
         ]
 
-    @classmethod
-    def _setup_regs(cls):
         cls.autoaddr = False
         cls.regs += [
             {
