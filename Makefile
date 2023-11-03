@@ -19,9 +19,6 @@ SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
 DOC ?= ug
 SETUP_ARGS += DOC=$(DOC)
 
-clean:
-	rm -rf ../$(CORE)_V*
-
 setup:
 	nix-shell --run "python3 -B ./$(CORE).py BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)"
 
