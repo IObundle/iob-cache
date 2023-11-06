@@ -12,10 +12,3 @@ endif
 
 iob_cache_tb.cpp: ./src/iob_cache_tb.cpp
 	cp $< $@
-
-#tests
-test:
-	make run SIMULATOR=icarus
-	sync && sleep 1 && test "$$(cat test.log)" = "Test passed!"
-	make run SIMULATOR=verilator
-	sync && sleep 1 && test "$$(cat test.log)" = "Test passed!"

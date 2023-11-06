@@ -26,7 +26,8 @@ sim-waves:
 	nix-shell --run "make -C ../$(CORE)_V*/ sim-waves"
 
 sim-test: clean
-	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-test"
+	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-run SIMULATOR=icarus"
+	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-run SIMULATOR=verilator"
 
 doc-build: clean
 	nix-shell --run "make build-setup && make -C ../$(CORE)_V*/ doc-build DOC=$(DOC)"
