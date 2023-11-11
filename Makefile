@@ -1,27 +1,45 @@
 CORE := iob_cache
 DISABLE_LINT:=1
+LIB_DIR=../LIB
+PROJECT_ROOT=..
 export DISABLE_LINT
+export LIB_DIR
+
+all: sim-run
+
+LIB_DIR=../LIB
+PROJECT_ROOT=..
+include ../LIB/setup.mk
+
 BE_IF ?= "AXI4"
 SETUP_ARGS += BE_IF=$(BE_IF)
 BE_DATA_W ?= "32"
 SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
 
-clean:
-	rm -rf ../$(CORE)_V*
+DOC ?= ug
+SETUP_ARGS += DOC=$(DOC)
 
 setup:
-	python3 -B ./$(CORE).py BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)
+	nix-shell --run "python3 -B ./$(CORE).py BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)"
 
 sim-build: clean setup
-	make -C ../$(CORE)_V*/ sim-build
+	nix-shell --run "make -C ../$(CORE)_V*/ sim-build"
 
 sim-run: clean setup
-	make -C ../$(CORE)_V*/ sim-run
+	nix-shell --run "make -C ../$(CORE)_V*/ sim-run"
 
 sim-waves:
-	make -C ../$(CORE)_V*/ sim-waves
+	nix-shell --run "make -C ../$(CORE)_V*/ sim-waves"
 
-sim-test: clean setup
-	make -C ../$(CORE)_V*/ sim-test
+sim-test: clean
+	nix-shell --run "make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-run SIMULATOR=icarus"
+	nix-shell --run "make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ sim-run SIMULATOR=verilator"
 
+doc-build: clean setup
+	nix-shell --run "make -C ../$(CORE)_V*/ doc-build DOC=$(DOC)"
+
+doc-view: ../$(CORE)_V*/document/$(DOC).pdf
+	nix-shell --run "make -C ../$(CORE)_V*/ doc-view DOC=$(DOC)"
+
+../$(CORE)_V*/document/$(DOC).pdf: doc-build
 
