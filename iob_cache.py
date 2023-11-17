@@ -514,7 +514,7 @@ class iob_cache(iob_module):
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 29,
+                        "addr": 32,
                         "log2n_items": 0,
                         "autoreg": False,
                         "descr": "Invalidate the cache data contents by writing any value to this register.",
