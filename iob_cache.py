@@ -14,7 +14,8 @@ from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
 from iob_reg_re import iob_reg_re
 from iob_ram_sp_be import iob_ram_sp_be
-from iob_axi_ram import iob_axi_ram
+from axi_ram import axi_ram
+from iob_tasks import iob_tasks
 
 
 class iob_cache(iob_module):
@@ -85,6 +86,11 @@ class iob_cache(iob_module):
         """Create submodules list with dependencies of this module"""
         super()._create_submodules_list(
             [
+                iob_utils,
+                iob_regfile_sp,
+                iob_fifo_sync,
+                iob_reg,
+                iob_reg_re,
                 {"interface": "iob_s_port"},
                 {"interface": "iob_s_portmap"},
                 {"interface": "axi_m_port"},
@@ -94,25 +100,33 @@ class iob_cache(iob_module):
                 {"interface": "axi_m_read_port"},
                 {"interface": "axi_m_m_read_portmap"},
                 {"interface": "axi_wire"},
-                iob_utils,
                 {"interface": "clk_en_rst_s_port"},
-                iob_regfile_sp,
-                iob_fifo_sync,
+                {"interface": "clk_en_rst_s_portmap"},
                 # fpga files
                 (iob_ram_2p, {"purpose": "fpga"}),
                 (iob_ram_sp, {"purpose": "fpga"}),
-                iob_reg,
-                iob_reg_re,
                 # simulation files
+                (iob_tasks, {"purpose": "simulation"}),
                 (iob_ram_2p, {"purpose": "simulation"}),
                 (iob_ram_sp, {"purpose": "simulation"}),
-                ({"interface": "axi_portmap"}, {"purpose": "simulation"}),
+                ({"interface": "axi_s_portmap"}, {"purpose": "simulation"}),
                 ({"interface": "axi_wire"}, {"purpose": "simulation"}),
                 ({"interface": "axi_m_portmap"}, {"purpose": "simulation"}),
+                ({"interface": "iob_m_tb_wire"}, {"purpose": "simulation"}),
                 (iob_ram_sp_be, {"purpose": "simulation"}),
-                (iob_axi_ram, {"purpose": "simulation"}),
+                (axi_ram, {"purpose": "simulation"}),
             ]
         )
+
+    @classmethod
+    def _post_setup(cls):
+        src_path = os.path.join(cls.build_dir, "hardware/src")
+        super()._post_setup()
+        if cls.BE_IF != "AXI4":
+            os.remove(os.path.join(src_path, "iob_cache_back_end_axi.v"))
+            os.remove(os.path.join(src_path, "iob_cache_write_channel_axi.v"))
+            os.remove(os.path.join(src_path, "iob_cache_read_channel_axi.v"))
+            os.remove(os.path.join(src_path, "iob_cache_axi.v"))
 
     @classmethod
     def _setup_confs(cls):

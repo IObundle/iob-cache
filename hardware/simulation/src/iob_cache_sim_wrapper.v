@@ -31,77 +31,41 @@ module iob_cache_sim_wrapper #(
    parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT
 ) (
    // Front-end interface (IOb native slave)
-   input  [                             1-1:0] avalid_i,
-   input  [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] addr_i,
-   input  [                        DATA_W-1:0] wdata_i,
-   input  [                     FE_NBYTES-1:0] wstrb_i,
-   output [                        DATA_W-1:0] rdata_o,
-   output [                             1-1:0] ack_o,
+   input [ 1-1:0]                             iob_avalid_i,
+   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] iob_addr_i,
+   input [ DATA_W-1:0]                        iob_wdata_i,
+   input [ FE_NBYTES-1:0]                     iob_wstrb_i,
+   output [ DATA_W-1:0]                       iob_rdata_o,
+   output [ 1-1:0]                            iob_rvalid_o,
+   output [ 1-1:0]                            iob_ready_o,
 
    // Cache invalidate and write-trough buffer IO chain
-   input  [1-1:0] invalidate_i,
-   output [1-1:0] invalidate_o,
-   input  [1-1:0] wtb_empty_i,
-   output [1-1:0] wtb_empty_o,
+   input [1-1:0]                              invalidate_i,
+   output [1-1:0]                             invalidate_o,
+   input [1-1:0]                              wtb_empty_i,
+   output [1-1:0]                             wtb_empty_o,
 
    //General Interface Signals
-   input [1-1:0] clk_i,  //V2TEX_IO System clock input.
-   input [1-1:0] arst_i   //V2TEX_IO System reset, active high.
+   input [1-1:0]                              clk_i,
+   input [1-1:0]                              arst_i
 );
 
-   wire cke;
-   wire rvalid;
-   wire ready;
-   wire wack;
-   wire wack_r;
-
-   assign cke = 1'b1;
-   assign ack_o = rvalid | wack_r;
-   assign wack = ready & avalid_i & (| wstrb_i);
-
-   iob_reg_re #(
-      .DATA_W (1),
-      .RST_VAL(0)
-   ) iob_reg_avalid (
-      .clk_i (clk_i),
-      .arst_i(arst_i),
-      .cke_i (cke),
-      .rst_i (1'b0),
-      .en_i  (1'b1),
-      .data_i(wack),
-      .data_o(wack_r)
-   );
+   wire cke_i;
+   assign cke_i = 1'b1;
 
 `ifdef IOB_CACHE_AXI
  `include "axi_wire.vs"
 
   iob_cache_axi cache (
       //front-end
-      .wdata_i(wdata_i),
-      .addr_i (addr_i),
-      .wstrb_i(wstrb_i),
-      .rdata_o(rdata_o),
-      .avalid_i(avalid_i),
-      .rvalid_o(rvalid_o),
-      .ready_o(ready_o),
-
-      //invalidate / wtb empty
+ `include "iob_s_s_portmap.vs"
+       //invalidate / wtb empty
       .invalidate_i (1'b0),
       .invalidate_o(invalidate_o),
       .wtb_empty_i  (1'b1),
       .wtb_empty_o (wtb_empty_o),
-
-      `include "axi_m_portmap.vs"
-
-      .be_avalid_o(be_avalid),
-      .be_addr_o  (be_addr),
-      .be_wdata_o (be_wdata),
-      .be_wstrb_o (be_wstrb),
-      .be_rdata_i (be_rdata),
-      .be_rvalid_i(be_rvalid),
-      .clk_i   (clk_i),
-      .cke_i   (cke),
-      .arst_i  (arst_i)
+ `include "axi_m_portmap.vs"
+ `include "clk_en_rst_s_s_portmap.vs"
    );
 `else
    wire                   be_avalid;
@@ -114,14 +78,7 @@ module iob_cache_sim_wrapper #(
 
    iob_cache_iob  cache (
       //front-end
-      .wdata_i(wdata_i),
-      .addr_i (addr_i),
-      .wstrb_i(wstrb_i),
-      .rdata_o(rdata_o),
-      .avalid_i(avalid_i),
-      .rvalid_o(rvalid),
-      .ready_o(ready),
-
+ `include "iob_s_s_portmap.vs"
       //invalidate / wtb empty
       .invalidate_i (1'b0),
       .invalidate_o(invalidate_o),
@@ -137,7 +94,7 @@ module iob_cache_sim_wrapper #(
       .be_ready_i (be_ready),
 
       .clk_i   (clk_i),
-      .cke_i   (cke),
+      .cke_i   (cke_i),
       .arst_i  (arst_i)
    );
 `endif
@@ -149,7 +106,7 @@ module iob_cache_sim_wrapper #(
       .DATA_WIDTH(BE_DATA_W),
       .ADDR_WIDTH(BE_ADDR_W)
    ) axi_ram (
-      `include "axi_portmap.vs"
+      `include "axi_s_portmap.vs"
       .clk_i(clk_i),
       .rst_i(arst_i)
    );
@@ -173,7 +130,7 @@ module iob_cache_sim_wrapper #(
    ) iob_reg_rvalid (
       .clk_i (clk_i),
       .arst_i(arst_i),
-      .cke_i (cke),
+      .cke_i (cke_i),
       .rst_i (1'b0),
       .en_i  (1'b1),
       .data_i(be_avalid & (~(|be_wstrb))),

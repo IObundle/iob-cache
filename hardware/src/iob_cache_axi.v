@@ -32,29 +32,20 @@ module iob_cache_axi #(
    parameter                FE_NBYTES_W   = $clog2(FE_NBYTES),
    parameter                BE_NBYTES     = BE_DATA_W / 8,
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W),
+   parameter                ADDR_W        = USE_CTRL+FE_ADDR_W-FE_NBYTES_W,
+   parameter                DATA_W        = FE_DATA_W
 ) (
+`include "clk_en_rst_s_port.vs"
    // Front-end interface (IOb native slave)
-   input [ 1-1:0]                                     avalid_i,
-   input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0]         addr_i,
-   input [ FE_DATA_W-1:0]                             wdata_i,
-   input [FE_NBYTES-1:0]                              wstrb_i,
-   output [ FE_DATA_W-1:0]                            rdata_o,
-   output                                             rvalid_o,
-   output                                             ready_o,
-
+`include "iob_s_port.vs"
    // Cache invalidate and write-trough buffer IO chain
    input [1-1:0]                                      invalidate_i,
    output [1-1:0]                                     invalidate_o,
    input [1-1:0]                                      wtb_empty_i,
    output [1-1:0]                                     wtb_empty_o,
-
    // AXI4 back-end interface
-   `include "axi_m_port.vs"
-   //General Interface Signals
-   input [1-1:0]                                      clk_i, //System clock input
-   input [1-1:0]                                      cke_i, //System clock enable
-   input [1-1:0]                                      arst_i //System reset, asynchronous and active high
+`include "axi_m_port.vs"
 );
 
   //Front-end & Front-end interface.
@@ -87,13 +78,7 @@ module iob_cache_axi #(
       .arst_i(arst_i),
 
       // front-end port
-      .avalid_i(avalid_i),
-      .addr_i  (addr_i),
-      .wdata_i (wdata_i),
-      .wstrb_i (wstrb_i),
-      .rdata_o (rdata_o),
-      .rvalid_o(rvalid_o),
-      .ready_o (ready_o),
+   `include "iob_s_s_portmap.vs"
 
       // cache-memory input signals
       .data_req_o (data_req),
