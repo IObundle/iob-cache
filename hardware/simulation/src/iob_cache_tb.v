@@ -60,7 +60,7 @@ module iob_cache_tb;
       end
 
       #100;
-      $display("End of Cache Testing\n");
+
       fd = $fopen("test.log", "w");
 
       if (failed == 0) begin
