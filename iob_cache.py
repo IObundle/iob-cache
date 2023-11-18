@@ -14,6 +14,7 @@ from iob_ram_sp import iob_ram_sp
 from iob_reg import iob_reg
 from iob_reg_re import iob_reg_re
 from iob_ram_sp_be import iob_ram_sp_be
+from iob_axi_ram import iob_axi_ram
 
 
 class iob_cache(iob_module):
@@ -92,21 +93,24 @@ class iob_cache(iob_module):
                 {"interface": "axi_m_m_write_portmap"},
                 {"interface": "axi_m_read_port"},
                 {"interface": "axi_m_m_read_portmap"},
+                {"interface": "axi_wire"},
                 iob_utils,
                 {"interface": "clk_en_rst_s_port"},
                 iob_regfile_sp,
                 iob_fifo_sync,
-                (iob_ram_2p, {"purpose": "simulation"}),
+                # fpga files
                 (iob_ram_2p, {"purpose": "fpga"}),
-                (iob_ram_sp, {"purpose": "simulation"}),
                 (iob_ram_sp, {"purpose": "fpga"}),
                 iob_reg,
                 iob_reg_re,
-                # Simulation headers & modules
+                # simulation files
+                (iob_ram_2p, {"purpose": "simulation"}),
+                (iob_ram_sp, {"purpose": "simulation"}),
                 ({"interface": "axi_portmap"}, {"purpose": "simulation"}),
                 ({"interface": "axi_wire"}, {"purpose": "simulation"}),
                 ({"interface": "axi_m_portmap"}, {"purpose": "simulation"}),
                 (iob_ram_sp_be, {"purpose": "simulation"}),
+                (iob_axi_ram, {"purpose": "simulation"}),
             ]
         )
 
