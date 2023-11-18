@@ -71,13 +71,13 @@ module iob_cache_control #(
             ready_o <= valid_i;  // Sends acknowlege the next clock cycle after request (handshake)
 
             if (valid_i)
-               if (addr_i == `IOB_CACHE_RW_HIT_ADDR) rdata_o <= hit_cnt;
-               else if (addr_i == `IOB_CACHE_RW_MISS_ADDR) rdata_o <= miss_cnt;
-               else if (addr_i == `IOB_CACHE_READ_HIT_ADDR) rdata_o <= read_hit_cnt;
-               else if (addr_i == `IOB_CACHE_READ_MISS_ADDR) rdata_o <= read_miss_cnt;
-               else if (addr_i == `IOB_CACHE_WRITE_HIT_ADDR) rdata_o <= write_hit_cnt;
-               else if (addr_i == `IOB_CACHE_WRITE_MISS_ADDR) rdata_o <= write_miss_cnt;
-               else if (addr_i == `IOB_CACHE_RST_CNTRS_ADDR) reset_counters <= 1'b1;
+               if (addr_i == `IOB_CACHE_RW_HIT_ADDR>>2) rdata_o <= hit_cnt;
+               else if (addr_i == `IOB_CACHE_RW_MISS_ADDR>>2) rdata_o <= miss_cnt;
+               else if (addr_i == `IOB_CACHE_READ_HIT_ADDR>>2) rdata_o <= read_hit_cnt;
+               else if (addr_i == `IOB_CACHE_READ_MISS_ADDR>>2) rdata_o <= read_miss_cnt;
+               else if (addr_i == `IOB_CACHE_WRITE_HIT_ADDR>>2) rdata_o <= write_hit_cnt;
+               else if (addr_i == `IOB_CACHE_WRITE_MISS_ADDR>>2) rdata_o <= write_miss_cnt;
+               else if (addr_i == `IOB_CACHE_RST_CNTRS_ADDR>>2) reset_counters <= 1'b1;
          end
       end else begin : g_no_ctrl_cnt
          always @(posedge clk_i) begin
@@ -85,10 +85,10 @@ module iob_cache_control #(
             invalidate_o <= 1'b0;
             ready_o      <= valid_i;  // Sends acknowlege the next clock cycle after request (handshake)
             if (valid_i)
-               if (addr_i == `IOB_CACHE_INVALIDATE_ADDR) invalidate_o <= 1'b1;
-               else if (addr_i == `IOB_CACHE_WTB_EMPTY_ADDR) rdata_o <= wtbuf_empty_i;
-               else if (addr_i == `IOB_CACHE_WTB_FULL_ADDR) rdata_o <= wtbuf_full_i;
-               else if (addr_i == `IOB_CACHE_VERSION_ADDR) rdata_o <= `IOB_CACHE_VERSION;
+               if (addr_i == `IOB_CACHE_INVALIDATE_ADDR>>2) invalidate_o <= 1'b1;
+               else if (addr_i == `IOB_CACHE_WTB_EMPTY_ADDR>>2) rdata_o <= wtbuf_empty_i;
+               else if (addr_i == `IOB_CACHE_WTB_FULL_ADDR>>2) rdata_o <= wtbuf_full_i;
+               else if (addr_i == `IOB_CACHE_VERSION_ADDR>>2) rdata_o <= `IOB_CACHE_VERSION;
          end
       end
 
