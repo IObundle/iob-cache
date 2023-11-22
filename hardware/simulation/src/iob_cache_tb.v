@@ -50,10 +50,10 @@ module iob_cache_tb;
       #80 @(posedge clk);
 
       $display("Reading data from frontend");
-      for (i = 0; i < 5; i = i + 4) begin
+      for (i = 0; i < 5*4; i = i + 4) begin
          iob_read(i, rdata, `IOB_CACHE_DATA_W);
          //Write "Test passed!" to a file named "test.log"
-         if (rdata != (3*i)) begin
+         if (rdata !== (3*i)) begin
             $display("ERROR at address %d: got 0x%0h, expected 0x%0h", i, rdata, 3*i);
              failed = failed+1;
          end
