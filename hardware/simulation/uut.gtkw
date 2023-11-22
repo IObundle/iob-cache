@@ -1,0 +1,95 @@
+[*]
+[*] GTKWave Analyzer v3.3.113 (w)1999-2022 BSI
+[*] Tue Nov 21 19:09:44 2023
+[*]
+[dumpfile] "(null)"
+[savefile] "/home/jsousa/sandbox/iob-soc/submodules/CACHE/hardware/simulation/uut.gtkw"
+[timestart] 21014700
+[size] 1910 1014
+[pos] -1 -1
+*-16.175915 21245000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] iob_cache_tb.
+[treeopen] iob_cache_tb.uut.
+[treeopen] iob_cache_tb.uut.cache.
+[treeopen] iob_cache_tb.uut.cache.back_end.
+[treeopen] iob_cache_tb.uut.cache.cache_memory.
+[treeopen] iob_cache_tb.uut.cache.cache_memory.g_n_ways_block[0].
+[treeopen] iob_cache_tb.uut.cache.cache_memory.g_n_ways_block[0].g_line2mem_block[0].
+[treeopen] iob_cache_tb.uut.cache.cache_memory.g_n_ways_block[0].g_line2mem_block[0].g_BE_block[0].
+[sst_width] 380
+[signals_width] 262
+[sst_expanded] 1
+[sst_vpaned_height] 334
+@200
+-tb
+@28
+iob_cache_tb.uut.cache.cache_memory.clk_i
+@22
+iob_cache_tb.iob_addr_i[23:0]
+iob_cache_tb.iob_rdata_o[31:0]
+iob_cache_tb.iob_wdata_i[31:0]
+iob_cache_tb.iob_wstrb_i[3:0]
+iob_cache_tb.uut.cache.iob_addr_i[21:0]
+@200
+-sim wrapper 
+@22
+iob_cache_tb.uut.iob_addr_i[21:0]
+iob_cache_tb.uut.iob_rdata_o[31:0]
+iob_cache_tb.uut.iob_wdata_i[31:0]
+iob_cache_tb.uut.iob_wstrb_i[3:0]
+@200
+-cache
+@22
+iob_cache_tb.uut.cache.iob_addr_i[21:0]
+iob_cache_tb.uut.cache.iob_rdata_o[31:0]
+iob_cache_tb.uut.cache.iob_wdata_i[31:0]
+iob_cache_tb.uut.cache.iob_wstrb_i[3:0]
+iob_cache_tb.uut.cache.be_rdata_i[31:0]
+@200
+-cache memory
+@28
+iob_cache_tb.uut.cache.cache_memory.ready_o
+iob_cache_tb.uut.cache.cache_memory.write_miss_o
+iob_cache_tb.uut.cache.cache_memory.read_miss_o
+iob_cache_tb.uut.cache.cache_memory.hit
+iob_cache_tb.uut.cache.cache_memory.req_i
+iob_cache_tb.uut.cache.cache_memory.write_access
+@22
+iob_cache_tb.uut.cache.cache_memory.write_wdata_o[31:0]
+iob_cache_tb.uut.cache.cache_memory.write_wstrb_o[3:0]
+@28
+iob_cache_tb.uut.cache.cache_memory.write_req_o
+iob_cache_tb.uut.cache.cache_memory.read_addr_i[2:0]
+@23
+iob_cache_tb.uut.cache.cache_memory.read_rdata_i[31:0]
+@200
+-front-end
+@28
+iob_cache_tb.uut.cache.front_end.ready_i
+@200
+-back end 
+@22
+iob_cache_tb.uut.cache.back_end.be_rdata_i[31:0]
+@200
+-read_channel
+@22
+iob_cache_tb.uut.cache.back_end.read_fsm.be_rdata_i[31:0]
+@200
+-write_channel
+-axi_ram
+-iob_ram
+@22
+iob_cache_tb.uut.native_ram.addr_i[21:0]
+iob_cache_tb.uut.native_ram.d_i[31:0]
+iob_cache_tb.uut.native_ram.we_i[3:0]
+@28
+iob_cache_tb.uut.native_ram.clk_i
+@22
+iob_cache_tb.uut.native_ram.d_o[31:0]
+iob_cache_tb.uut.native_ram.d_o_int[31:0]
+@28
+iob_cache_tb.uut.native_ram.en_i
+@420
+iob_cache_tb.uut.native_ram.i
+[pattern_trace] 1
+[pattern_trace] 0
