@@ -36,10 +36,10 @@ fpga-build: clean
 	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build FPGA_TOP=iob_cache_axi"
 
 fpga-test: clean
-	nix-shell --run "make build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build BOARD=CYCLONEV-GT-DK FPGA_TOP=iob_cache_axi"
+	nix-shell --run "make build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build BOARD=CYCLONEV-GT-DK FPGA_TOP=iob_cache_iob"
 	nix-shell --run "make build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_iob"
 	nix-shell --run "make build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build BOARD=CYCLONEV-GT-DK FPGA_TOP=iob_cache_axi"
-	nix-shell --run "make build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_iob"
+	nix-shell --run "make build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C ../$(CORE)_V*/ fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_axi"
 
 
 doc-build: clean
