@@ -21,7 +21,6 @@ from iob_tasks import iob_tasks
 class iob_cache(iob_module):
     name = "iob_cache"
     version = "V0.10"
-    flows = "emb sim doc fpga"
     setup_dir = os.path.dirname(__file__)
 
     @classmethod
