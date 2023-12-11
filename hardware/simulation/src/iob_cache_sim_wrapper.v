@@ -31,7 +31,7 @@ module iob_cache_sim_wrapper #(
    parameter                USE_CTRL_CNT  = `IOB_CACHE_USE_CTRL_CNT
 ) (
    // Front-end interface (IOb native slave)
-   input [ 1-1:0]                             iob_avalid_i,
+   input [ 1-1:0]                             iob_valid_i,
    input [USE_CTRL+FE_ADDR_W-FE_NBYTES_W-1:0] iob_addr_i,
    input [ DATA_W-1:0]                        iob_wdata_i,
    input [ FE_NBYTES-1:0]                     iob_wstrb_i,
@@ -68,7 +68,7 @@ module iob_cache_sim_wrapper #(
  `include "clk_en_rst_s_s_portmap.vs"
    );
 `else
-   wire                   be_avalid;
+   wire                   be_valid;
    wire [  BE_ADDR_W-1:0] be_addr;
    wire [  BE_DATA_W-1:0] be_wdata;
    wire [BE_DATA_W/8-1:0] be_wstrb;
@@ -85,7 +85,7 @@ module iob_cache_sim_wrapper #(
       .wtb_empty_i  (1'b1),
       .wtb_empty_o (wtb_empty_o),
 
-      .be_avalid_o(be_avalid),
+      .be_valid_o(be_valid),
       .be_addr_o  (be_addr),
       .be_wdata_o (be_wdata),
       .be_wstrb_o (be_wstrb),
@@ -116,7 +116,7 @@ module iob_cache_sim_wrapper #(
       .ADDR_W(BE_ADDR_W)
    ) native_ram (
       .clk_i (clk_i),
-      .en_i  (be_avalid),
+      .en_i  (be_valid),
       .we_i  (be_wstrb),
       .addr_i(be_addr),
       .d_o   (be_rdata),
@@ -133,7 +133,7 @@ module iob_cache_sim_wrapper #(
       .cke_i (cke_i),
       .rst_i (1'b0),
       .en_i  (1'b1),
-      .data_i(be_avalid & (~(|be_wstrb))),
+      .data_i(be_valid & (~(|be_wstrb))),
       .data_o(be_rvalid)
    );
 `endif

@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
         if (posedge_cnt == 8)
           VL_PRINTF("Test 1: Writing Test\n");
         RW = 0;
-        dut->iob_avalid_i = 1;
+        dut->iob_valid_i = 1;
         dut->iob_wstrb_i = 15;
         dut->iob_addr_i = iw;
         dut->iob_wdata_i = iw * 3;
@@ -56,13 +56,13 @@ int main(int argc, char **argv) {
         if (posedge_cnt == 30)
           VL_PRINTF("Test 2: Reading Test\n");
         RW = 1;
-        dut->iob_avalid_i = 1;
+        dut->iob_valid_i = 1;
         dut->iob_wstrb_i = 0;
         dut->iob_addr_i = ir;
       }
 
       if (dut->iob_ready_o) {
-        dut->iob_avalid_i = 0;
+        dut->iob_valid_i = 0;
         if ((posedge_cnt >= 8) && (posedge_cnt < 30))
           iw++;
         else if (posedge_cnt >= 30)

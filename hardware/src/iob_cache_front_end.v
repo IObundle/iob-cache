@@ -37,7 +37,7 @@ module iob_cache_front_end #(
 );
 
    wire ack;
-   wire avalid_int;
+   wire valid_int;
    wire we_r;
 
    // select cache memory ir controller
@@ -47,16 +47,16 @@ module iob_cache_front_end #(
          assign ack          = ctrl_ack_i | data_ack_i;
          assign iob_rdata_o        = (ctrl_ack_i) ? ctrl_rdata_i : data_rdata_i;
 
-         assign avalid_int = ~iob_addr_i[ADDR_W-1] & iob_avalid_i;
+         assign valid_int = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
 
-         assign ctrl_req_o     = iob_addr_i[ADDR_W-1] & iob_avalid_i;
+         assign ctrl_req_o     = iob_addr_i[ADDR_W-1] & iob_valid_i;
          assign ctrl_addr_o    = iob_addr_i[`IOB_CACHE_SWREG_ADDR_W-1:0];
 
       end else begin : g_no_ctrl
          // Front-end output signals
          assign ack        = data_ack_i;
          assign iob_rdata_o      = data_rdata_i;
-         assign avalid_int = iob_avalid_i;
+         assign valid_int = iob_valid_i;
          assign ctrl_req_o   = 1'bx;
          assign ctrl_addr_o  = `IOB_CACHE_SWREG_ADDR_W'dx;
       end
@@ -64,7 +64,7 @@ module iob_cache_front_end #(
 
    // data output ports
    assign data_addr_o = iob_addr_i[ADDR_W-1 : 0];
-   assign data_req_o  = avalid_int | data_req_reg_o;
+   assign data_req_o  = valid_int | data_req_reg_o;
 
    assign iob_rvalid_o = we_r ? 1'b0 : ack;
    assign iob_ready_o  = data_req_reg_o ~^ ack;
@@ -73,13 +73,13 @@ module iob_cache_front_end #(
    iob_reg_re #(
       .DATA_W (1),
       .RST_VAL(0)
-   ) iob_reg_avalid (
+   ) iob_reg_valid (
       .clk_i (clk_i),
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (avalid_int|ack),
-      .data_i(avalid_int),
+      .en_i  (valid_int|ack),
+      .data_i(valid_int),
       .data_o(data_req_reg_o)
    );
    iob_reg_re #(
@@ -90,7 +90,7 @@ module iob_cache_front_end #(
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (avalid_int),
+      .en_i  (valid_int),
       .data_i(iob_addr_i[ADDR_W-USE_CTRL-1:0]),
       .data_o(data_addr_reg_o)
    );
@@ -102,7 +102,7 @@ module iob_cache_front_end #(
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (avalid_int),
+      .en_i  (valid_int),
       .data_i(iob_wdata_i),
       .data_o(data_wdata_reg_o)
    );
@@ -114,7 +114,7 @@ module iob_cache_front_end #(
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (avalid_int),
+      .en_i  (valid_int),
       .data_i(iob_wstrb_i),
       .data_o(data_wstrb_reg_o)
    );
@@ -126,7 +126,7 @@ module iob_cache_front_end #(
       .arst_i(arst_i),
       .cke_i (cke_i),
       .rst_i (1'b0),
-      .en_i  (avalid_int),
+      .en_i  (valid_int),
       .data_i(|iob_wstrb_i),
       .data_o(we_r)
    );
