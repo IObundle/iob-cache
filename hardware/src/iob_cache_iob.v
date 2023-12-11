@@ -28,7 +28,7 @@ module iob_cache_iob #(
 `include "iob_s_port.vs"
 
    // Back-end interface
-   output [ 1-1:0]                            be_avalid_o,
+   output [ 1-1:0]                            be_valid_o,
    output [ BE_ADDR_W-1:0]                    be_addr_o,
    output [ BE_DATA_W-1:0]                    be_wdata_o,
    output [ BE_NBYTES-1:0]                    be_wstrb_o,
@@ -200,7 +200,7 @@ module iob_cache_iob #(
       .read_rdata_o   (read_rdata),
 
       // back-end native interface
-      .be_avalid_o(be_avalid_o),
+      .be_valid_o(be_valid_o),
       .be_addr_o  (be_addr_o),
       .be_wdata_o (be_wdata_o),
       .be_wstrb_o (be_wstrb_o),

@@ -37,7 +37,7 @@ module iob_cache_back_end #(
    output [                     BE_DATA_W -1:0] read_rdata_o,
 
    // back-end memory interface
-   output                  be_avalid_o,
+   output                  be_valid_o,
    output [BE_ADDR_W -1:0] be_addr_o,
    output [ BE_DATA_W-1:0] be_wdata_o,
    output [ BE_NBYTES-1:0] be_wstrb_o,
@@ -53,9 +53,9 @@ module iob_cache_back_end #(
    wire be_wack_r;
 
    assign be_addr_o   = (be_valid_read) ? be_addr_read : be_addr_write;
-   assign be_avalid_o = be_valid_read | be_valid_write;
+   assign be_valid_o = be_valid_read | be_valid_write;
    assign be_ack    = be_rvalid_i | be_wack_r;
-   assign be_wack   = be_ready_i & be_avalid_o & (| be_wstrb_o);
+   assign be_wack   = be_ready_i & be_valid_o & (| be_wstrb_o);
 
    iob_reg_re #(
       .DATA_W (1),
