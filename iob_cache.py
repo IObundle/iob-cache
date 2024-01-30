@@ -23,6 +23,8 @@ class iob_cache(iob_module):
     version = "V0.10"
     setup_dir = os.path.dirname(__file__)
 
+    fpga_list = ["CYCLONEV-GT-DK", "AES-KU040-DB-G"]
+
     @classmethod
     def _init_attributes(cls):
         # Parse BE_DATA_W argument
