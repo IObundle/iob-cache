@@ -23,7 +23,7 @@ class iob_cache(iob_module):
     version = "V0.10"
     setup_dir = os.path.dirname(__file__)
 
-    fpga_list = ["AES-KU040-DB-G"]
+    board_list = ["AES-KU040-DB-G"]
 
     @classmethod
     def _init_attributes(cls):
