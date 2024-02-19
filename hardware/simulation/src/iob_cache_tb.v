@@ -38,6 +38,11 @@ module iob_cache_tb;
       $dumpfile("uut.vcd");
       $dumpvars();
 `endif
+      iob_valid_i = 0;
+      iob_addr_i = 0;
+      iob_wdata_i = 0;
+      iob_wstrb_i = 0;
+
       repeat (5) @(posedge clk);
       rst = 0;
       #10;
