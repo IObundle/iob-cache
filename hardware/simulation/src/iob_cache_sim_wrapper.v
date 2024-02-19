@@ -76,27 +76,28 @@ module iob_cache_sim_wrapper #(
    wire                   be_rvalid;
    wire                   be_ready;
 
-   iob_cache_iob  cache (
-      //front-end
+   iob_cache_iob  
+   cache (
+          //front-end
  `include "iob_s_s_portmap.vs"
-      //invalidate / wtb empty
-      .invalidate_i (1'b0),
-      .invalidate_o(invalidate_o),
-      .wtb_empty_i  (1'b1),
-      .wtb_empty_o (wtb_empty_o),
-
-      .be_valid_o(be_valid),
-      .be_addr_o  (be_addr),
-      .be_wdata_o (be_wdata),
-      .be_wstrb_o (be_wstrb),
-      .be_rdata_i (be_rdata),
-      .be_rvalid_i(be_rvalid),
-      .be_ready_i (be_ready),
-
-      .clk_i   (clk_i),
-      .cke_i   (cke_i),
-      .arst_i  (arst_i)
-   );
+          //invalidate / wtb empty
+          .invalidate_i (1'b0),
+          .invalidate_o(invalidate_o),
+          .wtb_empty_i  (1'b1),
+          .wtb_empty_o (wtb_empty_o),
+          
+          .be_valid_o(be_valid),
+          .be_addr_o  (be_addr),
+          .be_wdata_o (be_wdata),
+          .be_wstrb_o (be_wstrb),
+          .be_rdata_i (be_rdata),
+          .be_rvalid_i(be_rvalid),
+          .be_ready_i (be_ready),
+          
+          .clk_i   (clk_i),
+          .cke_i   (cke_i),
+          .arst_i  (arst_i)
+          );
 `endif
 
 `ifdef IOB_CACHE_AXI
