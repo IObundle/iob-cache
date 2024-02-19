@@ -5,7 +5,13 @@ all: sim-run
 
 LIB_DIR=../LIB
 PROJECT_ROOT=..
+
+BOARD ?= "AES-KU040-DB-G"
+
+
 include ../LIB/setup.mk
+
+
 
 BE_IF ?= "AXI4"
 SETUP_ARGS += BE_IF=$(BE_IF)

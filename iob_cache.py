@@ -22,6 +22,7 @@ class iob_cache(iob_module):
     name = "iob_cache"
     version = "V0.10"
     setup_dir = os.path.dirname(__file__)
+    rw_overlap = False
 
     board_list = ["AES-KU040-DB-G"]
 
@@ -600,7 +601,7 @@ class iob_cache(iob_module):
                         "type": "W",
                         "n_bits": 1,
                         "rst_val": 0,
-                        "addr": 32,
+                        "addr": 29,
                         "log2n_items": 0,
                         "autoreg": False,
                         "descr": "Invalidate the cache data contents by writing any value to this register.",

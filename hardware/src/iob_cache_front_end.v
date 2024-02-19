@@ -19,7 +19,7 @@ module iob_cache_front_end #(
 
    // internal input signals
    output                               data_req_o,
-   output [ADDR_W-USE_CTRL-1:0]        data_addr_o,
+   output [ADDR_W-USE_CTRL-1:0]         data_addr_o,
    input [DATA_W-1:0]                   data_rdata_i,
    input                                data_ack_i,
 
@@ -57,7 +57,7 @@ module iob_cache_front_end #(
          assign ack        = data_ack_i;
          assign iob_rdata_o      = data_rdata_i;
          assign valid_int = iob_valid_i;
-         assign ctrl_req_o   = 1'bx;
+         assign ctrl_req_o   = 1'b0;
          assign ctrl_addr_o  = `IOB_CACHE_SWREG_ADDR_W'dx;
       end
    endgenerate

@@ -51,8 +51,7 @@ module iob_cache_axi #(
   //Front-end & Front-end interface.
    wire data_req, data_ack;
    wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr;
-   wire [FE_DATA_W-1 : 0] data_wdata, data_rdata;
-   wire [             FE_NBYTES-1:0] data_wstrb;
+   wire [FE_DATA_W-1 : 0] data_rdata;
    wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr_reg;
    wire [           FE_DATA_W-1 : 0] data_wdata_reg;
    wire [             FE_NBYTES-1:0] data_wstrb_reg;
@@ -233,8 +232,8 @@ module iob_cache_axi #(
             .invalidate_o(ctrl_invalidate)
          );
       else begin : g_no_cache_ctrl
-         assign ctrl_rdata      = 1'bx;
-         assign ctrl_ack        = 1'bx;
+         assign ctrl_rdata      = 1'b0;
+         assign ctrl_ack        = 1'b0;
          assign ctrl_invalidate = 1'b0;
       end
    endgenerate
