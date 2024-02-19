@@ -6,7 +6,7 @@ all: sim-run
 LIB_DIR=../LIB
 PROJECT_ROOT=..
 
-BOARD ?= "AES-KU040-DB-G"
+BOARD ?= AES-KU040-DB-G
 
 
 include ../LIB/setup.mk
