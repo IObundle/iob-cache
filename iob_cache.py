@@ -579,7 +579,7 @@ class iob_cache(iob_module):
                 ],
             }
         ]
-        self.block_groups += []
+        self.block_groups = []
 
     def _setup(self):
         super()._setup()
