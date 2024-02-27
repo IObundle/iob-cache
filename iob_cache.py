@@ -582,8 +582,8 @@ class iob_cache(iob_module):
         ]
         self.block_groups = []
 
-    def _setup(self):
-        super()._setup()
+    def _setup(self, *args, **kwargs):
+        super()._setup(*args, **kwargs)
         src_path = os.path.join(self.build_dir, "hardware/src")
         if self.BE_IF != "AXI4":
             os.remove(os.path.join(src_path, "iob_cache_back_end_axi.v"))
