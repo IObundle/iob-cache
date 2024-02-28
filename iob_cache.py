@@ -22,7 +22,6 @@ class iob_cache(iob_module):
     def __init__(self):
         super().__init__()
         self.version = "V0.10"
-        self.setup_dir = os.path.dirname(__file__)
         self.rw_overlap = False
         self.board_list = ["AES-KU040-DB-G"]
         # Parse BE_DATA_W argument
