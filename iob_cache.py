@@ -279,6 +279,7 @@ class iob_cache(iob_module):
                 "type": "master",
                 "port_prefix": "be_",
                 "wire_prefix": "be_",
+                "param_prefix": "be_",
                 "descr": "Back-end interface",
                 "ports": [],
             },
