@@ -9,6 +9,7 @@ from iob_core import iob_core
 class iob_cache(iob_core):
     def __init__(self, *args, **kwargs):
         self.set_default_attribute("version", "0.7")
+        self.set_default_attribute("generate_hw", False)
         self.set_default_attribute("rw_overlap", False)
         self.set_default_attribute("board_list", ["AES-KU040-DB-G"])
         self.set_default_attribute("autoaddr", False)
