@@ -543,11 +543,6 @@ class iob_cache(iob_core):
         )
 
         self.create_instance(
-            "iob_utils",
-            "iob_utils_inst",
-        )
-
-        self.create_instance(
             "iob_regfile_sp",
             "iob_regfile_sp_inst",
         )
