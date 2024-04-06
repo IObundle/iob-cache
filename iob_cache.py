@@ -245,6 +245,7 @@ class iob_cache(iob_core):
             type="master",
             port_prefix="be_",
             wire_prefix="be_",
+            param_prefix="be_",
             descr="Back-end interface",
             signals=[],
         ),
