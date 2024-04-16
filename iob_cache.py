@@ -579,16 +579,6 @@ class iob_cache(iob_core):
         )
 
         self.create_instance(
-            "iob_ram_2p",
-            "iob_ram_2p_inst",
-        )
-
-        self.create_instance(
-            "iob_ram_sp",
-            "iob_ram_sp_inst",
-        )
-
-        self.create_instance(
             "iob_ram_sp_be",
             "iob_ram_sp_be_inst",
         )

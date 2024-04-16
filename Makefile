@@ -1,5 +1,7 @@
 CORE := iob_cache
+
 DISABLE_LINT:=1
+export DISABLE_LINT
 
 all: sim-run
 
@@ -29,7 +31,6 @@ include $(LIB_DIR)/setup.mk
 
 BE_IF ?= "AXI4"
 SETUP_ARGS += BE_IF=$(BE_IF)
-
 BE_DATA_W ?= "32"
 SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
 
@@ -37,10 +38,13 @@ DOC ?= ug
 SETUP_ARGS += DOC=$(DOC)
 
 sim-build: clean
-	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-build"
+	nix-shell --run "python3 -B py2hwsw ./$(CORE).py BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)"
 
-sim-run: clean
-	nix-shell --run "make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run"
+sim-build: clean setup
+	nix-shell --run "make -C $(BUILD_DIR) sim-build"
+
+sim-run: clean setup
+	nix-shell --run "make -C $(BUILD_DIR) sim-run"
 
 sim-waves:
 	nix-shell --run "make -C $(BUILD_DIR) sim-waves"
@@ -59,11 +63,11 @@ fpga-test: clean
 	nix-shell --run "make clean build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_iob"
 	nix-shell --run "make clean build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_axi"
 
-doc-build: clean
-	nix-shell --run "make build-setup && make -C $(BUILD_DIR) doc-build DOC=$(DOC)"
+doc-build: clean setup
+	nix-shell --run "make -C $(BUILD_DIR) doc-build DOC=$(DOC)"
 
 doc-view: ../$(CORE)_V*/document/$(DOC).pdf
-	nix-shell --run "make build-setup && make -C $(BUILD_DIR) doc-view DOC=$(DOC)"
+	nix-shell --run "make -C $(BUILD_DIR) doc-view DOC=$(DOC)"
 
 ../$(CORE)_V*/document/$(DOC).pdf: doc-build
 
