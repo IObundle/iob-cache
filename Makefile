@@ -38,7 +38,7 @@ DOC ?= ug
 SETUP_ARGS += DOC=$(DOC)
 
 sim-build: clean
-	nix-shell --run "python3 -B py2hwsw ./$(CORE).py BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)"
+	nix-shell --run "py2hwsw $(CORE) BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W)"
 
 sim-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) sim-build"
