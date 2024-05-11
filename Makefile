@@ -1,28 +1,10 @@
 CORE := iob_cache
 
-DISABLE_LINT:=1
-export DISABLE_LINT
-
 all: sim-run
 
-IOB_PYTHONPATH ?= ../../../iob_python
-ifneq ($(PYTHONPATH),)
-PYTHONPATH := $(IOB_PYTHONPATH):$(PYTHONPATH)
-else
-PYTHONPATH := $(IOB_PYTHONPATH)
-endif
-export PYTHONPATH
-
 LIB_DIR=../../lib
-export LIB_DIR
-
 PROJECT_ROOT=../..
-export PROJECT_ROOT
-
-BUILD_DIR=../../../$(CORE)_build
-export BUILD_DIR
-
-BOARD ?= AES-KU040-DB-G
+BUILD_DIR=../$(CORE)_V*
 
 
 include $(LIB_DIR)/setup.mk
@@ -37,8 +19,10 @@ SETUP_ARGS += BE_DATA_W=$(BE_DATA_W)
 DOC ?= ug
 SETUP_ARGS += DOC=$(DOC)
 
-sim-build: clean
-	$(call IOB_NIX_ENV, py2hwsw $(CORE) BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W))
+setup:
+	$(call IOB_NIX_ENV, py2hwsw $(CORE) setup --project_root $(PROJECT_ROOT) --no_verilog_lint)
+	# TODO: Somehow pass BE_IF and BE_DATA_W to `py_params_dict` argument of iob_cache.py
+	#                   py2hwsw $(CORE) setup --project_root $(PROJECT_ROOT) BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) --no_verilog_lint
 
 sim-build: clean setup
 	$(call IOB_NIX_ENV, make -C $(BUILD_DIR) sim-build)
