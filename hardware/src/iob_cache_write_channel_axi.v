@@ -152,8 +152,6 @@ module iob_cache_write_channel_axi #(
                   state        <= idle;
                   word_counter <= 0;
                end else begin
-                  word_counter <= 0;
-
                   case (state)
                      idle:
                      if (valid_i) state <= address;
@@ -162,9 +160,10 @@ module iob_cache_write_channel_axi #(
                      if (axi_awready_i) state <= write;
                      else state <= address;
                      write:
-                     if (axi_wready_i & (&word_counter))  // last word written
+                     if (axi_wready_i & (&word_counter))  begin // last word written
                         state <= verif;
-                     else if (axi_wready_i & ~(&word_counter)) begin  // word still available
+                        word_counter <= 0;
+                     end else if (axi_wready_i & ~(&word_counter)) begin  // word still available
                         state        <= write;
                         word_counter <= word_counter + 1;
                      end else begin  // waiting for handshake
