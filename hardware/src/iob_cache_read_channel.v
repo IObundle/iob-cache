@@ -34,7 +34,7 @@ module iob_cache_read_channel #(
       if (LINE2BE_W > 0) begin : g_line2be_w
          reg [LINE2BE_W-1:0] word_counter;
 
-         assign be_addr_o   = {BE_ADDR_W{1'b0}} + {replace_addr_i[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o   =  {replace_addr_i[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W], word_counter, {BE_NBYTES_W{1'b0}}};
          assign read_rdata_o = be_rdata_i;
 
          localparam
