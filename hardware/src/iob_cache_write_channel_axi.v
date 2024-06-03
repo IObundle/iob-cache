@@ -135,7 +135,7 @@ module iob_cache_write_channel_axi #(
             assign axi_awburst_o = 2'b01;  // incremental burst
 
             // memory address
-            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr_i, {(FE_NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
+            assign axi_awaddr_o  =  {addr_i, {(FE_NBYTES_W+WORD_OFFSET_W){1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
             reg [LINE2BE_W-1:0] word_counter;
