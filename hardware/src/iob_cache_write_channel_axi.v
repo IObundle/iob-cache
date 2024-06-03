@@ -211,7 +211,7 @@ module iob_cache_write_channel_axi #(
             assign axi_awburst_o = 2'b00;
 
             // memory address
-            assign axi_awaddr_o  = {BE_ADDR_W{1'b0}} + {addr_i, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+            assign axi_awaddr_o  =  {addr_i, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
             // memory write-data
             assign axi_wdata_o = wdata_i;
