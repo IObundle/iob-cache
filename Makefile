@@ -34,18 +34,18 @@ sim-waves:
 	$(call IOB_NIX_ENV, make -C $(BUILD_DIR) sim-waves)
 
 sim-test: clean
-	$(call IOB_NIX_ENV, make clean build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus)
-	$(call IOB_NIX_ENV, make clean build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator)
-	$(call IOB_NIX_ENV, make clean build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus)
-	$(call IOB_NIX_ENV, make clean build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator)
+	$(call IOB_NIX_ENV, make clean setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus)
+	$(call IOB_NIX_ENV, make clean setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator)
+	$(call IOB_NIX_ENV, make clean setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus)
+	$(call IOB_NIX_ENV, make clean setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator)
 
 
 fpga-build: clean
-	$(call IOB_NIX_ENV, make build-setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build FPGA_TOP=iob_cache_axi)
+	$(call IOB_NIX_ENV, make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build FPGA_TOP=iob_cache_axi)
 
 fpga-test: clean
-	$(call IOB_NIX_ENV, make clean build-setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_iob)
-	$(call IOB_NIX_ENV, make clean build-setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_axi)
+	$(call IOB_NIX_ENV, make clean setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_iob)
+	$(call IOB_NIX_ENV, make clean setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_axi)
 
 doc-build: clean setup
 	$(call IOB_NIX_ENV, make -C $(BUILD_DIR) doc-build DOC=$(DOC))
