@@ -12,85 +12,91 @@
 vluint64_t main_time = 0;
 vluint64_t posedge_cnt = 0;
 vluint32_t RW = 0, iw = 0, ir = 0, itest = 0;
+Viob_cache_sim_wrapper *dut;
+VerilatedVcdC *tfp;
 
 double sc_time_stamp() { // Called by $time in Verilog
   return main_time;
 }
 
+void tick() {
+  if (main_time >= MAX_SIM_TIME) {
+    throw std::runtime_error(
+        "Simulation time exceeded maximum simulation time");
+  }
+  dut->clk_i = !dut->clk_i;
+  dut->eval();
+  dut->clk_i = !dut->clk_i;
+  dut->eval();
+#if (VM_TRACE == 1)
+  tfp->dump(main_time); // Dump values into tracing file
+#endif
+  main_time++;
+}
+
 int main(int argc, char **argv) {
 
   Verilated::commandArgs(argc, argv); // Init verilator context
-  Viob_cache_sim_wrapper *dut = new Viob_cache_sim_wrapper; // Create DUT object
+  dut = new Viob_cache_sim_wrapper;   // Create DUT object
 
 #if (VM_TRACE == 1)
-  Verilated::traceEverOn(true);           // Enable tracing
-  VerilatedVcdC *tfp = new VerilatedVcdC; // Create tracing object
-  dut->trace(tfp, 99);                    // Trace 99 levels of hierarchy
-  tfp->open("uut.vcd");                   // Open tracing file
+  Verilated::traceEverOn(true); // Enable tracing
+  tfp = new VerilatedVcdC;      // Create tracing object
+  dut->trace(tfp, 99);          // Trace 99 levels of hierarchy
+  tfp->open("uut.vcd");         // Open tracing file
 #endif
 
-  dut->clk_i = 1;
-  dut->arst_i = 0;
-  while (main_time < MAX_SIM_TIME) {
-    dut->clk_i = !dut->clk_i;
-    dut->arst_i = (main_time >= 1 && main_time <= 8) ? 1 : 0;
-    dut->eval();
+  dut->clk_i = 0;
+  dut->arst_i = 1;
 
-    if (dut->clk_i == 1) {
-      posedge_cnt++;
-
-      // if(posedge_cnt == 7) VL_PRINTF("IOb-Cache Version: %d\n",
-      // cache_version());
-
-      if ((posedge_cnt >= 8) && (iw < 5)) {
-        if (posedge_cnt == 8)
-          VL_PRINTF("Test 1: Writing Test\n");
-        RW = 0;
-        dut->iob_valid_i = 1;
-        dut->iob_wstrb_i = 15;
-        dut->iob_addr_i = iw;
-        dut->iob_wdata_i = iw * 3;
-      }
-
-      if ((posedge_cnt >= 30) && (ir < 5)) {
-        if (posedge_cnt == 30)
-          VL_PRINTF("Test 2: Reading Test\n");
-        RW = 1;
-        dut->iob_valid_i = 1;
-        dut->iob_wstrb_i = 0;
-        dut->iob_addr_i = ir;
-      }
-
-      if (dut->iob_ready_o) {
-        dut->iob_valid_i = 0;
-        if ((posedge_cnt >= 8) && (posedge_cnt < 30))
-          iw++;
-        else if (posedge_cnt >= 30)
-          ir++;
-      }
-
-      if ((RW == 1) && dut->iob_rvalid_o && (itest < 5)) {
-        if (dut->iob_rdata_o == itest * 3) {
-          VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n",
-                    dut->iob_rdata_o, itest);
-        } else {
-          VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n",
-                    dut->iob_rdata_o, itest);
-          std::ofstream log_file;
-          log_file.open("test.log");
-          log_file << "Test failed!" << std::endl;
-          log_file.close();
-          exit(EXIT_FAILURE);
-        }
-        itest++;
-      }
-    }
-
-#if (VM_TRACE == 1)
-    tfp->dump(main_time); // Dump values into tracing file
-#endif
-    main_time++;
+  for (uint32_t i = 0; i < 8; i++) {
+    tick();
   }
+
+  dut->arst_i = 0;
+  tick();
+
+  for (uint32_t i = 0; i < 5; i++) {
+    if (i == 0)
+      VL_PRINTF("Test 1: Writing Test\n");
+    dut->iob_valid_i = 1;
+    dut->iob_wstrb_i = 15;
+    dut->iob_addr_i = i;
+    dut->iob_wdata_i = i * 3;
+    tick();
+    while (!dut->iob_ready_o) {
+      tick();
+    }
+  }
+
+  for (uint32_t i = 0; i < 5; i++) {
+    if (i == 0)
+      VL_PRINTF("Test 2: Reading Test\n");
+    dut->iob_valid_i = 1;
+    dut->iob_wstrb_i = 0;
+    dut->iob_addr_i = i;
+    tick();
+    while (!dut->iob_rvalid_o) {
+      tick();
+    }
+    if (dut->iob_rdata_o == i * 3) {
+      VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: PASSED\n", dut->iob_rdata_o,
+                i);
+    } else {
+      VL_PRINTF("\tReading rdata=0x%x at addr=0x%x: FAILED\n", dut->iob_rdata_o,
+                i);
+      std::ofstream log_file;
+      log_file.open("test.log");
+      log_file << "Test failed!" << std::endl;
+      log_file.close();
+      exit(EXIT_FAILURE);
+    }
+  }
+
+#if (VM_TRACE == 1)
+  tfp->dump(main_time); // Dump values into tracing file
+#endif
+  main_time++;
 
   dut->final();
 

@@ -178,7 +178,7 @@ def setup(py_params_dict):
                 "name": "WORD_OFFSET_W",
                 "type": "P",
                 "val": "3",
-                "min": "0",
+                "min": "1",
                 "max": "",
                 "descr": "Word offset width (log2):  the value of this parameter equals the number of words per line, which is 2**OFFSET_W. ",
             },

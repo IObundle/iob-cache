@@ -78,8 +78,8 @@ module iob_cache_memory #(
    wire [NWAYS-1:0] way_hit, way_select;
 
    wire [TAG_W-1:0]            tag = addr_reg_i[FE_ADDR_W-1 -: TAG_W]; // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [NWAYS_W+NLINES_W-1:0] index = addr_i[FE_ADDR_W-TAG_W-1 -: NLINES_W]; // cant wait, doesnt update during a write-access
-   wire [NWAYS_W+NLINES_W-1:0] index_reg = addr_reg_i[FE_ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [NLINES_W-1:0]         index = addr_i[FE_ADDR_W-TAG_W-1 -: NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [NLINES_W-1:0]         index_reg = addr_reg_i[FE_ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
    wire [WORD_OFFSET_W-1:0]    offset = addr_reg_i[FE_NBYTES_W +: WORD_OFFSET_W]; // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
    wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata;
    wire [NWAYS*TAG_W-1:0] line_tag;
@@ -376,7 +376,7 @@ module iob_cache_memory #(
             end
 
             // flush line
-            assign write_req_o = req_reg_i & ~(|way_hit) & (way_select == dirty); //flush if there is not a hit, and the way selected is dirty
+            assign write_req_o = req_reg_i & ~(|way_hit) & dirty[way_select_bin]; //flush if there is not a hit, and the way selected is dirty
             wire [TAG_W-1:0] tag_flush = line_tag >> (way_select_bin * TAG_W);  //auxiliary wire
             assign write_addr_o = {
                tag_flush, index_reg
@@ -439,7 +439,7 @@ module iob_cache_memory #(
 
             // flush line
             // flush if there is not a hit, and is dirty
-            assign write_req_o = write_access & ~(way_hit) & dirty;
+            assign write_req_o = req_reg_i & ~(way_hit) & dirty;
             assign write_addr_o = {
                line_tag, index
             };  // the position of the current block in cache (not of the access)
