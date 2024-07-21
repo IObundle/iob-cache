@@ -227,80 +227,72 @@ def setup(py_params_dict):
         "ports": [
             {
                 "name": "clk_en_rst",
-                "type": "slave",
-                "port_prefix": "",
-                "wire_prefix": "",
+                "interface": {
+                    "type": "clk_en_rst",
+                    "subtype": "slave",
+                },
                 "descr": "Clock, clock enable and reset",
-                "signals": [],
             },
             {
                 "name": "iob",
-                "type": "slave",
-                "port_prefix": "",
-                "wire_prefix": "",
-                "descr": "Front-end interface",
-                "signals": [],
-                "widths": {
+                "interface": {
+                    "type": "iob",
+                    "subtype": "slave",
                     "ADDR_W": "ADDR_W",
                     "DATA_W": "DATA_W",
                 },
+                "descr": "Front-end interface",
             },
             {
                 "name": "iob",
-                "type": "master",
-                "port_prefix": "be_",
-                "wire_prefix": "be_",
-                "param_prefix": "be_",
+                "interface": {
+                    "type": "iob",
+                    "subtype": "master",
+                    "port_prefix": "be_",
+                    "wire_prefix": "be_",
+                    "ADDR_W": "BE_ADDR_W",
+                    "DATA_W": "BE_DATA_W",
+                },
                 "descr": "Back-end interface",
-                "signals": [],
             },
             {
                 "name": "axi",
-                "type": "master",
-                "port_prefix": "",
-                "wire_prefix": "",
-                "descr": "AXI4 interface",
-                "signals": [],
-                "widths": {
+                "interface": {
+                    "type": "axi",
+                    "subtype": "master",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
                     "LEN_W": "AXI_LEN_W",
                 },
+                "descr": "AXI4 interface",
             },
             {
                 "name": "axi_write",
-                "type": "master",
-                "port_prefix": "",
-                "wire_prefix": "",
-                "descr": "AXI4 write interface",
-                "signals": [],
-                "widths": {
+                "interface": {
+                    "type": "axi_write",
+                    "subtype": "master",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
                     "LEN_W": "AXI_LEN_W",
                 },
+                "descr": "AXI4 write interface",
             },
             {
                 "name": "axi_read",
-                "type": "master",
-                "port_prefix": "",
-                "wire_prefix": "",
-                "descr": "AXI4 read interface",
-                "signals": [],
-                "widths": {
+                "interface": {
+                    "type": "axi_read",
+                    "subtype": "master",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
                     "LEN_W": "AXI_LEN_W",
                 },
+                "descr": "AXI4 read interface",
             },
             {
                 "name": "fe",
-                "type": "slave",
-                "port_prefix": "",
-                "wire_prefix": "",
                 "descr": "Front-end interface (IOb native slave)",
                 "signals": [
                     {
@@ -343,9 +335,6 @@ def setup(py_params_dict):
             },
             {
                 "name": "be",
-                "type": "slave",
-                "port_prefix": "",
-                "wire_prefix": "",
                 "descr": "Back-end interface",
                 "signals": [
                     {
@@ -388,9 +377,6 @@ def setup(py_params_dict):
             },
             {
                 "name": "ie",
-                "type": "master",
-                "port_prefix": "",
-                "wire_prefix": "",
                 "descr": "Cache invalidate and write-trough buffer IO chain",
                 "signals": [
                     {
@@ -421,9 +407,6 @@ def setup(py_params_dict):
             },
             {
                 "name": "ge",
-                "type": "slave",
-                "port_prefix": "",
-                "wire_prefix": "",
                 "descr": "General Interface Signals",
                 "signals": [
                     {
