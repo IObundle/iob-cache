@@ -560,6 +560,7 @@ def setup(py_params_dict):
             {
                 "core_name": "iob_tasks",
                 "instance_name": "iob_tasks_inst",
+                "purpose": "simulation",
             },
             {
                 "core_name": "iob_ram_sp_be",
