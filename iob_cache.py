@@ -238,7 +238,8 @@ def setup(py_params_dict):
                 "interface": {
                     "type": "iob",
                     "subtype": "slave",
-                    "ADDR_W": "ADDR_W",
+                    # /*SWREG_ADDR_W*/ is a special py2hwsw keyword that will be replaced by csrs addr_w
+                    "ADDR_W": "/*SWREG_ADDR_W*/",
                     "DATA_W": "DATA_W",
                 },
                 "descr": "Front-end interface",
