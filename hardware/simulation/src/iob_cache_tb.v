@@ -22,7 +22,7 @@ module iob_cache_tb;
   reg rst = 1;
 
   //frontend signals
-  `include "iob_cache_tb_iob_m_tb_wire.vs"
+  `include "iob_cache_iob_m_tb_wire.vs"
   reg ctrl = 0;
 
   //iterator
@@ -83,7 +83,7 @@ module iob_cache_tb;
   //Unit Under Test (simulation wrapper)
   iob_cache_sim_wrapper uut (
       //frontend
-      `include "iob_cache_tb_iob_s_s_portmap.vs"
+      `include "iob_cache_iob_s_s_portmap.vs"
       //invalidate / wtb empty
       .invalidate_i(1'b0),
       .invalidate_o(),

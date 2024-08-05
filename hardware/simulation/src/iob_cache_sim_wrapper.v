@@ -54,18 +54,18 @@ module iob_cache_sim_wrapper #(
   assign cke_i = 1'b1;
 
 `ifdef IOB_CACHE_AXI
-  `include "iob_cache_sim_wrapper_axi_wire.vs"
+  `include "iob_cache_axi_wire.vs"
 
 iob_cache_axi cache (
       //front-end
-      `include "iob_cache_sim_wrapper_iob_s_s_portmap.vs"
+      `include "iob_cache_iob_s_s_portmap.vs"
       //invalidate / wtb empty
       .invalidate_i(1'b0),
       .invalidate_o(invalidate_o),
       .wtb_empty_i (1'b1),
       .wtb_empty_o (wtb_empty_o),
-      `include "axi_m_portmap.vs"
-      `include "iob_cache_sim_wrapper_clk_en_rst_s_s_portmap.vs"
+      `include "iob_cache_axi_m_portmap.vs"
+      `include "iob_cache_clk_en_rst_s_s_portmap.vs"
   );
 `else
   wire                   be_valid;
@@ -78,7 +78,7 @@ iob_cache_axi cache (
 
   iob_cache_iob cache (
       //front-end
-      `include "iob_cache_sim_wrapper_iob_s_s_portmap.vs"
+      `include "iob_cache_iob_s_s_portmap.vs"
       //invalidate / wtb empty
       .invalidate_i(1'b0),
       .invalidate_o(invalidate_o),
@@ -106,7 +106,7 @@ iob_cache_axi cache (
       .DATA_WIDTH(BE_DATA_W),
       .ADDR_WIDTH(BE_ADDR_W)
   ) axi_ram (
-      `include "iob_cache_sim_wrapper_axi_s_portmap.vs"
+      `include "iob_cache_axi_s_portmap.vs"
       .clk_i(clk_i),
       .rst_i(arst_i)
   );
