@@ -1,6 +1,6 @@
 /* PC Emulation of CACHE peripheral */
 
-#include "iob_cache_swreg.h"
+#include "iob_cache_csrs.h"
 
 static int base;
 void IOB_CACHE_INIT_BASEADDR(uint32_t addr) { base = addr; }

@@ -7,7 +7,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 
 module iob_cache_axi #(
     parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
@@ -58,9 +58,9 @@ module iob_cache_axi #(
   wire                              data_req_reg;
 
   wire ctrl_req, ctrl_ack;
-  wire [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr;
-  wire [   USE_CTRL*(FE_DATA_W-1):0] ctrl_rdata;
-  wire                               ctrl_invalidate;
+  wire [`IOB_CACHE_CSRS_ADDR_W-1:0] ctrl_addr;
+  wire [  USE_CTRL*(FE_DATA_W-1):0] ctrl_rdata;
+  wire                              ctrl_invalidate;
 
   wire wtbuf_full, wtbuf_empty;
 

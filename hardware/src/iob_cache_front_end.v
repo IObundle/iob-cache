@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 `include "iob_cache_conf.vh"
 
 module iob_cache_front_end #(
@@ -30,10 +30,10 @@ module iob_cache_front_end #(
     output reg [       DATA_W/8-1:0] data_wstrb_reg_o,
 
     // cache-control
-    output                               ctrl_req_o,
-    output [`IOB_CACHE_SWREG_ADDR_W-1:0] ctrl_addr_o,
-    input  [      USE_CTRL*(DATA_W-1):0] ctrl_rdata_i,
-    input                                ctrl_ack_i
+    output                              ctrl_req_o,
+    output [`IOB_CACHE_CSRS_ADDR_W-1:0] ctrl_addr_o,
+    input  [     USE_CTRL*(DATA_W-1):0] ctrl_rdata_i,
+    input                               ctrl_ack_i
 );
 
   wire ack;
@@ -50,7 +50,7 @@ module iob_cache_front_end #(
       assign valid_int   = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
 
       assign ctrl_req_o  = iob_addr_i[ADDR_W-1] & iob_valid_i;
-      assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_SWREG_ADDR_W-1:0];
+      assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_CSRS_ADDR_W-1:0];
 
     end else begin : g_no_ctrl
       // Front-end output signals
@@ -58,7 +58,7 @@ module iob_cache_front_end #(
       assign iob_rdata_o = data_rdata_i;
       assign valid_int   = iob_valid_i;
       assign ctrl_req_o  = 1'b0;
-      assign ctrl_addr_o = `IOB_CACHE_SWREG_ADDR_W'dx;
+      assign ctrl_addr_o = `IOB_CACHE_CSRS_ADDR_W'dx;
     end
   endgenerate
 

@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 `include "iob_cache_conf.vh"
 
 module iob_cache_read_channel_axi #(
