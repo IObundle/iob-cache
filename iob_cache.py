@@ -59,10 +59,12 @@ def setup(py_params_dict):
             },
         ]
 
+    VERSION = "0.7"
+
     attributes_dict = {
         "original_name": "iob_cache",
         "name": "iob_cache",
-        "version": "0.7",
+        "version": VERSION,
         "generate_hw": False,
         "board_list": ["AES-KU040-DB-G"],
         "confs": [
@@ -428,6 +430,7 @@ def setup(py_params_dict):
                 "instance_name": "csrs_inst",
                 "autoaddr": False,
                 "rw_overlap": False,
+                "version": VERSION,
                 "csrs": [
                     {
                         "name": "cache",

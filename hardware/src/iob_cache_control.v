@@ -88,7 +88,7 @@ module iob_cache_control #(
           if (addr_i == `IOB_CACHE_INVALIDATE_ADDR >> 2) invalidate_o <= 1'b1;
           else if (addr_i == `IOB_CACHE_WTB_EMPTY_ADDR >> 2) rdata_o <= wtbuf_empty_i;
           else if (addr_i == `IOB_CACHE_WTB_FULL_ADDR >> 2) rdata_o <= wtbuf_full_i;
-          else if (addr_i == `IOB_CACHE_VERSION_ADDR >> 2) rdata_o <= `IOB_CACHE_VERSION;
+          else if (addr_i == `IOB_CACHE_VERSION_ADDR >> 2) rdata_o <= `IOB_CACHE_CSRS_VERSION;
       end
     end
 
