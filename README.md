@@ -1,8 +1,6 @@
 # IOb-cache
 
-IOb-cache is a high-performance, configurable open-source Verilog cache. If you use or like this repository, please cite the following article:
-
-Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218. https://doi.org/10.3390/a14080218 
+IOb-cache is a high-performance, configurable open-source Verilog cache. If you use or like this repository, please cite the respective article as indicated above in the "About" section.
 
 IOb-cache supports pipeline architectures, allowing one request per clock cycle (read and write). 
 IOb-cache has both Native (pipelined) and AXI4 back-end interfaces.
