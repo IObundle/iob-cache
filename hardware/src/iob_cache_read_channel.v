@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 `include "iob_cache_conf.vh"
 
 module iob_cache_read_channel #(
@@ -76,19 +76,19 @@ module iob_cache_read_channel #(
          end
 
          always @* begin
-            be_valid_o     = 1'b0;
-            replace_o      = 1'b1;
+            be_valid_o   = 1'b0;
+            replace_o    = 1'b1;
             word_counter = 0;
-            read_valid_o   = 1'b0;
+            read_valid_o = 1'b0;
 
             case (state)
                idle: begin
                   replace_o = 1'b0;
                end
                handshake: begin
-                  be_valid_o     = ~be_ack_i | ~(&read_addr_o);
+                  be_valid_o   = ~be_ack_i | ~(&read_addr_o);
                   word_counter = read_addr_o + be_ack_i;
-                  read_valid_o   = be_ack_i;
+                  read_valid_o = be_ack_i;
                end
                default: ;
             endcase

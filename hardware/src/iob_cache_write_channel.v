@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 `include "iob_cache_conf.vh"
 
 module iob_cache_write_channel #(
@@ -134,9 +134,9 @@ module iob_cache_write_channel #(
             end
 
             always @* begin
-               ready_o        = 1'b0;
-               be_valid_o     = 1'b0;
-               be_wstrb_o     = 0;
+               ready_o      = 1'b0;
+               be_valid_o   = 1'b0;
+               be_wstrb_o   = 0;
                word_counter = 0;
 
                case (state)
@@ -146,9 +146,9 @@ module iob_cache_write_channel #(
                      else be_wstrb_o = 0;
                   end
                   default: begin  // write
-                     ready_o        = be_ack_i & (&word_counter);  // last word transfered
-                     be_valid_o     = ~(be_ack_i & (&word_counter));
-                     be_wstrb_o     = {BE_NBYTES{1'b1}};
+                     ready_o      = be_ack_i & (&word_counter);  // last word transfered
+                     be_valid_o   = ~(be_ack_i & (&word_counter));
+                     be_wstrb_o   = {BE_NBYTES{1'b1}};
                      word_counter = word_counter_reg + be_ack_i;
                   end
                endcase

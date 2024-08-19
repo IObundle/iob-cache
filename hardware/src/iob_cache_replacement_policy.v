@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 `include "iob_cache_conf.vh"
 
 module iob_cache_replacement_policy #(
@@ -52,15 +52,15 @@ module iob_cache_replacement_policy #(
             .DATA_W(N_WAYS * NWAYS_W)
          ) mru_memory  // simply uses the same format as valid memory
          (
-            .clk_i(clk_i),
-            .cke_i(cke_i),
+            .clk_i (clk_i),
+            .cke_i (cke_i),
             .arst_i(reset_i),
 
-            .rst_i(1'b0),
-            .we_i(write_en_i),
+            .rst_i (1'b0),
+            .we_i  (write_en_i),
             .addr_i(line_addr_i),
-            .d_i(mru_in),
-            .d_o(mru_out)
+            .d_i   (mru_in),
+            .d_o   (mru_out)
          );
 
          iob_cache_onehot_to_bin #(NWAYS_W) onehot_bin (
@@ -85,15 +85,15 @@ module iob_cache_replacement_policy #(
             .DATA_W(N_WAYS)
          ) mru_memory  // simply uses the same format as valid memory
          (
-            .clk_i(clk_i),
-            .cke_i(cke_i),
+            .clk_i (clk_i),
+            .cke_i (cke_i),
             .arst_i(reset_i),
 
-            .rst_i(1'b0),
-            .we_i(write_en_i),
+            .rst_i (1'b0),
+            .we_i  (write_en_i),
             .addr_i(line_addr_i),
-            .d_i(mru_in),
-            .d_o(mru_out)
+            .d_i   (mru_in),
+            .d_o   (mru_out)
          );
 
          iob_cache_onehot_to_bin #(NWAYS_W) onehot_bin (
@@ -152,15 +152,15 @@ module iob_cache_replacement_policy #(
             .DATA_W(N_WAYS - 1)
          ) mru_memory  // simply uses the same format as valid memory
          (
-            .clk_i(clk_i),
-            .cke_i(cke_i),
+            .clk_i (clk_i),
+            .cke_i (cke_i),
             .arst_i(reset_i),
 
-            .rst_i(1'b0),
-            .we_i(write_en_i),
+            .rst_i (1'b0),
+            .we_i  (write_en_i),
             .addr_i(line_addr_i),
-            .d_i(tree_in),
-            .d_o(tree_out)
+            .d_i   (tree_in),
+            .d_o   (tree_out)
          );
       end
    endgenerate

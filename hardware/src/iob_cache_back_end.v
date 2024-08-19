@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 
 module iob_cache_back_end #(
    parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
@@ -52,10 +52,10 @@ module iob_cache_back_end #(
    wire be_wack;
    wire be_wack_r;
 
-   assign be_addr_o   = (be_valid_read) ? be_addr_read : be_addr_write;
+   assign be_addr_o  = (be_valid_read) ? be_addr_read : be_addr_write;
    assign be_valid_o = be_valid_read | be_valid_write;
-   assign be_ack    = be_rvalid_i | be_wack_r;
-   assign be_wack   = be_ready_i & be_valid_o & (| be_wstrb_o);
+   assign be_ack     = be_rvalid_i | be_wack_r;
+   assign be_wack    = be_ready_i & be_valid_o & (|be_wstrb_o);
 
    iob_reg_re #(
       .DATA_W (1),
@@ -77,7 +77,7 @@ module iob_cache_back_end #(
       .BE_DATA_W    (BE_DATA_W),
       .WORD_OFFSET_W(WORD_OFFSET_W)
    ) read_fsm (
-      .clk_i        (clk_i),
+      .clk_i          (clk_i),
       .reset_i        (arst_i),
       .replace_valid_i(replace_valid_i),
       .replace_addr_i (replace_addr_i),
@@ -99,7 +99,7 @@ module iob_cache_back_end #(
       .WRITE_POL    (WRITE_POL),
       .WORD_OFFSET_W(WORD_OFFSET_W)
    ) write_fsm (
-      .clk_i(clk_i),
+      .clk_i  (clk_i),
       .reset_i(arst_i),
 
       .valid_i(write_valid_i),

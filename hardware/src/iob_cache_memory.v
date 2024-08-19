@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_conf.vh"
-`include "iob_cache_swreg_def.vh"
+`include "iob_cache_csrs_def.vh"
 
 module iob_cache_memory #(
    parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
@@ -143,7 +143,7 @@ module iob_cache_memory #(
             .arst_i(reset_i),
             .cke_i (1'b1),
 
-            .ext_mem_clk_o   (mem_clk),
+            .ext_mem_clk_o(mem_clk),
 
             .ext_mem_w_en_o  (mem_w_en),
             .ext_mem_w_addr_o(mem_w_addr),
@@ -341,8 +341,8 @@ module iob_cache_memory #(
             .NLINES_W  (NLINES_W),
             .REP_POLICY(REP_POLICY)
          ) replacement_policy_algorithm (
-            .clk_i         (clk_i),
-            .cke_i         (cke_i),
+            .clk_i           (clk_i),
+            .cke_i           (cke_i),
             .reset_i         (reset_i | invalidate_i),
             .write_en_i      (ack_o),
             .way_hit_i       (way_hit),
@@ -413,7 +413,7 @@ module iob_cache_memory #(
          );
 
          // Cache hit signal that indicates which way has had the hit (also during replacement)
-         assign way_hit              = (tag == line_tag) & v;
+         assign way_hit                = (tag == line_tag) & v;
 
          // Read Data Multiplexer
          assign rdata_o[FE_DATA_W-1:0] = line_rdata >> FE_DATA_W * offset;
