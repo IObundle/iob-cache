@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below. If you are an author, submit a pull request to add your name"
+authors:
+- family-names: "Roque"
+  given-names: "Joao"
+- family-names: "T. de Sousa"
+  given-names: "Jose"
+  orcid: "https://orcid.org/0000-0001-7525-7546"
+title: "IOb-Cache"
+version: 0.1.0
+doi: 10.3390/a14080218
+date-released: 2020-07-20
+url: "https://github.com/github-linguist/linguist"
