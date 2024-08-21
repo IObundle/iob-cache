@@ -1,18 +1,10 @@
-def setup(py_params_dict):
-    BE_DATA_W = py_params_dict["BE_DATA_W"] if "BE_DATA_W" in py_params_dict else "32"
-    BE_IF = py_params_dict["BE_IF"] if "BE_IF" in py_params_dict else "AXI4"
+import os
+import shutil
 
-    # These arguments should probably not be parsed from argv
-    # Maybe the py2hwsw should send argv parameters for the top module via py_params_dict?
-    #
-    # # Parse BE_DATA_W argument
-    # for arg in sys.argv[1:]:
-    #     if "BE_DATA_W" in arg:
-    #         BE_DATA_W = arg.split("=")[1]
-    # # Parse BE_IF argument
-    # for arg in sys.argv[1:]:
-    #     if "BE_IF" in arg:
-    #         BE_IF = arg.split("=")[1]
+
+def setup(py_params_dict):
+    BE_DATA_W = py_params_dict["be_data_w"] if "be_data_w" in py_params_dict else "32"
+    BE_IF = py_params_dict["be_if"] if "be_if" in py_params_dict else "AXI4"
 
     # Check if parameters are valid
     if BE_DATA_W not in ["32", "64", "128", "256"]:
@@ -65,6 +57,15 @@ def setup(py_params_dict):
         "original_name": "iob_cache",
         "name": "iob_cache",
         "version": VERSION,
+    }
+
+    if py_params_dict["build_dir"]:
+        build_dir = py_params_dict["build_dir"]
+    else:
+        build_dir = f"../{attributes_dict['name']}_V{attributes_dict['version']}"
+
+    attributes_dict |= {
+        "build_dir": build_dir,
         "generate_hw": False,
         "board_list": ["AES-KU040-DB-G"],
         "confs": [
@@ -580,15 +581,18 @@ def setup(py_params_dict):
         ],
     }
 
-    return attributes_dict
+    # Copy axi sources to build directory
+    if py_params_dict["py2hwsw_target"] == "setup" and BE_IF == "AXI4":
+        os.makedirs(os.path.join(build_dir, "hardware/src"), exist_ok=True)
+        for filename in [
+            "iob_cache_axi.v",
+            "iob_cache_back_end_axi.v",
+            "iob_cache_write_channel_axi.v",
+            "iob_cache_read_channel_axi.v",
+        ]:
+            shutil.copy(
+                os.path.join(os.path.dirname(__file__), "hardware/axi_src", filename),
+                os.path.join(build_dir, "hardware/src", filename),
+            )
 
-    # TODO: This script is supposed to run after the setup process has finished
-    # How will we handle this? The 'py2hwsw' currently does not have some sort of 'post setup script'.
-    # Post setup scripts should most likely be handled by the user, or by another process.
-    #
-    # src_path = os.path.join(self.build_dir, "hardware/src")
-    # if self.BE_IF != "AXI4":
-    #     os.remove(os.path.join(src_path, "iob_cache_back_end_axi.v"))
-    #     os.remove(os.path.join(src_path, "iob_cache_write_channel_axi.v"))
-    #     os.remove(os.path.join(src_path, "iob_cache_read_channel_axi.v"))
-    #     os.remove(os.path.join(src_path, "iob_cache_axi.v"))
+    return attributes_dict
