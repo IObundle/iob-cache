@@ -118,10 +118,10 @@ module iob_cache_memory #(
          wire [FIFO_DATA_W-1:0] mem_r_data;
 
          // FIFO memory
-         iob_ram_2p #(
+         iob_ram_t2p #(
             .DATA_W(FIFO_DATA_W),
             .ADDR_W(FIFO_ADDR_W)
-         ) iob_ram_2p0 (
+         ) iob_ram_t2p0 (
             .clk_i(clk_i),
 
             .w_en_i  (mem_w_en),
