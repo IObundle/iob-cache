@@ -67,7 +67,7 @@ def setup(py_params_dict):
     attributes_dict |= {
         "build_dir": build_dir,
         "generate_hw": False,
-        "board_list": ["AES-KU040-DB-G"],
+        "board_list": ["aes_ku040_db_g"],
         "confs": [
             {
                 "name": "LRU",
