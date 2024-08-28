@@ -67,7 +67,7 @@ def setup(py_params_dict):
     attributes_dict |= {
         "build_dir": build_dir,
         "generate_hw": False,
-        "board_list": ["AES-KU040-DB-G"],
+        "board_list": ["aes_ku040_db_g"],
         "confs": [
             {
                 "name": "LRU",
@@ -157,7 +157,7 @@ def setup(py_params_dict):
                 "val": BE_DATA_W,
                 "min": "32",
                 "max": "256",
-                "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
+                "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \\geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
             },
             {
                 "name": "NWAYS_W",

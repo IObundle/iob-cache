@@ -33,8 +33,8 @@ fpga-build: clean
 	nix-shell --run "make setup BE_IF=$(BE_IF) BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build FPGA_TOP=iob_cache_axi"
 
 fpga-test: clean
-	nix-shell --run "make clean setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_iob"
-	nix-shell --run "make clean setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=AES-KU040-DB-G FPGA_TOP=iob_cache_axi"
+	nix-shell --run "make clean setup BE_IF=IOb BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=aes_ku040_db_g FPGA_TOP=iob_cache_iob"
+	nix-shell --run "make clean setup BE_IF=AXI4 BE_DATA_W=$(BE_DATA_W) && make -C $(BUILD_DIR) fpga-build BOARD=aes_ku040_db_g FPGA_TOP=iob_cache_axi"
 
 doc-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) doc-build DOC=$(DOC)"
