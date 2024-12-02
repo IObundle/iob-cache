@@ -35,9 +35,9 @@ jobs:
         with:
           submodules: 'recursive'
       - name: run simulation test
-        run: make -C submodules/CACHE sim-test
+        run: make sim-test
       - name: run fpga test
-        run: make -C submodules/CACHE fpga-test
+        run: make fpga-test
 
   reuse:
     runs-on: self-hosted
