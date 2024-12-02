@@ -1,8 +1,11 @@
+# SPDX-FileCopyrightText: 2024 IObundle
+#
+# SPDX-License-Identifier: MIT
+
 CORE := iob_cache
 
 all: sim-run
 
-PROJECT_ROOT=../..
 BUILD_DIR ?= $(shell nix-shell --run "py2hwsw $(CORE) print_build_dir")
 
 BE_IF ?= AXI4
@@ -11,7 +14,7 @@ BE_DATA_W ?= 32
 DOC ?= ug
 
 setup:
-	nix-shell --run "py2hwsw $(CORE) setup --project_root $(PROJECT_ROOT) --no_verilog_lint --py_params 'be_if=$(BE_IF):be_data_w=$(BE_DATA_W)'"
+	nix-shell --run "py2hwsw $(CORE) setup --no_verilog_lint --py_params 'be_if=$(BE_IF):be_data_w=$(BE_DATA_W)'"
 
 sim-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) sim-build"

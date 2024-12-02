@@ -1,5 +1,10 @@
-/* PC Emulation of CACHE peripheral */
+/*
+ * SPDX-FileCopyrightText: 2024 IObundle
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
+/* PC Emulation of CACHE peripheral */
 #include "iob_cache_csrs.h"
 
 static int base;

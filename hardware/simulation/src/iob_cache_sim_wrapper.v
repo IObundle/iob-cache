@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 IObundle
+//
+// SPDX-License-Identifier: MIT
+
 `timescale 1ns / 1ps
 
 `include "iob_cache_csrs_def.vh"
@@ -100,7 +104,7 @@ iob_cache_axi cache (
 `endif
 
 `ifdef IOB_CACHE_AXI
-   axi_ram #(
+   iob_axi_ram #(
       .ID_WIDTH  (AXI_ID_W),
       .LEN_WIDTH (AXI_LEN_W),
       .DATA_WIDTH(BE_DATA_W),

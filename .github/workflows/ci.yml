@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2024 IObundle
+#
+# SPDX-License-Identifier: MIT
+
+name: CI
+
+# Set default shell as interactive (source ~/.bashrc)
+defaults:
+  run:
+    shell: bash -ieo pipefail {0}
+
+# Run only one instance of this workflow at a time
+# cancel-in-progress: stop running workflow and run latest instead
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+  # Allow manual workflow runs
+  workflow_dispatch:
+
+jobs:
+
+  cache:
+    runs-on: self-hosted
+    timeout-minutes: 20
+    if: ${{ !cancelled() }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: run simulation test
+        run: make sim-test
+      - name: run fpga test
+        run: make fpga-test
+
+  reuse:
+    runs-on: self-hosted
+    timeout-minutes: 3
+    if: ${{ !cancelled() }}
+    needs: [ cache ]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Clean untracked files and directories (like old submodules)
+        run: git clean -ffdx
+      - name: Check compliance with REUSE specification
+        run: nix-shell --run "reuse lint"

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 IObundle
+#
+# SPDX-License-Identifier: MIT
+
 import os
 import shutil
 
@@ -54,7 +58,6 @@ def setup(py_params_dict):
     VERSION = "0.7"
 
     attributes_dict = {
-        "original_name": "iob_cache",
         "name": "iob_cache",
         "version": VERSION,
     }
@@ -227,40 +230,35 @@ def setup(py_params_dict):
         + extra_confs,
         "ports": [
             {
-                "name": "clk_en_rst",
-                "interface": {
+                "name": "clk_en_rst_s",
+                "signals": {
                     "type": "clk_en_rst",
-                    "subtype": "slave",
                 },
                 "descr": "Clock, clock enable and reset",
             },
             {
-                "name": "iob",
-                "interface": {
+                "name": "iob_s",
+                "signals": {
                     "type": "iob",
-                    "subtype": "slave",
                     "ADDR_W": "ADDR_W",
                     "DATA_W": "DATA_W",
                 },
                 "descr": "Front-end interface",
             },
             {
-                "name": "iob",
-                "interface": {
+                "name": "iob_m",
+                "signals": {
                     "type": "iob",
-                    "subtype": "master",
-                    "port_prefix": "be_",
-                    "wire_prefix": "be_",
+                    "prefix": "be_",
                     "ADDR_W": "BE_ADDR_W",
                     "DATA_W": "BE_DATA_W",
                 },
                 "descr": "Back-end interface",
             },
             {
-                "name": "axi",
-                "interface": {
+                "name": "axi_m",
+                "signals": {
                     "type": "axi",
-                    "subtype": "master",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
@@ -269,10 +267,9 @@ def setup(py_params_dict):
                 "descr": "AXI4 interface",
             },
             {
-                "name": "axi_write",
-                "interface": {
+                "name": "axi_write_m",
+                "signals": {
                     "type": "axi_write",
-                    "subtype": "master",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
@@ -281,10 +278,9 @@ def setup(py_params_dict):
                 "descr": "AXI4 write interface",
             },
             {
-                "name": "axi_read",
-                "interface": {
+                "name": "axi_read_m",
+                "signals": {
                     "type": "axi_read",
-                    "subtype": "master",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
@@ -293,132 +289,114 @@ def setup(py_params_dict):
                 "descr": "AXI4 read interface",
             },
             {
-                "name": "fe",
+                "name": "fe_io",
                 "descr": "Front-end interface (IOb native slave)",
                 "signals": [
                     {
-                        "name": "req",
-                        "direction": "input",
+                        "name": "req_i",
                         "width": 1,
                         "descr": "Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.",
                     },
                     {
-                        "name": "addr",
-                        "direction": "input",
+                        "name": "addr_i",
                         "width": "USE_CTRL+FE_ADDR_W-2",
                         "descr": "Address from CPU or other user core, excluding the byte selection LSBs.",
                     },
                     {
-                        "name": "wdata",
-                        "direction": "input",
+                        "name": "wdata_i",
                         "width": "FE_DATA_W",
                         "descr": "Write data fom host.",
                     },
                     {
-                        "name": "wstrb",
-                        "direction": "input",
+                        "name": "wstrb_i",
                         "width": 4,
                         "descr": "Byte write strobe from host.",
                     },
                     {
-                        "name": "rdata",
-                        "direction": "output",
+                        "name": "rdata_o",
                         "width": "FE_DATA_W",
                         "descr": "Read data to host.",
                     },
                     {
-                        "name": "ack",
-                        "direction": "output",
+                        "name": "ack_o",
                         "width": 1,
                         "descr": "Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.",
                     },
                 ],
             },
             {
-                "name": "be",
+                "name": "be_io",
                 "descr": "Back-end interface",
                 "signals": [
                     {
-                        "name": "req",
-                        "direction": "output",
+                        "name": "req_o",
                         "width": 1,
                         "descr": "Read or write request to next-level cache or memory.",
                     },
                     {
-                        "name": "be_addr",
-                        "direction": "output",
+                        "name": "be_addr_o",
                         "width": "BE_ADDR_W",
                         "descr": "Address to next-level cache or memory.",
                     },
                     {
-                        "name": "be_wdata",
-                        "direction": "output",
+                        "name": "be_wdata_o",
                         "width": "BE_DATA_W",
                         "descr": "Write data to next-level cache or memory.",
                     },
                     {
-                        "name": "be_wstrb",
-                        "direction": "output",
+                        "name": "be_wstrb_o",
                         "width": 4,
                         "descr": "Write strobe to next-level cache or memory.",
                     },
                     {
-                        "name": "be_rdata",
-                        "direction": "input",
+                        "name": "be_rdata_i",
                         "width": "BE_DATA_W",
                         "descr": "Read data from next-level cache or memory.",
                     },
                     {
-                        "name": "be_ack",
-                        "direction": "input",
+                        "name": "be_ack_i",
                         "width": 1,
                         "descr": "Acknowledge signal from next-level cache or memory.",
                     },
                 ],
             },
             {
-                "name": "ie",
+                "name": "ie_io",
                 "descr": "Cache invalidate and write-trough buffer IO chain",
                 "signals": [
                     {
-                        "name": "invalidate_in",
-                        "direction": "input",
+                        "name": "invalidate_in_i",
                         "width": 1,
                         "descr": "Invalidates all cache lines instantaneously if high.",
                     },
                     {
-                        "name": "invalidate_out",
-                        "direction": "output",
+                        "name": "invalidate_out_o",
                         "width": 1,
                         "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
                     },
                     {
-                        "name": "wtb_empty_in",
-                        "direction": "input",
+                        "name": "wtb_empty_in_i",
                         "width": 1,
                         "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
                     },
                     {
-                        "name": "wtb_empty_out",
-                        "direction": "output",
+                        "name": "wtb_empty_out_o",
                         "width": 1,
                         "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
                     },
                 ],
             },
             {
-                "name": "ge",
+                "name": "ge_i",
                 "descr": "General Interface Signals",
                 "signals": [
                     {
                         "name": "clk_i",
-                        "direction": "input",
                         "width": 1,
                         "descr": "System clock input.",
                     },
                     {
                         "name": "rst_i",
-                        "direction": "input",
                         "width": 1,
                         "descr": "System reset, asynchronous and active high.",
                     },
@@ -427,7 +405,7 @@ def setup(py_params_dict):
         ],
         "blocks": [
             {
-                "core_name": "csrs",
+                "core_name": "iob_csrs",
                 "instance_name": "csrs_inst",
                 "autoaddr": False,
                 "rw_overlap": False,
@@ -575,8 +553,23 @@ def setup(py_params_dict):
                 "instance_name": "iob_ram_sp_be_inst",
             },
             {
-                "core_name": "axi_ram",
-                "instance_name": "axi_ram_inst",
+                "core_name": "iob_axi_ram",
+                "instance_name": "iob_axi_ram_inst",
+            },
+            # Simulation wrapper
+            {
+                "core_name": "iob_sim",
+                "instance_name": "iob_sim",
+                "instantiate": False,
+                "dest_dir": "hardware/simulation/src",
+            },
+            # Kintex wrapper
+            {
+                "core_name": "iob_aes_ku040_db_g",
+                "instance_name": "iob_aes_ku040_db_g",
+                "instance_description": "FPGA wrapper for aes_ku040_db_g board",
+                "instantiate": False,
+                "dest_dir": "hardware/fpga/vivado/aes_ku040_db_g",
             },
         ],
     }

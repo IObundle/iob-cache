@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 IObundle
+#
+# SPDX-License-Identifier: MIT
+
 1. Check invalidate while read request completes (see iob-soc ext_mem old fix)
 2. Move doc building to build directory
 3. Fix testbenches
