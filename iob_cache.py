@@ -563,6 +563,14 @@ def setup(py_params_dict):
                 "instantiate": False,
                 "dest_dir": "hardware/simulation/src",
             },
+            # Kintex wrapper
+            {
+                "core_name": "iob_aes_ku040_db_g",
+                "instance_name": "iob_aes_ku040_db_g",
+                "instance_description": "FPGA wrapper for aes_ku040_db_g board",
+                "instantiate": False,
+                "dest_dir": "hardware/fpga/vivado/aes_ku040_db_g",
+            },
         ],
     }
 
