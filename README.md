@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 IObundle
+
+SPDX-License-Identifier: MIT
+-->
+
 # IOb-cache
 
 IOb-cache is a high-performance, configurable open-source Verilog cache. If you use or like this repository, please cite the respective article as indicated above in the "About" section.

@@ -1,6 +1,6 @@
+# SPDX-FileCopyrightText: 2024 IObundle
 #
-# This file is included in BUILD_DIR/sim/Makefile
-#
+# SPDX-License-Identifier: MIT
 
 #verilator top module
 VTOP:=iob_cache_tb
