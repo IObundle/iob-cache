@@ -29,6 +29,9 @@ module iob_cache_iob #(
    parameter ADDR_W        = USE_CTRL + FE_ADDR_W - FE_NBYTES_W,
    parameter DATA_W        = FE_DATA_W
 ) (
+   //General Interface Signals
+   `include "iob_cache_clk_en_rst_s_port.vs"
+
    // Front-end interface (IOb native slave)
    `include "iob_cache_iob_s_port.vs"
 
@@ -45,12 +48,7 @@ module iob_cache_iob #(
    input  [1-1:0] invalidate_i,
    output [1-1:0] invalidate_o,
    input  [1-1:0] wtb_empty_i,
-   output [1-1:0] wtb_empty_o,
-
-   //General Interface Signals
-   input [1-1:0] clk_i,  //V2TEX_IO System clock input.
-   input [1-1:0] cke_i,  //V2TEX_IO System clock enable.
-   input [1-1:0] arst_i  //V2TEX_IO System reset, asynchronous and active high.
+   output [1-1:0] wtb_empty_o
 );
 
    //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.

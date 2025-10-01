@@ -43,13 +43,13 @@ module iob_cache_axi #(
    `include "iob_cache_clk_en_rst_s_port.vs"
    // Front-end interface (IOb native slave)
    `include "iob_cache_iob_s_port.vs"
+   // AXI4 back-end interface
+   `include "iob_cache_axi_m_port.vs"
    // Cache invalidate and write-trough buffer IO chain
    input  [1-1:0] invalidate_i,
    output [1-1:0] invalidate_o,
    input  [1-1:0] wtb_empty_i,
-   output [1-1:0] wtb_empty_o,
-   // AXI4 back-end interface
-   `include "iob_cache_axi_m_port.vs"
+   output [1-1:0] wtb_empty_o
 );
 
    //Front-end & Front-end interface.
