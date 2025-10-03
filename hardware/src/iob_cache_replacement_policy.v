@@ -51,7 +51,7 @@ module iob_cache_replacement_policy #(
          assign mru_in = (|way_hit_i)? mru_cnt : mru_out; // If an hit occured, then it updates, to avoid updating during a (write) miss (mru_cnt would decrement every way besides the lowest)
 
          // Most Recently Used (MRU) memory
-         iob_regfile_sp #(
+         iob_regarray_sp #(
             .ADDR_W(NLINES_W),
             .DATA_W(N_WAYS * NWAYS_W)
          ) mru_memory  // simply uses the same format as valid memory
@@ -84,7 +84,7 @@ module iob_cache_replacement_policy #(
          assign way_select_o[0] = ~mru_out[0];
 
          // Most Recently Used (MRU) memory
-         iob_regfile_sp #(
+         iob_regarray_sp #(
             .ADDR_W(NLINES_W),
             .DATA_W(N_WAYS)
          ) mru_memory  // simply uses the same format as valid memory
@@ -151,7 +151,7 @@ module iob_cache_replacement_policy #(
          assign way_select_o     = (1 << way_select_bin_o);
 
          // Most Recently Used (MRU) memory
-         iob_regfile_sp #(
+         iob_regarray_sp #(
             .ADDR_W(NLINES_W),
             .DATA_W(N_WAYS - 1)
          ) mru_memory  // simply uses the same format as valid memory

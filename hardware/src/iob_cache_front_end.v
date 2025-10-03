@@ -74,7 +74,7 @@ module iob_cache_front_end #(
    assign iob_ready_o  = data_req_reg_o ~^ ack;
 
    // Register every input
-   iob_reg_re #(
+   iob_reg_care #(
       .DATA_W (1),
       .RST_VAL(0)
    ) iob_reg_valid (
@@ -86,7 +86,7 @@ module iob_cache_front_end #(
       .data_i(valid_int),
       .data_o(data_req_reg_o)
    );
-   iob_reg_re #(
+   iob_reg_care #(
       .DATA_W (ADDR_W - USE_CTRL),
       .RST_VAL(0)
    ) iob_reg_addr (
@@ -98,7 +98,7 @@ module iob_cache_front_end #(
       .data_i(iob_addr_i[ADDR_W-USE_CTRL-1:0]),
       .data_o(data_addr_reg_o)
    );
-   iob_reg_re #(
+   iob_reg_care #(
       .DATA_W (DATA_W),
       .RST_VAL(0)
    ) iob_reg_wdata (
@@ -110,7 +110,7 @@ module iob_cache_front_end #(
       .data_i(iob_wdata_i),
       .data_o(data_wdata_reg_o)
    );
-   iob_reg_re #(
+   iob_reg_care #(
       .DATA_W (DATA_W / 8),
       .RST_VAL(0)
    ) iob_reg_wstrb (
@@ -122,7 +122,7 @@ module iob_cache_front_end #(
       .data_i(iob_wstrb_i),
       .data_o(data_wstrb_reg_o)
    );
-   iob_reg_re #(
+   iob_reg_care #(
       .DATA_W (1),
       .RST_VAL(0)
    ) iob_reg_we (

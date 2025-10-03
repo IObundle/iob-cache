@@ -19,8 +19,8 @@ def setup(py_params: dict):
     BE_IF = py_params.get("be_if", "AXI4")
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
     NAME = py_params.get("name", "iob_cache")
-    # Build directory. Usually auto-filled by Py2HWSW
-    BUILD_DIR = py_params.get("build_dir", f"../{NAME}_V{VERSION}")
+    # Build directory. Usually auto-filled by Py2HWSW.
+    BUILD_DIR = py_params.get("build_dir", "") or f"../{NAME}_V{VERSION}"
 
     # Check if parameters are valid
     assert BUILD_DIR, "Build directory is empty"
@@ -544,8 +544,8 @@ def setup(py_params: dict):
                 ],
             },
             {
-                "core_name": "iob_regfile_sp",
-                "instance_name": "iob_regfile_sp_inst",
+                "core_name": "iob_regarray_sp",
+                "instance_name": "iob_regarray_sp_inst",
             },
             {
                 "core_name": "iob_fifo_sync",
@@ -556,8 +556,11 @@ def setup(py_params: dict):
                 "instance_name": "iob_reg_inst",
             },
             {
-                "core_name": "iob_reg_re",
-                "instance_name": "iob_reg_re_inst",
+                "core_name": "iob_reg",
+                "instance_name": "iob_reg_care_inst",
+                "port_params": {
+                    "clk_en_rst_s": "c_a_r_e",
+                },
             },
             {
                 "core_name": "iob_ram_t2p",
