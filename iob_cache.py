@@ -18,7 +18,8 @@ def setup(py_params: dict):
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
-    NAME = py_params.get("name", "iob_cache")
+    suffix = 'axi' if BE_IF == 'AXI4' else 'iob'
+    NAME = py_params.get("name", f"iob_cache_{suffix}")
     # Build directory. Usually auto-filled by Py2HWSW.
     BUILD_DIR = py_params.get("build_dir", "") or f"../{NAME}_V{VERSION}"
 
@@ -261,23 +262,23 @@ def setup(py_params: dict):
                 "signals": [
                     {
                         "name": "invalidate_i",
-                        "width": 1,
                         "descr": "Invalidates all cache lines instantaneously if high.",
+                        "width": 1,
                     },
                     {
                         "name": "invalidate_o",
-                        "width": 1,
                         "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
+                        "width": 1,
                     },
                     {
                         "name": "wtb_empty_i",
-                        "width": 1,
                         "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
+                        "width": 1,
                     },
                     {
                         "name": "wtb_empty_o",
-                        "width": 1,
                         "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
+                        "width": 1,
                     },
                 ],
             },
@@ -587,17 +588,17 @@ def setup(py_params: dict):
         "superblocks": [
             # Simulation wrapper
             {
-                "core_name": "iob_sim",
-                "instance_name": "iob_sim",
+                "core_name": "iob_cache_sim_wrapper",
                 "dest_dir": "hardware/simulation/src",
+                "cache_confs": [conf for conf in attributes_dict["confs"] if conf["type"] == "P"],
+                "be_if": "axi" if BE_IF == "AXI4" else "iob",
             },
             # Kintex wrapper
-            {
-                "core_name": "iob_aes_ku040_db_g",
-                "instance_name": "iob_aes_ku040_db_g",
-                "instance_description": "FPGA wrapper for aes_ku040_db_g board",
-                "dest_dir": "hardware/fpga/vivado/iob_aes_ku040_db_g",
-            },
+            # {
+            #     "core_name": "iob_cache_aes_ku040_db_g",
+            #     "instance_description": "FPGA wrapper for aes_ku040_db_g board",
+            #     "dest_dir": "hardware/fpga/vivado/iob_aes_ku040_db_g",
+            # },
         ],
     }
 
