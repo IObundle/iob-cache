@@ -4,73 +4,76 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_conf.vh"
+`include "iob_cache_memory_conf.vh"
 `include "iob_cache_csrs_def.vh"
 
 module iob_cache_memory #(
-   parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
-   parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W,
-   parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
-   parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
+   // parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
+   // parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W,
+   // parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
+   // parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
 
-   parameter NWAYS_W       = `IOB_CACHE_NWAYS_W,
-   parameter NLINES_W      = `IOB_CACHE_NLINES_W,
-   parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   parameter WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
+   // parameter NWAYS_W       = `IOB_CACHE_NWAYS_W,
+   // parameter NLINES_W      = `IOB_CACHE_NLINES_W,
+   // parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+   // parameter WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
 
-   parameter WRITE_POL  = `IOB_CACHE_WRITE_THROUGH,
-   parameter REP_POLICY = `IOB_CACHE_PLRU_TREE,
+   // parameter WRITE_POL  = `IOB_CACHE_WRITE_THROUGH,
+   // parameter REP_POLICY = `IOB_CACHE_PLRU_TREE,
 
-   parameter USE_CTRL     = `IOB_CACHE_USE_CTRL,
-   parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT,
-   //derived parameters
-   parameter FE_NBYTES    = FE_DATA_W / 8,
-   parameter FE_NBYTES_W  = $clog2(FE_NBYTES),
-   parameter BE_NBYTES    = BE_DATA_W / 8,
-   parameter BE_NBYTES_W  = $clog2(BE_NBYTES),
-   parameter LINE2BE_W    = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   // parameter USE_CTRL     = `IOB_CACHE_USE_CTRL,
+   // parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT,
+   // //derived parameters
+   // parameter FE_NBYTES    = FE_DATA_W / 8,
+   // parameter FE_NBYTES_W  = $clog2(FE_NBYTES),
+   // parameter BE_NBYTES    = BE_DATA_W / 8,
+   // parameter BE_NBYTES_W  = $clog2(BE_NBYTES),
+   // parameter LINE2BE_W    = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   `include "iob_cache_memory_params.vs"
 ) (
-   input clk_i,
-   input cke_i,
-   input reset_i,
+   `include "iob_cache_memory_io.vs"
+   //
+   // input clk_i,
+   // input cke_i,
+   // input rst_i,
 
-   // front-end
-   input                                      req_i,
-   input  [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] addr_i,
-   output [                    FE_DATA_W-1:0] rdata_o,
-   output                                     ack_o,
+   // // front-end
+   // input                                      req_i,
+   // input  [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] addr_i,
+   // output [                    FE_DATA_W-1:0] rdata_o,
+   // output                                     ack_o,
 
-   // stored input value
-   input                           req_reg_i,
-   input [FE_ADDR_W-1:FE_NBYTES_W] addr_reg_i,
-   input [          FE_DATA_W-1:0] wdata_reg_i,
-   input [          FE_NBYTES-1:0] wstrb_reg_i,
+   // // stored input value
+   // input                           req_reg_i,
+   // input [FE_ADDR_W-1:FE_NBYTES_W] addr_reg_i,
+   // input [          FE_DATA_W-1:0] wdata_reg_i,
+   // input [          FE_NBYTES-1:0] wstrb_reg_i,
 
-   // back-end write-channel
-   output                                                                        write_req_o,
-   output [                   FE_ADDR_W-1:FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr_o,
-   output [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_o,
+   // // back-end write-channel
+   // output                                                                        write_req_o,
+   // output [                   FE_ADDR_W-1:FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr_o,
+   // output [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_o,
 
-   // write-through[DATA_W]; write-back[DATA_W*2**WORD_OFFSET_W]
-   output [FE_NBYTES-1:0] write_wstrb_o,
-   input                  write_ack_i,
+   // // write-through[DATA_W]; write-back[DATA_W*2**WORD_OFFSET_W]
+   // output [FE_NBYTES-1:0] write_wstrb_o,
+   // input                  write_ack_i,
 
-   // back-end read-channel
-   output                                     replace_req_o,
-   output [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr_o,
-   input                                      replace_i,
-   input                                      read_req_i,
-   input  [                    LINE2BE_W-1:0] read_addr_i,
-   input  [                    BE_DATA_W-1:0] read_rdata_i,
+   // // back-end read-channel
+   // output                                     replace_req_o,
+   // output [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr_o,
+   // input                                      replace_i,
+   // input                                      read_req_i,
+   // input  [                    LINE2BE_W-1:0] read_addr_i,
+   // input  [                    BE_DATA_W-1:0] read_rdata_i,
 
-   // cache-control
-   input  invalidate_i,
-   output wtbuf_full_o,
-   output wtbuf_empty_o,
-   output write_hit_o,
-   output write_miss_o,
-   output read_hit_o,
-   output read_miss_o
+   // // cache-control
+   // input  invalidate_i,
+   // output wtbuf_full_o,
+   // output wtbuf_empty_o,
+   // output write_hit_o,
+   // output write_miss_o,
+   // output read_hit_o,
+   // output read_miss_o
 );
 
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
@@ -143,8 +146,8 @@ module iob_cache_memory #(
             .ADDR_W  (FIFO_ADDR_W)
          ) write_throught_buffer (
             .clk_i (clk_i),
-            .rst_i (reset_i),
-            .arst_i(reset_i),
+            .rst_i (rst_i),
+            .arst_i(rst_i),
             .cke_i (1'b1),
 
             .ext_mem_clk_o(mem_clk),
@@ -305,8 +308,8 @@ module iob_cache_memory #(
          // reason for the 2 generates for single vs multiple ways
          wire [NWAYS_W-1:0] way_hit_bin, way_select_bin;
          // valid-memory
-         always @(posedge clk_i, posedge reset_i) begin
-            if (reset_i) v_reg <= 0;
+         always @(posedge clk_i, posedge rst_i) begin
+            if (rst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
             else if (replace_req_o)
                v_reg <= v_reg | (1 << (way_select_bin * (2 ** NLINES_W) + index_reg));
@@ -347,7 +350,7 @@ module iob_cache_memory #(
          ) replacement_policy_algorithm (
             .clk_i           (clk_i),
             .cke_i           (cke_i),
-            .reset_i         (reset_i | invalidate_i),
+            .reset_i         (rst_i | invalidate_i),
             .write_en_i      (ack_o),
             .way_hit_i       (way_hit),
             .line_addr_i     (index_reg[NLINES_W-1:0]),
@@ -365,8 +368,8 @@ module iob_cache_memory #(
 
          // dirty-memory
          if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
-            always @(posedge clk_i, posedge reset_i) begin
-               if (reset_i) dirty_reg <= 0;
+            always @(posedge clk_i, posedge rst_i) begin
+               if (rst_i) dirty_reg <= 0;
                else if (write_req_o)
                   dirty_reg <= dirty_reg & ~(1<<(way_select_bin*(2**NLINES_W) + index_reg)); // updates position with 0
                else if (write_access & hit)
@@ -390,8 +393,8 @@ module iob_cache_memory #(
          end
       end else begin : g_one_way  // (NWAYS = 1)
          // valid-memory
-         always @(posedge clk_i, posedge reset_i) begin
-            if (reset_i) v_reg <= 0;
+         always @(posedge clk_i, posedge rst_i) begin
+            if (rst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
             else if (replace_req_o) v_reg <= v_reg | (1 << index);
             else v_reg <= v_reg;
@@ -425,8 +428,8 @@ module iob_cache_memory #(
          // dirty-memory
          if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
             // dirty-memory
-            always @(posedge clk_i, posedge reset_i) begin
-               if (reset_i) begin
+            always @(posedge clk_i, posedge rst_i) begin
+               if (rst_i) begin
                   dirty_reg <= 0;
                end else if (write_req_o) begin
                   // updates postion with 0
