@@ -35,7 +35,7 @@ module iob_cache_memory #(
    //
    // input clk_i,
    // input cke_i,
-   // input rst_i,
+   // input arst_i,
 
    // // front-end
    // input                                      req_i,
@@ -146,8 +146,8 @@ module iob_cache_memory #(
             .ADDR_W  (FIFO_ADDR_W)
          ) write_throught_buffer (
             .clk_i (clk_i),
-            .rst_i (rst_i),
-            .arst_i(rst_i),
+            .rst_i (1'b0),
+            .arst_i(arst_i),
             .cke_i (1'b1),
 
             .ext_mem_clk_o(mem_clk),
@@ -308,8 +308,8 @@ module iob_cache_memory #(
          // reason for the 2 generates for single vs multiple ways
          wire [NWAYS_W-1:0] way_hit_bin, way_select_bin;
          // valid-memory
-         always @(posedge clk_i, posedge rst_i) begin
-            if (rst_i) v_reg <= 0;
+         always @(posedge clk_i, posedge arst_i) begin
+            if (arst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
             else if (replace_req_o)
                v_reg <= v_reg | (1 << (way_select_bin * (2 ** NLINES_W) + index_reg));
@@ -350,7 +350,7 @@ module iob_cache_memory #(
          ) replacement_policy_algorithm (
             .clk_i           (clk_i),
             .cke_i           (cke_i),
-            .reset_i         (rst_i | invalidate_i),
+            .reset_i         (arst_i | invalidate_i),
             .write_en_i      (ack_o),
             .way_hit_i       (way_hit),
             .line_addr_i     (index_reg[NLINES_W-1:0]),
@@ -368,8 +368,8 @@ module iob_cache_memory #(
 
          // dirty-memory
          if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
-            always @(posedge clk_i, posedge rst_i) begin
-               if (rst_i) dirty_reg <= 0;
+            always @(posedge clk_i, posedge arst_i) begin
+               if (arst_i) dirty_reg <= 0;
                else if (write_req_o)
                   dirty_reg <= dirty_reg & ~(1<<(way_select_bin*(2**NLINES_W) + index_reg)); // updates position with 0
                else if (write_access & hit)
@@ -393,8 +393,8 @@ module iob_cache_memory #(
          end
       end else begin : g_one_way  // (NWAYS = 1)
          // valid-memory
-         always @(posedge clk_i, posedge rst_i) begin
-            if (rst_i) v_reg <= 0;
+         always @(posedge clk_i, posedge arst_i) begin
+            if (arst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
             else if (replace_req_o) v_reg <= v_reg | (1 << index);
             else v_reg <= v_reg;
@@ -428,8 +428,8 @@ module iob_cache_memory #(
          // dirty-memory
          if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
             // dirty-memory
-            always @(posedge clk_i, posedge rst_i) begin
-               if (rst_i) begin
+            always @(posedge clk_i, posedge arst_i) begin
+               if (arst_i) begin
                   dirty_reg <= 0;
                end else if (write_req_o) begin
                   // updates postion with 0

@@ -159,7 +159,7 @@ def setup(py_params_dict):
     #
     attributes_dict["subblocks"] = [
         {
-            "core_name": f"iob_cache_{params['be_if']}",
+            "core_name": "iob_cache",
             "instance_name": "cache",
             "instance_description": f"Unit Under Test (UUT) Cache instance with '{params['be_if']}' back end interface.",
             "connect": {

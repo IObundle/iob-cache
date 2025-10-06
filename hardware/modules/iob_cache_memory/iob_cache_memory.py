@@ -168,7 +168,6 @@ def setup(py_params: dict):
             "descr": "Clock, clock enable and synchronous reset",
             "signals": {
                 "type": "iob_clk",
-                "params": "c_r",
             },
         },
         {
