@@ -38,7 +38,7 @@ def setup(py_params: dict):
         "version": VERSION,
         "build_dir": BUILD_DIR,
         "generate_hw": True,
-        "board_list": ["aes_ku040_db_g"],
+        "board_list": ["iob_aes_ku040_db_g"],
     }
     #
     # Confs
@@ -791,7 +791,7 @@ def setup(py_params: dict):
         "code": """
    invalidate_o = ctrl_invalidate | invalidate_i;
    wtb_empty_o  = wtbuf_empty & wtb_empty_i;
-   cache_mem_data_addr = data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]
+   cache_mem_data_addr = data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W];
 
 """
     }
