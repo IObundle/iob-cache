@@ -44,7 +44,7 @@ module iob_cache_back_end_axi #(
    // output [                    AXI_DATA_W -1:0] read_rdata_o,
 
    // // Back-end interface (AXI4 master)
-   // `include "iob_cache_axi_m_port.vs"
+   // include "iob_cache_axi_m_port.vs"
    // input [1-1:0] clk_i,  //V2TEX_IO System clock input.
    // input [1-1:0] arst_i  //V2TEX_IO System reset, asynchronous and active high.
 );
@@ -67,9 +67,26 @@ module iob_cache_back_end_axi #(
       .read_valid_o   (read_valid_o),
       .read_addr_o    (read_addr_o),
       .read_rdata_o   (read_rdata_o),
-      `include "iob_cache_axi_read_m_m_portmap.vs"
-      .clk_i          (clk_i),
-      .reset_i        (arst_i)
+
+      .axi_araddr_o (axi_araddr_o),
+      .axi_arvalid_o(axi_arvalid_o),
+      .axi_arready_i(axi_arready_i),
+      .axi_rdata_i  (axi_rdata_i),
+      .axi_rresp_i  (axi_rresp_i),
+      .axi_rvalid_i (axi_rvalid_i),
+      .axi_rready_o (axi_rready_o),
+      .axi_arid_o   (axi_arid_o),
+      .axi_arlen_o  (axi_arlen_o),
+      .axi_arsize_o (axi_arsize_o),
+      .axi_arburst_o(axi_arburst_o),
+      .axi_arlock_o (axi_arlock_o),
+      .axi_arcache_o(axi_arcache_o),
+      .axi_arqos_o  (axi_arqos_o),
+      .axi_rid_i    (axi_rid_i),
+      .axi_rlast_i  (axi_rlast_i),
+
+      .clk_i  (clk_i),
+      .reset_i(arst_i)
    );
 
    iob_cache_write_channel_axi #(
@@ -90,7 +107,27 @@ module iob_cache_back_end_axi #(
       .wstrb_i(write_wstrb_i),
       .wdata_i(write_wdata_i),
       .ready_o(write_ready_o),
-      `include "iob_cache_axi_write_m_m_portmap.vs"
+
+      .axi_awaddr_o (axi_awaddr_o),
+      .axi_awvalid_o(axi_awvalid_o),
+      .axi_awready_i(axi_awready_i),
+      .axi_wdata_o  (axi_wdata_o),
+      .axi_wstrb_o  (axi_wstrb_o),
+      .axi_wvalid_o (axi_wvalid_o),
+      .axi_wready_i (axi_wready_i),
+      .axi_bresp_i  (axi_bresp_i),
+      .axi_bvalid_i (axi_bvalid_i),
+      .axi_bready_o (axi_bready_o),
+      .axi_awid_o   (axi_awid_o),
+      .axi_awlen_o  (axi_awlen_o),
+      .axi_awsize_o (axi_awsize_o),
+      .axi_awburst_o(axi_awburst_o),
+      .axi_awlock_o (axi_awlock_o),
+      .axi_awcache_o(axi_awcache_o),
+      .axi_awqos_o  (axi_awqos_o),
+      .axi_wlast_o  (axi_wlast_o),
+      .axi_bid_i    (axi_bid_i),
+
       .clk_i  (clk_i),
       .reset_i(arst_i)
    );

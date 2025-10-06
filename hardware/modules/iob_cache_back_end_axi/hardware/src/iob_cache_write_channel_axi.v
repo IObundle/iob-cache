@@ -33,9 +33,29 @@ module iob_cache_write_channel_axi #(
    input      [DATA_W + WRITE_POL*(DATA_W*(2**WORD_OFFSET_W)-DATA_W)-1 : 0] wdata_i,
    input      [                                              FE_NBYTES-1:0] wstrb_i,
    output reg                                                               ready_o,
-   `include "iob_cache_axi_write_m_port.vs"
-   input                                                                    clk_i,
-   input                                                                    reset_i
+
+   output [  AXI_ADDR_W-1:0] axi_awaddr_o,
+   output                    axi_awvalid_o,
+   input                     axi_awready_i,
+   output [  AXI_DATA_W-1:0] axi_wdata_o,
+   output [AXI_DATA_W/8-1:0] axi_wstrb_o,
+   output                    axi_wvalid_o,
+   input                     axi_wready_i,
+   input  [           2-1:0] axi_bresp_i,
+   input                     axi_bvalid_i,
+   output                    axi_bready_o,
+   output [    AXI_ID_W-1:0] axi_awid_o,
+   output [   AXI_LEN_W-1:0] axi_awlen_o,
+   output [           3-1:0] axi_awsize_o,
+   output [           2-1:0] axi_awburst_o,
+   output                    axi_awlock_o,
+   output [           4-1:0] axi_awcache_o,
+   output [           4-1:0] axi_awqos_o,
+   output                    axi_wlast_o,
+   input  [    AXI_ID_W-1:0] axi_bid_i,
+
+   input clk_i,
+   input reset_i
 );
 
    reg axi_awvalid_int;

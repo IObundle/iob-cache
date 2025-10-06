@@ -21,7 +21,7 @@ module iob_cache_front_end #(
    // input cke_i,
    // input arst_i,
    // // IOb-bus front-end
-   // `include "iob_cache_iob_s_port.vs"
+   // include "iob_cache_iob_s_port.vs"
 
    // // internal input signals
    // output                       data_req_o,

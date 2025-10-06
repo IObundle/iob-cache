@@ -18,7 +18,7 @@ def setup(py_params: dict):
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
-    suffix = 'axi' if BE_IF == 'AXI4' else 'iob'
+    suffix = "axi" if BE_IF == "AXI4" else "iob"
     NAME = py_params.get("name", f"iob_cache_{suffix}")
     # Build directory. Usually auto-filled by Py2HWSW.
     BUILD_DIR = py_params.get("build_dir", "") or f"../{NAME}_V{VERSION}"
@@ -334,114 +334,76 @@ def setup(py_params: dict):
             ],
         },
         # Interfaces for submodules
-        # TODO: Move them to correct modules
-        {
-            "name": "axi_write_m",
-            "descr": "AXI4 write interface",
-            "signals": {
-                "type": "axi_write",
-                "ID_W": "AXI_ID_W",
-                "ADDR_W": "AXI_ADDR_W",
-                "DATA_W": "AXI_DATA_W",
-                "LEN_W": "AXI_LEN_W",
-            },
-        },
-        {
-            "name": "axi_read_m",
-            "descr": "AXI4 read interface",
-            "signals": {
-                "type": "axi_read",
-                "ID_W": "AXI_ID_W",
-                "ADDR_W": "AXI_ADDR_W",
-                "DATA_W": "AXI_DATA_W",
-                "LEN_W": "AXI_LEN_W",
-            },
-        },
-        {
-            "name": "fe_io",
-            "descr": "Front-end interface (IOb native slave)",
-            "signals": [
-                {
-                    "name": "req_i",
-                    "width": 1,
-                    "descr": "Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.",
-                },
-                {
-                    "name": "addr_i",
-                    "width": "USE_CTRL+FE_ADDR_W-2",
-                    "descr": "Address from CPU or other user core, excluding the byte selection LSBs.",
-                },
-                {
-                    "name": "wdata_i",
-                    "width": "FE_DATA_W",
-                    "descr": "Write data fom host.",
-                },
-                {
-                    "name": "wstrb_i",
-                    "width": 4,
-                    "descr": "Byte write strobe from host.",
-                },
-                {
-                    "name": "rdata_o",
-                    "width": "FE_DATA_W",
-                    "descr": "Read data to host.",
-                },
-                {
-                    "name": "ack_o",
-                    "width": 1,
-                    "descr": "Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.",
-                },
-            ],
-        },
-        {
-            "name": "be_io",
-            "descr": "Back-end interface",
-            "signals": [
-                {
-                    "name": "req_o",
-                    "width": 1,
-                    "descr": "Read or write request to next-level cache or memory.",
-                },
-                {
-                    "name": "be_addr_o",
-                    "width": "BE_ADDR_W",
-                    "descr": "Address to next-level cache or memory.",
-                },
-                {
-                    "name": "be_wdata_o",
-                    "width": "BE_DATA_W",
-                    "descr": "Write data to next-level cache or memory.",
-                },
-                {
-                    "name": "be_wstrb_o",
-                    "width": 4,
-                    "descr": "Write strobe to next-level cache or memory.",
-                },
-                {
-                    "name": "be_rdata_i",
-                    "width": "BE_DATA_W",
-                    "descr": "Read data from next-level cache or memory.",
-                },
-                {
-                    "name": "be_ack_i",
-                    "width": 1,
-                    "descr": "Acknowledge signal from next-level cache or memory.",
-                },
-            ],
-        },
+        # # TODO: Move them to correct modules
         # {
-        #     "name": "ge_i",
-        #     "descr": "General Interface Signals",
+        #     "name": "fe_io",
+        #     "descr": "Front-end interface (IOb native slave)",
         #     "signals": [
         #         {
-        #             "name": "clk_i",
+        #             "name": "req_i",
         #             "width": 1,
-        #             "descr": "System clock input.",
+        #             "descr": "Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.",
         #         },
         #         {
-        #             "name": "rst_i",
+        #             "name": "addr_i",
+        #             "width": "USE_CTRL+FE_ADDR_W-2",
+        #             "descr": "Address from CPU or other user core, excluding the byte selection LSBs.",
+        #         },
+        #         {
+        #             "name": "wdata_i",
+        #             "width": "FE_DATA_W",
+        #             "descr": "Write data fom host.",
+        #         },
+        #         {
+        #             "name": "wstrb_i",
+        #             "width": 4,
+        #             "descr": "Byte write strobe from host.",
+        #         },
+        #         {
+        #             "name": "rdata_o",
+        #             "width": "FE_DATA_W",
+        #             "descr": "Read data to host.",
+        #         },
+        #         {
+        #             "name": "ack_o",
         #             "width": 1,
-        #             "descr": "System reset, asynchronous and active high.",
+        #             "descr": "Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.",
+        #         },
+        #     ],
+        # },
+        # {
+        #     "name": "be_io",
+        #     "descr": "Back-end interface",
+        #     "signals": [
+        #         {
+        #             "name": "req_o",
+        #             "width": 1,
+        #             "descr": "Read or write request to next-level cache or memory.",
+        #         },
+        #         {
+        #             "name": "be_addr_o",
+        #             "width": "BE_ADDR_W",
+        #             "descr": "Address to next-level cache or memory.",
+        #         },
+        #         {
+        #             "name": "be_wdata_o",
+        #             "width": "BE_DATA_W",
+        #             "descr": "Write data to next-level cache or memory.",
+        #         },
+        #         {
+        #             "name": "be_wstrb_o",
+        #             "width": 4,
+        #             "descr": "Write strobe to next-level cache or memory.",
+        #         },
+        #         {
+        #             "name": "be_rdata_i",
+        #             "width": "BE_DATA_W",
+        #             "descr": "Read data from next-level cache or memory.",
+        #         },
+        #         {
+        #             "name": "be_ack_i",
+        #             "width": 1,
+        #             "descr": "Acknowledge signal from next-level cache or memory.",
         #         },
         #     ],
         # },
@@ -509,7 +471,10 @@ def setup(py_params: dict):
             "descr": "Cache memory front-end interface",
             "signals": [
                 {"name": "data_req"},
-                {"name": "cache_mem_data_addr", "width": "FE_ADDR_W-(BE_NBYTES_W+LINE2BE_W)"},
+                {
+                    "name": "cache_mem_data_addr",
+                    "width": "FE_ADDR_W-(BE_NBYTES_W+LINE2BE_W)",
+                },
                 {"name": "data_rdata"},
                 {"name": "data_ack"},
                 {"name": "data_req_reg"},
@@ -523,8 +488,14 @@ def setup(py_params: dict):
             "descr": "Back-end write channel",
             "signals": [
                 {"name": "write_req", "width": 1},
-                {"name": "write_addr", "width": "FE_ADDR_W - (FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W)"},
-                {"name": "write_wdata", "width": "FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)"},
+                {
+                    "name": "write_addr",
+                    "width": "FE_ADDR_W - (FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W)",
+                },
+                {
+                    "name": "write_wdata",
+                    "width": "FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)",
+                },
                 {"name": "write_wstrb", "width": "FE_NBYTES"},
                 {"name": "write_ack", "width": 1},
             ],
@@ -758,11 +729,13 @@ def setup(py_params: dict):
         #     "core_name": "iob_reg",
         #     "instance_name": "iob_reg_inst",
         # },
-        # {
-        #     "core_name": "iob_tasks",
-        #     "instance_name": "iob_tasks_inst",
-        #     "dest_dir": "hardware/simulation/src",
-        # },
+        # For simulation
+        {
+            "core_name": "iob_tasks",
+            "instance_name": "iob_tasks_inst",
+            "dest_dir": "hardware/simulation/src",
+            "instantiate": False,
+        },
     ]
     #
     # Superblocks
@@ -772,7 +745,9 @@ def setup(py_params: dict):
         {
             "core_name": "iob_cache_sim_wrapper",
             "dest_dir": "hardware/simulation/src",
-            "cache_confs": [conf for conf in attributes_dict["confs"] if conf["type"] == "P"],
+            "cache_confs": [
+                conf for conf in attributes_dict["confs"] if conf["type"] == "P"
+            ],
             "be_if": "axi" if BE_IF == "AXI4" else "iob",
         },
         # Kintex wrapper
@@ -786,7 +761,7 @@ def setup(py_params: dict):
     # Combinatorial
     #
     attributes_dict["comb"] = {
-            "code": """
+        "code": """
    invalidate_o = ctrl_invalidate | invalidate_i;
    wtb_empty_o  = wtbuf_empty & wtb_empty_i;
    cache_mem_data_addr = data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W]
