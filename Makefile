@@ -17,6 +17,8 @@ endif
 ifneq ($(BE_DATA_W),)
 PY_PARAMS:=$(PY_PARAMS):be_data_w=$(BE_DATA_W)
 endif
+# Remove first char (:) from PY_PARAMS
+PY_PARAMS:=$(shell echo $(PY_PARAMS) | cut -c2-)
 endif # ifndef PY_PARAMS
 
 DOC ?= ug

@@ -85,23 +85,9 @@ def setup(py_params: dict):
             "min": "?",
             "max": "?",
         },
-        # csrs_gen parameters
-        {
-            "name": "ADDR_W",
-            "descr": "Cache address width used by csrs_gen",
-            "type": "P",
-            "val": "`IOB_CACHE_CSRS_ADDR_W",
-            "min": "NA",
-            "max": "NA",
-        },
-        {
-            "name": "DATA_W",
-            "descr": "Cache data width used by csrs_gen",
-            "type": "P",
-            "val": "32",
-            "min": "NA",
-            "max": "NA",
-        },
+        #
+        # Verilog Parameters
+        #
         {
             "name": "FE_ADDR_W",
             "descr": "Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.",
@@ -233,6 +219,20 @@ def setup(py_params: dict):
             "val": "WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)",
             "min": "0",
             "max": "32",
+        },
+        {
+            "name": "ADDR_W",
+            "type": "D",
+            "val": "USE_CTRL + FE_ADDR_W - FE_NBYTES_W",
+            "min": "NA",
+            "max": "NA",
+        },
+        {
+            "name": "DATA_W",
+            "type": "D",
+            "val": "FE_DATA_W",
+            "min": "NA",
+            "max": "NA",
         },
     ]
     if BE_IF == "AXI4":
@@ -541,10 +541,10 @@ def setup(py_params: dict):
         {
             "core_name": "iob_cache_front_end",
             "instance_name": "front_end",
-            "instance_description": "Front-end block",
+            "instance_description": "This IOb interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory",
             "parameters": {
-                "ADDR_W": "FE_ADDR_W - FE_NBYTES_W",
-                "DATA_W": "FE_DATA_W",
+                "ADDR_W": "ADDR_W",  # Used to be 'FE_ADDR_W - FE_NBYTES_W' in axi version
+                "DATA_W": "DATA_W",
                 "USE_CTRL": "USE_CTRL",
             },
             "connect": {
@@ -557,7 +557,7 @@ def setup(py_params: dict):
         {
             "core_name": "iob_cache_memory",
             "instance_name": "cache_memory",
-            "instance_description": "This block implements the cache memory",
+            "instance_description": "This block contains the tag, data storage memories and the Write Through Buffer if the correspeonding write policy is selected; these memories are implemented either with RAM if large enough, or with registers if small enough",
             "parameters": {
                 "FE_ADDR_W": "FE_ADDR_W",
                 "FE_DATA_W": "FE_DATA_W",
@@ -580,30 +580,57 @@ def setup(py_params: dict):
                 "ctrl_io": "cache_mem_ctrl",
             },
         },
-        {
-            "core_name": "iob_cache_back_end_axi",
-            "instance_name": "back_end_axi",
-            "instance_description": "This block interfaces with the system level or next-level cache",
-            "parameters": {
-                "FE_ADDR_W": "FE_ADDR_W",
-                "FE_DATA_W": "FE_DATA_W",
-                "BE_ADDR_W": "BE_ADDR_W",
-                "BE_DATA_W": "BE_DATA_W",
-                "WORD_OFFSET_W": "WORD_OFFSET_W",
-                "WRITE_POL": "WRITE_POL",
-                "AXI_ADDR_W": "AXI_ADDR_W",
-                "AXI_DATA_W": "AXI_DATA_W",
-                "AXI_ID_W": "AXI_ID_W",
-                "AXI_LEN_W": "AXI_LEN_W",
-                "AXI_ID": "AXI_ID",
+    ]
+    if BE_IF == "AXI4":
+        attributes_dict["subblocks"] += [
+            {
+                "core_name": "iob_cache_back_end_axi",
+                "instance_name": "back_end_axi",
+                "instance_description": "Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This module implements an AXI4 interface",
+                "parameters": {
+                    "FE_ADDR_W": "FE_ADDR_W",
+                    "FE_DATA_W": "FE_DATA_W",
+                    "BE_ADDR_W": "BE_ADDR_W",
+                    "BE_DATA_W": "BE_DATA_W",
+                    "WORD_OFFSET_W": "WORD_OFFSET_W",
+                    "WRITE_POL": "WRITE_POL",
+                    "AXI_ADDR_W": "AXI_ADDR_W",
+                    "AXI_DATA_W": "AXI_DATA_W",
+                    "AXI_ID_W": "AXI_ID_W",
+                    "AXI_LEN_W": "AXI_LEN_W",
+                    "AXI_ID": "AXI_ID",
+                },
+                "connect": {
+                    "clk_en_rst_s": "clk_en_rst_s",
+                    "write_io": "be_write_if",
+                    "read_io": "be_read_if",
+                    "axi_m": "axi_m",
+                },
             },
-            "connect": {
-                "clk_en_rst_s": "clk_en_rst_s",
-                "write_io": "be_write_if",
-                "read_io": "be_read_if",
-                "axi_m": "axi_m",
+        ]
+    elif BE_IF == "IOb":
+        attributes_dict["subblocks"] += [
+            {
+                "core_name": "iob_cache_back_end_iob",
+                "instance_name": "back_end_iob",
+                "instance_description": "Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This module implements an IOb interface",
+                "parameters": {
+                    "FE_ADDR_W": "FE_ADDR_W",
+                    "FE_DATA_W": "FE_DATA_W",
+                    "BE_ADDR_W": "BE_ADDR_W",
+                    "BE_DATA_W": "BE_DATA_W",
+                    "WORD_OFFSET_W": "WORD_OFFSET_W",
+                    "WRITE_POL": "WRITE_POL",
+                },
+                "connect": {
+                    "clk_en_rst_s": "clk_en_rst_s",
+                    "write_io": "be_write_if",
+                    "read_io": "be_read_if",
+                    "iob_m": "iob_m",
+                },
             },
-        },
+        ]
+    attributes_dict["subblocks"] += [
         # Generate CSRs but don't instantiate it (generated hardware unused; only for software and docs)
         {
             "core_name": "iob_csrs",
@@ -774,9 +801,9 @@ def setup(py_params: dict):
     attributes_dict["snippets"] = [
         {
             "verilog_code": """
-   //Cache control & Cache control block.
+   //Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
    generate
-      if (USE_CTRL)
+      if (USE_CTRL) begin : g_ctrl
          iob_cache_control #(
             .DATA_W      (FE_DATA_W),
             .USE_CTRL_CNT(USE_CTRL_CNT)
@@ -800,7 +827,7 @@ def setup(py_params: dict):
             .ready_o     (ctrl_ack),
             .invalidate_o(ctrl_invalidate)
          );
-      else begin : g_no_cache_ctrl
+      end else begin : g_no_ctrl
          assign ctrl_rdata      = 1'b0;
          assign ctrl_ack        = 1'b0;
          assign ctrl_invalidate = 1'b0;

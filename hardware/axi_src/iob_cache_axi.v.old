@@ -52,7 +52,7 @@ module iob_cache_axi #(
    output [1-1:0] wtb_empty_o
 );
 
-   //Front-end & Front-end interface.
+   //BLOCK Front-end & This NIP interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory.
    wire data_req, data_ack;
    wire [FE_ADDR_W -1 : FE_NBYTES_W] data_addr;
    wire [           FE_DATA_W-1 : 0] data_rdata;
@@ -72,8 +72,8 @@ module iob_cache_axi #(
    assign wtb_empty_o  = wtbuf_empty & wtb_empty_i;
 
    iob_cache_front_end #(
-      .ADDR_W  (FE_ADDR_W - FE_NBYTES_W),
-      .DATA_W  (FE_DATA_W),
+      .ADDR_W  (ADDR_W),
+      .DATA_W  (DATA_W),
       .USE_CTRL(USE_CTRL)
    ) front_end (
       .clk_i (clk_i),
@@ -104,7 +104,7 @@ module iob_cache_axi #(
       .ctrl_ack_i  (ctrl_ack)
    );
 
-   //Cache memory & This block implements the cache memory.
+   //BLOCK Cache memory & This block contains the tag, data storage memories and the Write Through Buffer if the correspeonding write policy is selected; these memories are implemented either with RAM if large enough, or with registers if small enough.
    wire write_hit, write_miss, read_hit, read_miss;
 
    // back-end write-channel
@@ -174,7 +174,7 @@ module iob_cache_axi #(
       .invalidate_i (invalidate_o)
    );
 
-   //Back-end interface & This block interfaces with the system level or next-level cache.
+   //BLOCK Back-end interface & Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This interface can be of type NPI or AXI4 as per configuration. If it is connected to the next-level IOb-Cache, the NPI type must be selected; if it is connected to a third party cache or memory controlller featuring an AXI4 interface, then the AXI4 type must be selected.
    iob_cache_back_end_axi #(
       .FE_ADDR_W    (FE_ADDR_W),
       .FE_DATA_W    (FE_DATA_W),
@@ -209,9 +209,9 @@ module iob_cache_axi #(
       .rst_i(arst_i)
    );
 
-   //Cache control & Cache control block.
+   //BLOCK Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
    generate
-      if (USE_CTRL)
+      if (USE_CTRL) begin : g_ctrl
          iob_cache_control #(
             .DATA_W      (FE_DATA_W),
             .USE_CTRL_CNT(USE_CTRL_CNT)
@@ -235,7 +235,7 @@ module iob_cache_axi #(
             .ready_o     (ctrl_ack),
             .invalidate_o(ctrl_invalidate)
          );
-      else begin : g_no_cache_ctrl
+      end else begin : g_no_ctrl
          assign ctrl_rdata      = 1'b0;
          assign ctrl_ack        = 1'b0;
          assign ctrl_invalidate = 1'b0;

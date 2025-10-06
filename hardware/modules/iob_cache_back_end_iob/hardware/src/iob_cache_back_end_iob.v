@@ -4,50 +4,52 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_conf.vh"
+`include "iob_cache_back_end_iob_conf.vh"
 `include "iob_cache_csrs_def.vh"
 
-module iob_cache_back_end #(
-   parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
-   parameter FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
-   parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
-   parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   parameter WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
-   //derived parameters
-   parameter FE_NBYTES     = FE_DATA_W / 8,
-   parameter FE_NBYTES_W   = $clog2(FE_NBYTES),
-   parameter BE_NBYTES     = BE_DATA_W / 8,
-   parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
-   parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+module iob_cache_back_end_iob #(
+   // parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
+   // parameter FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
+   // parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
+   // parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
+   // parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+   // parameter WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
+   // //derived parameters
+   // parameter FE_NBYTES     = FE_DATA_W / 8,
+   // parameter FE_NBYTES_W   = $clog2(FE_NBYTES),
+   // parameter BE_NBYTES     = BE_DATA_W / 8,
+   // parameter BE_NBYTES_W   = $clog2(BE_NBYTES),
+   // parameter LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
+   `include "iob_cache_back_end_iob_params.vs"
 ) (
-   input clk_i,
-   input cke_i,
-   input arst_i,
+   `include "iob_cache_back_end_iob_io.vs"
+   // input clk_i,
+   // input cke_i,
+   // input arst_i,
 
-   // write-through-buffer
-   input                                                                         write_valid_i,
-   input  [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr_i,
-   input  [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_i,
-   input  [                                                       FE_NBYTES-1:0] write_wstrb_i,
-   output                                                                        write_ready_o,
+   // // write-through-buffer
+   // input                                                                         write_valid_i,
+   // input  [                 FE_ADDR_W-1 : FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr_i,
+   // input  [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_i,
+   // input  [                                                       FE_NBYTES-1:0] write_wstrb_i,
+   // output                                                                        write_ready_o,
 
-   // cache-line replacement
-   input                                        replace_valid_i,
-   input  [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr_i,
-   output                                       replace_o,
-   output                                       read_valid_o,
-   output [                     LINE2BE_W -1:0] read_addr_o,
-   output [                     BE_DATA_W -1:0] read_rdata_o,
+   // // cache-line replacement
+   // input                                        replace_valid_i,
+   // input  [FE_ADDR_W-1:BE_NBYTES_W + LINE2BE_W] replace_addr_i,
+   // output                                       replace_o,
+   // output                                       read_valid_o,
+   // output [                     LINE2BE_W -1:0] read_addr_o,
+   // output [                     BE_DATA_W -1:0] read_rdata_o,
 
-   // back-end memory interface
-   output                  be_valid_o,
-   output [BE_ADDR_W -1:0] be_addr_o,
-   output [ BE_DATA_W-1:0] be_wdata_o,
-   output [ BE_NBYTES-1:0] be_wstrb_o,
-   input  [ BE_DATA_W-1:0] be_rdata_i,
-   input                   be_rvalid_i,
-   input                   be_ready_i
+   // // back-end memory interface
+   // output                  iob_valid_o,
+   // output [BE_ADDR_W -1:0] iob_addr_o,
+   // output [ BE_DATA_W-1:0] iob_wdata_o,
+   // output [ BE_NBYTES-1:0] iob_wstrb_o,
+   // input  [ BE_DATA_W-1:0] iob_rdata_i,
+   // input                   iob_rvalid_i,
+   // input                   iob_ready_i
 );
 
    wire [BE_ADDR_W-1:0] be_addr_read, be_addr_write;
@@ -56,10 +58,10 @@ module iob_cache_back_end #(
    wire be_wack;
    wire be_wack_r;
 
-   assign be_addr_o  = (be_valid_read) ? be_addr_read : be_addr_write;
-   assign be_valid_o = be_valid_read | be_valid_write;
-   assign be_ack     = be_rvalid_i | be_wack_r;
-   assign be_wack    = be_ready_i & be_valid_o & (|be_wstrb_o);
+   assign iob_addr_o  = (be_valid_read) ? be_addr_read : be_addr_write;
+   assign iob_valid_o = be_valid_read | be_valid_write;
+   assign be_ack      = iob_rvalid_i | be_wack_r;
+   assign be_wack     = iob_ready_i & iob_valid_o & (|iob_wstrb_o);
 
    iob_reg_re #(
       .DATA_W (1),
@@ -92,7 +94,7 @@ module iob_cache_back_end #(
       .be_addr_o      (be_addr_read),
       .be_valid_o     (be_valid_read),
       .be_ack_i       (be_ack),
-      .be_rdata_i     (be_rdata_i)
+      .be_rdata_i     (iob_rdata_i)
    );
 
    iob_cache_write_channel #(
@@ -115,8 +117,8 @@ module iob_cache_back_end #(
       .be_addr_o (be_addr_write),
       .be_valid_o(be_valid_write),
       .be_ack_i  (be_ack),
-      .be_wdata_o(be_wdata_o),
-      .be_wstrb_o(be_wstrb_o)
+      .be_wdata_o(iob_wdata_o),
+      .be_wstrb_o(iob_wstrb_o)
    );
 
 endmodule
