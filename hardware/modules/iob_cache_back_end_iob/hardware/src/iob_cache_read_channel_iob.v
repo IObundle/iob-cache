@@ -7,8 +7,8 @@
 `include "iob_cache_iob_conf.vh"
 
 module iob_cache_read_channel_iob #(
-   parameter FE_ADDR_W     = `IOB_CACHE_IOB_ADDR_W,
-   parameter FE_DATA_W     = `IOB_CACHE_IOB_DATA_W,
+   parameter FE_ADDR_W     = 1,
+   parameter FE_DATA_W     = 32,
    parameter BE_ADDR_W     = `IOB_CACHE_IOB_BE_ADDR_W,
    parameter BE_DATA_W     = `IOB_CACHE_IOB_BE_DATA_W,
    parameter WORD_OFFSET_W = `IOB_CACHE_IOB_WORD_OFFSET_W,

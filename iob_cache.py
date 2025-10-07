@@ -802,7 +802,7 @@ def setup(py_params: dict):
         "code": """
    invalidate_o = ctrl_invalidate | invalidate_i;
    wtb_empty_o  = wtbuf_empty & wtb_empty_i;
-   cache_mem_data_addr = data_addr[FE_ADDR_W-1 : BE_NBYTES_W+LINE2BE_W];
+   cache_mem_data_addr = data_addr[FE_ADDR_W-FE_NBYTES_W-1:BE_NBYTES_W+LINE2BE_W-FE_NBYTES_W];
 
 """
     }

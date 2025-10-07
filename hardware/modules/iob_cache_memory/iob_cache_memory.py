@@ -151,7 +151,14 @@ def setup(py_params: dict):
         {
             "name": "ADDR_W",
             "type": "D",
-            "val": "USE_CTRL + FE_ADDR_W - FE_NBYTES_W",
+            "val": "FE_ADDR_W-(BE_NBYTES_W+LINE2BE_W)",
+            "min": "0",
+            "max": "32",
+        },
+        {
+            "name": "ADDR_REG_W",
+            "type": "D",
+            "val": "FE_ADDR_W-FE_NBYTES_W",
             "min": "0",
             "max": "32",
         },
@@ -179,14 +186,11 @@ def setup(py_params: dict):
             "descr": "Cache memory front-end interface",
             "signals": [
                 {"name": "req_i", "width": 1},
-                {
-                    "name": "addr_i",
-                    "width": "FE_ADDR_W-(BE_NBYTES_W+LINE2BE_W)",
-                },
+                {"name": "addr_i", "width": "ADDR_W"},
                 {"name": "rdata_o", "width": "FE_DATA_W"},
                 {"name": "ack_o", "width": 1},
                 {"name": "req_reg_i", "width": 1},
-                {"name": "addr_reg_i", "width": "FE_ADDR_W-FE_NBYTES_W"},
+                {"name": "addr_reg_i", "width": "ADDR_REG_W"},
                 {"name": "wdata_reg_i", "width": "FE_DATA_W"},
                 {"name": "wstrb_reg_i", "width": "FE_NBYTES"},
             ],

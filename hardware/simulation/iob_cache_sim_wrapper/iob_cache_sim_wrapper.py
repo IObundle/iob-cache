@@ -241,7 +241,7 @@ def setup(py_params_dict):
    mem_d_i = be_iob_rdata;
    be_iob_wdata = mem_d_o;
 
-   iob_reg_rvalid_nxt = be_valid & (~(|be_wstrb));
+   iob_reg_rvalid_nxt = be_iob_valid & (~(|be_iob_wstrb));
    be_iob_rvalid = iob_reg_rvalid;
 """
     attributes_dict["comb"] = {"code": comb_code}

@@ -83,10 +83,10 @@ module iob_cache_memory #(
    // cache-memory internal signals
    wire [NWAYS-1:0] way_hit, way_select;
 
-   wire [TAG_W-1:0]            tag = addr_reg_i[FE_ADDR_W-1 -: TAG_W]; // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [NLINES_W-1:0]         index = addr_i[FE_ADDR_W-TAG_W-1 -: NLINES_W]; // cant wait, doesnt update during a write-access
-   wire [NLINES_W-1:0]         index_reg = addr_reg_i[FE_ADDR_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
-   wire [WORD_OFFSET_W-1:0]    offset = addr_reg_i[FE_NBYTES_W +: WORD_OFFSET_W]; // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
+   wire [TAG_W-1:0]            tag = addr_reg_i[ADDR_REG_W-1 -: TAG_W]; // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
+   wire [NLINES_W-1:0]         index = addr_i[ADDR_W-TAG_W-1 -: NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [NLINES_W-1:0]         index_reg = addr_reg_i[ADDR_REG_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [WORD_OFFSET_W-1:0]    offset = addr_reg_i[0 +: WORD_OFFSET_W]; // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
    wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata;
    wire [NWAYS*TAG_W-1:0] line_tag;
    reg [NWAYS*(2**NLINES_W)-1:0] v_reg;
@@ -182,7 +182,7 @@ module iob_cache_memory #(
 
          // back-end read channel
          assign replace_req_o  = (~hit & read_access & ~replace_i) & (buffer_empty & write_ack_i);
-         assign replace_addr_o = addr_i[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
+         assign replace_addr_o = addr_i[ADDR_W-1:0];
       end else begin : g_write_back
          // if (WRITE_POL == WRITE_BACK)
          // back-end write channel
@@ -191,7 +191,7 @@ module iob_cache_memory #(
 
          // back-end read channel
          assign replace_req_o  = (~|way_hit) & (write_ack_i) & req_reg_i & ~replace_i;
-         assign replace_addr_o = addr_i[FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W];
+         assign replace_addr_o = addr_i[ADDR_W-1:0];
       end
    endgenerate
 

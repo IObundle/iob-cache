@@ -62,7 +62,7 @@ module iob_cache_back_end_iob #(
    assign be_ack      = iob_rvalid_i | be_wack_r;
    assign be_wack     = iob_ready_i & iob_valid_o & (|iob_wstrb_o);
 
-   iob_reg_re #(
+   iob_reg_care #(
       .DATA_W (1),
       .RST_VAL(0)
    ) iob_reg_be_wack (
@@ -75,7 +75,7 @@ module iob_cache_back_end_iob #(
       .data_o(be_wack_r)
    );
 
-   iob_cache_read_channel #(
+   iob_cache_read_channel_iob #(
       .FE_ADDR_W    (FE_ADDR_W),
       .FE_DATA_W    (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),
@@ -96,7 +96,7 @@ module iob_cache_back_end_iob #(
       .be_rdata_i     (iob_rdata_i)
    );
 
-   iob_cache_write_channel #(
+   iob_cache_write_channel_iob #(
       .ADDR_W       (FE_ADDR_W),
       .DATA_W       (FE_DATA_W),
       .BE_ADDR_W    (BE_ADDR_W),

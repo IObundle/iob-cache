@@ -137,7 +137,7 @@ def setup(py_params: dict):
                 },
                 {"name": "read_valid_o", "width": 1},
                 {"name": "read_addr_o", "width": "LINE2BE_W"},
-                {"name": "read_rdata_o", "width": "AXI_DATA_W"},
+                {"name": "read_rdata_o", "width": "BE_DATA_W"},
             ],
         },
         {
@@ -157,7 +157,15 @@ def setup(py_params: dict):
     #
     # Subblocks
     #
-    attributes_dict["subblocks"] = []
+    attributes_dict["subblocks"] = [
+        {
+            "core_name": "iob_reg",
+            "instance_name": "iob_reg_care_inst",
+            "port_params": {
+                "clk_en_rst_s": "c_a_r_e",
+            },
+        },
+    ]
     #
     # Snippets
     #
