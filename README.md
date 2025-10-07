@@ -29,5 +29,21 @@ select a specific simulator or the DOC variable used to choose a document type
 to generate. The Makefile provides the following targets for simulation, FPGA
 synthesis, and documentation generation.
 
+## Quick setup
+
+Py2HWSW runs on a Nix shell. First, download and install
+[nix-shell](https://nixos.org/download.html#nix-install-linux).
+
+To generate the Verilog sources, call the 'setup' Makefile target:
+```
+make setup
+```
+The sources are generated in the `../iob_cache_Vx.y/hardware/src/` directory, where Vx.y is the current version of IOb-cache.
+The generated top level module is either `iob_cache_iob.v` or `iob_cache_axi.v`, depending on the value of the BE_IF Makefile variable.
+
+To run in simulation, call the 'sim-run' Makefile target:
+```
+make sim-run
+```
 
 
