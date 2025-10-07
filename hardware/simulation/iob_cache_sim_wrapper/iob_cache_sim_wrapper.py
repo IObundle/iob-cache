@@ -239,8 +239,8 @@ def setup(py_params_dict):
    mem_en_i = be_iob_valid;
    mem_we_i = be_iob_wstrb;
    mem_addr_i = be_iob_addr;
-   mem_d_i = be_iob_rdata;
-   be_iob_wdata = mem_d_o;
+   mem_d_i = be_iob_wdata;
+   be_iob_rdata = mem_d_o;
 
    iob_reg_rvalid_nxt = be_iob_valid & (~(|be_iob_wstrb));
    be_iob_rvalid = iob_reg_rvalid;

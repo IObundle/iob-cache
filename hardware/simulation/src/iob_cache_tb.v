@@ -101,6 +101,7 @@ module iob_cache_tb;
       .wtb_empty_o (),
 
       .clk_i (clk),
+      .cke_i (1'b1),
       .arst_i(rst)
    );
 
