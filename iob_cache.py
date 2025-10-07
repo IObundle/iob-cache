@@ -428,6 +428,7 @@ def setup(py_params: dict):
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
                     "LEN_W": "AXI_LEN_W",
+                    "LOCK_W": 1,
                 },
             },
         ]

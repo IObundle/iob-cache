@@ -180,6 +180,7 @@ def setup(py_params_dict):
                     "ID_WIDTH": "AXI_ID_W",
                     "ADDR_WIDTH": "AXI_ADDR_W",
                     "DATA_WIDTH": "AXI_DATA_W",
+                    "LEN_WIDTH": "AXI_LEN_W",
                 },
                 "connect": {
                     "clk_i": "clk",
@@ -187,8 +188,8 @@ def setup(py_params_dict):
                     "axi_s": (
                         "axi",
                         [
-                            "{1'b0, axi_arlock}",
-                            "{1'b0, axi_awlock}",
+                            "{1'b0, be_axi_arlock}",
+                            "{1'b0, be_axi_awlock}",
                         ],
                     ),
                     "external_mem_bus_m": "axi_ram_mem",

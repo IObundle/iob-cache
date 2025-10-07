@@ -34,6 +34,7 @@ module iob_cache_write_channel_axi #(
    output reg                                                               ready_o,
 
    output [  AXI_ADDR_W-1:0] axi_awaddr_o,
+   output [           3-1:0] axi_awprot_o,
    output                    axi_awvalid_o,
    input                     axi_awready_i,
    output [  AXI_DATA_W-1:0] axi_wdata_o,

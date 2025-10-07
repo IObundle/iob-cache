@@ -30,6 +30,7 @@ module iob_cache_read_channel_axi #(
    output     [                 BE_DATA_W-1:0] read_rdata_o,
 
    output [AXI_ADDR_W-1:0] axi_araddr_o,
+   output [         3-1:0] axi_arprot_o,
    output                  axi_arvalid_o,
    input                   axi_arready_i,
    input  [AXI_DATA_W-1:0] axi_rdata_i,
