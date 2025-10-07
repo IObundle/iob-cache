@@ -22,11 +22,18 @@ module iob_cache_tb;
    parameter ADDR_W = USE_CTRL + FE_ADDR_W - FE_NBYTES_W;
    parameter DATA_W = `IOB_UUT_DATA_W;
 
-   reg rst = 1;
+   reg                 rst = 1;
 
    //frontend signals
-   `include "iob_cache_iob_m_tb_wire.vs"
-   reg ctrl = 0;
+   reg  [       1-1:0] iob_valid_i;
+   reg  [  ADDR_W-1:0] iob_addr_i;
+   reg  [  DATA_W-1:0] iob_wdata_i;
+   reg  [DATA_W/8-1:0] iob_wstrb_i;
+   wire [       1-1:0] iob_rvalid_o;
+   wire [  DATA_W-1:0] iob_rdata_o;
+   wire [       1-1:0] iob_ready_o;
+
+   reg                 ctrl = 0;
 
    //iterator
    integer i, fd, failed = 0;

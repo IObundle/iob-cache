@@ -257,6 +257,11 @@ def setup(py_params: dict):
             "core_name": "iob_ram_sp",
             "instance_name": "iob_ram_sp_inst",
         },
+        # For iob_cache_replacement_policy.v
+        {
+            "core_name": "iob_regarray_sp",
+            "instance_name": "iob_regarray_sp_inst",
+        },
     ]
     #
     # Snippets

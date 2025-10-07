@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import os
-import shutil
-
 
 def setup(py_params: dict):
     VERSION = "0.71"
@@ -766,10 +763,6 @@ def setup(py_params: dict):
                 },
             ],
         },
-        # {
-        #     "core_name": "iob_regarray_sp",
-        #     "instance_name": "iob_regarray_sp_inst",
-        # },
         # {
         #     "core_name": "iob_reg",
         #     "instance_name": "iob_reg_inst",

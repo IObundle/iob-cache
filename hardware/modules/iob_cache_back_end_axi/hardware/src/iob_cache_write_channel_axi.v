@@ -7,8 +7,8 @@
 `include "iob_cache_axi_conf.vh"
 
 module iob_cache_write_channel_axi #(
-   parameter                ADDR_W        = `IOB_CACHE_AXI_ADDR_W,
-   parameter                DATA_W        = `IOB_CACHE_AXI_DATA_W,
+   parameter                ADDR_W        = 1,
+   parameter                DATA_W        = 32,
    parameter                FE_ADDR_W     = `IOB_CACHE_AXI_FE_ADDR_W,
    parameter                FE_DATA_W     = `IOB_CACHE_AXI_FE_DATA_W,
    parameter                BE_ADDR_W     = `IOB_CACHE_AXI_BE_ADDR_W,
