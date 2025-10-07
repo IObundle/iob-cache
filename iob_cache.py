@@ -18,8 +18,8 @@ def setup(py_params: dict):
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
-    suffix = "axi" if BE_IF == "AXI4" else "iob"
-    NAME = py_params.get("name", f"iob_cache_{suffix}")
+    be_if = "axi" if BE_IF == "AXI4" else "iob"
+    NAME = py_params.get("name", f"iob_cache_{be_if}")
     # Build directory. Usually auto-filled by Py2HWSW.
     BUILD_DIR = py_params.get("build_dir", "") or f"../{NAME}_V{VERSION}"
 
@@ -43,7 +43,7 @@ def setup(py_params: dict):
     #
     # Confs
     #
-    attributes_dict["confs"] = [
+    config_macros = [
         {
             "name": "LRU",
             "descr": "Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters",
@@ -82,6 +82,17 @@ def setup(py_params: dict):
             "descr": "write-back allocate: implementes a dirty-memory",
             "type": "M",
             "val": "1",
+            "min": "?",
+            "max": "?",
+        },
+    ]
+    attributes_dict["confs"] = config_macros + [
+        # Currently, Py2hwsw does not have a way of adding `includes. So we need to repeat this macro manually here
+        {
+            "name": "ADDR_W_CSRS",
+            "descr": "Address width of CSRs",
+            "type": "M",
+            "val": "5",
             "min": "?",
             "max": "?",
         },
@@ -460,7 +471,7 @@ def setup(py_params: dict):
             "descr": "Control interface.",
             "signals": [
                 {"name": "ctrl_req", "width": 1},
-                {"name": "ctrl_addr", "width": "`IOB_CACHE_CSRS_ADDR_W"},
+                {"name": "ctrl_addr", "width": f"`{NAME.upper()}_ADDR_W_CSRS"},
                 {"name": "ctrl_rdata", "width": "USE_CTRL*(FE_DATA_W-1)+1"},
                 {"name": "ctrl_ack", "width": 1},
             ],
@@ -558,6 +569,7 @@ def setup(py_params: dict):
             "core_name": "iob_cache_memory",
             "instance_name": "cache_memory",
             "instance_description": "This block contains the tag, data storage memories and the Write Through Buffer if the correspeonding write policy is selected; these memories are implemented either with RAM if large enough, or with registers if small enough",
+            "config_macros": config_macros,
             "parameters": {
                 "FE_ADDR_W": "FE_ADDR_W",
                 "FE_DATA_W": "FE_DATA_W",
@@ -631,10 +643,16 @@ def setup(py_params: dict):
             },
         ]
     attributes_dict["subblocks"] += [
+        {
+            "core_name": "iob_cache_control",
+            "instance_name": "cache_control",
+            "instantiate": False,  # Instantiated manually in the verilog snippet
+        },
         # Generate CSRs but don't instantiate it (generated hardware unused; only for software and docs)
         {
             "core_name": "iob_csrs",
             "instance_name": "csrs_inst",
+            "name": "iob_cache_csrs",
             "instantiate": False,
             "autoaddr": False,
             "rw_overlap": False,
@@ -773,9 +791,9 @@ def setup(py_params: dict):
             "core_name": "iob_cache_sim_wrapper",
             "dest_dir": "hardware/simulation/src",
             "cache_confs": [
-                conf for conf in attributes_dict["confs"] if conf["type"] == "P"
+                conf for conf in attributes_dict["confs"] if conf["type"] in ["P", "D"]
             ],
-            "be_if": "axi" if BE_IF == "AXI4" else "iob",
+            "be_if": be_if,
         },
         # Kintex wrapper
         # {
@@ -809,7 +827,7 @@ def setup(py_params: dict):
             .USE_CTRL_CNT(USE_CTRL_CNT)
          ) cache_control (
             .clk_i  (clk_i),
-            .reset_i(arst_i),
+            .arst_i(arst_i),
 
             // control's signals
             .valid_i(ctrl_req),

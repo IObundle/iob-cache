@@ -4,18 +4,17 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_csrs_def.vh"
-`include "iob_cache_conf.vh"
+`include "iob_cache_axi_conf.vh"
 
 module iob_cache_read_channel_axi #(
-   parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
-   parameter                DATA_W        = `IOB_CACHE_DATA_W,
-   parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
-   parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter                WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   parameter                AXI_ID_W      = `IOB_CACHE_AXI_ID_W,
-   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID,
-   parameter                AXI_LEN_W     = `IOB_CACHE_AXI_LEN_W,
+   parameter                ADDR_W        = `IOB_CACHE_AXI_ADDR_W,
+   parameter                DATA_W        = `IOB_CACHE_AXI_DATA_W,
+   parameter                BE_ADDR_W     = `IOB_CACHE_AXI_BE_ADDR_W,
+   parameter                BE_DATA_W     = `IOB_CACHE_AXI_BE_DATA_W,
+   parameter                WORD_OFFSET_W = `IOB_CACHE_AXI_WORD_OFFSET_W,
+   parameter                AXI_ID_W      = `IOB_CACHE_AXI_AXI_ID_W,
+   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_AXI_ID,
+   parameter                AXI_LEN_W     = `IOB_CACHE_AXI_AXI_LEN_W,
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
    //derived parameters

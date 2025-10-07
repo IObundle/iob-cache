@@ -4,21 +4,20 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_csrs_def.vh"
-`include "iob_cache_conf.vh"
+`include "iob_cache_axi_conf.vh"
 
 module iob_cache_write_channel_axi #(
-   parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
-   parameter                DATA_W        = `IOB_CACHE_DATA_W,
-   parameter                FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
-   parameter                FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
-   parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
-   parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter                WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
-   parameter                WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   parameter                AXI_ID_W      = `IOB_CACHE_AXI_ID_W,
-   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID,
-   parameter                AXI_LEN_W     = `IOB_CACHE_AXI_LEN_W,
+   parameter                ADDR_W        = `IOB_CACHE_AXI_ADDR_W,
+   parameter                DATA_W        = `IOB_CACHE_AXI_DATA_W,
+   parameter                FE_ADDR_W     = `IOB_CACHE_AXI_FE_ADDR_W,
+   parameter                FE_DATA_W     = `IOB_CACHE_AXI_FE_DATA_W,
+   parameter                BE_ADDR_W     = `IOB_CACHE_AXI_BE_ADDR_W,
+   parameter                BE_DATA_W     = `IOB_CACHE_AXI_BE_DATA_W,
+   parameter                WRITE_POL     = `IOB_CACHE_AXI_WRITE_THROUGH,
+   parameter                WORD_OFFSET_W = `IOB_CACHE_AXI_WORD_OFFSET_W,
+   parameter                AXI_ID_W      = `IOB_CACHE_AXI_AXI_ID_W,
+   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_AXI_ID,
+   parameter                AXI_LEN_W     = `IOB_CACHE_AXI_AXI_LEN_W,
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
    //derived parameters
@@ -68,7 +67,7 @@ module iob_cache_write_channel_axi #(
 
    genvar i;
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
+      if (WRITE_POL == `IOB_CACHE_AXI_WRITE_THROUGH) begin : g_write_through
          // Constant AXI signals
          assign axi_awid_o = AXI_ID;
          assign axi_awlen_o = 8'd0;
@@ -144,7 +143,7 @@ module iob_cache_write_channel_axi #(
                end
             endcase
          end
-      end else begin : g_write_back  // if (WRITE_POL == `IOB_CACHE_WRITE_BACK)
+      end else begin : g_write_back  // if (WRITE_POL == `IOB_CACHE_AXI_WRITE_BACK)
          if (LINE2BE_W > 0) begin : g_line2be_w
             // Constant AXI signals
             assign axi_awid_o = AXI_ID;

@@ -5,7 +5,6 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_memory_conf.vh"
-`include "iob_cache_csrs_def.vh"
 
 module iob_cache_memory #(
    // parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
@@ -108,7 +107,7 @@ module iob_cache_memory #(
    reg  [                          NWAYS*(2**NLINES_W)-1:0] dirty_reg;
 
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
+      if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH) begin : g_write_through
          localparam FIFO_DATA_W = FE_ADDR_W - FE_NBYTES_W + FE_DATA_W + FE_NBYTES;
          localparam FIFO_ADDR_W = WTBUF_DEPTH_W;
 
@@ -205,7 +204,7 @@ module iob_cache_memory #(
    reg  [        NWAYS-1:0] way_hit_prev;
 
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through_on_RAW
+      if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH) begin : g_write_through_on_RAW
          always @(posedge clk_i) begin
             write_hit_prev <= write_access & (|way_hit);
             // previous write position
@@ -236,7 +235,7 @@ module iob_cache_memory #(
    // front-end ACK signal
    /////////////////////////////////
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH)
+      if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH)
          assign ack_o = (hit & read_access) | (~buffer_full & write_access);
       else  // if (WRITE_POL == WRITE_BACK)
          assign ack_o = hit & req_reg_i;
@@ -367,7 +366,7 @@ module iob_cache_memory #(
          );
 
          // dirty-memory
-         if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
+         if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_BACK) begin : g_write_back
             always @(posedge clk_i, posedge arst_i) begin
                if (arst_i) dirty_reg <= 0;
                else if (write_req_o)
@@ -426,7 +425,7 @@ module iob_cache_memory #(
          assign rdata_o[FE_DATA_W-1:0] = line_rdata >> FE_DATA_W * offset;
 
          // dirty-memory
-         if (WRITE_POL == `IOB_CACHE_WRITE_BACK) begin : g_write_back
+         if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_BACK) begin : g_write_back
             // dirty-memory
             always @(posedge clk_i, posedge arst_i) begin
                if (arst_i) begin

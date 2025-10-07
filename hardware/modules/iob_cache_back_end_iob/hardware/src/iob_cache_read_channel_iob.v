@@ -4,15 +4,14 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_csrs_def.vh"
-`include "iob_cache_conf.vh"
+`include "iob_cache_iob_conf.vh"
 
-module iob_cache_read_channel #(
-   parameter FE_ADDR_W     = `IOB_CACHE_ADDR_W,
-   parameter FE_DATA_W     = `IOB_CACHE_DATA_W,
-   parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
-   parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+module iob_cache_read_channel_iob #(
+   parameter FE_ADDR_W     = `IOB_CACHE_IOB_ADDR_W,
+   parameter FE_DATA_W     = `IOB_CACHE_IOB_DATA_W,
+   parameter BE_ADDR_W     = `IOB_CACHE_IOB_BE_ADDR_W,
+   parameter BE_DATA_W     = `IOB_CACHE_IOB_BE_DATA_W,
+   parameter WORD_OFFSET_W = `IOB_CACHE_IOB_WORD_OFFSET_W,
    //derived parameters
    parameter BE_NBYTES     = BE_DATA_W / 8,
    parameter BE_NBYTES_W   = $clog2(BE_NBYTES),

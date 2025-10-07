@@ -4,6 +4,10 @@
 
 
 def setup(py_params: dict):
+    assert py_params.get(
+        "config_macros", ""
+    ), "Cache memory needs cache's configuration macros, like LRU, PLRU_MRU, etc."
+
     # Create dictionary with attributes of cache
     attributes_dict = {
         "generate_hw": False,
@@ -11,7 +15,7 @@ def setup(py_params: dict):
     #
     # Confs
     #
-    attributes_dict["confs"] = [
+    attributes_dict["confs"] = py_params["config_macros"] + [
         {
             "name": "FE_ADDR_W",
             "descr": "Front-end address width (log2): defines the total memory space accessible via the cache, which must be a power of two.",
