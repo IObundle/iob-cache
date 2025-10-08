@@ -46,4 +46,9 @@ To run in simulation, call the 'sim-run' Makefile target:
 make sim-run
 ```
 
+## Pre-built files
+
+Two pre-built versions of iob-cache, with AXI4 and IOb back-end interfaces, are available in the [repository's release page](https://github.com/IObundle/iob-cache/releases).
+The Cache's Verilog sources are available in the `hardware/src/` directory of the compressed tar.gz files in the release page.
+
 
