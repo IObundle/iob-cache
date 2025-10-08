@@ -69,3 +69,13 @@ clean:
 	@find . -name \*~ -delete
 
 .PHONY: clean
+
+# Release Artifacts
+
+release-artifacts:
+	nix-shell --run "make clean setup BE_IF=AXI4"
+	tar -czf $(CORE)_V$(VERSION)_BEIF_AXI4.tar.gz ../$(CORE)_V$(VERSION)
+	nix-shell --run "make clean setup BE_IF=IOb"
+	tar -czf $(CORE)_V$(VERSION)_BEIF_IOB.tar.gz ../$(CORE)_V$(VERSION)
+
+.PHONY: release-artifacts
