@@ -12,25 +12,9 @@
 // cache state, and other cache functions
 
 module iob_cache_control #(
-   // parameter DATA_W       = 32,
-   // parameter USE_CTRL_CNT = 1
    `include "iob_cache_control_params.vs"
 ) (
    `include "iob_cache_control_io.vs"
-   // input clk_i,
-   // input arst_i,
-
-   // input                                   valid_i,
-   // input      [`IOB_CACHE_CSRS_ADDR_W-1:0] addr_i,
-   // input                                   wtbuf_full_i,
-   // input                                   wtbuf_empty_i,
-   // input                                   write_hit_i,
-   // input                                   write_miss_i,
-   // input                                   read_hit_i,
-   // input                                   read_miss_i,
-   // output reg [                DATA_W-1:0] rdata_o,
-   // output reg                              ready_o,
-   // output reg                              invalidate_o
 );
 
    generate

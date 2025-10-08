@@ -7,72 +7,9 @@
 `include "iob_cache_memory_conf.vh"
 
 module iob_cache_memory #(
-   // parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W,
-   // parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W,
-   // parameter BE_ADDR_W = `IOB_CACHE_BE_ADDR_W,
-   // parameter BE_DATA_W = `IOB_CACHE_BE_DATA_W,
-
-   // parameter NWAYS_W       = `IOB_CACHE_NWAYS_W,
-   // parameter NLINES_W      = `IOB_CACHE_NLINES_W,
-   // parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   // parameter WTBUF_DEPTH_W = `IOB_CACHE_WTBUF_DEPTH_W,
-
-   // parameter WRITE_POL  = `IOB_CACHE_WRITE_THROUGH,
-   // parameter REP_POLICY = `IOB_CACHE_PLRU_TREE,
-
-   // parameter USE_CTRL     = `IOB_CACHE_USE_CTRL,
-   // parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT,
-   // //derived parameters
-   // parameter FE_NBYTES    = FE_DATA_W / 8,
-   // parameter FE_NBYTES_W  = $clog2(FE_NBYTES),
-   // parameter BE_NBYTES    = BE_DATA_W / 8,
-   // parameter BE_NBYTES_W  = $clog2(BE_NBYTES),
-   // parameter LINE2BE_W    = WORD_OFFSET_W - $clog2(BE_DATA_W / FE_DATA_W)
    `include "iob_cache_memory_params.vs"
 ) (
    `include "iob_cache_memory_io.vs"
-   //
-   // input clk_i,
-   // input cke_i,
-   // input arst_i,
-
-   // // front-end
-   // input                                      req_i,
-   // input  [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] addr_i,
-   // output [                    FE_DATA_W-1:0] rdata_o,
-   // output                                     ack_o,
-
-   // // stored input value
-   // input                           req_reg_i,
-   // input [FE_ADDR_W-1:FE_NBYTES_W] addr_reg_i,
-   // input [          FE_DATA_W-1:0] wdata_reg_i,
-   // input [          FE_NBYTES-1:0] wstrb_reg_i,
-
-   // // back-end write-channel
-   // output                                                                        write_req_o,
-   // output [                   FE_ADDR_W-1:FE_NBYTES_W + WRITE_POL*WORD_OFFSET_W] write_addr_o,
-   // output [FE_DATA_W + WRITE_POL*(FE_DATA_W*(2**WORD_OFFSET_W)-FE_DATA_W)-1 : 0] write_wdata_o,
-
-   // // write-through[DATA_W]; write-back[DATA_W*2**WORD_OFFSET_W]
-   // output [FE_NBYTES-1:0] write_wstrb_o,
-   // input                  write_ack_i,
-
-   // // back-end read-channel
-   // output                                     replace_req_o,
-   // output [FE_ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr_o,
-   // input                                      replace_i,
-   // input                                      read_req_i,
-   // input  [                    LINE2BE_W-1:0] read_addr_i,
-   // input  [                    BE_DATA_W-1:0] read_rdata_i,
-
-   // // cache-control
-   // input  invalidate_i,
-   // output wtbuf_full_o,
-   // output wtbuf_empty_o,
-   // output write_hit_o,
-   // output write_miss_o,
-   // output read_hit_o,
-   // output read_miss_o
 );
 
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
