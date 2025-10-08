@@ -341,80 +341,6 @@ def setup(py_params: dict):
                 },
             ],
         },
-        # Interfaces for submodules
-        # # TODO: Move them to correct modules
-        # {
-        #     "name": "fe_io",
-        #     "descr": "Front-end interface (IOb native slave)",
-        #     "signals": [
-        #         {
-        #             "name": "req_i",
-        #             "width": 1,
-        #             "descr": "Read or write request from host. If signal {\\tt ack} raises in the next cyle the request has been served; otherwise {\\tt req} should remain high until {\\tt ack} raises. When {\\tt ack} raises in response to a previous request, {\\tt req} may keep high, or combinatorially lowered in the same cycle. If {\\tt req} keeps high, a new request is being made to the current address {\\tt addr}; if {\\tt req} lowers, no new request is being made. Note that the new request is being made in parallel with acknowledging the previous request: pipelined operation.",
-        #         },
-        #         {
-        #             "name": "addr_i",
-        #             "width": "USE_CTRL+FE_ADDR_W-2",
-        #             "descr": "Address from CPU or other user core, excluding the byte selection LSBs.",
-        #         },
-        #         {
-        #             "name": "wdata_i",
-        #             "width": "FE_DATA_W",
-        #             "descr": "Write data fom host.",
-        #         },
-        #         {
-        #             "name": "wstrb_i",
-        #             "width": 4,
-        #             "descr": "Byte write strobe from host.",
-        #         },
-        #         {
-        #             "name": "rdata_o",
-        #             "width": "FE_DATA_W",
-        #             "descr": "Read data to host.",
-        #         },
-        #         {
-        #             "name": "ack_o",
-        #             "width": 1,
-        #             "descr": "Acknowledge signal from cache: indicates that the last request has been served. The next request can be issued as soon as this signal raises, in the same clock cycle, or later after it becomes low.",
-        #         },
-        #     ],
-        # },
-        # {
-        #     "name": "be_io",
-        #     "descr": "Back-end interface",
-        #     "signals": [
-        #         {
-        #             "name": "req_o",
-        #             "width": 1,
-        #             "descr": "Read or write request to next-level cache or memory.",
-        #         },
-        #         {
-        #             "name": "be_addr_o",
-        #             "width": "BE_ADDR_W",
-        #             "descr": "Address to next-level cache or memory.",
-        #         },
-        #         {
-        #             "name": "be_wdata_o",
-        #             "width": "BE_DATA_W",
-        #             "descr": "Write data to next-level cache or memory.",
-        #         },
-        #         {
-        #             "name": "be_wstrb_o",
-        #             "width": 4,
-        #             "descr": "Write strobe to next-level cache or memory.",
-        #         },
-        #         {
-        #             "name": "be_rdata_i",
-        #             "width": "BE_DATA_W",
-        #             "descr": "Read data from next-level cache or memory.",
-        #         },
-        #         {
-        #             "name": "be_ack_i",
-        #             "width": 1,
-        #             "descr": "Acknowledge signal from next-level cache or memory.",
-        #         },
-        #     ],
-        # },
     ]
     # Back-end interface
     if BE_IF == "AXI4":
@@ -764,10 +690,6 @@ def setup(py_params: dict):
                 },
             ],
         },
-        # {
-        #     "core_name": "iob_reg",
-        #     "instance_name": "iob_reg_inst",
-        # },
         # For simulation
         {
             "core_name": "iob_tasks",
@@ -789,12 +711,6 @@ def setup(py_params: dict):
             ],
             "be_if": be_if,
         },
-        # Kintex wrapper
-        # {
-        #     "core_name": "iob_cache_aes_ku040_db_g",
-        #     "instance_description": "FPGA wrapper for aes_ku040_db_g board",
-        #     "dest_dir": "hardware/fpga/vivado/iob_aes_ku040_db_g",
-        # },
     ]
     #
     # Combinatorial
