@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/24.05.tar.gz") {} }:
+{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/25.05.tar.gz") {} }:
 
 let
   py2hwsw_commit = "85859c34c73158071b22ae26441bc51df7d91610"; # Replace with the desired commit.
