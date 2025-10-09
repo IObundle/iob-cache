@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 `timescale 1ns / 10ps
-`include "iob_cache_conf.vh"
-`include "iob_cache_csrs_def.vh"
+`include "iob_uut_conf.vh"
 
 module iob_cache_tb;
 
@@ -13,21 +12,28 @@ module iob_cache_tb;
    reg clk = 1;
    always #clk_per clk = ~clk;
 
-   parameter FE_ADDR_W = `IOB_CACHE_FE_ADDR_W;
-   parameter FE_DATA_W = `IOB_CACHE_FE_DATA_W;
+   parameter FE_ADDR_W = `IOB_UUT_FE_ADDR_W;
+   parameter FE_DATA_W = `IOB_UUT_FE_DATA_W;
    parameter FE_NBYTES = FE_DATA_W / 8;
    parameter FE_NBYTES_W = $clog2(FE_NBYTES);
-   parameter USE_CTRL = `IOB_CACHE_USE_CTRL;
-   parameter USE_CTRL_CNT = `IOB_CACHE_USE_CTRL_CNT;
+   parameter USE_CTRL = `IOB_UUT_USE_CTRL;
+   parameter USE_CTRL_CNT = `IOB_UUT_USE_CTRL_CNT;
 
    parameter ADDR_W = USE_CTRL + FE_ADDR_W - FE_NBYTES_W;
-   parameter DATA_W = `IOB_CACHE_DATA_W;
+   parameter DATA_W = `IOB_UUT_DATA_W;
 
-   reg rst = 1;
+   reg                 rst = 1;
 
    //frontend signals
-   `include "iob_cache_iob_m_tb_wire.vs"
-   reg ctrl = 0;
+   reg  [       1-1:0] iob_valid_i;
+   reg  [  ADDR_W-1:0] iob_addr_i;
+   reg  [  DATA_W-1:0] iob_wdata_i;
+   reg  [DATA_W/8-1:0] iob_wstrb_i;
+   wire [       1-1:0] iob_rvalid_o;
+   wire [  DATA_W-1:0] iob_rdata_o;
+   wire [       1-1:0] iob_ready_o;
+
+   reg                 ctrl = 0;
 
    //iterator
    integer i, fd, failed = 0;
@@ -52,14 +58,14 @@ module iob_cache_tb;
 
       $display("Writing data to frontend");
       for (i = 0; i < 5 * 4; i = i + 4) begin
-         iob_write(i, (3 * i), `IOB_CACHE_DATA_W);
+         iob_write(i, (3 * i), `IOB_UUT_DATA_W);
       end
 
       #80 @(posedge clk);
 
       $display("Reading data from frontend");
       for (i = 0; i < 5 * 4; i = i + 4) begin
-         iob_read(i, rdata, `IOB_CACHE_DATA_W);
+         iob_read(i, rdata, `IOB_UUT_DATA_W);
          //Write "Test passed!" to a file named "test.log"
          if (rdata !== (3 * i)) begin
             $display("ERROR at address %d: got 0x%0h, expected 0x%0h", i, rdata, 3 * i);
@@ -85,7 +91,7 @@ module iob_cache_tb;
    end
 
    //Unit Under Test (simulation wrapper)
-   iob_cache_sim_wrapper uut (
+   iob_uut uut (
       //frontend
       `include "iob_cache_iob_s_s_portmap.vs"
       //invalidate / wtb empty
@@ -95,6 +101,7 @@ module iob_cache_tb;
       .wtb_empty_o (),
 
       .clk_i (clk),
+      .cke_i (1'b1),
       .arst_i(rst)
    );
 

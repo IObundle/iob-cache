@@ -4,18 +4,17 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_csrs_def.vh"
-`include "iob_cache_conf.vh"
+`include "iob_cache_iob_conf.vh"
 
-module iob_cache_write_channel #(
-   parameter ADDR_W        = `IOB_CACHE_ADDR_W,
-   parameter DATA_W        = `IOB_CACHE_DATA_W,
-   parameter FE_ADDR_W     = `IOB_CACHE_FE_ADDR_W,
-   parameter FE_DATA_W     = `IOB_CACHE_FE_DATA_W,
-   parameter BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
-   parameter BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter WRITE_POL     = `IOB_CACHE_WRITE_THROUGH,
-   parameter WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
+module iob_cache_write_channel_iob #(
+   parameter ADDR_W        = 1,
+   parameter DATA_W        = 32,
+   parameter FE_ADDR_W     = `IOB_CACHE_IOB_FE_ADDR_W,
+   parameter FE_DATA_W     = `IOB_CACHE_IOB_FE_DATA_W,
+   parameter BE_ADDR_W     = `IOB_CACHE_IOB_BE_ADDR_W,
+   parameter BE_DATA_W     = `IOB_CACHE_IOB_BE_DATA_W,
+   parameter WRITE_POL     = `IOB_CACHE_IOB_WRITE_THROUGH,
+   parameter WORD_OFFSET_W = `IOB_CACHE_IOB_WORD_OFFSET_W,
    //derived parameters
    parameter FE_NBYTES     = FE_DATA_W / 8,
    parameter FE_NBYTES_W   = $clog2(FE_NBYTES),
@@ -43,7 +42,7 @@ module iob_cache_write_channel #(
    genvar i;
 
    generate
-      if (WRITE_POL == `IOB_CACHE_WRITE_THROUGH) begin : g_write_through
+      if (WRITE_POL == `IOB_CACHE_IOB_WRITE_THROUGH) begin : g_write_through
          assign be_addr_o = {BE_ADDR_W{1'b0}} + {addr_i[ADDR_W-1 : BE_NBYTES_W], {BE_NBYTES_W{1'b0}}};
 
          localparam idle = 1'd0, write = 1'd1;

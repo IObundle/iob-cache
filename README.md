@@ -10,7 +10,7 @@ IOb-cache is a high-performance, configurable open-source Verilog cache. If you 
 Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218. https://doi.org/10.3390/a14080218 
 
 IOb-cache supports pipeline architectures, allowing one request per clock cycle (read and write). 
-IOb-cache has both Native (pipelined) and AXI4 back-end interfaces.
+IOb-cache has both Native `IOb` (pipelined) and `AXI4` back-end interfaces.
 The Write Policy is configurable: either write-through/not-allocate or write-back/allocate.
 The configuration supports the number of ways, address width, cache's word size (front-end data width), the memory's word size (back-end data width), the number of lines and words per line, replacement policy (if set associative), and cache-control module (allows performance measurement, cache invalidation, and write-through buffer status).
 
@@ -29,5 +29,26 @@ select a specific simulator or the DOC variable used to choose a document type
 to generate. The Makefile provides the following targets for simulation, FPGA
 synthesis, and documentation generation.
 
+## Quick setup
+
+Py2HWSW runs on a Nix shell. First, download and install
+[nix-shell](https://nixos.org/download.html#nix-install-linux).
+
+To generate the Verilog sources, call the 'setup' Makefile target:
+```
+make setup
+```
+The sources are generated in the `../iob_cache_Vx.y/hardware/src/` directory, where Vx.y is the current version of IOb-cache.
+The generated top level module is either `iob_cache_iob.v` or `iob_cache_axi.v`, depending on the value of the BE_IF Makefile variable.
+
+To run in simulation, call the 'sim-run' Makefile target:
+```
+make sim-run
+```
+
+## Pre-built files
+
+Two pre-built versions of iob-cache, with AXI4 and IOb back-end interfaces, are available in the [repository's release page](https://github.com/IObundle/iob-cache/releases).
+The Cache's Verilog sources are available in the `hardware/src/` directory of the compressed tar.gz files in the release page.
 
 

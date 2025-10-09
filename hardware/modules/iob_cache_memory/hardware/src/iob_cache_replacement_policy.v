@@ -4,14 +4,13 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_csrs_def.vh"
-`include "iob_cache_conf.vh"
+`include "iob_cache_memory_conf.vh"
 
 module iob_cache_replacement_policy #(
    parameter N_WAYS     = 8,
    parameter NLINES_W   = 0,
    parameter NWAYS_W    = $clog2(N_WAYS),
-   parameter REP_POLICY = `IOB_CACHE_PLRU_TREE
+   parameter REP_POLICY = `IOB_CACHE_MEMORY_PLRU_TREE
 ) (
    input                 clk_i,
    input                 cke_i,
@@ -26,7 +25,7 @@ module iob_cache_replacement_policy #(
    genvar i, j, k;
 
    generate
-      if (REP_POLICY == `IOB_CACHE_LRU) begin : g_LRU
+      if (REP_POLICY == `IOB_CACHE_MEMORY_LRU) begin : g_LRU
          wire [N_WAYS*NWAYS_W-1:0] mru_out, mru_in;
          wire [N_WAYS*NWAYS_W-1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
          wire [N_WAYS*NWAYS_W-1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
@@ -51,7 +50,7 @@ module iob_cache_replacement_policy #(
          assign mru_in = (|way_hit_i)? mru_cnt : mru_out; // If an hit occured, then it updates, to avoid updating during a (write) miss (mru_cnt would decrement every way besides the lowest)
 
          // Most Recently Used (MRU) memory
-         iob_regfile_sp #(
+         iob_regarray_sp #(
             .ADDR_W(NLINES_W),
             .DATA_W(N_WAYS * NWAYS_W)
          ) mru_memory  // simply uses the same format as valid memory
@@ -71,7 +70,7 @@ module iob_cache_replacement_policy #(
             .onehot_i(way_select_o[N_WAYS-1:1]),
             .bin_o   (way_select_bin_o)
          );
-      end else if (REP_POLICY == `IOB_CACHE_PLRU_MRU) begin : g_PLRU_MRU
+      end else if (REP_POLICY == `IOB_CACHE_MEMORY_PLRU_MRU) begin : g_PLRU_MRU
          wire [N_WAYS -1:0] mru_in, mru_out;
 
          // pseudo LRU MRU based Encoder (More Recenty-Used bits):
@@ -84,7 +83,7 @@ module iob_cache_replacement_policy #(
          assign way_select_o[0] = ~mru_out[0];
 
          // Most Recently Used (MRU) memory
-         iob_regfile_sp #(
+         iob_regarray_sp #(
             .ADDR_W(NLINES_W),
             .DATA_W(N_WAYS)
          ) mru_memory  // simply uses the same format as valid memory
@@ -151,7 +150,7 @@ module iob_cache_replacement_policy #(
          assign way_select_o     = (1 << way_select_bin_o);
 
          // Most Recently Used (MRU) memory
-         iob_regfile_sp #(
+         iob_regarray_sp #(
             .ADDR_W(NLINES_W),
             .DATA_W(N_WAYS - 1)
          ) mru_memory  // simply uses the same format as valid memory

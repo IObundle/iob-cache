@@ -4,18 +4,17 @@
 
 `timescale 1ns / 1ps
 
-`include "iob_cache_csrs_def.vh"
-`include "iob_cache_conf.vh"
+`include "iob_cache_axi_conf.vh"
 
 module iob_cache_read_channel_axi #(
-   parameter                ADDR_W        = `IOB_CACHE_ADDR_W,
-   parameter                DATA_W        = `IOB_CACHE_DATA_W,
-   parameter                BE_ADDR_W     = `IOB_CACHE_BE_ADDR_W,
-   parameter                BE_DATA_W     = `IOB_CACHE_BE_DATA_W,
-   parameter                WORD_OFFSET_W = `IOB_CACHE_WORD_OFFSET_W,
-   parameter                AXI_ID_W      = `IOB_CACHE_AXI_ID_W,
-   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_ID,
-   parameter                AXI_LEN_W     = `IOB_CACHE_AXI_LEN_W,
+   parameter                ADDR_W        = 1,
+   parameter                DATA_W        = 32,
+   parameter                BE_ADDR_W     = `IOB_CACHE_AXI_BE_ADDR_W,
+   parameter                BE_DATA_W     = `IOB_CACHE_AXI_BE_DATA_W,
+   parameter                WORD_OFFSET_W = `IOB_CACHE_AXI_WORD_OFFSET_W,
+   parameter                AXI_ID_W      = `IOB_CACHE_AXI_AXI_ID_W,
+   parameter [AXI_ID_W-1:0] AXI_ID        = `IOB_CACHE_AXI_AXI_ID,
+   parameter                AXI_LEN_W     = `IOB_CACHE_AXI_AXI_LEN_W,
    parameter                AXI_ADDR_W    = BE_ADDR_W,
    parameter                AXI_DATA_W    = BE_DATA_W,
    //derived parameters
@@ -29,9 +28,27 @@ module iob_cache_read_channel_axi #(
    output                                      read_valid_o,
    output reg [                 LINE2BE_W-1:0] read_addr_o,
    output     [                 BE_DATA_W-1:0] read_rdata_o,
-   `include "iob_cache_axi_read_m_port.vs"
-   input                                       clk_i,
-   input                                       reset_i
+
+   output [AXI_ADDR_W-1:0] axi_araddr_o,
+   output [         3-1:0] axi_arprot_o,
+   output                  axi_arvalid_o,
+   input                   axi_arready_i,
+   input  [AXI_DATA_W-1:0] axi_rdata_i,
+   input  [         2-1:0] axi_rresp_i,
+   input                   axi_rvalid_i,
+   output                  axi_rready_o,
+   output [  AXI_ID_W-1:0] axi_arid_o,
+   output [ AXI_LEN_W-1:0] axi_arlen_o,
+   output [         3-1:0] axi_arsize_o,
+   output [         2-1:0] axi_arburst_o,
+   output                  axi_arlock_o,
+   output [         4-1:0] axi_arcache_o,
+   output [         4-1:0] axi_arqos_o,
+   input  [  AXI_ID_W-1:0] axi_rid_i,
+   input                   axi_rlast_i,
+
+   input clk_i,
+   input reset_i
 );
 
    reg axi_arvalid_int;

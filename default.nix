@@ -1,27 +1,30 @@
-# SPDX-FileCopyrightText: 2024 IObundle
+# SPDX-FileCopyrightText: 2025 IObundle
 #
 # SPDX-License-Identifier: MIT
 
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/25.05.tar.gz") {} }:
 
 let
-  py2hwsw_commit = "4f92cafd667d313c15c23f61d10725f8a7a59cae"; # Replace with the desired commit.
-  py2hwsw_sha256 = "W3EZVcXvbUMN8LyCdn9ci48Xh3eOORgYN4sEtlYwZ6A="; # Replace with the actual SHA256 hash.
+  py2hwsw_commit = "85859c34c73158071b22ae26441bc51df7d91610"; # Replace with the desired commit.
+  py2hwsw_sha256 = "DXhjiOtD0McUDt7zk9ZxsOX409M4gPfDXZqYXb09VXc="; # Replace with the actual SHA256 hash.
   # Get local py2hwsw root from `PY2HWSW_ROOT` env variable
   py2hwswRoot = builtins.getEnv "PY2HWSW_ROOT";
 
   # For debug
-  disable_py2_build = 0;
+  force_py2_build = 0;
 
   py2hwsw = 
-    if disable_py2_build == 0 then
+    # If no root is provided, or there is a root but we want to force a rebuild
+    if py2hwswRoot == "" || force_py2_build != 0 then
       pkgs.python3.pkgs.buildPythonPackage rec {
         pname = "py2hwsw";
         version = py2hwsw_commit;
         src =
           if py2hwswRoot != "" then
+            # Root provided, use local
             pkgs.lib.cleanSource py2hwswRoot
           else
+            # No root provided, use GitHub
             (pkgs.fetchFromGitHub {
               owner = "IObundle";
               repo = "py2hwsw";
@@ -39,10 +42,16 @@ let
     else
       null;
 
+  extra_pkgs = with pkgs; [
+    # Define other Nix packages for your project here
+  ];
 
 in
 
-if disable_py2_build == 0 then
-  import "${py2hwsw}/lib/python${builtins.substring 0 4 pkgs.python3.version}/site-packages/py2hwsw/lib/default.nix" { inherit pkgs; py2hwsw_pkg = py2hwsw; }
+# If no root is provided, or there is a root but we want to force a rebuild
+if py2hwswRoot == "" || force_py2_build != 0 then
+  # Use newly built nix package
+  import "${py2hwsw}/lib/python${builtins.substring 0 4 pkgs.python3.version}/site-packages/py2hwsw/lib/default.nix" { py2hwsw_pkg = py2hwsw; extra_pkgs = extra_pkgs; }
 else
-  import "${py2hwswRoot}/py2hwsw/lib/default.nix" { inherit pkgs; py2hwsw_pkg = py2hwsw; }
+  # Use local
+  import "${py2hwswRoot}/py2hwsw/lib/default.nix" { py2hwsw_pkg = py2hwsw; extra_pkgs = extra_pkgs; }
