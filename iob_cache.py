@@ -230,6 +230,7 @@ def setup(py_params: dict):
         },
         {
             "name": "ADDR_W",
+            "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled) and excluding the lowest bits of the FE_ADDR_W (byte aligned).",
             "type": "D",
             "val": "USE_CTRL + FE_ADDR_W - FE_NBYTES_W",
             "min": "NA",
@@ -478,7 +479,7 @@ def setup(py_params: dict):
             "instance_name": "front_end",
             "instance_description": "This IOb interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory",
             "parameters": {
-                "ADDR_W": "ADDR_W",  # Used to be 'FE_ADDR_W - FE_NBYTES_W' in axi version
+                "ADDR_W": "ADDR_W",
                 "DATA_W": "DATA_W",
                 "USE_CTRL": "USE_CTRL",
             },
