@@ -6,7 +6,7 @@
 def setup(py_params: dict):
     # Create dictionary with attributes of cache
     attributes_dict = {
-        "generate_hw": False,
+        "generate_hw": True,
     }
     #
     # Confs
@@ -93,22 +93,75 @@ def setup(py_params: dict):
     #
     # Wires
     #
-    attributes_dict["wires"] = []
-    #
-    # Subblocks
-    #
-    attributes_dict["subblocks"] = [
+    attributes_dict["wires"] = [
         {
-            "core_name": "iob_reg",
-            "instance_name": "iob_reg_care_inst",
-            "port_params": {
-                "clk_en_rst_s": "c_a_r_e",
-            },
+            "name": "internal_wires",
+            "descr": "Internal wires",
+            "signals": [
+                {"name": "ack", "width": 1},
+                {"name": "valid_int", "width": 1},
+                {"name": "we_r", "width": 1},
+            ],
         },
     ]
     #
+    # Combinatorial
+    #
+    attributes_dict["comb"] = {
+        "code": """
+        // data output ports
+        data_addr_o  = iob_addr_i[ADDR_W-USE_CTRL-1:0];
+        data_req_o   = valid_int | data_req_reg_o;
+
+        iob_rvalid_o = we_r ? 1'b0 : ack;
+        iob_ready_o  = data_req_reg_o ~^ ack;
+
+        // Register every input
+        data_req_reg_o_nxt = valid_int;
+        data_req_reg_o_en = valid_int | ack;
+
+        data_addr_reg_o_nxt = iob_addr_i[ADDR_W-USE_CTRL-1:0];
+        data_addr_reg_o_en = valid_int;
+
+        data_wdata_reg_o_nxt = iob_wdata_i;
+        data_wdata_reg_o_en = valid_int;
+
+        data_wstrb_reg_o_nxt = iob_wstrb_i;
+        data_wstrb_reg_o_en = valid_int;
+
+        we_r_nxt = |iob_wstrb_i;
+        we_r_en = valid_int;
+"""
+    }
+    #
     # Snippets
     #
-    attributes_dict["snippets"] = []
+    attributes_dict["snippets"] = [
+        {
+            "verilog_code": """
+   // select cache memory ir controller
+   generate
+      if (USE_CTRL) begin : g_ctrl
+         // Front-end output signals
+         assign ack         = ctrl_ack_i | data_ack_i;
+         assign iob_rdata_o = (ctrl_ack_i) ? ctrl_rdata_i : data_rdata_i;
+
+         assign valid_int   = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
+
+         assign ctrl_req_o  = iob_addr_i[ADDR_W-1] & iob_valid_i;
+         assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_CSRS_ADDR_W-1:0];
+
+      end else begin : g_no_ctrl
+         // Front-end output signals
+         assign ack         = data_ack_i;
+         assign iob_rdata_o = data_rdata_i;
+         assign valid_int   = iob_valid_i;
+         assign ctrl_req_o  = 1'b0;
+         assign ctrl_addr_o = `IOB_CACHE_CSRS_ADDR_W'dx;
+      end
+   endgenerate
+""",
+        },
+    ]
 
     return attributes_dict
