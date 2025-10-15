@@ -110,7 +110,7 @@ def setup(py_params: dict):
     attributes_dict["comb"] = {
         "code": """
         // data output ports
-        data_addr_o  = iob_addr_i[ADDR_W-USE_CTRL-1:0];
+        data_addr_o  = valid_int ? iob_addr_i[ADDR_W-USE_CTRL-1:0] : data_addr_reg_o;
         data_req_o   = valid_int | data_req_reg_o;
 
         iob_rvalid_o = we_r ? 1'b0 : ack;

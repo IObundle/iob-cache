@@ -33,26 +33,11 @@ module iob_cache_read_channel_iob #(
    input      [BE_DATA_W-1:0] be_rdata_i
 );
 
-   wire [FE_ADDR_W-(BE_NBYTES_W+LINE2BE_W)-1:0] replace_addr_i_reg;
-   iob_reg_ae #(
-      .DATA_W (FE_ADDR_W - (BE_NBYTES_W + LINE2BE_W)),
-      .RST_VAL(0)
-   ) addr_i_reg_ae (
-      // clk_en_rst_s port: Clock, clock enable and reset
-      .clk_i (clk_i),
-      .arst_i(reset_i),
-      .en_i  (replace_valid_i),
-      // data_i port: Data input
-      .data_i(replace_addr_i),
-      // data_o port: Data output
-      .data_o(replace_addr_i_reg)
-   );
-
    generate
       if (LINE2BE_W > 0) begin : g_line2be_w
          reg [LINE2BE_W-1:0] word_counter;
 
-         assign be_addr_o = {BE_ADDR_W{1'b0}} + {replace_addr_i_reg, word_counter, {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o = {BE_ADDR_W{1'b0}} + {replace_addr_i, word_counter, {BE_NBYTES_W{1'b0}}};
          assign read_rdata_o = be_rdata_i;
 
          localparam
@@ -112,7 +97,7 @@ module iob_cache_read_channel_iob #(
             endcase
          end
       end else begin : g_no_line2be_w
-         assign be_addr_o    = {BE_ADDR_W{1'b0}} + {replace_addr_i_reg, {BE_NBYTES_W{1'b0}}};
+         assign be_addr_o    = {BE_ADDR_W{1'b0}} + {replace_addr_i, {BE_NBYTES_W{1'b0}}};
          assign read_rdata_o = be_rdata_i;
 
          localparam
