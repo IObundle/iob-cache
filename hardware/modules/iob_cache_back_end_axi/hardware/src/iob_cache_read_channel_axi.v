@@ -22,12 +22,12 @@ module iob_cache_read_channel_axi #(
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
-   input                                       replace_valid_i,
-   input      [ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr_i,
-   output reg                                  replace_o,
-   output                                      read_valid_o,
-   output reg [                 LINE2BE_W-1:0] read_addr_o,
-   output     [                 BE_DATA_W-1:0] read_rdata_o,
+   input                                           replace_valid_i,
+   input      [ADDR_W-(BE_NBYTES_W+LINE2BE_W)-1:0] replace_addr_i,
+   output reg                                      replace_o,
+   output                                          read_valid_o,
+   output reg [                     LINE2BE_W-1:0] read_addr_o,
+   output     [                     BE_DATA_W-1:0] read_rdata_o,
 
    output [AXI_ADDR_W-1:0] axi_araddr_o,
    output [         3-1:0] axi_arprot_o,
@@ -57,6 +57,22 @@ module iob_cache_read_channel_axi #(
    assign axi_arvalid_o = axi_arvalid_int;
    assign axi_rready_o  = axi_rready_int;
 
+   wire [ADDR_W-(BE_NBYTES_W+LINE2BE_W)-1:0] replace_addr_i_reg;
+   iob_reg_ae #(
+      .DATA_W (ADDR_W - (BE_NBYTES_W + LINE2BE_W)),
+      .RST_VAL(0)
+   ) addr_i_reg_ae (
+      // clk_en_rst_s port: Clock, clock enable and reset
+      .clk_i (clk_i),
+      .arst_i(reset_i),
+      .en_i  (replace_valid_i),
+      // data_i port: Data input
+      .data_i(replace_addr_i),
+      // data_o port: Data output
+      .data_o(replace_addr_i_reg)
+   );
+
+
 
    generate
       if (LINE2BE_W > 0) begin : g_line2be_w
@@ -71,7 +87,7 @@ module iob_cache_read_channel_axi #(
          assign axi_arlen_o   = 2**LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
          assign axi_arsize_o  = BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst_o = 2'b01;  // incremental burst
-         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i, {(LINE2BE_W+BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i_reg, {(LINE2BE_W+BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
          assign read_rdata_o = axi_rdata_i;
@@ -155,7 +171,7 @@ module iob_cache_read_channel_axi #(
          assign axi_arlen_o = 8'd0;  // A single burst of Memory data width word
          assign axi_arsize_o  = BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst_o = 2'b00;
-         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
+         assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i_reg, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 
          // Read Line values
          assign read_valid_o = axi_rvalid_i;

@@ -43,6 +43,23 @@ module iob_cache_memory #(
    reg  [                                        NWAYS-1:0] dirty;
    reg  [                          NWAYS*(2**NLINES_W)-1:0] dirty_reg;
 
+   wire [                                       ADDR_W-1:0] addr_i_reg;
+   iob_reg_cae #(
+      .DATA_W (ADDR_W),
+      .RST_VAL(0)
+   ) addr_i_reg_cae (
+      // clk_en_rst_s port: Clock, clock enable and reset
+      .clk_i (clk_i),
+      .cke_i (cke_i),
+      .arst_i(arst_i),
+      .en_i  (req_i),
+      // data_i port: Data input
+      .data_i(addr_i),
+      // data_o port: Data output
+      .data_o(addr_i_reg)
+   );
+
+
    generate
       if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH) begin : g_write_through
          localparam FIFO_DATA_W = FE_ADDR_W - FE_NBYTES_W + FE_DATA_W + FE_NBYTES;
@@ -119,7 +136,7 @@ module iob_cache_memory #(
 
          // back-end read channel
          assign replace_req_o  = (~hit & read_access & ~replace_i) & (buffer_empty & write_ack_i);
-         assign replace_addr_o = addr_i[ADDR_W-1:0];
+         assign replace_addr_o = addr_i_reg[ADDR_W-1:0];
       end else begin : g_write_back
          // if (WRITE_POL == WRITE_BACK)
          // back-end write channel
@@ -128,7 +145,7 @@ module iob_cache_memory #(
 
          // back-end read channel
          assign replace_req_o  = (~|way_hit) & (write_ack_i) & req_reg_i & ~replace_i;
-         assign replace_addr_o = addr_i[ADDR_W-1:0];
+         assign replace_addr_o = addr_i_reg[ADDR_W-1:0];
       end
    endgenerate
 
