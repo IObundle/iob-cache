@@ -52,7 +52,7 @@ sim-test:
 fpga-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME)"
 
-fpga-test: clean
+fpga-test:
 	make fpga-build BE_IF=IOb
 	make fpga-build BE_IF=AXI4
 
