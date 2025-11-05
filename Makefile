@@ -50,7 +50,7 @@ sim-test:
 
 
 fpga-build: clean setup
-	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME)"
+	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME) BOARD=$(BOARD)"
 
 fpga-test:
 	make fpga-build BE_IF=IOb
