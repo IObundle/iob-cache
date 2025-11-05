@@ -12,7 +12,7 @@ def setup(py_params: dict):
     # Confs
     #
     attributes_dict["confs"] = [
-        # Currently, Py2hwsw does not have a way of adding `includes. So we need to repeat this CSRs ADDR_W macro manually here
+        # Currently, Py2hwsw does not have a way of adding verilog `include` directives. So we need to repeat this CSRs ADDR_W macro manually here
         {
             "name": "ADDR_W_CSRS",
             "descr": "Address width of CSRs",
