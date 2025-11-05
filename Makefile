@@ -7,8 +7,6 @@ CORE := iob_cache
 SIMULATOR ?= verilator
 BOARD ?= iob_aes_ku040_db_g
 
-BUILD_DIR ?= $(shell nix-shell --run "py2hwsw $(CORE) print_build_dir")
-
 BE_IF ?= AXI4
 
 # Fill PY_PARAMS if not defined
@@ -22,6 +20,11 @@ endif
 # Remove first char (:) from PY_PARAMS
 PY_PARAMS:=$(shell echo $(PY_PARAMS) | cut -c2-)
 endif # ifndef PY_PARAMS
+
+BUILD_DIR ?= $(shell nix-shell --run "py2hwsw $(CORE) print_build_dir --py_params '$(PY_PARAMS)'")
+NAME ?= $(shell nix-shell --run "py2hwsw $(CORE) print_core_name --py_params '$(PY_PARAMS)'")
+VERSION ?= $(shell nix-shell --run "py2hwsw $(CORE) print_core_version --py_params '$(PY_PARAMS)'")
+
 
 DOC ?= ug
 
@@ -39,27 +42,27 @@ sim-run: clean setup
 sim-waves:
 	nix-shell --run "make -C $(BUILD_DIR) sim-waves"
 
-sim-test: clean
-	nix-shell --run "make clean setup BE_IF=IOb  && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus"
-	nix-shell --run "make clean setup BE_IF=IOb  && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator"
-	nix-shell --run "make clean setup BE_IF=AXI4 && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus"
-	nix-shell --run "make clean setup BE_IF=AXI4 && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator"
+sim-test:
+	make sim-run SIMULATOR=icarus BE_IF=IOb
+	make sim-run SIMULATOR=verilator BE_IF=IOb
+	make sim-run SIMULATOR=icarus BE_IF=AXI4
+	make sim-run SIMULATOR=verilator BE_IF=AXI4
 
 
-fpga-build: clean
-	nix-shell --run "make setup BE_IF=$(BE_IF) && make -C $(BUILD_DIR) fpga-build FPGA_TOP=iob_cache_axi BOARD=$(BOARD)"
+fpga-build: clean setup
+	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME) BOARD=$(BOARD)"
 
-fpga-test: clean
-	nix-shell --run "make clean setup BE_IF=IOb && make -C $(BUILD_DIR) fpga-build BOARD=iob_aes_ku040_db_g FPGA_TOP=iob_cache_iob BOARD=$(BOARD)"
-	nix-shell --run "make clean setup BE_IF=AXI4 && make -C $(BUILD_DIR) fpga-build BOARD=iob_aes_ku040_db_g FPGA_TOP=iob_cache_axi BOARD=$(BOARD)"
+fpga-test:
+	make fpga-build BE_IF=IOb
+	make fpga-build BE_IF=AXI4
 
 doc-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) doc-build DOC=$(DOC)"
 
-doc-view: ../$(CORE)_V*/document/$(DOC).pdf
+doc-view: $(BUILD_DIR)/document/$(DOC).pdf
 	nix-shell --run "make -C $(BUILD_DIR) doc-view DOC=$(DOC)"
 
-../$(CORE)_V*/document/$(DOC).pdf: doc-build
+$(BUILD_DIR)/document/$(DOC).pdf: doc-build
 
 .PHONY: all setup sim-build sim-run sim-waves sim-test fpga-build fpga-test doc-build doc-view
 
@@ -74,8 +77,8 @@ clean:
 
 release-artifacts:
 	nix-shell --run "make clean setup BE_IF=AXI4"
-	tar -czf $(CORE)_V$(VERSION)_BEIF_AXI4.tar.gz ../$(CORE)_V$(VERSION)
+	tar -czf $(CORE)_axi_V$(VERSION).tar.gz ../$(CORE)_axi_V$(VERSION)
 	nix-shell --run "make clean setup BE_IF=IOb"
-	tar -czf $(CORE)_V$(VERSION)_BEIF_IOB.tar.gz ../$(CORE)_V$(VERSION)
+	tar -czf $(CORE)_iob_V$(VERSION).tar.gz ../$(CORE)_iob_V$(VERSION)
 
 .PHONY: release-artifacts

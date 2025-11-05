@@ -22,12 +22,12 @@ module iob_cache_read_channel_axi #(
    parameter                BE_NBYTES_W   = $clog2(BE_NBYTES),
    parameter                LINE2BE_W     = WORD_OFFSET_W - $clog2(BE_DATA_W / DATA_W)
 ) (
-   input                                       replace_valid_i,
-   input      [ADDR_W-1:BE_NBYTES_W+LINE2BE_W] replace_addr_i,
-   output reg                                  replace_o,
-   output                                      read_valid_o,
-   output reg [                 LINE2BE_W-1:0] read_addr_o,
-   output     [                 BE_DATA_W-1:0] read_rdata_o,
+   input                                           replace_valid_i,
+   input      [ADDR_W-(BE_NBYTES_W+LINE2BE_W)-1:0] replace_addr_i,
+   output reg                                      replace_o,
+   output                                          read_valid_o,
+   output reg [                     LINE2BE_W-1:0] read_addr_o,
+   output     [                     BE_DATA_W-1:0] read_rdata_o,
 
    output [AXI_ADDR_W-1:0] axi_araddr_o,
    output [         3-1:0] axi_arprot_o,

@@ -43,6 +43,7 @@ module iob_cache_memory #(
    reg  [                                        NWAYS-1:0] dirty;
    reg  [                          NWAYS*(2**NLINES_W)-1:0] dirty_reg;
 
+
    generate
       if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH) begin : g_write_through
          localparam FIFO_DATA_W = FE_ADDR_W - FE_NBYTES_W + FE_DATA_W + FE_NBYTES;
