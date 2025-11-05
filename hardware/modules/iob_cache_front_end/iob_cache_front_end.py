@@ -148,7 +148,7 @@ def setup(py_params: dict):
     attributes_dict["snippets"] = [
         {
             "verilog_code": """
-   // select cache memory ir controller
+   // select cache memory or controller
    generate
       if (USE_CTRL) begin : g_ctrl
          // Front-end output signals
