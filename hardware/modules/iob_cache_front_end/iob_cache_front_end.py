@@ -12,11 +12,20 @@ def setup(py_params: dict):
     # Confs
     #
     attributes_dict["confs"] = [
+        # Currently, Py2hwsw does not have a way of adding `includes. So we need to repeat this CSRs ADDR_W macro manually here
+        {
+            "name": "ADDR_W_CSRS",
+            "descr": "Address width of CSRs",
+            "type": "M",
+            "val": "5",
+            "min": "?",
+            "max": "?",
+        },
         {
             "name": "ADDR_W",
             "descr": "Cache address width used by csrs_gen",
             "type": "P",
-            "val": "`IOB_CACHE_CSRS_ADDR_W",
+            "val": "`IOB_CACHE_FRONT_END_ADDR_W_CSRS",
             "min": "NA",
             "max": "NA",
         },
@@ -84,7 +93,7 @@ def setup(py_params: dict):
             "descr": "Control interface.",
             "signals": [
                 {"name": "ctrl_req_o", "width": 1},
-                {"name": "ctrl_addr_o", "width": "`IOB_CACHE_CSRS_ADDR_W"},
+                {"name": "ctrl_addr_o", "width": "`IOB_CACHE_FRONT_END_ADDR_W_CSRS"},
                 {"name": "ctrl_rdata_i", "width": "USE_CTRL*(DATA_W-1)+1"},
                 {"name": "ctrl_ack_i", "width": 1},
             ],
@@ -149,7 +158,7 @@ def setup(py_params: dict):
          assign valid_int   = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
 
          assign ctrl_req_o  = iob_addr_i[ADDR_W-1] & iob_valid_i;
-         assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_CSRS_ADDR_W-1:0];
+         assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
 
       end else begin : g_no_ctrl
          // Front-end output signals
@@ -157,7 +166,7 @@ def setup(py_params: dict):
          assign iob_rdata_o = data_rdata_i;
          assign valid_int   = iob_valid_i;
          assign ctrl_req_o  = 1'b0;
-         assign ctrl_addr_o = `IOB_CACHE_CSRS_ADDR_W'dx;
+         assign ctrl_addr_o = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
       end
    endgenerate
 """,
