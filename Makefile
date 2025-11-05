@@ -41,11 +41,11 @@ sim-run: clean setup
 sim-waves:
 	nix-shell --run "make -C $(BUILD_DIR) sim-waves"
 
-sim-test: clean
-	nix-shell --run "make clean setup BE_IF=IOb  && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus"
-	nix-shell --run "make clean setup BE_IF=IOb  && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator"
-	nix-shell --run "make clean setup BE_IF=AXI4 && make -C $(BUILD_DIR) sim-run SIMULATOR=icarus"
-	nix-shell --run "make clean setup BE_IF=AXI4 && make -C $(BUILD_DIR) sim-run SIMULATOR=verilator"
+sim-test:
+	nix-shell --run "make clean sim-run SIMULATOR=icarus BE_IF=IOb"
+	nix-shell --run "make clean sim-run SIMULATOR=verilator BE_IF=IOb"
+	nix-shell --run "make clean sim-run SIMULATOR=icarus BE_IF=AXI4"
+	nix-shell --run "make clean sim-run SIMULATOR=verilator BE_IF=AXI4"
 
 
 fpga-build: clean
