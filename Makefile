@@ -68,17 +68,22 @@ $(BUILD_DIR)/document/$(DOC).pdf: doc-build
 
 clean:
 	nix-shell --run "py2hwsw $(CORE) clean --build_dir '$(BUILD_DIR)'"
-	@rm -rf ../*.summary ../*.rpt 
+	@rm -rf ../*.summary ../*.rpt fusesoc_exports
 	@find . -name \*~ -delete
 
 .PHONY: clean
 
+fusesoc-export: clean setup
+	nix-shell --run "py2hwsw $(CORE) export_fusesoc --build_dir '$(BUILD_DIR)' --py_params '$(PY_PARAMS)'"
+
+.PHONY: fusesoc-export
+
 # Release Artifacts
 
 release-artifacts:
-	nix-shell --run "make clean setup BE_IF=AXI4"
-	tar -czf $(CORE)_axi_V$(VERSION).tar.gz ../$(CORE)_axi_V$(VERSION)
-	nix-shell --run "make clean setup BE_IF=IOb"
-	tar -czf $(CORE)_iob_V$(VERSION).tar.gz ../$(CORE)_iob_V$(VERSION)
+	make fusesoc-export BE_IF=AXI4
+	tar -czf $(CORE)_axi_V$(VERSION).tar.gz ./fusesoc_exports/*
+	make fusesoc-export BE_IF=IOb
+	tar -czf $(CORE)_iob_V$(VERSION).tar.gz ./fusesoc_exports/*
 
 .PHONY: release-artifacts
