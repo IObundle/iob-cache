@@ -48,7 +48,8 @@ make sim-run
 
 ## Pre-built files
 
-Two pre-built versions of iob-cache, with AXI4 and IOb back-end interfaces, are available in the [repository's release page](https://github.com/IObundle/iob-cache/releases).
-The Cache's Verilog sources are available in the `hardware/src/` directory of the compressed tar.gz files in the release page.
+Two [FuseSoC](https://github.com/olofk/fusesoc)-compatible pre-built versions of iob-cache, with AXI4 and IOb back-end interfaces, are available in the [repository's release page](https://github.com/IObundle/iob-cache/releases).
+The Cache's Verilog sources are available in the `iob_cache_*/hardware/src/` directory of the compressed tar.gz files in the release page.
 
+To use these pre-built cores in FuseSoC, extract the compressed tar.gz files to a [FuseSoC library directory](https://fusesoc.readthedocs.io/en/stable/user/overview.html#discover-cores-the-package-manager).
 
