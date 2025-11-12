@@ -68,7 +68,7 @@ $(BUILD_DIR)/document/$(DOC).pdf: doc-build
 
 clean:
 	nix-shell --run "py2hwsw $(CORE) clean --build_dir '$(BUILD_DIR)'"
-	@rm -rf ../*.summary ../*.rpt fusesoc_exports
+	@rm -rf ../*.summary ../*.rpt fusesoc_exports *.core
 	@find . -name \*~ -delete
 
 .PHONY: clean
@@ -78,12 +78,32 @@ fusesoc-export: clean setup
 
 .PHONY: fusesoc-export
 
+CORE_NAME=$(shell nix-shell --run "py2hwsw $(CORE) print_core_name --py_params '$(PY_PARAMS)'")
+
+# Multiline string (use a here‑document)
+define MULTILINE_TEXT
+provider:
+  name: url
+  url: https://github.com/IObundle/iob-cache/releases/latest/download/$(CORE_NAME)_V$(VERSION).tar.gz
+  filetype: tar
+endef
+
+# Generate independent fusesoc .core file. FuseSoC will obtain the Verilog sources from remote url with a pre-built build directory.
+export MULTILINE_TEXT
+fusesoc-core-file: fusesoc-export
+	cp fusesoc_exports/$(CORE_NAME).core .
+	# Append provider remote url to .core file
+	printf "\n%s\n" "$$MULTILINE_TEXT" >> $(CORE_NAME).core
+	echo "Generated independent $(CORE_NAME).core file."
+
+.PHONY: fusesoc-core-file
+
 # Release Artifacts
 
 release-artifacts:
 	make fusesoc-export BE_IF=AXI4
-	tar -czf $(CORE)_axi_V$(VERSION).tar.gz ./fusesoc_exports/*
+	tar -czf $(CORE)_axi_V$(VERSION).tar.gz -C ./fusesoc_exports .
 	make fusesoc-export BE_IF=IOb
-	tar -czf $(CORE)_iob_V$(VERSION).tar.gz ./fusesoc_exports/*
+	tar -czf $(CORE)_iob_V$(VERSION).tar.gz -C ./fusesoc_exports .
 
 .PHONY: release-artifacts
