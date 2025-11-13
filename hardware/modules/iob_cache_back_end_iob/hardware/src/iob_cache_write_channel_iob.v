@@ -9,7 +9,6 @@
 module iob_cache_write_channel_iob #(
    parameter ADDR_W        = 1,
    parameter DATA_W        = 32,
-   parameter FE_ADDR_W     = `IOB_CACHE_IOB_FE_ADDR_W,
    parameter FE_DATA_W     = `IOB_CACHE_IOB_FE_DATA_W,
    parameter BE_ADDR_W     = `IOB_CACHE_IOB_BE_ADDR_W,
    parameter BE_DATA_W     = `IOB_CACHE_IOB_BE_DATA_W,

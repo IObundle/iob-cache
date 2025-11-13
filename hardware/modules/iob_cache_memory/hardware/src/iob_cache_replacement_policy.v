@@ -22,7 +22,7 @@ module iob_cache_replacement_policy #(
    output [ NWAYS_W-1:0] way_select_bin_o
 );
 
-   genvar i, j, k;
+   genvar i, j;
 
    generate
       if (REP_POLICY == `IOB_CACHE_MEMORY_LRU) begin : g_LRU
