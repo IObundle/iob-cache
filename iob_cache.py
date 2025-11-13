@@ -498,7 +498,6 @@ def setup(py_params: dict):
             "parameters": {
                 "FE_ADDR_W": "FE_ADDR_W",
                 "FE_DATA_W": "FE_DATA_W",
-                "BE_ADDR_W": "BE_ADDR_W",
                 "BE_DATA_W": "BE_DATA_W",
                 "NWAYS_W": "NWAYS_W",
                 "NLINES_W": "NLINES_W",
@@ -738,7 +737,8 @@ def setup(py_params: dict):
             .USE_CTRL_CNT(USE_CTRL_CNT)
          ) cache_control (
             .clk_i  (clk_i),
-            .arst_i(arst_i),
+            .cke_i  (cke_i),
+            .arst_i (arst_i),
 
             // control's signals
             .valid_i(ctrl_req),

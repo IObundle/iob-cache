@@ -45,14 +45,6 @@ def setup(py_params: dict):
             "min": "0",
             "max": "1",
         },
-        {
-            "name": "USE_CTRL_CNT",
-            "descr": "Instantiates hit/miss counters for reads, writes or both (1), or not (0). This parameter is meaningful if the cache controller is present (USE_CTRL: 1), providing additional software accessible functions for these functions.",
-            "type": "P",
-            "val": "0",
-            "min": "0",
-            "max": "1",
-        },
     ]
     #
     # Ports
