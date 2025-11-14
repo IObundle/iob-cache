@@ -7,83 +7,29 @@
 `verilator_config
 
 // unused instance port
-lint_off -rule PINCONNECTEMPTY -file "**/iob_cache_memory.v" -match "Instance pin connected by name with empty reference: 'level_o'*"
+lint_off -rule PINCONNECTEMPTY -file "**/*_cache_memory.v" -match "Instance pin connected by name with empty reference: 'level_o'*"
 
 // Bits can be used depending of module parameters
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Bits of signal are not used: 'data_addr'[2:0]*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Bits of signal are not used: 'data_addr'[2:0]*"
 
 // Signals used for USE_CTRL = 1
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'ctrl_req'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'ctrl_addr'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'wtbuf_full'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'write_hit'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'write_miss'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'read_hit'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_iob.v" -match "Signal is not used: 'read_miss'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_req'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_addr'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'wtbuf_full'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'write_hit'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'write_miss'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'read_hit'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'read_miss'*"
 
 // Extra bits to match line_rdata signal width
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_memory.v" -match "Bits of signal are not used: 'line_rdata_tmp'[511:32]*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Bits of signal are not used: 'line_rdata_tmp'[511:32]*"
 
 // Signals used if USE_CTRL=1
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_front_end.v" -match "Signal is not used: 'ctrl_rdata_i'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_front_end.v" -match "Signal is not used: 'ctrl_ack_i'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_rdata_i'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_ack_i'*"
 
-//
-// To be reviewed
-//
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_regarray_sp.v" -match "Operator SHIFTL expects 256 bits on the LHS, but LHS's VARREF 'd_i' generates 2 bits.*"
-
-// lint_off -rule WIDTHTRUNC -file "**/iob_regarray_sp.v" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's SHIFTR generates 256 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_read_channel_iob.v" -match "Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'be_ack_i' generates 1 bits.*"
-
-// lint_off -rule WIDTHTRUNC -file "**/iob_cache_replacement_policy.v" -match "Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's SHIFTR generates 2 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator EQ expects 32 or 6 bits on the RHS, but RHS's VARREF 'offset' generates 3 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator SHIFTL expects 32 bits on the LHS, but LHS's REPLICATE generates 4 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator AND expects 32 bits on the LHS, but LHS's VARREF 'wstrb_reg_i' generates 4 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator AND expects 32 bits on the RHS, but RHS's REPLICATE generates 4 bits.*"
-
-// lint_off -rule WIDTHEXPAND -file "**/iob_cache_memory.v" -match "Operator ADD expects 32 or 6 bits on the LHS, but LHS's VARREF 'offset' generates 3 bits.*"
-
-
-// TODO: REVIEW THIS LATER
-// these are used in some generate cases 
+// signals used in some generate cases 
 // but generate bases are split, so we can't just put then inside one of them
 // otherwise they get out scoped
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_memory.v" -match "Signal is not driven, nor used: 'dirty'*"
-lint_off -rule UNUSEDSIGNAL -file "**/iob_cache_memory.v" -match "Signal is not driven, nor used: 'dirty_reg'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not driven, nor used: 'dirty'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not driven, nor used: 'dirty_reg'*"
