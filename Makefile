@@ -48,6 +48,12 @@ sim-test:
 	make sim-run SIMULATOR=icarus BE_IF=AXI4
 	make sim-run SIMULATOR=verilator BE_IF=AXI4
 
+lint: clean setup
+	nix-shell --run "make -C $(BUILD_DIR)/hardware/lint run"
+
+lint-test:
+	make lint BE_IF=IOb
+	make lint BE_IF=AXI4
 
 fpga-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME) BOARD=$(BOARD)"

@@ -90,7 +90,11 @@ module iob_cache_read_channel_iob #(
                end
                handshake: begin
                   be_valid_o   = ~be_ack_i | ~(&read_addr_o);
-                  word_counter = read_addr_o + be_ack_i;
+                  if (be_ack_i) begin
+                      word_counter = read_addr_o + 1;
+                  end else begin
+                      word_counter = read_addr_o;
+                  end
                   read_valid_o = be_ack_i;
                end
                default: ;

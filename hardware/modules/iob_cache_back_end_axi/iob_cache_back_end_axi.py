@@ -142,10 +142,11 @@ def setup(py_params: dict):
     #
     attributes_dict["ports"] = [
         {
-            "name": "clk_en_rst_s",
-            "descr": "Clock, clock enable and reset",
+            "name": "clk_rst_s",
+            "descr": "Clock and reset",
             "signals": {
                 "type": "iob_clk",
+                "params": "a",
             },
         },
         {

@@ -69,7 +69,7 @@ module iob_cache_read_channel_axi #(
 
          // Burst parameters
          assign axi_arlen_o   = 2**LINE2BE_W - 1'b1; // will choose the burst lenght depending on the cache's and slave's data width
-         assign axi_arsize_o  = BE_NBYTES_W;         // each word will be the width of the memory for maximum bandwidth
+         assign axi_arsize_o  = BE_NBYTES_W[3-1:0];         // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst_o = 2'b01;  // incremental burst
          assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i, {(LINE2BE_W+BE_NBYTES_W){1'b0}}}; // base address for the burst, with width extension
 
@@ -153,7 +153,7 @@ module iob_cache_read_channel_axi #(
 
          // Burst parameters - single
          assign axi_arlen_o = 8'd0;  // A single burst of Memory data width word
-         assign axi_arsize_o  = BE_NBYTES_W; // each word will be the width of the memory for maximum bandwidth
+         assign axi_arsize_o  = BE_NBYTES_W[3-1:0]; // each word will be the width of the memory for maximum bandwidth
          assign axi_arburst_o = 2'b00;
          assign axi_araddr_o  = {BE_ADDR_W{1'b0}} + {replace_addr_i, {BE_NBYTES_W{1'b0}}}; // base address for the burst, with width extension
 

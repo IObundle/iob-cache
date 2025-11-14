@@ -32,6 +32,7 @@ module iob_cache_back_end_axi #(
       .read_rdata_o   (read_rdata_o),
 
       .axi_araddr_o (axi_araddr_o),
+      .axi_arprot_o  (),
       .axi_arvalid_o(axi_arvalid_o),
       .axi_arready_i(axi_arready_i),
       .axi_rdata_i  (axi_rdata_i),
@@ -72,6 +73,7 @@ module iob_cache_back_end_axi #(
       .ready_o(write_ready_o),
 
       .axi_awaddr_o (axi_awaddr_o),
+      .axi_awprot_o (),
       .axi_awvalid_o(axi_awvalid_o),
       .axi_awready_i(axi_awready_i),
       .axi_wdata_o  (axi_wdata_o),

@@ -33,14 +33,6 @@ def setup(py_params: dict):
             "max": "64",
         },
         {
-            "name": "BE_ADDR_W",
-            "descr": "Back-end address width (log2): the value of this parameter must be equal or greater than FE_ADDR_W to match the width of the back-end interface, but the address space is still dictated by ADDR_W.",
-            "type": "P",
-            "val": "24",
-            "min": "1",
-            "max": "",
-        },
-        {
             "name": "BE_DATA_W",
             "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \\geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
             "type": "P",
@@ -159,13 +151,6 @@ def setup(py_params: dict):
             "name": "ADDR_REG_W",
             "type": "D",
             "val": "FE_ADDR_W-FE_NBYTES_W",
-            "min": "0",
-            "max": "32",
-        },
-        {
-            "name": "DATA_W",
-            "type": "D",
-            "val": "FE_DATA_W",
             "min": "0",
             "max": "32",
         },
