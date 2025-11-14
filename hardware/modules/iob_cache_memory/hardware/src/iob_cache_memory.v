@@ -14,6 +14,7 @@ module iob_cache_memory #(
 
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
    localparam NWAYS = 2 ** NWAYS_W;
+   localparam OFFSET_PAD_W = 32 - WORD_OFFSET_W;
 
    wire hit;
 
@@ -203,15 +204,23 @@ module iob_cache_memory #(
       for (k = 0; k < NWAYS; k = k + 1) begin : g_n_ways_block
          for (j = 0; j < 2 ** LINE2BE_W; j = j + 1) begin : g_line2mem_block
             for (i = 0; i < BE_DATA_W / FE_DATA_W; i = i + 1) begin : g_BE_block
+               wire [FE_NBYTES-1:0] we_gen;
+               wire [NLINES_W-1:0] addr_gen;
+               wire [FE_DATA_W-1:0] data_in_gen;
+
+               assign we_gen = {FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES];
+               assign addr_gen = (write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == {{OFFSET_PAD_W{1'b0}}, offset}))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0];
+               assign data_in_gen = (replace_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg_i;
+
                iob_cache_gen_sp_ram #(
                   .DATA_W(FE_DATA_W),
                   .ADDR_W(NLINES_W)
                ) cache_memory (
                   .clk_i(clk_i),
                   .en_i(req_i),
-                  .we_i ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                  .addr_i((write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
-                  .data_i((replace_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg_i),
+                  .we_i (we_gen),
+                  .addr_i(addr_gen),
+                  .data_i(data_in_gen),
                   .data_o(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W+:FE_DATA_W])
                );
             end
@@ -219,13 +228,14 @@ module iob_cache_memory #(
       end
 
       // Cache Line Write Strobe
+      // DEBUG: reg [(2**WORD_OFFSET_W)*FE_NBYTES-1:0] line_wstrb;
       if (LINE2BE_W > 0) begin : g_line2be_w
          always @* begin
             if (replace_i) begin
                // line-replacement: read_addr_i indexes the words in cache-line
-               line_wstrb = {BE_NBYTES{read_req_i}} << (read_addr_i * BE_NBYTES);
+               line_wstrb = {{(32-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}} << (read_addr_i * BE_NBYTES);
             end else begin
-               line_wstrb = (wstrb_reg_i & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
+               line_wstrb = {{(32-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
             end
          end
       end else begin : g_no_line2be_w
@@ -275,7 +285,7 @@ module iob_cache_memory #(
             assign way_hit[k] = (tag == line_tag[TAG_W*k+:TAG_W]) & v[k];
          end
          // Read Data Multiplexer
-         wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata_tmp = line_rdata >> (FE_DATA_W*(offset + (2**WORD_OFFSET_W)*way_hit_bin));
+         wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata_tmp = line_rdata >> (FE_DATA_W*({{OFFSET_PAD_W{1'b0}}, offset} + (2**WORD_OFFSET_W)*way_hit_bin));
          assign rdata_o[FE_DATA_W-1:0] = line_rdata_tmp[FE_DATA_W-1:0];
 
          // replacement-policy module

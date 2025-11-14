@@ -29,14 +29,17 @@ module iob_cache_replacement_policy #(
          wire [N_WAYS*NWAYS_W-1:0] mru_out, mru_in;
          wire [N_WAYS*NWAYS_W-1:0] mru; // Initial MRU values of the LRU algorithm, also initialized them in case it's the first access or was invalidated
          wire [N_WAYS*NWAYS_W-1:0] mru_cnt; // updates the MRU line, the way used will be the highest value, while the others are decremented
-         wire [NWAYS_W-1:0] mru_index, way_hit_bin;
+         wire [NWAYS_W-1:0] way_hit_bin;
+         reg [NWAYS_W-1:0] mru_index;
 
          iob_cache_onehot_to_bin #(NWAYS_W) way_hit_binary (
             .onehot_i(way_hit_i[N_WAYS-1:1]),
             .bin_o   (way_hit_bin)
          );
 
-         assign mru_index[NWAYS_W-1:0] = mru_out >> (NWAYS_W * way_hit_bin);
+         always @(*) begin
+            mru_index = mru_out[(way_hit_bin*NWAYS_W) +: NWAYS_W];
+         end
 
          for (i = 0; i < N_WAYS; i = i + 1) begin : encoder_decoder
             // LRU - Encoder
