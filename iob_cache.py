@@ -470,6 +470,17 @@ def setup(py_params: dict):
             ],
         },
     ]
+    if BE_IF == "AXI4":
+        attributes_dict["wires"] += [
+            {
+                "name": "clk_rst_s",
+                "descr": "",
+                "signals": [
+                    {"name": "clk_i"},
+                    {"name": "arst_i"},
+                ],
+            },
+        ]
     #
     # Subblocks
     #
@@ -537,7 +548,7 @@ def setup(py_params: dict):
                     "AXI_ID": "AXI_ID",
                 },
                 "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
+                    "clk_rst_s": "clk_rst_s",
                     "write_io": "be_write_if",
                     "read_io": "be_read_if",
                     "axi_m": "axi_m",

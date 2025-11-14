@@ -53,6 +53,7 @@ lint: clean setup
 
 lint-test:
 	make lint BE_IF=IOb
+	make lint BE_IF=AXI4
 
 fpga-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME) BOARD=$(BOARD)"
