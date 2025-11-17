@@ -5,8 +5,8 @@
 `timescale 1ns / 1ps
 
 `include "iob_cache_control_conf.vh"
-`include "iob_cache_csrs_conf.vh"
-`include "iob_cache_csrs.vh"
+`include "iob_cache_axi_csrs_conf.vh"
+`include "iob_cache_axi_csrs.vh"
 
 // Module responsible for performance measuring, information about the current
 // cache state, and other cache functions
@@ -63,13 +63,13 @@ module iob_cache_control #(
             ready_o <= valid_i;  // Sends acknowlege the next clock cycle after request (handshake)
 
             if (valid_i)
-               if (addr_i == `IOB_CACHE_CSRS_RW_HIT_ADDR >> 2) rdata_o <= hit_cnt;
-               else if (addr_i == `IOB_CACHE_CSRS_RW_MISS_ADDR >> 2) rdata_o <= miss_cnt;
-               else if (addr_i == `IOB_CACHE_CSRS_READ_HIT_ADDR >> 2) rdata_o <= read_hit_cnt;
-               else if (addr_i == `IOB_CACHE_CSRS_READ_MISS_ADDR >> 2) rdata_o <= read_miss_cnt;
-               else if (addr_i == `IOB_CACHE_CSRS_WRITE_HIT_ADDR >> 2) rdata_o <= write_hit_cnt;
-               else if (addr_i == `IOB_CACHE_CSRS_WRITE_MISS_ADDR >> 2) rdata_o <= write_miss_cnt;
-               else if (addr_i == `IOB_CACHE_CSRS_RST_CNTRS_ADDR >> 2) reset_counters <= 1'b1;
+               if (addr_i == `IOB_CACHE_AXI_CSRS_RW_HIT_ADDR >> 2) rdata_o <= hit_cnt;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_RW_MISS_ADDR >> 2) rdata_o <= miss_cnt;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_READ_HIT_ADDR >> 2) rdata_o <= read_hit_cnt;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_READ_MISS_ADDR >> 2) rdata_o <= read_miss_cnt;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_WRITE_HIT_ADDR >> 2) rdata_o <= write_hit_cnt;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_WRITE_MISS_ADDR >> 2) rdata_o <= write_miss_cnt;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_RST_CNTRS_ADDR >> 2) reset_counters <= 1'b1;
          end
       end else begin : g_no_ctrl_cnt
          always @(posedge clk_i) begin
@@ -77,11 +77,11 @@ module iob_cache_control #(
             invalidate_o <= 1'b0;
             ready_o <= valid_i;  // Sends acknowlege the next clock cycle after request (handshake)
             if (valid_i)
-               if (addr_i == `IOB_CACHE_CSRS_INVALIDATE_ADDR >> 2) invalidate_o <= 1'b1;
-               else if (addr_i == `IOB_CACHE_CSRS_WTB_EMPTY_ADDR >> 2) rdata_o <= wtbuf_empty_i;
-               else if (addr_i == `IOB_CACHE_CSRS_WTB_FULL_ADDR >> 2) rdata_o <= wtbuf_full_i;
-               else if (addr_i == `IOB_CACHE_CSRS_VERSION_ADDR >> 2)
-                  rdata_o <= `IOB_CACHE_CSRS_VERSION;
+               if (addr_i == `IOB_CACHE_AXI_CSRS_INVALIDATE_ADDR >> 2) invalidate_o <= 1'b1;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_WTB_EMPTY_ADDR >> 2) rdata_o <= wtbuf_empty_i;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_WTB_FULL_ADDR >> 2) rdata_o <= wtbuf_full_i;
+               else if (addr_i == `IOB_CACHE_AXI_CSRS_VERSION_ADDR >> 2)
+                  rdata_o <= `IOB_CACHE_AXI_CSRS_VERSION;
          end
       end
 

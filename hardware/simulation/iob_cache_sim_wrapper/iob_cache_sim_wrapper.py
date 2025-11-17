@@ -42,32 +42,6 @@ def setup(py_params_dict):
                 "DATA_W": "FE_DATA_W",
             },
         },
-        {
-            "name": "ie_io",
-            "descr": "Cache invalidate and write-trough buffer IO chain",
-            "signals": [
-                {
-                    "name": "invalidate_i",
-                    "descr": "Invalidates all cache lines instantaneously if high.",
-                    "width": 1,
-                },
-                {
-                    "name": "invalidate_o",
-                    "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
-                    "width": 1,
-                },
-                {
-                    "name": "wtb_empty_i",
-                    "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
-                    "width": 1,
-                },
-                {
-                    "name": "wtb_empty_o",
-                    "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
-                    "width": 1,
-                },
-            ],
-        },
     ]
     #
     # Wires
@@ -228,9 +202,7 @@ def setup(py_params_dict):
     comb_code = """
    // Set constant inputs and connect outputs
    invalidate_i_int = 1'b0;
-   invalidate_o = invalidate_o_int;
    wtb_empty_i_int = 1'b1;
-   wtb_empty_o = wtb_empty_o_int;
 """
     if params["be_if"] == "iob":
         comb_code += """

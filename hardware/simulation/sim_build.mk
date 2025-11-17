@@ -5,10 +5,10 @@
 #verilator top module
 VTOP:=iob_cache_tb
 
-ifeq ($(SIMULATOR),verilator)
-VHDR+=iob_cache_tb.cpp
-VTOP:=iob_cache_sim_wrapper
-endif
-
-iob_cache_tb.cpp: ./src/iob_cache_tb.cpp
-	cp $< $@
+# Custom Coverage Analysis
+CUSTOM_COVERAGE_FLAGS=cov_annotated
+CUSTOM_COVERAGE_FLAGS+=-E iob_cache_tb.v
+CUSTOM_COVERAGE_FLAGS+=-E iob_uut.v
+CUSTOM_COVERAGE_FLAGS+=--waive cache_coverage.waiver
+CUSTOM_COVERAGE_FLAGS+=--waived-tag
+CUSTOM_COVERAGE_FLAGS+=-o cache_coverage.rpt

@@ -581,13 +581,14 @@ def setup(py_params: dict):
         {
             "core_name": "iob_cache_control",
             "instance_name": "cache_control",
+            "be_if": be_if,
             "instantiate": False,  # Instantiated manually in the verilog snippet
         },
         # Generate CSRs but don't instantiate it (generated hardware unused; only for software and docs)
         {
             "core_name": "iob_csrs",
             "instance_name": "csrs_inst",
-            "name": "iob_cache_csrs",
+            "name": f"iob_cache_{be_if}_csrs",
             "instantiate": False,
             "autoaddr": False,
             "rw_overlap": False,
@@ -721,6 +722,15 @@ def setup(py_params: dict):
                 conf for conf in attributes_dict["confs"] if conf["type"] in ["P", "D"]
             ],
             "be_if": be_if,
+        },
+    ]
+    #
+    # Software Modules
+    #
+    attributes_dict["sw_modules"] = [
+        {
+            "core_name": "iob_coverage_analyze",
+            "instance_name": "iob_coverage_analyze_inst",
         },
     ]
     #

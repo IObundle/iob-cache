@@ -2,8 +2,15 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
+from pathlib import Path
+import shutil
+
 
 def setup(py_params: dict):
+
+    be_if = py_params.get("be_if", "axi")
+
     # Create dictionary with attributes of cache
     attributes_dict = {
         "generate_hw": False,
@@ -46,7 +53,7 @@ def setup(py_params: dict):
             "descr": "",
             "signals": [
                 {"name": "valid_i", "width": 1},
-                {"name": "addr_i", "width": "`IOB_CACHE_CSRS_ADDR_W"},
+                {"name": "addr_i", "width": f"`IOB_CACHE_{be_if.upper()}_CSRS_ADDR_W"},
                 {"name": "wtbuf_full_i", "width": 1},
                 {"name": "wtbuf_empty_i", "width": 1},
                 {"name": "write_hit_i", "width": 1},
@@ -71,5 +78,13 @@ def setup(py_params: dict):
     # Snippets
     #
     attributes_dict["snippets"] = []
+
+    # Copy correct iob_cache_control according to cache backend interface
+    # Backend interface type ["axi", "iob"]
+    hw_src = os.path.dirname(os.path.realpath(__file__))
+    hw_src = f"{hw_src}/hardware/{be_if}/iob_cache_control_{be_if}.v"
+    hw_dst = f"{py_params['build_dir']}/hardware/src/"
+    Path(hw_dst).mkdir(parents=True, exist_ok=True)
+    shutil.copy2(hw_src, f"{hw_dst}/iob_cache_control.v")
 
     return attributes_dict
