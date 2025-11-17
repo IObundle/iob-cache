@@ -80,7 +80,6 @@ fusesoc-export: clean setup
 
 CORE_NAME=$(shell nix-shell --run "py2hwsw $(CORE) print_core_name --py_params '$(PY_PARAMS)'")
 
-# Multiline string (use a here‑document)
 define MULTILINE_TEXT
 provider:
   name: url
