@@ -91,7 +91,7 @@ endef
 export MULTILINE_TEXT
 fusesoc-core-file: fusesoc-export
 	cp fusesoc_exports/$(CORE_NAME).core .
-	# Append provider remote url to .core file
+	# Append provider remote URL to .core file
 	printf "\n%s\n" "$$MULTILINE_TEXT" >> $(CORE_NAME).core
 	echo "Generated independent $(CORE_NAME).core file."
 
