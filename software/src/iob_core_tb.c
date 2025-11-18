@@ -13,6 +13,16 @@
 #define CACHE_CTRL_BASE (1 << (IOB_CACHE_CSRS_FE_ADDR_W - 1))
 #define DATA_W (IOB_CACHE_CSRS_FE_DATA_W)
 
+// print n dots (.), keep CPU busy to wait for cache
+void wait_print(uint32_t n) {
+  uint32_t i = 0;
+  printf("\tWait Print:");
+  for (i = 0; i < n; i++) {
+    printf(".");
+  }
+  printf("\n");
+}
+
 int simple_test(uint32_t n) {
   uint32_t i = 0;
   uint32_t failed = 0;
@@ -36,6 +46,61 @@ int simple_test(uint32_t n) {
   return failed;
 }
 
+int data_test() {
+  uint32_t failed = 0;
+  uint32_t rdata = 0;
+  uint32_t wdata[3] = {0, 0xFFFFFFFF, 0};
+  uint32_t ndata = 3;
+  uint32_t i;
+
+  // write data
+  for (i = 0; i < ndata; i++) {
+    iob_write(i * 4, DATA_W, wdata[i]);
+  }
+
+  wait_print(50);
+
+  // read data
+  for (i = 0; i < ndata; i++) {
+    rdata = iob_read(i * 4, DATA_W);
+    if (rdata != wdata[i]) {
+      failed++;
+      printf("DATA TEST ERROR at address %d: got 0x%x, expected 0x%x\n", i * 4,
+             rdata, wdata[i]);
+    }
+  }
+  return failed;
+}
+
+int address_test() {
+  uint32_t failed = 0;
+  uint32_t addr_w = IOB_CACHE_CSRS_FE_ADDR_W;
+  uint32_t rdata = 0;
+  uint32_t wdata[3] = {0x0F, 0x10, 0x0F};
+  uint32_t addr[3] = {0};
+  uint32_t ndata = 3;
+  uint32_t i;
+  uint32_t max_addr = (1 << addr_w) - 1;
+  addr[1] = max_addr;
+
+  // write data
+  // write data
+  for (i = 0; i < ndata; i++) {
+    iob_write(addr[i], DATA_W, wdata[i]);
+  }
+  wait_print(50);
+  // read data
+  for (i = 0; i < ndata; i++) {
+    rdata = iob_read(addr[i], DATA_W);
+    if (rdata != wdata[i]) {
+      failed++;
+      printf("ADDRESS TEST ERROR at address %d: got 0x%x, expected 0x%x\n",
+             addr[i], rdata, wdata[i]);
+    }
+  }
+  return failed;
+}
+
 int iob_core_tb() {
 
   int failed = 0;
@@ -51,6 +116,9 @@ int iob_core_tb() {
 
   // simple cache access test
   failed += simple_test(5);
+
+  failed += data_test();
+  failed += address_test();
 
   printf("CACHE test complete.\n");
   return failed;
