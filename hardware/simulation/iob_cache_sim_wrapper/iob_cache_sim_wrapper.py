@@ -38,7 +38,7 @@ def setup(py_params_dict):
             "descr": "Testbench cache csrs interface",
             "signals": {
                 "type": "iob",
-                "ADDR_W": "USE_CTRL+FE_ADDR_W-FE_NBYTES_W",
+                "ADDR_W": "FE_ADDR_W",
                 "DATA_W": "FE_DATA_W",
             },
         },
@@ -199,13 +199,15 @@ def setup(py_params_dict):
     #
     # Combinatorial
     #
-    comb_code = """
+    attributes_dict["snippets"] = {
+        """
    // Set constant inputs and connect outputs
-   invalidate_i_int = 1'b0;
-   wtb_empty_i_int = 1'b1;
+   assign invalidate_i_int = 1'b0;
+   assign wtb_empty_i_int = 1'b1;
 """
+    }
     if params["be_if"] == "iob":
-        comb_code += """
+        comb_code = """
    be_iob_ready = 1'b1;
 
    mem_en_i = be_iob_valid;
@@ -217,6 +219,6 @@ def setup(py_params_dict):
    iob_reg_rvalid_nxt = be_iob_valid & (~(|be_iob_wstrb));
    be_iob_rvalid = iob_reg_rvalid;
 """
-    attributes_dict["comb"] = {"code": comb_code}
+        attributes_dict["comb"] = {"code": comb_code}
 
     return attributes_dict

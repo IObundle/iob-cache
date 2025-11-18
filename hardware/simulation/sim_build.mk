@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-#verilator top module
-VTOP:=iob_cache_tb
-
 # Custom Coverage Analysis
 CUSTOM_COVERAGE_FLAGS=cov_annotated
 CUSTOM_COVERAGE_FLAGS+=-E iob_cache_tb.v

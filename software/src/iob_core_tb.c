@@ -11,6 +11,7 @@
 #include <stdio.h>
 
 #define CACHE_CTRL_BASE (1 << (IOB_CACHE_CSRS_FE_ADDR_W - 1))
+#define DATA_W (IOB_CACHE_CSRS_FE_DATA_W)
 
 int simple_test(uint32_t n) {
   uint32_t i = 0;
@@ -19,11 +20,11 @@ int simple_test(uint32_t n) {
   uint32_t expected = 0;
   // write n words to cache
   for (i = 0; i < n * 4; i += 4) {
-    iob_write(i, 4, (3 * i));
+    iob_write(i, DATA_W, (3 * i));
   }
   // read n words back
   for (i = 0; i < n * 4; i += 4) {
-    rdata = iob_read(i, 4);
+    rdata = iob_read(i, DATA_W);
     // check for valid data
     expected = 3 * i;
     if (rdata != expected) {
