@@ -17,7 +17,7 @@ lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_ack_i'*"
 
 // signals used in some generate cases 
-// but generate bases are split, so we can't just put then inside one of them
+// but generate cases are split, so we can't just put signals inside one of them
 // otherwise they get out scoped
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not driven, nor used: 'dirty'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not driven, nor used: 'dirty_reg'*"

@@ -15,6 +15,7 @@ module iob_cache_memory #(
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
    localparam NWAYS = 2 ** NWAYS_W;
    localparam OFFSET_PAD_W = 32 - WORD_OFFSET_W;
+   localparam LINE_WSTRB_W = (2**WORD_OFFSET_W)*FE_NBYTES;
 
    wire hit;
 
@@ -30,7 +31,7 @@ module iob_cache_memory #(
    reg [NWAYS*(2**NLINES_W)-1:0] v_reg;
    reg [NWAYS-1:0] v;
 
-   reg [(2**WORD_OFFSET_W)*FE_NBYTES-1:0] line_wstrb;
+   reg [LINE_WSTRB_W-1:0] line_wstrb;
 
    wire write_access = |wstrb_reg_i & req_reg_i;
    wire read_access = ~|wstrb_reg_i & req_reg_i;
@@ -228,23 +229,22 @@ module iob_cache_memory #(
       end
 
       // Cache Line Write Strobe
-      // DEBUG: reg [(2**WORD_OFFSET_W)*FE_NBYTES-1:0] line_wstrb;
       if (LINE2BE_W > 0) begin : g_line2be_w
          always @* begin
             if (replace_i) begin
                // line-replacement: read_addr_i indexes the words in cache-line
-               line_wstrb = {{(32-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}} << (read_addr_i * BE_NBYTES);
+               line_wstrb = {{(LINE_WSTRB_W-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}} << (read_addr_i * BE_NBYTES);
             end else begin
-               line_wstrb = {{(32-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
+               line_wstrb = {{(LINE_WSTRB_W-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
             end
          end
       end else begin : g_no_line2be_w
          always @* begin
             if (replace_i) begin
                // line-replacement: mem's word replaces entire line
-               line_wstrb = {BE_NBYTES{read_req_i}};
+               line_wstrb = {{(LINE_WSTRB_W-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}};
             end else begin
-               line_wstrb = (wstrb_reg_i & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
+               line_wstrb = {{(LINE_WSTRB_W-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
             end
          end
       end
