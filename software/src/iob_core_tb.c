@@ -101,6 +101,17 @@ int address_test() {
   return failed;
 }
 
+int lru_test(uint32_t nways_w, uint32_t nlines_w) {
+  uint32_t i = 0;
+  uint32_t nways = (1 << nways_w);
+  uint32_t addr_step = ((1 << nlines_w) * (DATA_W / 8));
+  uint32_t addr = 0;
+  for (i = 0, addr = 0; i < (2 * nways); i++, addr += addr_step) {
+    printf("\tLRU: mem[%x] = %x\n", addr, iob_read(addr, DATA_W));
+  }
+  return 0;
+}
+
 int iob_core_tb() {
 
   int failed = 0;
@@ -119,6 +130,8 @@ int iob_core_tb() {
 
   failed += data_test();
   failed += address_test();
+
+  failed += lru_test(IOB_CACHE_CSRS_NWAYS_W, IOB_CACHE_CSRS_NLINES_W);
 
   printf("CACHE test complete.\n");
   return failed;
