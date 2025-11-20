@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "iob_cache_iob_csrs.h"
-#include "iob_cache_iob_csrs_conf.h"
+#include "iob_cache_csrs.h"
+#include "iob_cache_csrs_conf.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -15,6 +15,10 @@
 #define FE_NBYTES_W (2)
 #define CACHE_ADDR_W (IOB_CACHE_CSRS_FE_ADDR_W + USE_CTRL - FE_NBYTES_W)
 #define CACHE_CTRL_BASE (1 << (CACHE_ADDR_W - 1))
+
+static inline void use_ctrl() { iob_cache_csrs_init_baseaddr(CACHE_CTRL_BASE); }
+
+static inline void use_data() { iob_cache_csrs_init_baseaddr(0); }
 
 // print n dots (.), keep CPU busy to wait for cache
 void wait_print(uint32_t n) {
@@ -115,6 +119,49 @@ int lru_test(uint32_t nways_w, uint32_t nlines_w) {
   return 0;
 }
 
+void print_counters() {
+  use_ctrl();
+  printf("\tCache Counters:\n");
+  printf("\tRW Hit:%d\n", iob_cache_csrs_get_RW_HIT());
+  printf("\tRW Miss:%d\n", iob_cache_csrs_get_RW_MISS());
+  printf("\tRead Hit:%d\n", iob_cache_csrs_get_READ_HIT());
+  printf("\tRead Miss:%d\n", iob_cache_csrs_get_READ_MISS());
+  printf("\tWrite Hit:%d\n", iob_cache_csrs_get_WRITE_HIT());
+  printf("\tWrite Miss:%d\n", iob_cache_csrs_get_WRITE_MISS());
+}
+
+void wtb_status() {
+  use_ctrl();
+  printf("\tWrite Buffer Status:\n");
+  printf("\t\tEmpty: %d\n", iob_cache_csrs_get_WTB_EMPTY());
+  printf("\t\tFull: %d\n", iob_cache_csrs_get_WTB_FULL());
+}
+
+void reset_counters() {
+  iob_cache_csrs_set_RST_CNTRS(1);
+  iob_cache_csrs_set_RST_CNTRS(0);
+}
+
+int ctrl_test() {
+
+  use_ctrl();
+  printf("CTRL Test\n");
+  printf("\tVersion: %x\n", iob_cache_csrs_get_version());
+
+  wtb_status();
+  print_counters();
+  printf("\tResetting counters...");
+
+  reset_counters();
+  printf("done!\n");
+  print_counters();
+
+  iob_cache_csrs_set_INVALIDATE(1);
+  iob_cache_csrs_set_INVALIDATE(0);
+
+  return 0;
+}
+
 int iob_core_tb() {
 
   int failed = 0;
@@ -126,7 +173,7 @@ int iob_core_tb() {
   printf("Reset complete\n");
 
   // init Cache Control
-  iob_cache_iob_csrs_init_baseaddr(CACHE_CTRL_BASE);
+  iob_cache_csrs_init_baseaddr(CACHE_CTRL_BASE);
 
   // simple cache access test
   failed += simple_test(5);
@@ -135,6 +182,8 @@ int iob_core_tb() {
   failed += address_test();
 
   failed += lru_test(IOB_CACHE_CSRS_NWAYS_W, IOB_CACHE_CSRS_NLINES_W);
+
+  failed += ctrl_test();
 
   printf("CACHE test complete.\n");
   return failed;
