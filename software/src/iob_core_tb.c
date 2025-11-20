@@ -4,14 +4,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "iob_cache_csrs.h"
-#include "iob_cache_csrs_conf.h"
+#include "iob_cache_iob_csrs.h"
+#include "iob_cache_iob_csrs_conf.h"
 
 #include <stdint.h>
 #include <stdio.h>
 
-#define CACHE_CTRL_BASE (1 << (IOB_CACHE_CSRS_FE_ADDR_W - 1))
+#define USE_CTRL (1)
 #define DATA_W (IOB_CACHE_CSRS_FE_DATA_W)
+#define FE_NBYTES_W (2)
+#define CACHE_ADDR_W (IOB_CACHE_CSRS_FE_ADDR_W + USE_CTRL - FE_NBYTES_W)
+#define CACHE_CTRL_BASE (1 << (CACHE_ADDR_W - 1))
 
 // print n dots (.), keep CPU busy to wait for cache
 void wait_print(uint32_t n) {
@@ -74,13 +77,13 @@ int data_test() {
 
 int address_test() {
   uint32_t failed = 0;
-  uint32_t addr_w = IOB_CACHE_CSRS_FE_ADDR_W;
+  uint32_t addr_w = CACHE_ADDR_W;
   uint32_t rdata = 0;
   uint32_t wdata[3] = {0x0F, 0x10, 0x0F};
   uint32_t addr[3] = {0};
   uint32_t ndata = 3;
   uint32_t i;
-  uint32_t max_addr = (1 << addr_w) - 1;
+  uint32_t max_addr = (1 << (addr_w - 1)) - 1;
   addr[1] = max_addr;
 
   // write data
@@ -123,7 +126,7 @@ int iob_core_tb() {
   printf("Reset complete\n");
 
   // init Cache Control
-  iob_cache_csrs_init_baseaddr(CACHE_CTRL_BASE);
+  iob_cache_iob_csrs_init_baseaddr(CACHE_CTRL_BASE);
 
   // simple cache access test
   failed += simple_test(5);

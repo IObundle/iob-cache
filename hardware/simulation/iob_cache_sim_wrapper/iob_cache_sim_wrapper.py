@@ -136,6 +136,10 @@ def setup(py_params_dict):
             "core_name": "iob_cache",
             "instance_name": "cache",
             "instance_description": f"Unit Under Test (UUT) Cache instance with '{params['be_if']}' back end interface.",
+            "parameters": {
+                "USE_CTRL": "1",
+                "USE_CTRL_CNT": "1",
+            },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",
                 "iob_s": "cache_s",
