@@ -470,6 +470,17 @@ def setup(py_params: dict):
             ],
         },
     ]
+    if BE_IF == "AXI4":
+        attributes_dict["wires"] += [
+            {
+                "name": "clk_rst_s",
+                "descr": "",
+                "signals": [
+                    {"name": "clk_i"},
+                    {"name": "arst_i"},
+                ],
+            },
+        ]
     #
     # Subblocks
     #
@@ -498,7 +509,6 @@ def setup(py_params: dict):
             "parameters": {
                 "FE_ADDR_W": "FE_ADDR_W",
                 "FE_DATA_W": "FE_DATA_W",
-                "BE_ADDR_W": "BE_ADDR_W",
                 "BE_DATA_W": "BE_DATA_W",
                 "NWAYS_W": "NWAYS_W",
                 "NLINES_W": "NLINES_W",
@@ -538,7 +548,7 @@ def setup(py_params: dict):
                     "AXI_ID": "AXI_ID",
                 },
                 "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
+                    "clk_rst_s": "clk_rst_s",
                     "write_io": "be_write_if",
                     "read_io": "be_read_if",
                     "axi_m": "axi_m",
@@ -738,7 +748,8 @@ def setup(py_params: dict):
             .USE_CTRL_CNT(USE_CTRL_CNT)
          ) cache_control (
             .clk_i  (clk_i),
-            .arst_i(arst_i),
+            .cke_i  (cke_i),
+            .arst_i (arst_i),
 
             // control's signals
             .valid_i(ctrl_req),

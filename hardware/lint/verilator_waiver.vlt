@@ -1,0 +1,63 @@
+// SPDX-FileCopyrightText: 2025 IObundle
+//
+// SPDX-License-Identifier: MIT
+
+// DESCRIPTION: Verilator output: Waivers generated with --waiver-output
+
+`verilator_config
+
+// unused instance port
+lint_off -rule PINCONNECTEMPTY -file "**/*_cache_memory.v" -match "Instance pin connected by name with empty reference: 'level_o'*"
+
+// Extra bits to match line_rdata signal width
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Bits of signal are not used: 'line_rdata_tmp'[511:32]*"
+
+// Signals used if USE_CTRL=1
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_rdata_i'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_ack_i'*"
+
+// signals used in some generate cases 
+// but generate cases are split, so we can't just put signals inside one of them
+// otherwise they get out scoped
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not driven, nor used: 'dirty'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not driven, nor used: 'dirty_reg'*"
+
+//
+// IOb
+//
+
+// Bits can be used depending of module parameters
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Bits of signal are not used: 'data_addr'[2:0]*"
+
+// Signals used for USE_CTRL = 1
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_req'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_addr'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'wtbuf_full'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'write_hit'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'write_miss'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'read_hit'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'read_miss'*"
+
+//
+// AXI4
+//
+
+// Unused instance outputs
+lint_off -rule PINCONNECTEMPTY -file "**/*_cache_back_end_axi.v" -match "Instance pin connected by name with empty reference: 'axi_arprot_o'*"
+lint_off -rule PINCONNECTEMPTY -file "**/*_cache_back_end_axi.v" -match "Instance pin connected by name with empty reference: 'axi_awprot_o'*"
+
+// Bits can be used depending of module parameters
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Bits of signal are not used: 'data_addr'[2:0]*"
+
+// Signals used for USE_CTRL = 1
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'ctrl_req'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'ctrl_addr'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'wtbuf_full'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'write_hit'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'write_miss'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'read_hit'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'read_miss'*"
+
+// Signals kept for standard interface implementation
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_read_channel_axi.v" -match "Signal is not used: 'axi_rid_i'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_write_channel_axi.v" -match "Signal is not used: 'axi_bid_i'*"

@@ -14,6 +14,8 @@ module iob_cache_memory #(
 
    localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
    localparam NWAYS = 2 ** NWAYS_W;
+   localparam OFFSET_PAD_W = 32 - WORD_OFFSET_W;
+   localparam LINE_WSTRB_W = (2**WORD_OFFSET_W)*FE_NBYTES;
 
    wire hit;
 
@@ -29,7 +31,7 @@ module iob_cache_memory #(
    reg [NWAYS*(2**NLINES_W)-1:0] v_reg;
    reg [NWAYS-1:0] v;
 
-   reg [(2**WORD_OFFSET_W)*FE_NBYTES-1:0] line_wstrb;
+   reg [LINE_WSTRB_W-1:0] line_wstrb;
 
    wire write_access = |wstrb_reg_i & req_reg_i;
    wire read_access = ~|wstrb_reg_i & req_reg_i;
@@ -50,8 +52,6 @@ module iob_cache_memory #(
          localparam FIFO_ADDR_W = WTBUF_DEPTH_W;
 
          wire                   mem_clk;
-         wire                   mem_arst;
-         wire                   mem_cke;
 
          wire                   mem_w_en;
          wire [FIFO_ADDR_W-1:0] mem_w_addr;
@@ -66,7 +66,7 @@ module iob_cache_memory #(
             .DATA_W(FIFO_DATA_W),
             .ADDR_W(FIFO_ADDR_W)
          ) iob_ram_t2p0 (
-            .clk_i(clk_i),
+            .clk_i(mem_clk),
 
             .w_en_i  (mem_w_en),
             .w_addr_i(mem_w_addr),
@@ -173,10 +173,11 @@ module iob_cache_memory #(
    // front-end ACK signal
    /////////////////////////////////
    generate
-      if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH)
+      if (WRITE_POL == `IOB_CACHE_MEMORY_WRITE_THROUGH) begin : g_write_through_ACK
          assign ack_o = (hit & read_access) | (~buffer_full & write_access);
-      else  // if (WRITE_POL == WRITE_BACK)
+      end else begin : g_write_back_ACK  // if (WRITE_POL == WRITE_BACK)
          assign ack_o = hit & req_reg_i;
+      end
    endgenerate
 
    // cache-control hit-miss counters enables
@@ -204,15 +205,23 @@ module iob_cache_memory #(
       for (k = 0; k < NWAYS; k = k + 1) begin : g_n_ways_block
          for (j = 0; j < 2 ** LINE2BE_W; j = j + 1) begin : g_line2mem_block
             for (i = 0; i < BE_DATA_W / FE_DATA_W; i = i + 1) begin : g_BE_block
-               iob_gen_sp_ram #(
+               wire [FE_NBYTES-1:0] we_gen;
+               wire [NLINES_W-1:0] addr_gen;
+               wire [FE_DATA_W-1:0] data_in_gen;
+
+               assign we_gen = {FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES];
+               assign addr_gen = (write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == {{OFFSET_PAD_W{1'b0}}, offset}))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0];
+               assign data_in_gen = (replace_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg_i;
+
+               iob_cache_gen_sp_ram #(
                   .DATA_W(FE_DATA_W),
                   .ADDR_W(NLINES_W)
                ) cache_memory (
                   .clk_i(clk_i),
                   .en_i(req_i),
-                  .we_i ({FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES]),
-                  .addr_i((write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == offset))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0]),
-                  .data_i((replace_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg_i),
+                  .we_i (we_gen),
+                  .addr_i(addr_gen),
+                  .data_i(data_in_gen),
                   .data_o(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W+:FE_DATA_W])
                );
             end
@@ -224,18 +233,18 @@ module iob_cache_memory #(
          always @* begin
             if (replace_i) begin
                // line-replacement: read_addr_i indexes the words in cache-line
-               line_wstrb = {BE_NBYTES{read_req_i}} << (read_addr_i * BE_NBYTES);
+               line_wstrb = {{(LINE_WSTRB_W-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}} << (read_addr_i * BE_NBYTES);
             end else begin
-               line_wstrb = (wstrb_reg_i & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
+               line_wstrb = {{(LINE_WSTRB_W-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
             end
          end
       end else begin : g_no_line2be_w
          always @* begin
             if (replace_i) begin
                // line-replacement: mem's word replaces entire line
-               line_wstrb = {BE_NBYTES{read_req_i}};
+               line_wstrb = {{(LINE_WSTRB_W-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}};
             end else begin
-               line_wstrb = (wstrb_reg_i & {FE_NBYTES{write_access}}) << (offset * FE_NBYTES);
+               line_wstrb = {{(LINE_WSTRB_W-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
             end
          end
       end
@@ -276,7 +285,7 @@ module iob_cache_memory #(
             assign way_hit[k] = (tag == line_tag[TAG_W*k+:TAG_W]) & v[k];
          end
          // Read Data Multiplexer
-         wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata_tmp = line_rdata >> (FE_DATA_W*(offset + (2**WORD_OFFSET_W)*way_hit_bin));
+         wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata_tmp = line_rdata >> (FE_DATA_W*({{OFFSET_PAD_W{1'b0}}, offset} + (2**WORD_OFFSET_W)*way_hit_bin));
          assign rdata_o[FE_DATA_W-1:0] = line_rdata_tmp[FE_DATA_W-1:0];
 
          // replacement-policy module
@@ -389,44 +398,6 @@ module iob_cache_memory #(
             };  // the position of the current block in cache (not of the access)
             assign write_wdata_o = line_rdata;
          end
-      end
-   endgenerate
-
-endmodule
-
-/*---------------------------------*/
-/* Byte-width generable iob-sp-ram */
-/*---------------------------------*/
-
-// For cycle that generated byte-width (single enable) single-port SRAM
-// older synthesis tool may require this approch
-
-module iob_gen_sp_ram #(
-   parameter DATA_W = 32,
-   parameter ADDR_W = 10
-) (
-   input                 clk_i,
-   input                 en_i,
-   input  [DATA_W/8-1:0] we_i,
-   input  [  ADDR_W-1:0] addr_i,
-   output [  DATA_W-1:0] data_o,
-   input  [  DATA_W-1:0] data_i
-);
-
-   genvar i;
-   generate
-      for (i = 0; i < (DATA_W / 8); i = i + 1) begin : g_ram
-         iob_ram_sp #(
-            .DATA_W(8),
-            .ADDR_W(ADDR_W)
-         ) iob_cache_mem (
-            .clk_i (clk_i),
-            .en_i  (en_i),
-            .we_i  (we_i[i]),
-            .addr_i(addr_i),
-            .d_o   (data_o[8*i+:8]),
-            .d_i   (data_i[8*i+:8])
-         );
       end
    endgenerate
 
