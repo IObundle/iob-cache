@@ -101,7 +101,10 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ack", "width": 1},
                 {"name": "valid_int", "width": 1},
+                {"name": "ctrl_ready_int", "width": 1},
+                {"name": "ready_int", "width": 1},
                 {"name": "we_r", "width": 1},
+                {"name": "data_ready_int", "width": 1, "isvar": True},
             ],
         },
     ]
@@ -115,7 +118,9 @@ def setup(py_params: dict):
         data_req_o   = valid_int | data_req_reg_o;
 
         iob_rvalid_o = we_r ? 1'b0 : ack;
-        iob_ready_o  = data_req_reg_o ~^ ack;
+        iob_ready_o  = ready_int;
+
+        data_ready_int = data_req_reg_o ~^ data_ack_i;
 
         // Register every input
         data_req_reg_o_nxt = valid_int;
@@ -152,6 +157,9 @@ def setup(py_params: dict):
          assign ctrl_req_o  = iob_addr_i[ADDR_W-1] & iob_valid_i;
          assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
 
+         assign ctrl_ready_int = ctrl_req_o ~^ ctrl_ack_i;
+         assign ready_int = ctrl_req_o ? ctrl_ready_int : data_ready_int;
+
       end else begin : g_no_ctrl
          // Front-end output signals
          assign ack         = data_ack_i;
@@ -159,6 +167,8 @@ def setup(py_params: dict):
          assign valid_int   = iob_valid_i;
          assign ctrl_req_o  = 1'b0;
          assign ctrl_addr_o = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
+
+         assign ready_int = data_ready_int;
       end
    endgenerate
 """,

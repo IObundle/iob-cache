@@ -138,14 +138,14 @@ void wtb_status() {
 }
 
 void reset_counters() {
+  use_ctrl();
   iob_cache_csrs_set_RST_CNTRS(1);
-  iob_cache_csrs_set_RST_CNTRS(0);
 }
 
 int ctrl_test() {
 
-  use_ctrl();
   printf("CTRL Test\n");
+  use_ctrl();
   printf("\tVersion: %x\n", iob_cache_csrs_get_version());
 
   wtb_status();
