@@ -33,6 +33,7 @@ def setup(py_params: dict):
     attributes_dict = {
         "name": NAME,
         "version": VERSION,
+        "description": "IOb-cache is a high-performance, configurable open-source Verilog cache. If you use or like this core, please cite the following article: Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218. https://doi.org/10.3390/a14080218 ",
         "build_dir": BUILD_DIR,
         "generate_hw": True,
         "board_list": ["iob_aes_ku040_db_g"],
