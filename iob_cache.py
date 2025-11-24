@@ -232,7 +232,7 @@ def setup(py_params: dict):
             "name": "ADDR_W",
             "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled)",
             "type": "D",
-            "val": "USE_CTRL + FE_ADDR_W - FE_NBYTES_W",
+            "val": "USE_CTRL + FE_ADDR_W",
             "min": "NA",
             "max": "NA",
         },

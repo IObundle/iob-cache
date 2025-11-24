@@ -38,6 +38,14 @@ def setup(py_params: dict):
             "max": "NA",
         },
         {
+            "name": "FE_NBYTES_W",
+            "type": "D",
+            "descr": "Front end data bytes width. Sets the number of bits ignored for data addressing.",
+            "val": "$clog2(DATA_W/8)",
+            "min": "NA",
+            "max": "NA",
+        },
+        {
             "name": "USE_CTRL",
             "descr": "Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
             "type": "P",
@@ -71,11 +79,11 @@ def setup(py_params: dict):
             "descr": "Cache memory front-end interface",
             "signals": [
                 {"name": "data_req_o", "width": 1},
-                {"name": "data_addr_o", "width": "ADDR_W-USE_CTRL"},
+                {"name": "data_addr_o", "width": "ADDR_W-USE_CTRL-FE_NBYTES_W"},
                 {"name": "data_rdata_i", "width": "DATA_W"},
                 {"name": "data_ack_i", "width": 1},
                 {"name": "data_req_reg_o", "width": 1},
-                {"name": "data_addr_reg_o", "width": "ADDR_W-USE_CTRL"},
+                {"name": "data_addr_reg_o", "width": "ADDR_W-USE_CTRL-FE_NBYTES_W"},
                 {"name": "data_wdata_reg_o", "width": "DATA_W"},
                 {"name": "data_wstrb_reg_o", "width": "DATA_W/8"},
             ],
@@ -115,7 +123,7 @@ def setup(py_params: dict):
     attributes_dict["comb"] = {
         "code": """
         // data output ports
-        data_addr_o  = valid_int ? iob_addr_i[ADDR_W-USE_CTRL-1:0] : data_addr_reg_o;
+        data_addr_o  = valid_int ? iob_addr_i[ADDR_W-USE_CTRL-1:FE_NBYTES_W] : data_addr_reg_o;
         data_req_o   = valid_int | data_req_reg_o;
 
         iob_rvalid_o = we_r ? 1'b0 : ack;
@@ -127,7 +135,7 @@ def setup(py_params: dict):
         data_req_reg_o_nxt = valid_int;
         data_req_reg_o_en = valid_int | ack;
 
-        data_addr_reg_o_nxt = iob_addr_i[ADDR_W-USE_CTRL-1:0];
+        data_addr_reg_o_nxt = iob_addr_i[ADDR_W-USE_CTRL-1:FE_NBYTES_W];
         data_addr_reg_o_en = valid_int;
 
         data_wdata_reg_o_nxt = iob_wdata_i;
