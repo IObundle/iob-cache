@@ -86,6 +86,7 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ctrl_req_o", "width": 1},
                 {"name": "ctrl_addr_o", "width": "`IOB_CACHE_FRONT_END_ADDR_W_CSRS"},
+                {"name": "ctrl_wstrb_o", "width": "DATA_W/8"},
                 {"name": "ctrl_rdata_i", "width": "USE_CTRL*(DATA_W-1)+1"},
                 {"name": "ctrl_ack_i", "width": 1},
             ],
@@ -136,7 +137,7 @@ def setup(py_params: dict):
         data_wstrb_reg_o_en = valid_int;
 
         we_r_nxt = |iob_wstrb_i;
-        we_r_en = valid_int;
+        we_r_en = iob_valid_i;
 """
     }
     #
@@ -149,24 +150,26 @@ def setup(py_params: dict):
    generate
       if (USE_CTRL) begin : g_ctrl
          // Front-end output signals
-         assign ack         = ctrl_ack_i | data_ack_i;
-         assign iob_rdata_o = (ctrl_ack_i) ? ctrl_rdata_i : data_rdata_i;
+         assign ack          = ctrl_ack_i | data_ack_i;
+         assign iob_rdata_o  = (ctrl_ack_i) ? ctrl_rdata_i : data_rdata_i;
 
-         assign valid_int   = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
+         assign valid_int    = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
 
-         assign ctrl_req_o  = iob_addr_i[ADDR_W-1] & iob_valid_i;
-         assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
+         assign ctrl_req_o   = iob_addr_i[ADDR_W-1] & iob_valid_i;
+         assign ctrl_addr_o  = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
+         assign ctrl_wstrb_o = (ctrl_req_o) ? iob_wstrb_i : {(DATA_W/8){1'b0}};
 
          assign ctrl_ready_int = ctrl_req_o ~^ ctrl_ack_i;
          assign ready_int = ctrl_req_o ? ctrl_ready_int : data_ready_int;
 
       end else begin : g_no_ctrl
          // Front-end output signals
-         assign ack         = data_ack_i;
-         assign iob_rdata_o = data_rdata_i;
-         assign valid_int   = iob_valid_i;
-         assign ctrl_req_o  = 1'b0;
-         assign ctrl_addr_o = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
+         assign ack          = data_ack_i;
+         assign iob_rdata_o  = data_rdata_i;
+         assign valid_int    = iob_valid_i;
+         assign ctrl_req_o   = 1'b0;
+         assign ctrl_addr_o  = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
+         assign ctrl_wstrb_o = {(DATA_W/8){1'b0}};
 
          assign ready_int = data_ready_int;
       end

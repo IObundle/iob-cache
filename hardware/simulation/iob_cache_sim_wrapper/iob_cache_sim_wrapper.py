@@ -38,11 +38,20 @@ def setup(py_params_dict):
             "descr": "Testbench cache csrs interface",
             "signals": {
                 "type": "iob",
-                "ADDR_W": "FE_ADDR_W",
-                "DATA_W": "FE_DATA_W",
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
             },
         },
     ]
+    #
+    # Confs
+    #
+    # Overwrite Cache Confs
+    for conf in attributes_dict["confs"]:
+        if conf["name"] == "USE_CTRL":
+            conf["val"] = "1"
+        elif conf["name"] == "USE_CTRL_CNT":
+            conf["val"] = "1"
     #
     # Wires
     #
@@ -137,8 +146,8 @@ def setup(py_params_dict):
             "instance_name": "cache",
             "instance_description": f"Unit Under Test (UUT) Cache instance with '{params['be_if']}' back end interface.",
             "parameters": {
-                "USE_CTRL": "1",
-                "USE_CTRL_CNT": "1",
+                "USE_CTRL": "USE_CTRL",
+                "USE_CTRL_CNT": "USE_CTRL_CNT",
             },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",

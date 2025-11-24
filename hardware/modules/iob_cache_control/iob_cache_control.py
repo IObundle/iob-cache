@@ -54,6 +54,7 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "valid_i", "width": 1},
                 {"name": "addr_i", "width": f"`IOB_CACHE_{be_if.upper()}_CSRS_ADDR_W"},
+                {"name": "wstrb_i", "width": "DATA_W/8"},
                 {"name": "wtbuf_full_i", "width": 1},
                 {"name": "wtbuf_empty_i", "width": 1},
                 {"name": "write_hit_i", "width": 1},

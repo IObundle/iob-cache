@@ -230,7 +230,7 @@ def setup(py_params: dict):
         },
         {
             "name": "ADDR_W",
-            "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled) and excluding the lowest bits of the FE_ADDR_W (byte aligned).",
+            "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled)",
             "type": "D",
             "val": "USE_CTRL + FE_ADDR_W - FE_NBYTES_W",
             "min": "NA",
@@ -397,6 +397,7 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ctrl_req", "width": 1},
                 {"name": "ctrl_addr", "width": f"`{NAME.upper()}_ADDR_W_CSRS"},
+                {"name": "ctrl_wstrb", "width": "DATA_W/8"},
                 {"name": "ctrl_rdata", "width": "USE_CTRL*(FE_DATA_W-1)+1"},
                 {"name": "ctrl_ack", "width": 1},
             ],
@@ -764,6 +765,7 @@ def setup(py_params: dict):
             // control's signals
             .valid_i(ctrl_req),
             .addr_i (ctrl_addr),
+            .wstrb_i (ctrl_wstrb),
 
             // write data
             .wtbuf_full_i (wtbuf_full),
