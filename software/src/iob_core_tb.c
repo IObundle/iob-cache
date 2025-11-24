@@ -13,8 +13,9 @@
 #define USE_CTRL (1)
 #define DATA_W (IOB_CACHE_CSRS_FE_DATA_W)
 #define FE_NBYTES_W (2)
-#define CACHE_ADDR_W (IOB_CACHE_CSRS_FE_ADDR_W + USE_CTRL - FE_NBYTES_W)
-#define CACHE_CTRL_BASE (1 << (CACHE_ADDR_W - 1))
+#define CACHE_DATA_ADDR_W (IOB_CACHE_CSRS_FE_ADDR_W)
+// address control after data addressing
+#define CACHE_CTRL_BASE (1 << (CACHE_DATA_ADDR_W))
 
 static inline void use_ctrl() { iob_cache_csrs_init_baseaddr(CACHE_CTRL_BASE); }
 
@@ -81,13 +82,13 @@ int data_test() {
 
 int address_test() {
   uint32_t failed = 0;
-  uint32_t addr_w = CACHE_ADDR_W;
+  uint32_t addr_w = CACHE_DATA_ADDR_W;
   uint32_t rdata = 0;
   uint32_t wdata[3] = {0x0F, 0x10, 0x0F};
   uint32_t addr[3] = {0};
   uint32_t ndata = 3;
   uint32_t i;
-  uint32_t max_addr = (1 << (addr_w - 1)) - 1;
+  uint32_t max_addr = (1 << addr_w) - 1;
   addr[1] = max_addr;
 
   // write data
@@ -113,6 +114,15 @@ int lru_test(uint32_t nways_w, uint32_t nlines_w) {
   uint32_t nways = (1 << nways_w);
   uint32_t addr_step = ((1 << nlines_w) * (DATA_W / 8));
   uint32_t addr = 0;
+  uint32_t wdata = 0xDEADBEEF;
+
+  // Write data
+  for (i = 0, addr = 0; i < (2 * nways); i++, addr += addr_step) {
+    printf("\tLRU: mem[%x] = %x\n", addr, wdata);
+    iob_write(addr, DATA_W, wdata);
+  }
+
+  // Read back data
   for (i = 0, addr = 0; i < (2 * nways); i++, addr += addr_step) {
     printf("\tLRU: mem[%x] = %x\n", addr, iob_read(addr, DATA_W));
   }
