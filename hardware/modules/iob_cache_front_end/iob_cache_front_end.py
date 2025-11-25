@@ -110,7 +110,6 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ack", "width": 1},
                 {"name": "valid_int", "width": 1},
-                {"name": "ctrl_ready_int", "width": 1},
                 {"name": "ready_int", "width": 1},
                 {"name": "we_r", "width": 1},
                 {"name": "data_ready_int", "width": 1, "isvar": True},
@@ -167,6 +166,7 @@ def setup(py_params: dict):
          assign ctrl_addr_o  = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
          assign ctrl_wstrb_o = (ctrl_req_o) ? iob_wstrb_i : {(DATA_W/8){1'b0}};
 
+         wire ctrl_ready_int;
          assign ctrl_ready_int = ctrl_req_o ~^ ctrl_ack_i;
          assign ready_int = ctrl_req_o ? ctrl_ready_int : data_ready_int;
 
