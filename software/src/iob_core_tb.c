@@ -92,7 +92,6 @@ int address_test() {
   addr[1] = max_addr;
 
   // write data
-  // write data
   for (i = 0; i < ndata; i++) {
     iob_write(addr[i], DATA_W, wdata[i]);
   }

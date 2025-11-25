@@ -212,13 +212,13 @@ def setup(py_params_dict):
     #
     # Combinatorial
     #
-    attributes_dict["snippets"] = {
+    attributes_dict["snippets"] = [
         """
    // Set constant inputs and connect outputs
    assign invalidate_i_int = 1'b0;
    assign wtb_empty_i_int = 1'b1;
 """
-    }
+    ]
     if params["be_if"] == "iob":
         comb_code = """
    be_iob_ready = 1'b1;

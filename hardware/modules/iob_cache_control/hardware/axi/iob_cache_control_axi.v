@@ -21,7 +21,6 @@ module iob_cache_control #(
    localparam BYTE_SHIFT = $clog2(WSTRB_W);
 
    wire [`IOB_CACHE_AXI_CSRS_ADDR_W-1:0] addr_int;
-   wire [`IOB_CACHE_AXI_CSRS_ADDR_W-1:0] write_address;
    wire [($clog2(WSTRB_W)+1)-1:0] byte_offset;
    // TODO: add iob_prio_enc subblock
    iob_prio_enc #(
@@ -81,7 +80,7 @@ module iob_cache_control #(
             rdata_o <= {DATA_W{1'b0}};
             invalidate_o <= 1'b0;
             reset_counters <= 1'b0;
-            ready_o <= valid_i;  // Sends acknowlege the next clock cycle after request (handshake)
+            ready_o <= valid_i;  // Sends acknowledge the next clock cycle after request (handshake)
 
             if (valid_i) begin
                if (wstrb_i == 0) begin // read operation
@@ -101,7 +100,7 @@ module iob_cache_control #(
          always @(posedge clk_i) begin
             rdata_o <= {DATA_W{1'b0}};
             invalidate_o <= 1'b0;
-            ready_o <= valid_i;  // Sends acknowlege the next clock cycle after request (handshake)
+            ready_o <= valid_i;  // Sends acknowledge the next clock cycle after request (handshake)
             if (valid_i) begin
                if (wstrb_i == 0) begin // read operation
                if (addr_i == `IOB_CACHE_AXI_CSRS_WTB_EMPTY_ADDR) rdata_o <= wtbuf_empty_i;
