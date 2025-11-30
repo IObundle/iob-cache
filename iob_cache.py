@@ -230,9 +230,9 @@ def setup(py_params: dict):
         },
         {
             "name": "ADDR_W",
-            "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled) and excluding the lowest bits of the FE_ADDR_W (byte aligned).",
+            "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled)",
             "type": "D",
-            "val": "USE_CTRL + FE_ADDR_W - FE_NBYTES_W",
+            "val": "USE_CTRL + FE_ADDR_W",
             "min": "NA",
             "max": "NA",
         },
@@ -397,6 +397,7 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ctrl_req", "width": 1},
                 {"name": "ctrl_addr", "width": f"`{NAME.upper()}_ADDR_W_CSRS"},
+                {"name": "ctrl_wstrb", "width": "DATA_W/8"},
                 {"name": "ctrl_rdata", "width": "USE_CTRL*(FE_DATA_W-1)+1"},
                 {"name": "ctrl_ack", "width": 1},
             ],
@@ -581,13 +582,14 @@ def setup(py_params: dict):
         {
             "core_name": "iob_cache_control",
             "instance_name": "cache_control",
+            "be_if": be_if,
             "instantiate": False,  # Instantiated manually in the verilog snippet
         },
         # Generate CSRs but don't instantiate it (generated hardware unused; only for software and docs)
         {
             "core_name": "iob_csrs",
             "instance_name": "csrs_inst",
-            "name": "iob_cache_csrs",
+            "name": f"iob_cache_{be_if}_csrs",
             "instantiate": False,
             "autoaddr": False,
             "rw_overlap": False,
@@ -724,6 +726,15 @@ def setup(py_params: dict):
         },
     ]
     #
+    # Software Modules
+    #
+    attributes_dict["sw_modules"] = [
+        {
+            "core_name": "iob_coverage_analyze",
+            "instance_name": "iob_coverage_analyze_inst",
+        },
+    ]
+    #
     # Combinatorial
     #
     attributes_dict["comb"] = {
@@ -754,6 +765,7 @@ def setup(py_params: dict):
             // control's signals
             .valid_i(ctrl_req),
             .addr_i (ctrl_addr),
+            .wstrb_i (ctrl_wstrb),
 
             // write data
             .wtbuf_full_i (wtbuf_full),

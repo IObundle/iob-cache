@@ -13,6 +13,7 @@ lint_off -rule PINCONNECTEMPTY -file "**/*_cache_memory.v" -match "Instance pin 
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Bits of signal are not used: 'line_rdata_tmp'[511:32]*"
 
 // Signals used if USE_CTRL=1
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Bits of signal are not used: 'iob_addr_i'[1:0]*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_rdata_i'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_front_end.v" -match "Signal is not used: 'ctrl_ack_i'*"
 
@@ -29,9 +30,11 @@ lint_off -rule UNUSEDSIGNAL -file "**/*_cache_memory.v" -match "Signal is not dr
 // Bits can be used depending of module parameters
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Bits of signal are not used: 'data_addr'[2:0]*"
 
+
 // Signals used for USE_CTRL = 1
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_req'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_addr'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'ctrl_wstrb'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'wtbuf_full'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'write_hit'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_iob.v" -match "Signal is not used: 'write_miss'*"
@@ -52,6 +55,7 @@ lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Bits of signal are 
 // Signals used for USE_CTRL = 1
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'ctrl_req'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'ctrl_addr'*"
+lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'ctrl_wstrb'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'wtbuf_full'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'write_hit'*"
 lint_off -rule UNUSEDSIGNAL -file "**/*_cache_axi.v" -match "Signal is not used: 'write_miss'*"

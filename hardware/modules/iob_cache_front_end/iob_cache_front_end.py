@@ -38,6 +38,14 @@ def setup(py_params: dict):
             "max": "NA",
         },
         {
+            "name": "FE_NBYTES_W",
+            "type": "D",
+            "descr": "Front end data bytes width. Sets the number of bits ignored for data addressing.",
+            "val": "$clog2(DATA_W/8)",
+            "min": "NA",
+            "max": "NA",
+        },
+        {
             "name": "USE_CTRL",
             "descr": "Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
             "type": "P",
@@ -71,11 +79,11 @@ def setup(py_params: dict):
             "descr": "Cache memory front-end interface",
             "signals": [
                 {"name": "data_req_o", "width": 1},
-                {"name": "data_addr_o", "width": "ADDR_W-USE_CTRL"},
+                {"name": "data_addr_o", "width": "ADDR_W-USE_CTRL-FE_NBYTES_W"},
                 {"name": "data_rdata_i", "width": "DATA_W"},
                 {"name": "data_ack_i", "width": 1},
                 {"name": "data_req_reg_o", "width": 1},
-                {"name": "data_addr_reg_o", "width": "ADDR_W-USE_CTRL"},
+                {"name": "data_addr_reg_o", "width": "ADDR_W-USE_CTRL-FE_NBYTES_W"},
                 {"name": "data_wdata_reg_o", "width": "DATA_W"},
                 {"name": "data_wstrb_reg_o", "width": "DATA_W/8"},
             ],
@@ -86,6 +94,7 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ctrl_req_o", "width": 1},
                 {"name": "ctrl_addr_o", "width": "`IOB_CACHE_FRONT_END_ADDR_W_CSRS"},
+                {"name": "ctrl_wstrb_o", "width": "DATA_W/8"},
                 {"name": "ctrl_rdata_i", "width": "USE_CTRL*(DATA_W-1)+1"},
                 {"name": "ctrl_ack_i", "width": 1},
             ],
@@ -101,7 +110,9 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ack", "width": 1},
                 {"name": "valid_int", "width": 1},
+                {"name": "ready_int", "width": 1},
                 {"name": "we_r", "width": 1},
+                {"name": "data_ready_int", "width": 1, "isvar": True},
             ],
         },
     ]
@@ -111,17 +122,19 @@ def setup(py_params: dict):
     attributes_dict["comb"] = {
         "code": """
         // data output ports
-        data_addr_o  = valid_int ? iob_addr_i[ADDR_W-USE_CTRL-1:0] : data_addr_reg_o;
+        data_addr_o  = valid_int ? iob_addr_i[ADDR_W-USE_CTRL-1:FE_NBYTES_W] : data_addr_reg_o;
         data_req_o   = valid_int | data_req_reg_o;
 
         iob_rvalid_o = we_r ? 1'b0 : ack;
-        iob_ready_o  = data_req_reg_o ~^ ack;
+        iob_ready_o  = ready_int;
+
+        data_ready_int = data_req_reg_o ~^ data_ack_i;
 
         // Register every input
         data_req_reg_o_nxt = valid_int;
         data_req_reg_o_en = valid_int | ack;
 
-        data_addr_reg_o_nxt = iob_addr_i[ADDR_W-USE_CTRL-1:0];
+        data_addr_reg_o_nxt = iob_addr_i[ADDR_W-USE_CTRL-1:FE_NBYTES_W];
         data_addr_reg_o_en = valid_int;
 
         data_wdata_reg_o_nxt = iob_wdata_i;
@@ -131,7 +144,7 @@ def setup(py_params: dict):
         data_wstrb_reg_o_en = valid_int;
 
         we_r_nxt = |iob_wstrb_i;
-        we_r_en = valid_int;
+        we_r_en = iob_valid_i;
 """
     }
     #
@@ -144,21 +157,29 @@ def setup(py_params: dict):
    generate
       if (USE_CTRL) begin : g_ctrl
          // Front-end output signals
-         assign ack         = ctrl_ack_i | data_ack_i;
-         assign iob_rdata_o = (ctrl_ack_i) ? ctrl_rdata_i : data_rdata_i;
+         assign ack          = ctrl_ack_i | data_ack_i;
+         assign iob_rdata_o  = (ctrl_ack_i) ? ctrl_rdata_i : data_rdata_i;
 
-         assign valid_int   = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
+         assign valid_int    = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
 
-         assign ctrl_req_o  = iob_addr_i[ADDR_W-1] & iob_valid_i;
-         assign ctrl_addr_o = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
+         assign ctrl_req_o   = iob_addr_i[ADDR_W-1] & iob_valid_i;
+         assign ctrl_addr_o  = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
+         assign ctrl_wstrb_o = (ctrl_req_o) ? iob_wstrb_i : {(DATA_W/8){1'b0}};
+
+         wire ctrl_ready_int;
+         assign ctrl_ready_int = ctrl_req_o ~^ ctrl_ack_i;
+         assign ready_int = ctrl_req_o ? ctrl_ready_int : data_ready_int;
 
       end else begin : g_no_ctrl
          // Front-end output signals
-         assign ack         = data_ack_i;
-         assign iob_rdata_o = data_rdata_i;
-         assign valid_int   = iob_valid_i;
-         assign ctrl_req_o  = 1'b0;
-         assign ctrl_addr_o = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
+         assign ack          = data_ack_i;
+         assign iob_rdata_o  = data_rdata_i;
+         assign valid_int    = iob_valid_i;
+         assign ctrl_req_o   = 1'b0;
+         assign ctrl_addr_o  = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
+         assign ctrl_wstrb_o = {(DATA_W/8){1'b0}};
+
+         assign ready_int = data_ready_int;
       end
    endgenerate
 """,

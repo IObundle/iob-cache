@@ -1,0 +1,9 @@
+// SPDX-FileCopyrightText: 2025 IObundle
+//
+// SPDX-License-Identifier: MIT
+
+// IOb-Cache verilator coverage waivers
+
+// waiver structure:
+// waive filename:line[:line] [reason]
+// waive module.v:19 "Coverage waiver description."

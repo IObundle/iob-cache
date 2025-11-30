@@ -38,37 +38,20 @@ def setup(py_params_dict):
             "descr": "Testbench cache csrs interface",
             "signals": {
                 "type": "iob",
-                "ADDR_W": "USE_CTRL+FE_ADDR_W-FE_NBYTES_W",
-                "DATA_W": "FE_DATA_W",
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
             },
         },
-        {
-            "name": "ie_io",
-            "descr": "Cache invalidate and write-trough buffer IO chain",
-            "signals": [
-                {
-                    "name": "invalidate_i",
-                    "descr": "Invalidates all cache lines instantaneously if high.",
-                    "width": 1,
-                },
-                {
-                    "name": "invalidate_o",
-                    "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
-                    "width": 1,
-                },
-                {
-                    "name": "wtb_empty_i",
-                    "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
-                    "width": 1,
-                },
-                {
-                    "name": "wtb_empty_o",
-                    "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
-                    "width": 1,
-                },
-            ],
-        },
     ]
+    #
+    # Confs
+    #
+    # Overwrite Cache Confs
+    for conf in attributes_dict["confs"]:
+        if conf["name"] == "USE_CTRL":
+            conf["val"] = "1"
+        elif conf["name"] == "USE_CTRL_CNT":
+            conf["val"] = "1"
     #
     # Wires
     #
@@ -162,6 +145,10 @@ def setup(py_params_dict):
             "core_name": "iob_cache",
             "instance_name": "cache",
             "instance_description": f"Unit Under Test (UUT) Cache instance with '{params['be_if']}' back end interface.",
+            "parameters": {
+                "USE_CTRL": "USE_CTRL",
+                "USE_CTRL_CNT": "USE_CTRL_CNT",
+            },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",
                 "iob_s": "cache_s",
@@ -225,15 +212,15 @@ def setup(py_params_dict):
     #
     # Combinatorial
     #
-    comb_code = """
+    attributes_dict["snippets"] = [
+        """
    // Set constant inputs and connect outputs
-   invalidate_i_int = 1'b0;
-   invalidate_o = invalidate_o_int;
-   wtb_empty_i_int = 1'b1;
-   wtb_empty_o = wtb_empty_o_int;
+   assign invalidate_i_int = 1'b0;
+   assign wtb_empty_i_int = 1'b1;
 """
+    ]
     if params["be_if"] == "iob":
-        comb_code += """
+        comb_code = """
    be_iob_ready = 1'b1;
 
    mem_en_i = be_iob_valid;
@@ -245,6 +232,6 @@ def setup(py_params_dict):
    iob_reg_rvalid_nxt = be_iob_valid & (~(|be_iob_wstrb));
    be_iob_rvalid = iob_reg_rvalid;
 """
-    attributes_dict["comb"] = {"code": comb_code}
+        attributes_dict["comb"] = {"code": comb_code}
 
     return attributes_dict
