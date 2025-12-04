@@ -27,7 +27,7 @@ jobs:
 
   cache:
     runs-on: self-hosted
-    timeout-minutes: 20
+    timeout-minutes: 30
     if: ${{ !cancelled() }}
 
     steps:
@@ -38,6 +38,8 @@ jobs:
         run: make sim-test
       - name: run fpga test
         run: make fpga-test
+      - name: run synthesis test (yosys)
+        run: make syn-test
 
   reuse:
     runs-on: self-hosted

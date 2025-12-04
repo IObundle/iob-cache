@@ -62,6 +62,14 @@ fpga-test:
 	make fpga-build BE_IF=IOb
 	make fpga-build BE_IF=AXI4
 
+
+syn-build: clean setup
+	nix-shell --run "make -C $(BUILD_DIR) syn-build"
+
+syn-test:
+	make syn-build BE_IF=IOb
+	make syn-build BE_IF=AXI4
+
 doc-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) doc-build DOC=$(DOC)"
 
