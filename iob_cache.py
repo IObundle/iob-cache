@@ -13,6 +13,9 @@ def setup(py_params: dict):
     # Backend interface data width
     BE_DATA_W = py_params.get("be_data_w", "32")
     # Backend interface type
+    FE_IF = py_params.get("fe_if", "IOb")
+    assert FE_IF in ["IOb", "AXIL", "Wishbone", "APB"], "Unsupported frontend interface"
+    # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
     be_if = "axi" if BE_IF == "AXI4" else "iob"
@@ -309,10 +312,10 @@ def setup(py_params: dict):
             },
         },
         {
-            "name": "iob_s",
+            "name": f"{FE_IF.lower()}_s",
             "descr": "Front-end interface",
             "signals": {
-                "type": "iob",
+                "type": FE_IF.lower(),
                 "ADDR_W": "ADDR_W",
                 "DATA_W": "DATA_W",
             },
@@ -378,6 +381,15 @@ def setup(py_params: dict):
     #
     attributes_dict["wires"] = [
         # Front-end
+        {
+            "name": "internal_iob",
+            "descr": "Internal IOb wire",
+            "signals": {
+                "type": "iob",
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
+            },
+        },
         {
             "name": "fe_cache_mem",
             "descr": "Cache memory front-end interface",
@@ -486,7 +498,25 @@ def setup(py_params: dict):
     #
     # Subblocks
     #
+    converter_connect = {
+        "s_s": f"{FE_IF.lower()}_s",
+        "m_m": "internal_iob",
+    }
+    if FE_IF.lower() != "iob":
+        converter_connect["clk_en_rst_s"] = "clk_en_rst_s"
     attributes_dict["subblocks"] = [
+        {
+            "core_name": "iob_universal_converter",
+            "instance_name": "iob_universal_converter",
+            "instance_description": "Convert front-end interface into internal IOb port",
+            "subordinate_if": FE_IF.lower(),
+            "manager_if": "iob",
+            "parameters": {
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
+            },
+            "connect": converter_connect,
+        },
         {
             "core_name": "iob_cache_front_end",
             "instance_name": "front_end",
@@ -498,7 +528,7 @@ def setup(py_params: dict):
             },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",
-                "iob_s": "iob_s",
+                "iob_s": "internal_iob",
                 "cache_mem_io": "fe_cache_mem",
                 "ctrl_io": "fe_ctrl",
             },
@@ -723,6 +753,7 @@ def setup(py_params: dict):
             "cache_confs": [
                 conf for conf in attributes_dict["confs"] if conf["type"] in ["P", "D"]
             ],
+            "fe_if": FE_IF.lower(),
             "be_if": be_if,
         },
     ]

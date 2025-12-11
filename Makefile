@@ -7,10 +7,14 @@ CORE := iob_cache
 SIMULATOR ?= verilator
 BOARD ?= iob_aes_ku040_db_g
 
+FE_IF ?= IOb
 BE_IF ?= AXI4
 
 # Fill PY_PARAMS if not defined
 ifeq ($(PY_PARAMS),)
+ifneq ($(FE_IF),)
+PY_PARAMS:=$(PY_PARAMS):fe_if=$(FE_IF)
+endif
 ifneq ($(BE_IF),)
 PY_PARAMS:=$(PY_PARAMS):be_if=$(BE_IF)
 endif

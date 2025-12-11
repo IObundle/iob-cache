@@ -7,6 +7,7 @@ def setup(py_params_dict):
     params = {
         # Confs passed by issuer (iob_cache)
         "cache_confs": [],
+        "fe_if": "iob",
         "be_if": "axi",
     }
 
@@ -80,6 +81,15 @@ def setup(py_params_dict):
                 {"name": "wtb_empty_o_int", "width": 1},
             ],
         },
+        {
+            "name": "cache_fe",
+            "descr": "Testbench cache front-end bus",
+            "signals": {
+                "type": params["fe_if"],
+                "prefix": "internal_",
+                "ADDR_W": "ADDR_W",
+            },
+        },
     ]
     if params["be_if"] == "axi":
         attributes_dict["wires"] += [
@@ -140,6 +150,12 @@ def setup(py_params_dict):
     #
     # Blocks
     #
+    converter_connect = {
+        "s_s": "cache_s",
+        "m_m": "cache_fe",
+    }
+    if params["fe_if"] != "iob":
+        converter_connect["clk_en_rst_s"] = "clk_en_rst_s"
     attributes_dict["subblocks"] = [
         {
             "core_name": "iob_cache",
@@ -151,10 +167,22 @@ def setup(py_params_dict):
             },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",
-                "iob_s": "cache_s",
+                f"{params['fe_if']}_s": "cache_fe",
                 f"{params['be_if']}_m": f"{params['be_if']}",
                 "ie_io": "ie",
             },
+        },
+        {
+            "core_name": "iob_universal_converter",
+            "instance_name": "iob_universal_converter",
+            "instance_description": "Convert IOb port from testbench into correct interface for Cache front-end bus",
+            "subordinate_if": "iob",
+            "manager_if": params["fe_if"],
+            "parameters": {
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
+            },
+            "connect": converter_connect,
         },
     ]
     if params["be_if"] == "axi":
