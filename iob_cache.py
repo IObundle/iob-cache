@@ -126,7 +126,7 @@ def setup(py_params: dict):
         },
         {
             "name": "BE_DATA_W",
-            "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \\geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
+            "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k>=1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
             "type": "P",
             "val": BE_DATA_W,
             "min": "32",
@@ -331,17 +331,17 @@ def setup(py_params: dict):
                 },
                 {
                     "name": "invalidate_o",
-                    "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
+                    "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct 'invalidate_in' signal. The present 'invalidate_out' signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
                     "width": 1,
                 },
                 {
                     "name": "wtb_empty_i",
-                    "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
+                    "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal 'wtb_empty_out'.",
                     "width": 1,
                 },
                 {
                     "name": "wtb_empty_o",
-                    "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
+                    "descr": "This output is high if the cache's write-through buffer is empty and its 'wtb_empty_in' signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
                     "width": 1,
                 },
             ],
