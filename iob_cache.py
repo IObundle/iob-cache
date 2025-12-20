@@ -14,7 +14,6 @@ def setup(py_params: dict):
     BE_DATA_W = py_params.get("be_data_w", "32")
     # Backend interface type
     FE_IF = py_params.get("fe_if", "IOb")
-    assert FE_IF in ["IOb", "AXIL", "Wishbone", "APB"], "Unsupported frontend interface"
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
