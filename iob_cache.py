@@ -16,6 +16,8 @@ def setup(py_params: dict):
     FE_IF = py_params.get("fe_if", "IOb")
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
+    # Use cache controller
+    USE_CTRL = py_params.get("use_ctrl", 0)
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
     be_if = "axi" if BE_IF == "AXI4" else "iob"
     NAME = py_params.get("name", f"iob_cache_{be_if}")
@@ -183,7 +185,7 @@ def setup(py_params: dict):
             "name": "USE_CTRL",
             "descr": "Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
             "type": "P",
-            "val": "0",
+            "val": USE_CTRL,
             "min": "0",
             "max": "1",
         },
