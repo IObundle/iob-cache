@@ -2,9 +2,9 @@
 %
 % SPDX-License-Identifier: MIT
 
-IOb-Cache is an open-source configurable pipelined memory cache. The
-processor-side interface (front-end) uses IObundle's Native Interface
-(IOb). The memory-side interface (back-end) can also be configured to use IOb or
+IOb-Cache is an open-source configurable pipelined memory cache.
+The processor-side interface (front-end) can be configured to use IObundle's Native Interface (IOb), AXI4-Lite or Wishbone interface.
+The memory-side interface (back-end) can also be configured to use IOb or
 the widely used AXI4 interface. The address and data widths of the front-end and
 back-end are configurable to support multiple user cores and memories. IOb-Cache
 is a K-Way Set-Associative cache, where K can vary from 1 (directly mapped) to 8
