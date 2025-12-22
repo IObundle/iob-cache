@@ -12,7 +12,7 @@ def setup(py_params: dict):
 
     # Backend interface data width
     BE_DATA_W = py_params.get("be_data_w", "32")
-    # Backend interface type
+    # Front-end interface type
     FE_IF = py_params.get("fe_if", "IOb")
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
