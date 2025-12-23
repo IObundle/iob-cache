@@ -12,8 +12,12 @@ def setup(py_params: dict):
 
     # Backend interface data width
     BE_DATA_W = py_params.get("be_data_w", "32")
+    # Front-end interface type
+    FE_IF = py_params.get("fe_if", "IOb")
     # Backend interface type
     BE_IF = py_params.get("be_if", "AXI4")
+    # Use cache controller
+    USE_CTRL = py_params.get("use_ctrl", 0)
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
     be_if = "axi" if BE_IF == "AXI4" else "iob"
     NAME = py_params.get("name", f"iob_cache_{be_if}")
@@ -33,6 +37,7 @@ def setup(py_params: dict):
     attributes_dict = {
         "name": NAME,
         "version": VERSION,
+        "description": "IOb-cache is a high-performance, configurable open-source Verilog cache. If you use or like this core, please cite the following article: Roque, J.V.; Lopes, J.D.; Véstias, M.P.; de Sousa, J.T. IOb-Cache: A High-Performance Configurable Open-Source Cache. Algorithms 2021, 14, 218. https://doi.org/10.3390/a14080218",
         "build_dir": BUILD_DIR,
         "generate_hw": True,
         "board_list": ["iob_aes_ku040_db_g"],
@@ -122,7 +127,7 @@ def setup(py_params: dict):
         },
         {
             "name": "BE_DATA_W",
-            "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k \\geq 1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
+            "descr": "Back-end data width (log2): the value of this parameter must be an integer  multiple $k>=1$ of DATA_W. If $k>1$, the memory controller can operate at a frequency higher than the cache's frequency. Typically, the memory controller has an asynchronous FIFO interface, so that it can sequentially process multiple commands received in paralell from the cache's back-end interface. ",
             "type": "P",
             "val": BE_DATA_W,
             "min": "32",
@@ -180,7 +185,7 @@ def setup(py_params: dict):
             "name": "USE_CTRL",
             "descr": "Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
             "type": "P",
-            "val": "0",
+            "val": USE_CTRL,
             "min": "0",
             "max": "1",
         },
@@ -308,10 +313,10 @@ def setup(py_params: dict):
             },
         },
         {
-            "name": "iob_s",
+            "name": f"{FE_IF.lower()}_s",
             "descr": "Front-end interface",
             "signals": {
-                "type": "iob",
+                "type": FE_IF.lower(),
                 "ADDR_W": "ADDR_W",
                 "DATA_W": "DATA_W",
             },
@@ -327,17 +332,17 @@ def setup(py_params: dict):
                 },
                 {
                     "name": "invalidate_o",
-                    "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct {\\tt invalidate_in} signal. The present {\\tt invalidate_out} signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
+                    "descr": "This output is asserted high when the cache is invalidated via the cache controller or the direct 'invalidate_in' signal. The present 'invalidate_out' signal is useful for invalidating the next-level cache if there is one. If not, this output should be floated.",
                     "width": 1,
                 },
                 {
                     "name": "wtb_empty_i",
-                    "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal {\\tt wtb_empty_out}.",
+                    "descr": "This input is driven by the next-level cache, if there is one, when its write-through buffer is empty. It should be tied high if there is no next-level cache. This signal is used to compute the overall empty status of a cache hierarchy, as explained for signal 'wtb_empty_out'.",
                     "width": 1,
                 },
                 {
                     "name": "wtb_empty_o",
-                    "descr": "This output is high if the cache's write-through buffer is empty and its {\tt wtb_empty_in} signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
+                    "descr": "This output is high if the cache's write-through buffer is empty and its 'wtb_empty_in' signal is high. This signal informs that all data written to the cache has been written to the destination memory module, and all caches on the way are empty.",
                     "width": 1,
                 },
             ],
@@ -377,6 +382,15 @@ def setup(py_params: dict):
     #
     attributes_dict["wires"] = [
         # Front-end
+        {
+            "name": "internal_iob",
+            "descr": "Internal IOb wire",
+            "signals": {
+                "type": "iob",
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
+            },
+        },
         {
             "name": "fe_cache_mem",
             "descr": "Cache memory front-end interface",
@@ -485,7 +499,25 @@ def setup(py_params: dict):
     #
     # Subblocks
     #
+    converter_connect = {
+        "s_s": f"{FE_IF.lower()}_s",
+        "m_m": "internal_iob",
+    }
+    if FE_IF.lower() != "iob":
+        converter_connect["clk_en_rst_s"] = "clk_en_rst_s"
     attributes_dict["subblocks"] = [
+        {
+            "core_name": "iob_universal_converter",
+            "instance_name": "iob_universal_converter",
+            "instance_description": "Convert front-end interface into internal IOb port",
+            "subordinate_if": FE_IF.lower(),
+            "manager_if": "iob",
+            "parameters": {
+                "ADDR_W": "ADDR_W",
+                "DATA_W": "DATA_W",
+            },
+            "connect": converter_connect,
+        },
         {
             "core_name": "iob_cache_front_end",
             "instance_name": "front_end",
@@ -497,7 +529,7 @@ def setup(py_params: dict):
             },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",
-                "iob_s": "iob_s",
+                "iob_s": "internal_iob",
                 "cache_mem_io": "fe_cache_mem",
                 "ctrl_io": "fe_ctrl",
             },
@@ -722,6 +754,7 @@ def setup(py_params: dict):
             "cache_confs": [
                 conf for conf in attributes_dict["confs"] if conf["type"] in ["P", "D"]
             ],
+            "fe_if": FE_IF.lower(),
             "be_if": be_if,
         },
     ]

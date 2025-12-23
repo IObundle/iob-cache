@@ -3,10 +3,9 @@
 % SPDX-License-Identifier: MIT
 
 The figure shows a three-level memory hierarchy comprising L1 and L2 caches and
-a memory module. The Host drives the L1 cache through its front-end NPI
-interface (the user is free to develop other interfaces).  The L1 and L2 caches
-are connected using another NPI interface since IOb-Cache's front-end interface
-only supports this.
+a memory module. The Host drives the L1 cache through its front-end interface 
+(IOb by default. The user is free to select other supported interfaces or develop new ones).
+The L1 and L2 caches are connected using another IOb interface.
 
 The {\tt wtb\_empty\_in} and {\tt wtb\_empty\_out} signals form a chain from the
 L1's front-end to the L2's back-end. As explained in the description of these
@@ -24,8 +23,8 @@ tight to low as L1 is invalidated via the cache controller by writing to the
 respective address. The L2's {\tt invalidate\_out} signal is floating because L2
 is the last cache in the hierarchy, and there are no more caches to invalidate.
 
-Finally, L2 is connected to a memory module, and one can choose between NPI or
+Finally, L2 is connected to a memory module, and one can choose between IOb or
 AXI4 interfaces. In practice, most memory modules have a standard interface such
-as AXI4, which is themost common choice, although one may choose NPI in less
+as AXI4, which is the most common choice, although one may choose IOb in less
 usual simulation or FPGA prototyping scenarios.
 

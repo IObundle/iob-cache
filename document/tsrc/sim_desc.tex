@@ -8,4 +8,23 @@ only a set of primary non-pipelined write followed by read tests is
 implemented. However, IOb-Cache has been thoroughly verified in-system, with two
 cache levels. Various open-source RISC-V processors have proven that IOb-Cache
 works well: PicoRV32, SSRV, VexRISCV, and DarkRV.
+
+The testbench architecture involves the following components and data flow:
+
+\begin{itemize}
+  \item Includes an iob\_universal\_converter module to test the various types of interfaces supported by the IOb-Cache front-end interface.
+  \item The IOb-Cache core's back-end interface is connected to a model memory via AXI bus.
+\end{itemize}
+
+The testbench controller orchestrates the test sequence as follows:
+
+\begin{enumerate}
+  \item Initializes cache.
+  \item Simple test: Writes a few random words to cache and reads them back for verification. % simple test
+  \item Data test: Writes custom data words to cache and reads them back for verification. % data test
+  \item Address test: Writes words to specific addresses, including the highest one, and reads them back for verification. % address test
+  \item LRU test: Writes words to specific addresses at regular interval and reads them back to verify cache replacement policy. % LRU test
+  \item Controller test: Reads and modifies Cache controller CSRs to verify their functionality. % Controller test
+\end{enumerate}
+
 \clearpage

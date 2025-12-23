@@ -5,8 +5,8 @@
 \begin{itemize}
   \itemsep-0.5em
 \item Pipelined operation allowing consecutive one-cycle reads and writes
-\item IObundle's Native Pipelined Interface (NPI) front-end native interface on the processor side (front-end)
-\item NPI or AXI4 interface on the memory side (back-end)
+\item Support for multiple interface types (selectable) on the processor side (front-end): IOb, AXI-Lite, Wishbone
+\item IOb or AXI4 interface on the memory side (back-end)
 \item Configurable address and data widths on the front-end and back-end interfaces for supporting a variety of different systems
 \item Configurable number of lines and words per line
 \item Configurable K-Way Set-Associativity ($k \geq 1$)
