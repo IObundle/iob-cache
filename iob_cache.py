@@ -620,7 +620,7 @@ def setup(py_params: dict):
         # Generate CSRs but don't instantiate it (generated hardware unused; only for software and docs)
         {
             "core_name": "iob_csrs",
-            "instance_name": "csrs_inst",
+            "instance_name": "csrs",
             "name": f"iob_cache_{be_if}_csrs",
             "instantiate": False,
             "autoaddr": False,
