@@ -33,6 +33,12 @@ def setup(py_params: dict):
         print("ERROR: backend interface must be either AXI4 or IOb")
         exit(1)
 
+    IF_DISPLAY_NAME = {
+        "iob": "IOb",
+        "axil": "AXI-Lite",
+        "wb": "Wishbone",
+    }
+
     # Create dictionary with attributes of cache
     attributes_dict = {
         "name": NAME,
@@ -314,7 +320,7 @@ def setup(py_params: dict):
         },
         {
             "name": f"{FE_IF.lower()}_s",
-            "descr": "Front-end interface",
+            "descr": f"Front-end interface, when selecting the {IF_DISPLAY_NAME[FE_IF.lower()]} FE interface.",
             "signals": {
                 "type": FE_IF.lower(),
                 "ADDR_W": "ADDR_W",
@@ -347,36 +353,51 @@ def setup(py_params: dict):
                 },
             ],
         },
+        # Back-end interface
+        {
+            "name": "axi_m",
+            "doc_only": BE_IF != "AXI4",
+            "descr": "Back-end interface, when selecting the AXI4 BE interface.",
+            "signals": {
+                "type": "axi",
+                "ID_W": "AXI_ID_W",
+                "ADDR_W": "AXI_ADDR_W",
+                "DATA_W": "AXI_DATA_W",
+                "LEN_W": "AXI_LEN_W",
+                "LOCK_W": 1,
+            },
+        },
+        {
+            "name": "iob_m",
+            "doc_only": BE_IF != "IOb",
+            "descr": "Back-end interface, when selecting the IOb BE interface.",
+            "signals": {
+                "type": "iob",
+                "prefix": "be_",
+                "ADDR_W": "BE_ADDR_W",
+                "DATA_W": "BE_DATA_W",
+            },
+        },
     ]
-    # Back-end interface
-    if BE_IF == "AXI4":
-        attributes_dict["ports"] += [
-            {
-                "name": "axi_m",
-                "descr": "Back-end interface",
-                "signals": {
-                    "type": "axi",
-                    "ID_W": "AXI_ID_W",
-                    "ADDR_W": "AXI_ADDR_W",
-                    "DATA_W": "AXI_DATA_W",
-                    "LEN_W": "AXI_LEN_W",
-                    "LOCK_W": 1,
+
+    # Document all supported Front-End interfaces
+    for supported_if in ["iob", "axil", "wb"]:
+        # FE_IF has already been documented previously. Only document other supported interfaces.
+        if FE_IF.lower() != supported_if:
+            attributes_dict["ports"].insert(
+                2,
+                {
+                    "name": f"{supported_if}_s",
+                    "doc_only": True,
+                    "descr": f"Front-end interface, when selecting the {IF_DISPLAY_NAME[supported_if]} FE interface.",
+                    "signals": {
+                        "type": supported_if,
+                        "ADDR_W": "ADDR_W",
+                        "DATA_W": "DATA_W",
+                    },
                 },
-            },
-        ]
-    elif BE_IF == "IOb":
-        attributes_dict["ports"] += [
-            {
-                "name": "iob_m",
-                "descr": "Back-end interface",
-                "signals": {
-                    "type": "iob",
-                    "prefix": "be_",
-                    "ADDR_W": "BE_ADDR_W",
-                    "DATA_W": "BE_DATA_W",
-                },
-            },
-        ]
+            )
+
     #
     # Wires
     #
