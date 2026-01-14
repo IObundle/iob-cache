@@ -80,10 +80,8 @@ syn-test:
 doc-build: clean setup
 	nix-shell --run "make -C $(BUILD_DIR) doc-build DOC=$(DOC)"
 
-doc-view: $(BUILD_DIR)/document/$(DOC).pdf
+doc-view: doc-build
 	nix-shell --run "make -C $(BUILD_DIR) doc-view DOC=$(DOC)"
-
-$(BUILD_DIR)/document/$(DOC).pdf: doc-build
 
 .PHONY: all setup sim-build sim-run sim-waves sim-test fpga-build fpga-test doc-build doc-view
 
