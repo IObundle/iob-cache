@@ -5,8 +5,8 @@
 { pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/25.05.tar.gz") {} }:
 
 let
-  py2hwsw_commit = "2b4512745dcd301a26cdd24aed7b87d68d043c66"; # Replace with the desired commit.
-  py2hwsw_sha256 = "GOIjjRb2nuNwuHh1ai6iwmh2idicP1UVoYAY9HUhktA="; # Replace with the actual SHA256 hash.
+  py2hwsw_commit = "3d285ff8cfb41a57f7822f3f8adea901b948e1c0"; # Replace with the desired commit.
+  py2hwsw_sha256 = "q38sN4nlb0OPreUylVT8eTgUAt9O9jCZm/pwF15WRis="; # Replace with the actual SHA256 hash.
   # Get local py2hwsw root from `PY2HWSW_ROOT` env variable
   py2hwswRoot = builtins.getEnv "PY2HWSW_ROOT";
 
@@ -24,13 +24,18 @@ let
             # Root provided, use local
             pkgs.lib.cleanSource py2hwswRoot
           else
-            # No root provided, use GitHub
+            # No root provided: fetch from GitHub and add shortHash.tex
             (pkgs.fetchFromGitHub {
               owner = "IObundle";
               repo = "py2hwsw";
               rev = py2hwsw_commit;
               sha256 = py2hwsw_sha256;
               fetchSubmodules = true;
+              # Generate shortHash.tex based on commit
+              postFetch = ''
+                echo "Creating shortHash.tex"
+                echo "${builtins.substring 0 7 py2hwsw_commit}" > "$out/py2hwsw/shortHash.tex"
+              '';
             }).overrideAttrs (_: {
               GIT_CONFIG_COUNT = 1;
               GIT_CONFIG_KEY_0 = "url.https://github.com/.insteadOf";
