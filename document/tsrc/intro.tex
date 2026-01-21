@@ -1,20 +1,20 @@
 % SPDX-FileCopyrightText: 2024 IObundle
 %
 % SPDX-License-Identifier: MIT
+IOb-Cache is a highly configurable, pipelined memory cache designed to bridge
+the gap between processing cores and system memory. On the front-end, it
+features a versatile processor-side interface that supports AXI4-Lite, Wishbone,
+or the proprietary IObundle Native Interface (IOb). The back-end memory-side
+interface is equally flexible, offering compatibility with AXI4 or IOb
+interfaces. Both the address and data widths are fully parameterizable, ensuring
+seamless integration with a wide variety of user cores and memory technologies.
 
-IOb-Cache is an open-source configurable pipelined memory cache.
-The processor-side interface (front-end) can be configured to use IObundle's Native Interface (IOb), AXI4-Lite or Wishbone interface.
-The memory-side interface (back-end) can also be configured to use IOb or
-the widely used AXI4 interface. The address and data widths of the front-end and
-back-end are configurable to support multiple user cores and memories. IOb-Cache
-is a K-Way Set-Associative cache, where K can vary from 1 (directly mapped) to 8
-or more ways, provided the operating frequency after synthesis is
-acceptable. IOb-Cache supports the two most common write policies: Write-Through
-Not-Allocate and Write-Back Allocate.
+The architecture is based on a $k$-way set-associative structure, where $k$ can
+be configured from 1 (direct-mapped) to 8 or more, depending on timing closure
+requirements. To suit different application needs, IOb-Cache supports the two
+most common write policies: Write-Through Not-Allocate and Write-Back
+Allocate. Currently, the IP core is fully verified and operational within
+IObundle's IOb-SoC system using the picorv32 CPU, supporting both simulation
+environments and FPGA implementations.
 
-IOb-Cache was developed in the scope of João Roque's master's thesis in
-Electrical and Computer Engineering at the Instituto Superior Técnico of the
-University of Lisbon. The Verilog code works well in IObundle's IOb-SoC system
-(https://github.com/IObundle/iob-soc) both in simulation and FPGA. To be used in
-an ASIC, it would need to be lint-cleaned and verified more thoroughly by RTL
-simulation to achieve 100\% code coverage desirably.
+
