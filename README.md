@@ -46,10 +46,12 @@ To run in simulation, call the 'sim-run' Makefile target:
 make sim-run
 ```
 
-## Pre-built files
+## FuseSoC
 
-Two [FuseSoC](https://github.com/olofk/fusesoc)-compatible pre-built versions of iob-cache, with AXI4 and IOb back-end interfaces, are available in the [repository's release page](https://github.com/IObundle/iob-cache/releases).
-The Cache's Verilog sources are available in the `iob_cache_*/hardware/src/` directory of the compressed tar.gz files in the release page.
+A [FuseSoC](https://github.com/olofk/fusesoc)-compatible pre-built version of IOb-Cache is available in the official [FuseSoC Package Directory](https://cores.fusesoc.net/cores/?search=iob_cache).
 
-To use these pre-built cores in FuseSoC, extract the compressed tar.gz files to a [FuseSoC library directory](https://fusesoc.readthedocs.io/en/stable/user/overview.html#discover-cores-the-package-manager).
+There is also a [FuseSoC](https://github.com/olofk/fusesoc)-compatible pre-built version of IOb-Cache available in the [repository's release page](https://github.com/IObundle/iob-cache/releases) and in the [iob-cache-fs](https://github.com/IObundle/iob-cache-fs) repository.
+The core's Verilog sources are available in the `iob_cache_*/hardware/src/` directory of the compressed tar.gz file in the release page.
+
+To use this pre-built core in FuseSoC, extract the compressed tar.gz file to a [FuseSoC library directory](https://fusesoc.readthedocs.io/en/stable/user/overview.html#discover-cores-the-package-manager).
 
