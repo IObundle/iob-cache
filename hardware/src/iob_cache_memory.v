@@ -143,8 +143,6 @@ module iob_cache_memory #(
             .arst_i(reset_i),
             .cke_i (1'b1),
 
-            .ext_mem_clk_o   (mem_clk),
-
             .ext_mem_w_en_o  (mem_w_en),
             .ext_mem_w_addr_o(mem_w_addr),
             .ext_mem_w_data_o(mem_w_data),
