@@ -24,6 +24,12 @@ endif
 ifneq ($(USE_CTRL),)
 PY_PARAMS:=$(PY_PARAMS):use_ctrl=$(USE_CTRL)
 endif
+ifneq ($(WRITE_POL),)
+PY_PARAMS:=$(PY_PARAMS):write_pol=$(WRITE_POL)
+endif
+ifneq ($(NWAYS_W),)
+PY_PARAMS:=$(PY_PARAMS):nways_w=$(NWAYS_W)
+endif
 # Remove first char (:) from PY_PARAMS
 PY_PARAMS:=$(shell echo $(PY_PARAMS) | cut -c2-)
 endif # ifndef PY_PARAMS

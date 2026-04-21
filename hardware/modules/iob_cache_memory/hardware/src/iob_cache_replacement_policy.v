@@ -7,19 +7,19 @@
 `include "iob_cache_memory_conf.vh"
 
 module iob_cache_replacement_policy #(
-   parameter N_WAYS     = 8,
-   parameter NLINES_W   = 0,
-   parameter NWAYS_W    = $clog2(N_WAYS),
-   parameter REP_POLICY = `IOB_CACHE_MEMORY_PLRU_TREE
+   parameter N_WAYS      = 8,
+   parameter SET_INDEX_W = 0,
+   parameter NWAYS_W     = $clog2(N_WAYS),
+   parameter REP_POLICY  = `IOB_CACHE_MEMORY_PLRU_TREE
 ) (
-   input                 clk_i,
-   input                 cke_i,
-   input                 reset_i,
-   input                 write_en_i,
-   input  [  N_WAYS-1:0] way_hit_i,
-   input  [NLINES_W-1:0] line_addr_i,
-   output [  N_WAYS-1:0] way_select_o,
-   output [ NWAYS_W-1:0] way_select_bin_o
+   input                    clk_i,
+   input                    cke_i,
+   input                    reset_i,
+   input                    write_en_i,
+   input  [     N_WAYS-1:0] way_hit_i,
+   input  [SET_INDEX_W-1:0] line_addr_i,
+   output [     N_WAYS-1:0] way_select_o,
+   output [    NWAYS_W-1:0] way_select_bin_o
 );
 
    genvar i, j;
@@ -33,12 +33,12 @@ module iob_cache_replacement_policy #(
          reg [NWAYS_W-1:0] mru_index;
 
          iob_cache_onehot_to_bin #(NWAYS_W) way_hit_binary (
-            .onehot_i(way_hit_i[N_WAYS-1:1]),
-            .bin_o   (way_hit_bin)
+             .onehot_i(way_hit_i[N_WAYS-1:1]),
+             .bin_o   (way_hit_bin)
          );
 
          always @(*) begin
-            mru_index = mru_out[(way_hit_bin*NWAYS_W) +: NWAYS_W];
+            mru_index = mru_out[(way_hit_bin*NWAYS_W)+:NWAYS_W];
          end
 
          for (i = 0; i < N_WAYS; i = i + 1) begin : encoder_decoder
@@ -54,24 +54,24 @@ module iob_cache_replacement_policy #(
 
          // Most Recently Used (MRU) memory
          iob_regarray_sp #(
-            .ADDR_W(NLINES_W),
+            .ADDR_W(SET_INDEX_W),
             .DATA_W(N_WAYS * NWAYS_W)
          ) mru_memory  // simply uses the same format as valid memory
          (
-            .clk_i (clk_i),
-            .cke_i (cke_i),
-            .arst_i(reset_i),
+             .clk_i (clk_i),
+             .cke_i (cke_i),
+             .arst_i(reset_i),
 
-            .rst_i (1'b0),
-            .we_i  (write_en_i),
-            .addr_i(line_addr_i),
-            .d_i   (mru_in),
-            .d_o   (mru_out)
+             .rst_i (1'b0),
+             .we_i  (write_en_i),
+             .addr_i(line_addr_i),
+             .d_i   (mru_in),
+             .d_o   (mru_out)
          );
 
          iob_cache_onehot_to_bin #(NWAYS_W) onehot_bin (
-            .onehot_i(way_select_o[N_WAYS-1:1]),
-            .bin_o   (way_select_bin_o)
+             .onehot_i(way_select_o[N_WAYS-1:1]),
+             .bin_o   (way_select_bin_o)
          );
       end else if (REP_POLICY == `IOB_CACHE_MEMORY_PLRU_MRU) begin : g_PLRU_MRU
          wire [N_WAYS -1:0] mru_in, mru_out;
@@ -87,24 +87,24 @@ module iob_cache_replacement_policy #(
 
          // Most Recently Used (MRU) memory
          iob_regarray_sp #(
-            .ADDR_W(NLINES_W),
+            .ADDR_W(SET_INDEX_W),
             .DATA_W(N_WAYS)
          ) mru_memory  // simply uses the same format as valid memory
          (
-            .clk_i (clk_i),
-            .cke_i (cke_i),
-            .arst_i(reset_i),
+             .clk_i (clk_i),
+             .cke_i (cke_i),
+             .arst_i(reset_i),
 
-            .rst_i (1'b0),
-            .we_i  (write_en_i),
-            .addr_i(line_addr_i),
-            .d_i   (mru_in),
-            .d_o   (mru_out)
+             .rst_i (1'b0),
+             .we_i  (write_en_i),
+             .addr_i(line_addr_i),
+             .d_i   (mru_in),
+             .d_o   (mru_out)
          );
 
          iob_cache_onehot_to_bin #(NWAYS_W) onehot_bin (
-            .onehot_i(way_select_o[N_WAYS-1:1]),
-            .bin_o   (way_select_bin_o)
+             .onehot_i(way_select_o[N_WAYS-1:1]),
+             .bin_o   (way_select_bin_o)
          );
       end else begin : g_PLRU_TREE
          // (REP_POLICY == PLRU_TREE)
@@ -154,19 +154,19 @@ module iob_cache_replacement_policy #(
 
          // Most Recently Used (MRU) memory
          iob_regarray_sp #(
-            .ADDR_W(NLINES_W),
+            .ADDR_W(SET_INDEX_W),
             .DATA_W(N_WAYS - 1)
          ) mru_memory  // simply uses the same format as valid memory
          (
-            .clk_i (clk_i),
-            .cke_i (cke_i),
-            .arst_i(reset_i),
+             .clk_i (clk_i),
+             .cke_i (cke_i),
+             .arst_i(reset_i),
 
-            .rst_i (1'b0),
-            .we_i  (write_en_i),
-            .addr_i(line_addr_i),
-            .d_i   (tree_in),
-            .d_o   (tree_out)
+             .rst_i (1'b0),
+             .we_i  (write_en_i),
+             .addr_i(line_addr_i),
+             .d_i   (tree_in),
+             .d_o   (tree_out)
          );
       end
    endgenerate

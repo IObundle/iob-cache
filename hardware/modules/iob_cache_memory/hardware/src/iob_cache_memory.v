@@ -12,10 +12,10 @@ module iob_cache_memory #(
    `include "iob_cache_memory_io.vs"
 );
 
-   localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + NLINES_W);
+   localparam TAG_W = FE_ADDR_W - (FE_NBYTES_W + WORD_OFFSET_W + SET_INDEX_W);
    localparam NWAYS = 2 ** NWAYS_W;
    localparam OFFSET_PAD_W = 32 - WORD_OFFSET_W;
-   localparam LINE_WSTRB_W = (2**WORD_OFFSET_W)*FE_NBYTES;
+   localparam LINE_WSTRB_W = (2 ** WORD_OFFSET_W) * FE_NBYTES;
 
    wire hit;
 
@@ -23,12 +23,12 @@ module iob_cache_memory #(
    wire [NWAYS-1:0] way_hit, way_select;
 
    wire [TAG_W-1:0]            tag = addr_reg_i[ADDR_REG_W-1 -: TAG_W]; // so the tag doesnt update during ack on a read-access, losing the current hit status (can take the 1 clock-cycle delay)
-   wire [NLINES_W-1:0]         index = addr_i[ADDR_W-TAG_W-1 -: NLINES_W]; // cant wait, doesnt update during a write-access
-   wire [NLINES_W-1:0]         index_reg = addr_reg_i[ADDR_REG_W-TAG_W-1 -:NLINES_W]; // cant wait, doesnt update during a write-access
+   wire [SET_INDEX_W-1:0]         index = addr_i[ADDR_W-TAG_W-1 -: SET_INDEX_W]; // cant wait, doesnt update during a write-access
+   wire [SET_INDEX_W-1:0]         index_reg = addr_reg_i[ADDR_REG_W-TAG_W-1 -:SET_INDEX_W]; // cant wait, doesnt update during a write-access
    wire [WORD_OFFSET_W-1:0]    offset = addr_reg_i[0 +: WORD_OFFSET_W]; // so the offset doesnt update during ack on a read-access (can take the 1 clock-cycle delay)
    wire [NWAYS*(2**WORD_OFFSET_W)*FE_DATA_W-1:0] line_rdata;
    wire [NWAYS*TAG_W-1:0] line_tag;
-   reg [NWAYS*(2**NLINES_W)-1:0] v_reg;
+   reg [NWAYS*(2**SET_INDEX_W)-1:0] v_reg;
    reg [NWAYS-1:0] v;
 
    reg [LINE_WSTRB_W-1:0] line_wstrb;
@@ -43,7 +43,7 @@ module iob_cache_memory #(
 
    // for write-back write-allocate only
    reg  [                                        NWAYS-1:0] dirty;
-   reg  [                          NWAYS*(2**NLINES_W)-1:0] dirty_reg;
+   reg  [                       NWAYS*(2**SET_INDEX_W)-1:0] dirty_reg;
 
 
    generate
@@ -66,15 +66,15 @@ module iob_cache_memory #(
             .DATA_W(FIFO_DATA_W),
             .ADDR_W(FIFO_ADDR_W)
          ) iob_ram_t2p0 (
-            .clk_i(mem_clk),
+             .clk_i(mem_clk),
 
-            .w_en_i  (mem_w_en),
-            .w_addr_i(mem_w_addr),
-            .w_data_i(mem_w_data),
+             .w_en_i  (mem_w_en),
+             .w_addr_i(mem_w_addr),
+             .w_data_i(mem_w_data),
 
-            .r_en_i  (mem_r_en),
-            .r_addr_i(mem_r_addr),
-            .r_data_o(mem_r_data)
+             .r_en_i  (mem_r_en),
+             .r_addr_i(mem_r_addr),
+             .r_data_o(mem_r_data)
          );
 
          iob_fifo_sync #(
@@ -82,30 +82,30 @@ module iob_cache_memory #(
             .W_DATA_W(FIFO_DATA_W),
             .ADDR_W  (FIFO_ADDR_W)
          ) write_throught_buffer (
-            .clk_i (clk_i),
-            .rst_i (1'b0),
-            .arst_i(arst_i),
-            .cke_i (1'b1),
+             .clk_i (clk_i),
+             .rst_i (1'b0),
+             .arst_i(arst_i),
+             .cke_i (1'b1),
 
-            .ext_mem_clk_o(mem_clk),
+             .ext_mem_clk_o(mem_clk),
 
-            .ext_mem_w_en_o  (mem_w_en),
-            .ext_mem_w_addr_o(mem_w_addr),
-            .ext_mem_w_data_o(mem_w_data),
+             .ext_mem_w_en_o  (mem_w_en),
+             .ext_mem_w_addr_o(mem_w_addr),
+             .ext_mem_w_data_o(mem_w_data),
 
-            .ext_mem_r_en_o  (mem_r_en),
-            .ext_mem_r_addr_o(mem_r_addr),
-            .ext_mem_r_data_i(mem_r_data),
+             .ext_mem_r_en_o  (mem_r_en),
+             .ext_mem_r_addr_o(mem_r_addr),
+             .ext_mem_r_data_i(mem_r_data),
 
-            .level_o(),
+             .level_o(),
 
-            .r_data_o (buffer_dout),
-            .r_empty_o(buffer_empty),
-            .r_en_i   (write_ack_i),
+             .r_data_o (buffer_dout),
+             .r_empty_o(buffer_empty),
+             .r_en_i   (write_ack_i),
 
-            .w_data_i({addr_reg_i, wdata_reg_i, wstrb_reg_i}),
-            .w_full_o(buffer_full),
-            .w_en_i  (write_access & ack_o)
+             .w_data_i({addr_reg_i, wdata_reg_i, wstrb_reg_i}),
+             .w_full_o(buffer_full),
+             .w_en_i  (write_access & ack_o)
          );
 
          // buffer status
@@ -205,24 +205,24 @@ module iob_cache_memory #(
       for (k = 0; k < NWAYS; k = k + 1) begin : g_n_ways_block
          for (j = 0; j < 2 ** LINE2BE_W; j = j + 1) begin : g_line2mem_block
             for (i = 0; i < BE_DATA_W / FE_DATA_W; i = i + 1) begin : g_BE_block
-               wire [FE_NBYTES-1:0] we_gen;
-               wire [NLINES_W-1:0] addr_gen;
-               wire [FE_DATA_W-1:0] data_in_gen;
+               wire [  FE_NBYTES-1:0] we_gen;
+               wire [SET_INDEX_W-1:0] addr_gen;
+               wire [  FE_DATA_W-1:0] data_in_gen;
 
                assign we_gen = {FE_NBYTES{way_hit[k]}} & line_wstrb[(j*(BE_DATA_W/FE_DATA_W)+i)*FE_NBYTES +: FE_NBYTES];
-               assign addr_gen = (write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == {{OFFSET_PAD_W{1'b0}}, offset}))? index_reg[NLINES_W-1:0] : index[NLINES_W-1:0];
+               assign addr_gen = (write_access & way_hit[k] & ((j*(BE_DATA_W/FE_DATA_W)+i) == {{OFFSET_PAD_W{1'b0}}, offset}))? index_reg[SET_INDEX_W-1:0] : index[SET_INDEX_W-1:0];
                assign data_in_gen = (replace_i) ? read_rdata_i[i*FE_DATA_W+:FE_DATA_W] : wdata_reg_i;
 
                iob_cache_gen_sp_ram #(
                   .DATA_W(FE_DATA_W),
-                  .ADDR_W(NLINES_W)
+                  .ADDR_W(SET_INDEX_W)
                ) cache_memory (
-                  .clk_i(clk_i),
-                  .en_i(req_i),
-                  .we_i (we_gen),
-                  .addr_i(addr_gen),
-                  .data_i(data_in_gen),
-                  .data_o(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W+:FE_DATA_W])
+                   .clk_i(clk_i),
+                   .en_i(req_i),
+                   .we_i(we_gen),
+                   .addr_i(addr_gen),
+                   .data_i(data_in_gen),
+                   .data_o(line_rdata[(k*(2**WORD_OFFSET_W)+j*(BE_DATA_W/FE_DATA_W)+i)*FE_DATA_W+:FE_DATA_W])
                );
             end
          end
@@ -242,7 +242,7 @@ module iob_cache_memory #(
          always @* begin
             if (replace_i) begin
                // line-replacement: mem's word replaces entire line
-               line_wstrb = {{(LINE_WSTRB_W-BE_NBYTES){1'b0}}, {BE_NBYTES{read_req_i}}};
+               line_wstrb = {{(LINE_WSTRB_W - BE_NBYTES) {1'b0}}, {BE_NBYTES{read_req_i}}};
             end else begin
                line_wstrb = {{(LINE_WSTRB_W-FE_NBYTES){1'b0}}, (wstrb_reg_i & {FE_NBYTES{write_access}})} << (offset * FE_NBYTES);
             end
@@ -258,7 +258,7 @@ module iob_cache_memory #(
             if (arst_i) v_reg <= 0;
             else if (invalidate_i) v_reg <= 0;
             else if (replace_req_o)
-               v_reg <= v_reg | (1 << (way_select_bin * (2 ** NLINES_W) + index_reg));
+               v_reg <= v_reg | (1 << (way_select_bin * (2 ** SET_INDEX_W) + index_reg));
             else v_reg <= v_reg;
          end
 
@@ -266,19 +266,19 @@ module iob_cache_memory #(
             // valid-memory output stage register - 1 c.c. read-latency (cleaner simulation during rep.)
             always @(posedge clk_i)
                if (invalidate_i) v[k] <= 0;
-               else v[k] <= v_reg[(2**NLINES_W)*k+index];
+               else v[k] <= v_reg[(2**SET_INDEX_W)*k+index];
 
             // tag-memory
             iob_ram_sp #(
                .DATA_W(TAG_W),
-               .ADDR_W(NLINES_W)
+               .ADDR_W(SET_INDEX_W)
             ) tag_memory (
-               .clk_i (clk_i),
-               .en_i  (req_i),
-               .we_i  (way_select[k] & replace_req_o),
-               .addr_i(index[NLINES_W-1:0]),
-               .d_i   (tag),
-               .d_o   (line_tag[TAG_W*k+:TAG_W])
+                .clk_i (clk_i),
+                .en_i  (req_i),
+                .we_i  (way_select[k] & replace_req_o),
+                .addr_i(index[SET_INDEX_W-1:0]),
+                .d_i   (tag),
+                .d_o   (line_tag[TAG_W*k+:TAG_W])
             );
 
             // Way hit signal - hit or replacement
@@ -290,26 +290,26 @@ module iob_cache_memory #(
 
          // replacement-policy module
          iob_cache_replacement_policy #(
-            .N_WAYS    (NWAYS),
-            .NLINES_W  (NLINES_W),
-            .REP_POLICY(REP_POLICY)
+            .N_WAYS     (NWAYS),
+            .SET_INDEX_W(SET_INDEX_W),
+            .REP_POLICY (REP_POLICY)
          ) replacement_policy_algorithm (
-            .clk_i           (clk_i),
-            .cke_i           (cke_i),
-            .reset_i         (arst_i | invalidate_i),
-            .write_en_i      (ack_o),
-            .way_hit_i       (way_hit),
-            .line_addr_i     (index_reg[NLINES_W-1:0]),
-            .way_select_o    (way_select),
-            .way_select_bin_o(way_select_bin)
+             .clk_i           (clk_i),
+             .cke_i           (cke_i),
+             .reset_i         (arst_i | invalidate_i),
+             .write_en_i      (ack_o),
+             .way_hit_i       (way_hit),
+             .line_addr_i     (index_reg[SET_INDEX_W-1:0]),
+             .way_select_o    (way_select),
+             .way_select_bin_o(way_select_bin)
          );
 
          // onehot-to-binary for way-hit
          iob_cache_onehot_to_bin #(
             .BIN_W(NWAYS_W)
          ) way_hit_encoder (
-            .onehot_i(way_hit[NWAYS-1:1]),
-            .bin_o   (way_hit_bin)
+             .onehot_i(way_hit[NWAYS-1:1]),
+             .bin_o   (way_hit_bin)
          );
 
          // dirty-memory
@@ -317,15 +317,15 @@ module iob_cache_memory #(
             always @(posedge clk_i, posedge arst_i) begin
                if (arst_i) dirty_reg <= 0;
                else if (write_req_o)
-                  dirty_reg <= dirty_reg & ~(1<<(way_select_bin*(2**NLINES_W) + index_reg)); // updates position with 0
+                  dirty_reg <= dirty_reg & ~(1<<(way_select_bin*(2**SET_INDEX_W) + index_reg)); // updates position with 0
                else if (write_access & hit)
-                  dirty_reg <= dirty_reg |  (1<<(way_hit_bin*(2**NLINES_W) + index_reg)); // updates position with 1
+                  dirty_reg <= dirty_reg |  (1<<(way_hit_bin*(2**SET_INDEX_W) + index_reg)); // updates position with 1
                else dirty_reg <= dirty_reg;
             end
 
             for (k = 0; k < NWAYS; k = k + 1) begin : g_dirty_block
                // valid-memory output stage register - 1 c.c. read-latency (cleaner simulation during rep.)
-               always @(posedge clk_i) dirty[k] <= dirty_reg[(2**NLINES_W)*k+index];
+               always @(posedge clk_i) dirty[k] <= dirty_reg[(2**SET_INDEX_W)*k+index];
             end
 
             // flush line
@@ -355,14 +355,14 @@ module iob_cache_memory #(
          // tag-memory
          iob_ram_sp #(
             .DATA_W(TAG_W),
-            .ADDR_W(NLINES_W)
+            .ADDR_W(SET_INDEX_W)
          ) tag_memory (
-            .clk_i (clk_i),
-            .en_i  (req_i),
-            .we_i  (replace_req_o),
-            .addr_i(index),
-            .d_i   (tag),
-            .d_o   (line_tag)
+             .clk_i (clk_i),
+             .en_i  (req_i),
+             .we_i  (replace_req_o),
+             .addr_i(index),
+             .d_i   (tag),
+             .d_o   (line_tag)
          );
 
          // Cache hit signal that indicates which way has had the hit (also during replacement)

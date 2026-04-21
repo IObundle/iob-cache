@@ -49,8 +49,10 @@ def setup(py_params: dict):
             "max": "8",
         },
         {
-            "name": "NLINES_W",
-            "descr": "Line offset width (log2): the value of this parameter equals the number of cache lines, given by 2**NLINES_W.",
+            "name": "SET_INDEX_W",
+            "descr": "Width (in bits) of the cache's set index field. The number of sets in the cache is calculated as 2**SET_INDEX_W. Combined with the number of ways (NWAYS), the total number of cache lines in the cache is NWAYS*(2**SET_INDEX_W)."
+            "- For a fully associative cache, `SET_INDEX_W` is `0` (as the entire cache forms a single set). "
+            "- For a direct-mapped cache (which has `NWAYS = 1`), `SET_INDEX_W` specifies the log2 number of sets, each containing a single cache line, therefore is also equivalent to the log2 total number of cache lines.",
             "type": "P",
             "val": "7",
             "min": "",
