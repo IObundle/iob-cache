@@ -21,7 +21,9 @@ def setup(py_params: dict):
     # Number of cache ways (log2)
     NWAYS_W = py_params.get("nways_w", 1)
     # Use cache controller
-    USE_CTRL = py_params.get("use_ctrl", 0)
+    USE_CTRL = int(py_params.get("use_ctrl", 0))
+    # Use dedicated controller port
+    USE_DEDICATED_CTRL_PORT = int(py_params.get("use_dedicated_ctrl_port", 0))
     # Name of generated cache's verilog. We may use multiple names to generate caches with different configurations.
     be_if = "axi" if BE_IF == "AXI4" else "iob"
     NAME = py_params.get("name", f"iob_cache_{be_if}")
@@ -36,11 +38,17 @@ def setup(py_params: dict):
     if BE_IF not in ["AXI4", "IOb"]:
         print("ERROR: backend interface must be either AXI4 or IOb")
         exit(1)
+    if USE_DEDICATED_CTRL_PORT and not USE_CTRL:
+        print(
+            "ERROR: USE_DEDICATED_CTRL_PORT requires use_ctrl=1 (controller must be enabled)"
+        )
+        exit(1)
 
     IF_DISPLAY_NAME = {
         "iob": "IOb",
         "axil": "AXI-Lite",
         "wb": "Wishbone",
+        "axi": "AXI",
     }
 
     # Create dictionary with attributes of cache
@@ -58,7 +66,7 @@ def setup(py_params: dict):
     config_macros = [
         {
             "name": "LRU",
-            "descr": "Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters",
+            "descr": "Index of LRU Policy. Least Recently Used -- more resources intensive - N*log2(N) bits per cache line - Uses counters",
             "type": "M",
             "val": "0",
             "min": "?",
@@ -66,7 +74,7 @@ def setup(py_params: dict):
         },
         {
             "name": "PLRU_MRU",
-            "descr": "bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line",
+            "descr": "Index of PLRU_MRU Policy. Bit-based Pseudo-Least-Recently-Used, a simpler replacement policy than LRU, using a much lower complexity (lower resources) - N bits per cache line",
             "type": "M",
             "val": "1",
             "min": "?",
@@ -74,7 +82,7 @@ def setup(py_params: dict):
         },
         {
             "name": "PLRU_TREE",
-            "descr": "tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line",
+            "descr": "Index of PLRU_TREE Policy. tree-based Pseudo-Least-Recently-Used, uses a tree that updates after any way received an hit, and points towards the oposing one. Uses less resources than bit-pseudo-lru - N-1 bits per cache line",
             "type": "M",
             "val": "2",
             "min": "?",
@@ -83,7 +91,7 @@ def setup(py_params: dict):
         # Write Policy
         {
             "name": "WRITE_THROUGH",
-            "descr": "write-through not allocate: implements a write-through buffer",
+            "descr": "Index of write-through Policy. write-through not allocate: implements a write-through buffer",
             "type": "M",
             "val": "0",
             "min": "?",
@@ -91,7 +99,7 @@ def setup(py_params: dict):
         },
         {
             "name": "WRITE_BACK",
-            "descr": "write-back allocate: implementes a dirty-memory",
+            "descr": "Index of write-back Policy. write-back allocate: implementes a dirty-memory",
             "type": "M",
             "val": "1",
             "min": "?",
@@ -104,7 +112,7 @@ def setup(py_params: dict):
             "name": "ADDR_W_CSRS",
             "descr": "Address width of CSRs",
             "type": "M",
-            "val": "5",
+            "val": "6",
             "min": "?",
             "max": "?",
         },
@@ -249,7 +257,7 @@ def setup(py_params: dict):
             "name": "ADDR_W",
             "descr": "Width of the (word aligned) front-end address bus, optionally including the highest bit to access cache controller CSRs (if enabled)",
             "type": "D",
-            "val": "USE_CTRL + FE_ADDR_W",
+            "val": "FE_ADDR_W" if USE_DEDICATED_CTRL_PORT else "USE_CTRL + FE_ADDR_W",
             "min": "NA",
             "max": "NA",
         },
@@ -329,10 +337,31 @@ def setup(py_params: dict):
             "descr": f"Front-end interface, when selecting the {IF_DISPLAY_NAME[FE_IF.lower()]} FE interface.",
             "signals": {
                 "type": FE_IF.lower(),
+                "prefix": "fe_",
                 "ADDR_W": "ADDR_W",
                 "DATA_W": "DATA_W",
             },
         },
+    ]
+    if FE_IF.lower() == "axi":
+        attributes_dict["ports"][-1]["signals"]["ID_W"] = "AXI_ID_W"
+        attributes_dict["ports"][-1]["signals"]["LEN_W"] = "AXI_LEN_W"
+        #attributes_dict["ports"][-1]["signals"]["LOCK_W"] = 1
+
+    if USE_DEDICATED_CTRL_PORT:
+        attributes_dict["ports"].append(
+            {
+                "name": "csrs_cbus_s",
+                "descr": "Dedicated Control and Status Register interface for cache controller",
+                "signals": {
+                    "type": "iob",
+                    "prefix": "csrs_",
+                    "ADDR_W": f"`{NAME.upper()}_ADDR_W_CSRS",
+                    "DATA_W": "DATA_W",
+                },
+            }
+        )
+    attributes_dict["ports"] += [
         {
             "name": "ie_io",
             "descr": "Cache invalidate and write-trough buffer IO chain",
@@ -398,6 +427,7 @@ def setup(py_params: dict):
                     "descr": f"Front-end interface, when selecting the {IF_DISPLAY_NAME[supported_if]} FE interface.",
                     "signals": {
                         "type": supported_if,
+                        "prefix": "fe_",
                         "ADDR_W": "ADDR_W",
                         "DATA_W": "DATA_W",
                     },
@@ -438,8 +468,8 @@ def setup(py_params: dict):
             "signals": [
                 {"name": "ctrl_req", "width": 1},
                 {"name": "ctrl_addr", "width": f"`{NAME.upper()}_ADDR_W_CSRS"},
-                {"name": "ctrl_wstrb", "width": "DATA_W/8"},
-                {"name": "ctrl_rdata", "width": "USE_CTRL*(FE_DATA_W-1)+1"},
+                {"name": "ctrl_wstrb", "width": "FE_DATA_W/8"},
+                {"name": "ctrl_rdata", "width": "FE_DATA_W"},
                 {"name": "ctrl_ack", "width": 1},
             ],
         },
@@ -545,6 +575,10 @@ def setup(py_params: dict):
             },
             "connect": converter_connect,
         },
+    ]
+    if FE_IF.lower() == "axi":
+        attributes_dict["subblocks"][-1]["parameters"]["AXI_ID_W"] = "AXI_ID_W"
+    attributes_dict["subblocks"] += [
         {
             "core_name": "iob_cache_front_end",
             "instance_name": "front_end",
@@ -552,7 +586,8 @@ def setup(py_params: dict):
             "parameters": {
                 "ADDR_W": "ADDR_W",
                 "DATA_W": "DATA_W",
-                "USE_CTRL": "USE_CTRL",
+                "USE_CTRL": "0" if USE_DEDICATED_CTRL_PORT else "USE_CTRL",
+                "ADDR_W_CSRS": f"`{NAME.upper()}_ADDR_W_CSRS",
             },
             "connect": {
                 "clk_en_rst_s": "clk_en_rst_s",
@@ -793,6 +828,9 @@ def setup(py_params: dict):
             "core_name": "iob_coverage_analyze",
             "instance_name": "iob_coverage_analyze_inst",
         },
+        {
+            "core_name": "iob_linux_device_drivers",
+        },
     ]
     #
     # Combinatorial
@@ -808,9 +846,52 @@ def setup(py_params: dict):
     #
     # Snippets
     #
-    attributes_dict["snippets"] = [
-        {
-            "verilog_code": """
+    verilog_code = ""
+    if USE_DEDICATED_CTRL_PORT:
+        verilog_code += """
+   //Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
+   generate
+      if (USE_CTRL) begin : g_ctrl
+         iob_cache_control #(
+            .DATA_W      (FE_DATA_W),
+            .USE_CTRL_CNT(USE_CTRL_CNT)
+         ) cache_control (
+            .clk_i  (clk_i),
+            .cke_i  (cke_i),
+            .arst_i (arst_i),
+
+            // control's signals
+            .valid_i(csrs_iob_valid_i),
+            .addr_i (csrs_iob_addr_i),
+            .wstrb_i (csrs_iob_wstrb_i),
+
+            // write data
+            .wtbuf_full_i (wtbuf_full),
+            .wtbuf_empty_i(wtbuf_empty),
+            .write_hit_i  (write_hit),
+            .write_miss_i (write_miss),
+            .read_hit_i   (read_hit),
+            .read_miss_i  (read_miss),
+
+            .rdata_o     (csrs_iob_rdata_o),
+            .ready_o     (csrs_iob_ready_o),
+            .invalidate_o(ctrl_invalidate)
+         );
+         assign csrs_iob_rvalid_o = csrs_iob_valid_i & ~csrs_iob_wstrb_i & csrs_iob_ready_o;
+      end else begin : g_no_ctrl
+         // Dedicated controller port unused when there is no controller
+         assign csrs_iob_rdata_o = 1'b0;
+         assign csrs_iob_ready_o = 1'b0;
+         assign csrs_iob_rvalid_o = 1'b0;
+         assign ctrl_invalidate = 1'b0;
+      end
+   endgenerate
+   // Front-end interface controller bus unused when there is dedicated controller port
+   assign ctrl_rdata      = {FE_DATA_W{1'b0}};
+   assign ctrl_ack        = 1'b0;
+"""
+    else:  # No dedicated controller port. Use merge with front-end interface
+        verilog_code += """
    //Cache control & Cache controller: this block is used for invalidating the cache, monitoring the status of the Write Thorough buffer, and accessing read/write hit/miss counters.
    generate
       if (USE_CTRL) begin : g_ctrl
@@ -840,13 +921,14 @@ def setup(py_params: dict):
             .invalidate_o(ctrl_invalidate)
          );
       end else begin : g_no_ctrl
-         assign ctrl_rdata      = 1'b0;
+         // Front-end interface controller bus unused when there is no controller
+         assign ctrl_rdata      = {FE_DATA_W{1'b0}};
          assign ctrl_ack        = 1'b0;
          assign ctrl_invalidate = 1'b0;
       end
    endgenerate
 """
-        }
-    ]
+
+    attributes_dict["snippets"] = [{"verilog_code": verilog_code}]
 
     return attributes_dict

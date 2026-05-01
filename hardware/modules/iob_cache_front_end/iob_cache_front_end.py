@@ -16,8 +16,8 @@ def setup(py_params: dict):
         {
             "name": "ADDR_W_CSRS",
             "descr": "Address width of CSRs",
-            "type": "M",
-            "val": "5",
+            "type": "P",
+            "val": "6",
             "min": "?",
             "max": "?",
         },
@@ -25,7 +25,7 @@ def setup(py_params: dict):
             "name": "ADDR_W",
             "descr": "Cache address width used by csrs_gen",
             "type": "P",
-            "val": "`IOB_CACHE_FRONT_END_ADDR_W_CSRS",
+            "val": "ADDR_W_CSRS",
             "min": "NA",
             "max": "NA",
         },
@@ -47,7 +47,7 @@ def setup(py_params: dict):
         },
         {
             "name": "USE_CTRL",
-            "descr": "Instantiates a cache controller (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
+            "descr": "Connects cache controller port (1) or not (0). The cache controller provides memory-mapped software accessible registers to invalidate the cache data contents, and monitor the write through buffer status using the front-end interface. To access the cache controller, the MSB of the address mut be set to 1. For more information refer to the example software functions provided.",
             "type": "P",
             "val": "0",
             "min": "0",
@@ -93,9 +93,9 @@ def setup(py_params: dict):
             "descr": "Control interface.",
             "signals": [
                 {"name": "ctrl_req_o", "width": 1},
-                {"name": "ctrl_addr_o", "width": "`IOB_CACHE_FRONT_END_ADDR_W_CSRS"},
+                {"name": "ctrl_addr_o", "width": "ADDR_W_CSRS"},
                 {"name": "ctrl_wstrb_o", "width": "DATA_W/8"},
-                {"name": "ctrl_rdata_i", "width": "USE_CTRL*(DATA_W-1)+1"},
+                {"name": "ctrl_rdata_i", "width": "DATA_W"},
                 {"name": "ctrl_ack_i", "width": 1},
             ],
         },
@@ -163,7 +163,7 @@ def setup(py_params: dict):
          assign valid_int    = ~iob_addr_i[ADDR_W-1] & iob_valid_i;
 
          assign ctrl_req_o   = iob_addr_i[ADDR_W-1] & iob_valid_i;
-         assign ctrl_addr_o  = iob_addr_i[`IOB_CACHE_FRONT_END_ADDR_W_CSRS-1:0];
+         assign ctrl_addr_o  = iob_addr_i[ADDR_W_CSRS-1:0];
          assign ctrl_wstrb_o = (ctrl_req_o) ? iob_wstrb_i : {(DATA_W/8){1'b0}};
 
          wire ctrl_ready_int;
@@ -175,8 +175,9 @@ def setup(py_params: dict):
          assign ack          = data_ack_i;
          assign iob_rdata_o  = data_rdata_i;
          assign valid_int    = iob_valid_i;
+         // Controller signals unused.
          assign ctrl_req_o   = 1'b0;
-         assign ctrl_addr_o  = `IOB_CACHE_FRONT_END_ADDR_W_CSRS'dx;
+         assign ctrl_addr_o  = {ADDR_W_CSRS{1'dx}};
          assign ctrl_wstrb_o = {(DATA_W/8){1'b0}};
 
          assign ready_int = data_ready_int;
