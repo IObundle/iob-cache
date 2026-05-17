@@ -108,10 +108,12 @@ int address_test() {
   return failed;
 }
 
-int lru_test(uint32_t nways_w, uint32_t nlines_w) {
+int lru_test(uint32_t nways_w, uint32_t set_index_w, uint32_t word_offset_w) {
   uint32_t i = 0;
   uint32_t nways = (1 << nways_w);
-  uint32_t addr_step = ((1 << nlines_w) * (DATA_W / 8));
+  // Address step such that it targets the same cache set with a different tag.
+  // uint32_t addr_step = 1 << (set_index_w + word_offset_w + byte_offset_w);
+  uint32_t addr_step = ((1 << (set_index_w + word_offset_w)) * (DATA_W / 8));
   uint32_t addr = 0;
   uint32_t wdata = 0xDEADBEEF;
 
@@ -190,7 +192,8 @@ int iob_core_tb() {
   failed += data_test();
   failed += address_test();
 
-  failed += lru_test(IOB_CACHE_CSRS_NWAYS_W, IOB_CACHE_CSRS_NLINES_W);
+  failed += lru_test(IOB_CACHE_CSRS_NWAYS_W, IOB_CACHE_CSRS_SET_INDEX_W,
+                     IOB_CACHE_CSRS_WORD_OFFSET_W);
 
   failed += ctrl_test();
 
