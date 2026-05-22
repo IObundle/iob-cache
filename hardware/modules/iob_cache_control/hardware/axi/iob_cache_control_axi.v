@@ -26,8 +26,8 @@ module iob_cache_control #(
       .W   (WSTRB_W),
       .MODE("LOW")
    ) prio_encoder0 (
-      .unencoded_i(wstrb_i),
-      .encoded_o  (byte_offset)
+       .unencoded_i(wstrb_i),
+       .encoded_o  (byte_offset)
    );
 
    // ignore address LSBs
@@ -83,7 +83,11 @@ module iob_cache_control #(
 
             if (valid_i) begin
                if (wstrb_i == 0) begin  // read operation
-                  if (addr_i == `IOB_CACHE_AXI_CSRS_RW_HIT_ADDR) rdata_o <= hit_cnt;
+                  if (addr_i == `IOB_CACHE_AXI_CSRS_WTB_EMPTY_ADDR) rdata_o <= wtbuf_empty_i;
+                  else if (addr_i == `IOB_CACHE_AXI_CSRS_WTB_FULL_ADDR) rdata_o <= wtbuf_full_i;
+                  else if (addr_i == `IOB_CACHE_AXI_CSRS_VERSION_ADDR)
+                     rdata_o <= `IOB_CACHE_AXI_CSRS_VERSION;
+                  else if (addr_i == `IOB_CACHE_AXI_CSRS_RW_HIT_ADDR) rdata_o <= hit_cnt;
                   else if (addr_i == `IOB_CACHE_AXI_CSRS_RW_MISS_ADDR) rdata_o <= miss_cnt;
                   else if (addr_i == `IOB_CACHE_AXI_CSRS_READ_HIT_ADDR) rdata_o <= read_hit_cnt;
                   else if (addr_i == `IOB_CACHE_AXI_CSRS_READ_MISS_ADDR) rdata_o <= read_miss_cnt;
