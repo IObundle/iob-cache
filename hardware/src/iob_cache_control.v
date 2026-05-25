@@ -2,6 +2,7 @@
 
 `include "iob_cache_swreg_def.vh"
 `include "iob_cache_conf.vh"
+`include "iob_cache.vh"
 
 // Module responsible for performance measuring, information about the current
 // cache state, and other cache functions
