@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: 2024 IObundle
+// SPDX-FileCopyrightText: 2026 IObundle
 //
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CERN-OHL-S-2.0
 
 `timescale 1ns / 1ps
 
