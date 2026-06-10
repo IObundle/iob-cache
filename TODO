@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2024 IObundle
+# SPDX-FileCopyrightText: 2026 IObundle
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-only
 
 1. Check invalidate while read request completes (see iob-soc ext_mem old fix)
 2. Move doc building to build directory

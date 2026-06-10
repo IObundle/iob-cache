@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2024 IObundle
+# SPDX-FileCopyrightText: 2026 IObundle
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-only
 
 # Custom Coverage Analysis
 CUSTOM_COVERAGE_FLAGS=cov_annotated
