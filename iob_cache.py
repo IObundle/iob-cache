@@ -564,7 +564,7 @@ def setup(py_params: dict):
         converter_connect["clk_en_rst_s"] = "clk_en_rst_s"
     attributes_dict["subblocks"] = [
         {
-            "core_name": "iob_universal_converter",
+            "core": "iob_universal_converter",
             "instance_name": "iob_universal_converter",
             "instance_description": "Convert front-end interface into internal IOb port",
             "subordinate_if": FE_IF.lower(),
@@ -580,7 +580,7 @@ def setup(py_params: dict):
         attributes_dict["subblocks"][-1]["parameters"]["AXI_ID_W"] = "AXI_ID_W"
     attributes_dict["subblocks"] += [
         {
-            "core_name": "iob_cache_front_end",
+            "core": "iob_cache_front_end",
             "instance_name": "front_end",
             "instance_description": "This IOb interface is connected to a processor or any other processing element that needs a cache buffer to improve the performance of accessing a slower but larger memory",
             "parameters": {
@@ -597,7 +597,7 @@ def setup(py_params: dict):
             },
         },
         {
-            "core_name": "iob_cache_memory",
+            "core": "iob_cache_memory",
             "instance_name": "cache_memory",
             "instance_description": "This block contains the tag, data storage memories and the Write Through Buffer if the correspeonding write policy is selected; these memories are implemented either with RAM if large enough, or with registers if small enough",
             "config_macros": config_macros,
@@ -626,7 +626,7 @@ def setup(py_params: dict):
     if BE_IF == "AXI4":
         attributes_dict["subblocks"] += [
             {
-                "core_name": "iob_cache_back_end_axi",
+                "core": "iob_cache_back_end_axi",
                 "instance_name": "back_end_axi",
                 "instance_description": "Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This module implements an AXI4 interface",
                 "parameters": {
@@ -653,7 +653,7 @@ def setup(py_params: dict):
     elif BE_IF == "IOb":
         attributes_dict["subblocks"] += [
             {
-                "core_name": "iob_cache_back_end_iob",
+                "core": "iob_cache_back_end_iob",
                 "instance_name": "back_end_iob",
                 "instance_description": "Memory-side interface: if the cache is at the last level before the target memory module, the back-end interface connects to the target memory (e.g. DDR) controller; if the cache is not at the last level, the back-end interface connects to the next-level cache. This module implements an IOb interface",
                 "parameters": {
@@ -674,14 +674,14 @@ def setup(py_params: dict):
         ]
     attributes_dict["subblocks"] += [
         {
-            "core_name": "iob_cache_control",
+            "core": "iob_cache_control",
             "instance_name": "cache_control",
             "be_if": be_if,
             "instantiate": False,  # Instantiated manually in the verilog snippet
         },
         # Generate CSRs but don't instantiate it (generated hardware unused; only for software and docs)
         {
-            "core_name": "iob_csrs",
+            "core": "iob_csrs",
             "instance_name": "csrs",
             "name": f"iob_cache_{be_if}_csrs",
             "instantiate": False,
@@ -799,7 +799,7 @@ def setup(py_params: dict):
         },
         # For simulation
         {
-            "core_name": "iob_tasks",
+            "core": "iob_tasks",
             "instance_name": "iob_tasks_inst",
             "dest_dir": "hardware/simulation/src",
             "instantiate": False,
@@ -811,7 +811,7 @@ def setup(py_params: dict):
     attributes_dict["superblocks"] = [
         # Simulation wrapper
         {
-            "core_name": "iob_cache_sim_wrapper",
+            "core": "iob_cache_sim_wrapper",
             "dest_dir": "hardware/simulation/src",
             "cache_confs": [
                 conf for conf in attributes_dict["confs"] if conf["type"] in ["P", "D"]
@@ -825,11 +825,11 @@ def setup(py_params: dict):
     #
     attributes_dict["sw_modules"] = [
         {
-            "core_name": "iob_coverage_analyze",
+            "core": "iob_coverage_analyze",
             "instance_name": "iob_coverage_analyze_inst",
         },
         {
-            "core_name": "iob_linux_device_drivers",
+            "core": "iob_linux_device_drivers",
         },
     ]
     #

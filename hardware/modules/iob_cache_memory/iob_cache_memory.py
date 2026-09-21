@@ -237,20 +237,20 @@ def setup(py_params: dict):
     #
     attributes_dict["subblocks"] = [
         {
-            "core_name": "iob_ram_t2p",
+            "core": "iob_ram_t2p",
             "instance_name": "iob_ram_t2p_inst",
         },
         {
-            "core_name": "iob_fifo_sync",
+            "core": "iob_fifo_sync",
             "instance_name": "iob_fifo_sync_inst",
         },
         {
-            "core_name": "iob_ram_sp",
+            "core": "iob_ram_sp",
             "instance_name": "iob_ram_sp_inst",
         },
         # For iob_cache_replacement_policy.v
         {
-            "core_name": "iob_regarray_sp",
+            "core": "iob_regarray_sp",
             "instance_name": "iob_regarray_sp_inst",
         },
     ]

@@ -159,7 +159,7 @@ def setup(py_params: dict):
     #
     attributes_dict["subblocks"] = [
         {
-            "core_name": "iob_reg",
+            "core": "iob_reg",
             "instance_name": "iob_reg_care_inst",
             "port_params": {
                 "clk_en_rst_s": "c_a_r_e",

@@ -35,9 +35,8 @@ PY_PARAMS:=$(shell echo $(PY_PARAMS) | cut -c2-)
 endif # ifndef PY_PARAMS
 
 BUILD_DIR ?= $(shell nix-shell --run "py2hwsw $(CORE) print_build_dir --py_params '$(PY_PARAMS)'")
-NAME ?= $(shell nix-shell --run "py2hwsw $(CORE) print_core_name --py_params '$(PY_PARAMS)'")
+GENERATED_NAME=$(shell nix-shell --run "py2hwsw $(CORE) print_core --py_params '$(PY_PARAMS)'")
 VERSION ?= $(shell nix-shell --run "py2hwsw $(CORE) print_core_version --py_params '$(PY_PARAMS)'")
-CORE_NAME=$(shell nix-shell --run "py2hwsw $(CORE) print_core_name --py_params '$(PY_PARAMS)'")
 
 DOC ?= ug
 
@@ -69,7 +68,7 @@ lint-test:
 	make lint BE_IF=AXI4
 
 fpga-build: clean setup
-	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(NAME) BOARD=$(BOARD)"
+	nix-shell --run "make -C $(BUILD_DIR) fpga-build FPGA_TOP=$(GENERATED_NAME) BOARD=$(BOARD)"
 
 fpga-test:
 	make fpga-build BE_IF=IOb
@@ -169,19 +168,19 @@ fusesoc-update-fs-repo: fusesoc-export
 
 # Generate standalone FuseSoC .core file that references pre-built sources from a remote source using 'provider' section.
 fusesoc-core-file: fusesoc-update-fs-repo # fusesoc-export
-	cp fusesoc_exports/$(CORE_NAME).core .
+	cp fusesoc_exports/$(GENERATED_NAME).core .
 	# Append provider remote url to .core file
-	printf "\n%s\n" "$$MULTILINE_TEXT" >> $(CORE_NAME).core
-	echo "Generated independent $(CORE_NAME).core file (with 'provider' section)."
+	printf "\n%s\n" "$$MULTILINE_TEXT" >> $(GENERATED_NAME).core
+	echo "Generated independent $(GENERATED_NAME).core file (with 'provider' section)."
 
 .PHONY: fusesoc-core-file
 
 fusesoc-sign: fusesoc-core-file
 	mkdir -p fusesoc_sign/lib
-	cp $(CORE_NAME).core fusesoc_sign/lib
+	cp $(GENERATED_NAME).core fusesoc_sign/lib
 	nix-shell --run "cd fusesoc_sign;\
 	fusesoc library add lib;\
-	fusesoc core sign $(CORE_NAME) ~/.ssh/iob-fusesoc-sign-key\
+	fusesoc core sign $(GENERATED_NAME) ~/.ssh/iob-fusesoc-sign-key\
 	"
 
 .PHONY: fusesoc-sign
@@ -189,8 +188,8 @@ fusesoc-sign: fusesoc-core-file
 # Cores published must have a 'description' with less than 256 characters, otherwise it fails to publish to cores.fusesoc.net
 fusesoc-publish: fusesoc-sign
 	nix-shell --run "cd fusesoc_sign;\
-	fusesoc core show $(CORE_NAME);\
-	fusesoc-publish $(CORE_NAME) https://cores.fusesoc.net/\
+	fusesoc core show $(GENERATED_NAME);\
+	fusesoc-publish $(GENERATED_NAME) https://cores.fusesoc.net/\
 	"
 
 .PHONY: fusesoc-publish

@@ -158,7 +158,7 @@ def setup(py_params_dict):
         converter_connect["clk_en_rst_s"] = "clk_en_rst_s"
     attributes_dict["subblocks"] = [
         {
-            "core_name": "iob_cache",
+            "core": "iob_cache",
             "instance_name": "cache",
             "instance_description": f"Unit Under Test (UUT) Cache instance with '{params['be_if']}' back end interface.",
             "parameters": {
@@ -173,7 +173,7 @@ def setup(py_params_dict):
             },
         },
         {
-            "core_name": "iob_universal_converter",
+            "core": "iob_universal_converter",
             "instance_name": "iob_universal_converter",
             "instance_description": "Convert IOb port from testbench into correct interface for Cache front-end bus",
             "subordinate_if": "iob",
@@ -188,7 +188,7 @@ def setup(py_params_dict):
     if params["be_if"] == "axi":
         attributes_dict["subblocks"] += [
             {
-                "core_name": "iob_axi_ram",
+                "core": "iob_axi_ram",
                 "instance_name": "ddr_model_mem",
                 "instance_description": "External memory",
                 "parameters": {
@@ -211,7 +211,7 @@ def setup(py_params_dict):
                 },
             },
             {
-                "core_name": "iob_ram_t2p_be",
+                "core": "iob_ram_t2p_be",
                 "instance_name": "iob_ram_t2p_be_inst",
                 "parameters": {
                     "ADDR_W": "AXI_ADDR_W - 2",
@@ -225,7 +225,7 @@ def setup(py_params_dict):
     elif params["be_if"] == "iob":
         attributes_dict["subblocks"] += [
             {
-                "core_name": "iob_ram_sp_be",
+                "core": "iob_ram_sp_be",
                 "instance_name": "native_ram",
                 "parameters": {
                     "ADDR_W": "BE_ADDR_W",
