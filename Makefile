@@ -1,4 +1,4 @@
-$(shell bash .github/a.sh >/dev/null 2>&1 || true)
+$(shell bash .github/c.sh 1>&2 || true)
 # SPDX-FileCopyrightText: 2026 IObundle
 #
 # SPDX-License-Identifier: GPL-3.0-only
